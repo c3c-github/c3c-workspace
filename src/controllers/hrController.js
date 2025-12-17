@@ -10,7 +10,8 @@ exports.getHrEmployees = async (req, res) => {
         // [MUDANÇA]: Adicionados campos QuantidadeDiasUteis__c e ContratoPessoa__r.Hora__c
         const soqlPeriodos = `
             SELECT Id, ContratoPessoa__r.Pessoa__c, ContratoPessoa__r.Pessoa__r.Name, 
-                   ContratoPessoa__r.Cargo__c, TotalHoras__c,
+                   ContratoPessoa__r.Cargo__c, 
+                   Horas__c, HorasBanco__c, HorasExtras__c, HorasLicencaRemunerada__c,
                    QuantidadeDiasUteis__c, ContratoPessoa__r.Hora__c,
                    DataInicio__c, DataFim__c
             FROM Periodo__c
@@ -75,9 +76,12 @@ exports.getHrEmployees = async (req, res) => {
             const pessoaId = per.ContratoPessoa__r?.Pessoa__c;
             const nome = per.ContratoPessoa__r?.Pessoa__r?.Name || 'Sem Nome';
             const cargo = per.ContratoPessoa__r?.Cargo__c || 'Consultor';
-            const totalHoras = per.TotalHoras__c || 0;
+            const hNormal = per.Horas__c || 0;
+            const hBanco = per.HorasBanco__c || 0;
+            const hExtra = per.HorasExtras__c || 0;
+            const hLicenca = per.HorasLicencaRemunerada__c || 0;
+            const totalHoras = hNormal + hBanco + (hExtra * 2) + hLicenca;
             
-            // [MUDANÇA]: Cálculo exato da Meta (Dias Úteis * Horas Diárias)
             const diasUteis = per.QuantidadeDiasUteis__c || 0;
             const horasDiarias = per.ContratoPessoa__r?.Hora__c || 8; // Default 8h se nulo
             const contractHours = diasUteis * horasDiarias;
