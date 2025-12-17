@@ -7,12 +7,26 @@ const dashboardController = require('./controllers/dashboardController');
 const apiController = require('./controllers/apiController');
 const hrController = require('./controllers/hrController');
 
-// Middleware de Autenticação (Proteção de Rotas)
+// Middleware Básico de Autenticação
 const requireAuth = (req, res, next) => {
     if (!req.session || !req.session.user) {
         return res.redirect('/');
     }
     next();
+};
+
+// [NOVO] Middleware de Grupo (Permissão)
+const requireGroup = (groupCode) => {
+    return (req, res, next) => {
+        const user = req.session.user;
+        // Verifica se usuário tem grupos e se o código exigido está lá
+        if (user && user.grupos && user.grupos.includes(groupCode)) {
+            next();
+        } else {
+            // Se não tiver permissão, renderiza página de erro ou redireciona
+            res.status(403).render('negado', { mensagem: `Acesso negado. Requer perfil: ${groupCode}` });
+        }
+    };
 };
 
 // =========================================
@@ -27,48 +41,34 @@ router.get('/logout', authController.logout);
 // 2. ROTAS DE PÁGINAS (VIEWS)
 // =========================================
 
-// Página Inicial (Dashboard / KPIs)
+// Dashboard Principal (Acesso Geral)
 router.get('/dashboard', requireAuth, dashboardController.renderHome);
 
-// Página de Aprovação (Gestor)
-router.get('/approvals', requireAuth, dashboardController.renderApprovals);
+// Página de Aprovação (Apenas GESTOR)
+router.get('/approvals', requireAuth, requireGroup('GESTOR'), dashboardController.renderApprovals);
 
-// Página de RH (Gestão de Ponto)
-router.get('/hr', requireAuth, hrController.renderHrDashboard);
+// Página de RH (Apenas ADMIN_RH)
+router.get('/hr', requireAuth, requireGroup('ADMIN_RH'), hrController.renderHrDashboard);
 
 // =========================================
-// 3. APIS - DADOS GERAIS & GESTOR
+// 3. APIS - DADOS GERAIS
 // =========================================
-
-// Lista de Períodos (Dropdown)
 router.get('/api/periods', requireAuth, apiController.getPeriods);
-
-// KPIs do Dashboard Principal
 router.get('/api/dashboard/metrics', requireAuth, apiController.getDashboardMetrics);
 
-// Lista de Projetos para Aprovação
-router.get('/api/approvals/projects', requireAuth, apiController.getProjects);
-
-// Detalhes dos Recursos de um Projeto
-router.get('/api/approvals/:serviceId/resources', requireAuth, apiController.getProjectResources);
-
-// Drill-down: Atividades detalhadas de um Recurso
-router.get('/api/approvals/:serviceId/resources/:personId/activities', requireAuth, apiController.getResourceActivities);
-
-// Ação do Gestor (Aprovar/Reprovar)
-router.post('/api/approvals/action', requireAuth, apiController.handleApprovalAction);
+// =========================================
+// 4. APIS - GESTOR (Protegidas)
+// =========================================
+router.get('/api/approvals/projects', requireAuth, requireGroup('GESTOR'), apiController.getProjects);
+router.get('/api/approvals/:serviceId/resources', requireAuth, requireGroup('GESTOR'), apiController.getProjectResources);
+router.get('/api/approvals/:serviceId/resources/:personId/activities', requireAuth, requireGroup('GESTOR'), apiController.getResourceActivities);
+router.post('/api/approvals/action', requireAuth, requireGroup('GESTOR'), apiController.handleApprovalAction);
 
 // =========================================
-// 4. APIS - RECURSOS HUMANOS (RH)
+// 5. APIS - RH (Protegidas)
 // =========================================
-
-// Tabela Principal do RH (Colaboradores, Status, KPIs)
-router.get('/api/hr/employees', requireAuth, hrController.getHrEmployees);
-
-// Detalhes do Modal do RH (Extrato diário)
-router.get('/api/hr/employees/:personId/details', requireAuth, hrController.getEmployeeDetails);
-
-// Ação do RH (Fechar Folha ou Reprovar)
-router.post('/api/hr/action', requireAuth, hrController.handleHrAction);
+router.get('/api/hr/employees', requireAuth, requireGroup('ADMIN_RH'), hrController.getHrEmployees);
+router.get('/api/hr/employees/:personId/details', requireAuth, requireGroup('ADMIN_RH'), hrController.getEmployeeDetails);
+router.post('/api/hr/action', requireAuth, requireGroup('ADMIN_RH'), hrController.handleHrAction);
 
 module.exports = router;

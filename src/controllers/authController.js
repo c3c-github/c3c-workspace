@@ -35,8 +35,11 @@ exports.azureCallback = async (req, res) => {
         // C. Busca dados no Salesforce
         const conn = await getSfConnection();
         
+        // [CORREÇÃO AQUI]: O nome do relacionamento é 'GruposDePermissao__r' (conforme seu JSON)
         const soqlPessoa = `
-            SELECT Id, Name, (SELECT Name FROM ContratosPessoa__r WHERE Status__c = 'Ativo' LIMIT 1)
+            SELECT Id, Name, Email__c, 
+                   (SELECT Name FROM ContratosPessoa__r WHERE Status__c = 'Ativo' LIMIT 1),
+                   (SELECT Grupo__r.Codigo__c FROM GruposDePermissao__r)
             FROM Pessoa__c 
             WHERE Email__c = '${userEmail}' 
             LIMIT 1
@@ -53,22 +56,26 @@ exports.azureCallback = async (req, res) => {
                          ? pessoa.ContratosPessoa__r.records[0].Name 
                          : null;
 
-        if (!contrato) {
-            return res.render('negado', { mensagem: 'Pessoa encontrada, mas sem Contrato Ativo.' });
-        }
+        // [CORREÇÃO AQUI]: Mapeando corretamente GruposDePermissao__r
+        const grupos = (pessoa.GruposDePermissao__r && pessoa.GruposDePermissao__r.records)
+            ? pessoa.GruposDePermissao__r.records.map(m => m.Grupo__r.Codigo__c)
+            : [];
+            
+        console.log(`✅ Login: ${pessoa.Name} | Grupos: ${grupos.join(', ')}`);
 
         // D. Salva na Sessão
         req.session.user = {
             id: pessoa.Id,
             nome: pessoa.Name,
             email: userEmail,
-            contrato: contrato 
+            contrato: contrato, 
+            grupos: grupos      // Agora deve vir ['GESTOR', 'ADMIN_RH']
         };
 
         res.redirect('/dashboard');
 
     } catch (error) {
-        console.error(error);
+        console.error("Erro no Login:", error);
         res.render('negado', { mensagem: 'Erro técnico no processo de login.' });
     }
 };

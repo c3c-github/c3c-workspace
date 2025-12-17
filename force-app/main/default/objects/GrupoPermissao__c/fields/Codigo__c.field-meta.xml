@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Codigo__c</fullName>
+    <caseSensitive>true</caseSensitive>
+    <description>Crucial. Use códigos fixos sem espaços (ex: ADMIN_RH, GESTOR_PROJETO). É isso que seu código Node.js vai verificar.</description>
+    <externalId>false</externalId>
+    <label>Código do Grupo</label>
+    <length>255</length>
+    <required>true</required>
+    <trackTrending>false</trackTrending>
+    <type>Text</type>
+    <unique>true</unique>
+</CustomField>

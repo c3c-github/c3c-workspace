@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomApplication xmlns="http://soap.sforce.com/2006/04/metadata">
+    <brand>
+        <headerColor>#0070D2</headerColor>
+        <logo>ChatGPT_Image_23_de_abr_de_2025_09</logo>
+        <logoVersion>1</logoVersion>
+        <shouldOverrideOrgTheme>true</shouldOverrideOrgTheme>
+    </brand>
+    <formFactors>Small</formFactors>
+    <formFactors>Large</formFactors>
+    <isNavAutoTempTabsDisabled>false</isNavAutoTempTabsDisabled>
+    <isNavPersonalizationDisabled>false</isNavPersonalizationDisabled>
+    <isNavTabPersistenceDisabled>false</isNavTabPersistenceDisabled>
+    <isOmniPinnedViewEnabled>false</isOmniPinnedViewEnabled>
+    <label>Pessoas</label>
+    <navType>Standard</navType>
+    <tabs>Pessoa__c</tabs>
+    <tabs>GrupoPermissao__c</tabs>
+    <tabs>MembroGrupo__c</tabs>
+    <tabs>ContratoPessoa__c</tabs>
+    <tabs>Servico__c</tabs>
+    <tabs>Alocacao__c</tabs>
+    <tabs>Atividade__c</tabs>
+    <tabs>Periodo__c</tabs>
+    <tabs>Ferias__c</tabs>
+    <tabs>FeriadoRegional__c</tabs>
+    <tabs>Estado__c</tabs>
+    <tabs>Municipio__c</tabs>
+    <tabs>Sessao__c</tabs>
+    <tabs>BeneficioPessoa__c</tabs>
+    <uiType>Lightning</uiType>
+    <utilityBar>Pessoas_UtilityBar</utilityBar>
+</CustomApplication>
