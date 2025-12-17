@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+
+<html lang="pt-BR">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Entrar - C3C Software</title>
+
+    <!-- Tailwind CSS -->
+
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Fonte Montserrat (Identidade Visual C3C) -->
+
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+   
+
+    <script>
+
+        tailwind.config = {
+
+            theme: {
+
+                extend: {
+
+                    fontFamily: {
+
+                        sans: ['Montserrat', 'sans-serif'],
+
+                    },
+
+                    colors: {
+
+                        c3c: {
+
+                            blue: '#2978FF',
+
+                            teal: '#1DDDBD',
+
+                            gray: '#F2F2F2',
+
+                            black: '#000000'
+
+                        }
+
+                    }
+
+                }
+
+            }
+
+        }
+
+    </script>
+
+   
+
+    <style>
+
+        body {
+
+            font-family: 'Montserrat', sans-serif;
+
+            background-color: #F2F2F2; /* Cor secundária C3C */
+
+        }
+
+       
+
+        /* Animações suaves */
+
+        .fade-in {
+
+            animation: fadeIn 0.5s ease-in-out;
+
+        }
+
+
+
+        .slide-up {
+
+            animation: slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+
+        }
+
+
+
+        @keyframes fadeIn {
+
+            from { opacity: 0; }
+
+            to { opacity: 1; }
+
+        }
+
+
+
+        @keyframes slideUp {
+
+            from { transform: translateY(20px); opacity: 0; }
+
+            to { transform: translateY(0); opacity: 1; }
+
+        }
+
+
+
+        /* Loader com as cores da C3C */
+
+        .loader {
+
+            border: 3px solid #f3f3f3;
+
+            border-radius: 50%;
+
+            border-top: 3px solid #2978FF; /* Azul C3C */
+
+            border-right: 3px solid #1DDDBD; /* Turquesa C3C */
+
+            width: 20px;
+
+            height: 20px;
+
+            -webkit-animation: spin 1s linear infinite;
+
+            animation: spin 1s linear infinite;
+
+        }
+
+
+
+        @keyframes spin {
+
+            0% { transform: rotate(0deg); }
+
+            100% { transform: rotate(360deg); }
+
+        }
+
+
+
+        /* Gradiente Exclusivo C3C */
+
+        .bg-c3c-gradient {
+
+            background: linear-gradient(135deg, #2978FF 0%, #1DDDBD 100%);
+
+            background-size: 200% 200%;
+
+            animation: gradientShift 8s ease infinite;
+
+        }
+
+
+
+        @keyframes gradientShift {
+
+            0% { background-position: 0% 50%; }
+
+            50% { background-position: 100% 50%; }
+
+            100% { background-position: 0% 50%; }
+
+        }
+
+
+
+        .check-icon {
+
+            stroke-dasharray: 100;
+
+            stroke-dashoffset: 100;
+
+            animation: draw 0.5s ease forwards;
+
+        }
+
+
+
+        @keyframes draw {
+
+            to { stroke-dashoffset: 0; }
+
+        }
+
+    </style>
+
+</head>
+
+<body class="h-screen w-full flex items-center justify-center overflow-hidden">
+
+
+
+    <!-- Container Principal -->
+
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-5xl h-[90vh] md:h-[800px] flex overflow-hidden fade-in m-4 relative">
+
+       
+
+        <!-- Lado Esquerdo: Branding C3C (Visível apenas em Desktop/Tablet) -->
+
+        <div class="hidden md:flex md:w-1/2 bg-c3c-gradient flex-col justify-between p-12 text-white relative overflow-hidden">
+
+            <!-- Elementos Decorativos de Fundo (Abstratos) -->
+
+            <div class="absolute top-[-10%] right-[-10%] w-64 h-64 bg-white opacity-10 rounded-full blur-3xl"></div>
+
+            <div class="absolute bottom-[-10%] left-[-10%] w-80 h-80 bg-[#1DDDBD] opacity-20 rounded-full blur-3xl"></div>
+
+
+
+            <div class="absolute top-0 left-0 w-full h-full opacity-10 pointer-events-none">
+
+                <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+
+                    <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+
+                        <path d="M 40 0 L 0 0 0 40" fill="none" stroke="white" stroke-width="0.5"/>
+
+                    </pattern>
+
+                    <rect width="100%" height="100%" fill="url(#grid)" />
+
+                </svg>
+
+            </div>
+
+
+
+            <div class="z-10 slide-up">
+
+                <div class="flex items-center gap-2 mb-8">
+
+                    <!-- Logo C3C Software com fundo branco para contraste ideal -->
+
+                    <div class="bg-white p-4 rounded-xl shadow-lg flex flex-col items-center justify-center">
+
+                        <img src="https://c3c.my.site.com/resource/1752735833000/logo" alt="C3C Software" class="h-10 w-auto">
+
+                        <span class="mt-1 font-bold text-gray-800 text-sm tracking-wide">C3C</span>
+
+                    </div>
+
+                </div>
+
+                <!-- Tipografia Montserrat Bold/ExtraBold -->
+
+                <h1 class="text-4xl font-extrabold mb-4 leading-tight tracking-tight">A melhor empresa de implantação <span class="text-white opacity-90 border-b-4 border-[#1DDDBD]">de Salesforce do Brasil.</span></h1>
+
+                <p class="text-blue-50 text-lg font-medium opacity-90">Acesse o ecossistema integrado C3C Workplace.</p>
+
+            </div>
+
+
+
+            <!-- Ícones de Integração -->
+
+            <div class="z-10 slide-up" style="animation-delay: 0.2s;">
+
+                <p class="text-xs uppercase tracking-widest text-white mb-6 font-bold opacity-80">Ambiente integrado com</p>
+
+                <div class="flex gap-8 items-center">
+
+                    <!-- Microsoft Logo (White) -->
+
+                    <div class="flex flex-col items-center gap-2 opacity-90 hover:opacity-100 transition transform hover:scale-105 duration-300">
+
+                        <svg class="w-8 h-8" viewBox="0 0 23 23" fill="white">
+
+                            <path d="M0 0h11v11H0zM12 0h11v11H12zM0 12h11v11H0zM12 12h11v11H12z"/>
+
+                        </svg>
+
+                        <span class="text-[10px] font-bold tracking-wide">365</span>
+
+                    </div>
+
+                    <!-- Salesforce Logo -->
+
+                    <div class="flex flex-col items-center gap-2 opacity-90 hover:opacity-100 transition transform hover:scale-105 duration-300">
+
+                        <svg class="w-8 h-8" viewBox="0 0 24 24" fill="white">
+
+                            <path d="M16.1,6.8c-0.6-2.6-2.9-4.5-5.6-4.5c-2.4,0-4.4,1.4-5.3,3.5C2.2,6.4,0,9,0,12.1c0,3.5,2.7,6.3,6.2,6.5h8.9 c2.7,0,4.9-2.2,4.9-4.9C20,11.1,18.4,8.9,16.1,6.8z"/>
+
+                        </svg>
+
+                        <span class="text-[10px] font-bold tracking-wide">CRM</span>
+
+                    </div>
+
+                    <!-- Discord Logo -->
+
+                    <div class="flex flex-col items-center gap-2 opacity-90 hover:opacity-100 transition transform hover:scale-105 duration-300">
+
+                        <svg class="w-8 h-8" viewBox="0 0 24 24" fill="white">
+
+                            <path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994a.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03z"/>
+
+                        </svg>
+
+                        <span class="text-[10px] font-bold tracking-wide">CHAT</span>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+
+            <div class="text-[11px] font-semibold tracking-wide text-white opacity-60">
+
+                &copy; 2024 C3C SOFTWARE. TODOS OS DIREITOS RESERVADOS.
+
+            </div>
+
+        </div>
+
+
+
+        <!-- Lado Direito: Formulário de Login -->
+
+        <div class="w-full md:w-1/2 bg-white p-8 md:p-16 flex flex-col justify-center relative">
+
+           
+
+            <!-- Badge de Status do Sistema -->
+
+            <div class="absolute top-6 right-6 flex items-center gap-2">
+
+                <span class="relative flex h-3 w-3">
+
+                  <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#1DDDBD] opacity-75"></span>
+
+                  <span class="relative inline-flex rounded-full h-3 w-3 bg-[#1DDDBD]"></span>
+
+                </span>
+
+                <span class="text-xs font-bold text-gray-400 tracking-wide">ONLINE</span>
+
+            </div>
+
+
+
+            <!-- Card de Login (Estado Inicial) -->
+
+            <div id="login-state" class="slide-up max-w-sm mx-auto w-full">
+
+                <!-- Logo Mobile -->
+
+                <div class="md:hidden mb-10 flex justify-center">
+
+                    <img src="https://c3c.my.site.com/resource/1752735833000/logo" alt="C3C Software" class="h-12 w-auto">
+
+                </div>
+
+
+
+                <div class="mb-12 text-center md:text-left">
+
+                    <h2 class="text-3xl font-bold text-[#000000] mb-3">Bem-vindo</h2>
+
+                    <p class="text-gray-500 font-medium">Faça login com sua conta corporativa para acessar o C3C Workplace.</p>
+
+                </div>
+
+
+
+                <!-- Botão Microsoft SSO -->
+
+                <button onclick="window.location.href='/auth/login'" class="w-full group relative flex items-center justify-center gap-3 bg-[#2f2f2f] hover:bg-[#000000] text-white px-6 py-4 rounded-xl border border-transparent transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#2978FF]">
+
+                    <!-- Logo Microsoft Colorido -->
+
+                    <svg class="w-5 h-5" viewBox="0 0 23 23">
+
+                        <path fill="#f35325" d="M1 1h10v10H1z"/>
+
+                        <path fill="#81bc06" d="M12 1h10v10H12z"/>
+
+                        <path fill="#05a6f0" d="M1 12h10v10H1z"/>
+
+                        <path fill="#ffba08" d="M12 12h10v10H12z"/>
+
+                    </svg>
+
+                    <span class="font-bold text-[15px] tracking-wide">Entrar com Microsoft 365</span>
+
+                   
+
+                    <!-- Seta indicativa no hover (Cor da Marca) -->
+
+                    <svg class="w-4 h-4 absolute right-5 opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-x-[-10px] group-hover:translate-x-0 text-[#1DDDBD]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14 5l7 7m0 0l-7 7m7-7H3"></path>
+
+                    </svg>
+
+                </button>
+
+
+
+                <div class="mt-10 relative">
+
+                    <div class="absolute inset-0 flex items-center">
+
+                        <div class="w-full border-t border-gray-100"></div>
+
+                    </div>
+
+                    <div class="relative flex justify-center text-xs uppercase tracking-widest font-bold">
+
+                        <span class="px-2 bg-white text-gray-300">Suporte</span>
+
+                    </div>
+
+                </div>
+
+
+
+                <div class="mt-8 text-center text-xs font-semibold text-gray-400">
+
+                    Ao continuar, você concorda com a <a href="#" class="underline hover:text-[#2978FF] transition-colors">Política de Privacidade</a> da C3C Software.
+
+                </div>
+
+            </div>
+
+
+
+            <!-- Estado de Carregamento / Integração -->
+
+            <div id="loading-state" class="hidden flex-col items-center justify-center w-full max-w-sm mx-auto text-center fade-in">
+
+                <div class="relative w-24 h-24 mb-8">
+
+                    <!-- Avatar do usuário (Mock) -->
+
+                    <div class="w-24 h-24 rounded-full bg-gray-200 overflow-hidden border-4 border-white shadow-xl relative z-10">
+
+                        <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Felix" alt="User Avatar" class="w-full h-full object-cover">
+
+                    </div>
+
+                    <!-- Spinner ring com gradiente C3C -->
+
+                    <div class="absolute top-[-4px] left-[-4px] w-[104px] h-[104px] rounded-full border-4 border-transparent border-t-[#2978FF] border-r-[#1DDDBD] animate-spin z-0"></div>
+
+                </div>
+
+               
+
+                <h3 class="text-xl font-bold text-gray-900 mb-2">Autenticando...</h3>
+
+                <p class="text-sm font-medium text-gray-500 mb-8">Verificando credenciais no Azure AD</p>
+
+
+
+                <!-- Passos de Integração -->
+
+                <div class="w-full space-y-4 bg-[#F2F2F2] p-6 rounded-xl">
+
+                    <div id="step-1" class="flex items-center gap-3 text-sm font-medium text-gray-400 transition-colors duration-300">
+
+                        <div class="w-5 h-5 rounded-full border-2 border-gray-300 flex items-center justify-center step-icon bg-white"></div>
+
+                        <span>Token Microsoft 365</span>
+
+                    </div>
+
+                    <div id="step-2" class="flex items-center gap-3 text-sm font-medium text-gray-400 transition-colors duration-300">
+
+                        <div class="w-5 h-5 rounded-full border-2 border-gray-300 flex items-center justify-center step-icon bg-white"></div>
+
+                        <span>Sincronizando Salesforce CRM</span>
+
+                    </div>
+
+                    <div id="step-3" class="flex items-center gap-3 text-sm font-medium text-gray-400 transition-colors duration-300">
+
+                        <div class="w-5 h-5 rounded-full border-2 border-gray-300 flex items-center justify-center step-icon bg-white"></div>
+
+                        <span>Conectando Discord RPC</span>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+
+            <!-- Estado de Sucesso -->
+
+            <div id="success-state" class="hidden flex-col items-center justify-center w-full max-w-sm mx-auto text-center fade-in">
+
+                <div class="w-20 h-20 bg-[#e6f9f7] rounded-full flex items-center justify-center mb-6 shadow-sm">
+
+                    <svg class="w-10 h-10 text-[#1DDDBD] check-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path>
+
+                    </svg>
+
+                </div>
+
+                <h3 class="text-2xl font-bold text-gray-900 mb-2">Login Efetuado!</h3>
+
+                <p class="text-gray-500 font-medium mb-8">Redirecionando para C3C Workplace...</p>
+
+                <div class="w-full bg-gray-100 rounded-full h-2 mb-4 overflow-hidden">
+
+                    <div class="bg-gradient-to-r from-[#2978FF] to-[#1DDDBD] h-2 rounded-full" style="width: 100%; transition: width 2s ease-in-out; animation: progress 2s ease-in-out;"></div>
+
+                </div>
+
+            </div>
+
+
+
+        </div>
+
+    </div>
+
+
+
+    <!-- JavaScript para Simulação de Lógica -->
+
+    <script>
+
+        function handleLogin() {
+
+            const loginState = document.getElementById('login-state');
+
+            const loadingState = document.getElementById('loading-state');
+
+            const successState = document.getElementById('success-state');
+
+
+
+            // 1. Esconder Login, Mostrar Loader
+
+            loginState.style.display = 'none';
+
+            loadingState.style.display = 'flex';
+
+
+
+            // Função auxiliar para atualizar steps
+
+            const updateStep = (id, isActive) => {
+
+                const el = document.getElementById(id);
+
+                const icon = el.querySelector('.step-icon');
+
+               
+
+                el.classList.remove('text-gray-400');
+
+               
+
+                if (isActive) {
+
+                    // Estado Ativo (Loading)
+
+                    el.classList.add('text-[#2978FF]');
+
+                    icon.innerHTML = '<div class="loader" style="width:12px; height:12px; border-width:2px;"></div>';
+
+                    icon.className = 'w-5 h-5 flex items-center justify-center bg-white rounded-full shadow-sm';
+
+                } else {
+
+                    // Estado Concluído (Check)
+
+                    el.classList.remove('text-[#2978FF]');
+
+                    el.classList.add('text-green-600');
+
+                   
+
+                    icon.innerHTML = '<svg class="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>';
+
+                    icon.className = 'w-5 h-5 rounded-full bg-[#1DDDBD] border-none flex items-center justify-center shadow-sm';
+
+                }
+
+            };
+
+
+
+            // Simulação da Sequência de Autenticação
+
+           
+
+            // Passo 1: Microsoft (Imediato)
+
+            updateStep('step-1', true);
+
+
+
+            setTimeout(() => {
+
+                updateStep('step-1', false); // MS Completo
+
+                updateStep('step-2', true);  // Salesforce Começa
+
+            }, 1500);
+
+
+
+            setTimeout(() => {
+
+                updateStep('step-2', false); // Salesforce Completo
+
+                updateStep('step-3', true);  // Discord Começa
+
+            }, 3000);
+
+
+
+            setTimeout(() => {
+
+                updateStep('step-3', false); // Discord Completo
+
+               
+
+                // Mostrar Sucesso
+
+                loadingState.style.display = 'none';
+
+                successState.style.display = 'flex';
+
+               
+
+                // Mock redirect
+
+                console.log("Redirecionando para /dashboard...");
+
+            }, 4500);
+
+        }
+
+    </script>
+
+</body>
+
+</html>

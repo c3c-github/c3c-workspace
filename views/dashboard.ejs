@@ -1,0 +1,723 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - C3C Workplace</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Montserrat', 'sans-serif'] },
+                    colors: {
+                        c3c: { blue: '#2978FF', teal: '#1DDDBD', gray: '#F2F2F2' }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body { font-family: 'Montserrat', sans-serif; background-color: #F8FAFC; }
+        .bg-c3c-gradient { background: linear-gradient(135deg, #2978FF 0%, #1DDDBD 100%); }
+        .nav-item.active { background-color: #EEF2FF; color: #2978FF; border-right: 3px solid #2978FF; }
+        .fade-in { animation: fadeIn 0.3s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+        /* Scrollbar suave */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    </style>
+</head>
+<body class="h-screen flex overflow-hidden">
+
+    <aside class="w-64 bg-white border-r border-gray-100 flex flex-col hidden md:flex shadow-sm z-20">
+        <div class="h-20 flex items-center px-8 border-b border-gray-50">
+            <div class="flex items-center gap-2">
+                <div class="w-8 h-8 bg-c3c-gradient rounded-lg flex items-center justify-center text-white font-bold text-xs">C3C</div>
+                <span class="font-bold text-gray-800 tracking-wide text-lg">Workplace</span>
+            </div>
+        </div>
+
+        <nav class="flex-1 py-6 space-y-1">
+            <p class="px-6 text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Principal</p>
+            
+            <a href="#" onclick="navigate('home')" id="nav-home" class="nav-item active flex items-center gap-3 px-6 py-3 text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition-colors">
+                <i data-lucide="layout-dashboard" class="w-5 h-5"></i>
+                <span class="font-medium text-sm">Visão Geral</span>
+            </a>
+
+            <p class="px-6 text-xs font-semibold text-gray-400 uppercase tracking-wider mt-8 mb-2">Serviços</p>
+            
+            <a href="#" onclick="navigate('approval')" id="nav-approval" class="nav-item flex items-center gap-3 px-6 py-3 text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition-colors">
+                <i data-lucide="clock" class="w-5 h-5"></i>
+                <span class="font-medium text-sm">Aprovação de Horas</span>
+            </a>
+        </nav>
+
+        <div class="p-4 border-t border-gray-50">
+            <div class="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50 cursor-pointer">
+                <div class="w-10 h-10 rounded-full bg-blue-100 text-blue-600 border border-blue-200 flex items-center justify-center font-bold">
+                    <%= user.nome.charAt(0) %>
+                </div>
+                <div class="flex-1 min-w-0">
+                    <p class="text-sm font-semibold text-gray-900 truncate"><%= user.nome %></p>
+                    <a href="/logout" class="text-xs text-red-500 hover:underline truncate">Sair do sistema</a>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <main class="flex-1 flex flex-col bg-[#F8FAFC] overflow-hidden relative">
+        
+        <div class="md:hidden h-16 bg-white border-b border-gray-200 flex items-center justify-between px-4">
+            <span class="font-bold text-gray-800">C3C Workplace</span>
+            <i data-lucide="menu" class="w-6 h-6 text-gray-600"></i>
+        </div>
+
+        <div class="flex-1 overflow-y-auto p-4 md:p-8" id="content-area">
+            
+            <div id="view-home" class="fade-in">
+                <header class="mb-8 flex flex-col md:flex-row md:items-end justify-between gap-4">
+                    <div>
+                        <h1 class="text-2xl font-bold text-gray-900">Bom dia, <%= user.nome.split(' ')[0] %>! 👋</h1>
+                        <p class="text-gray-500 text-sm mt-1">Aqui está o resumo dos seus serviços hoje.</p>
+                    </div>
+
+                    <div class="flex items-center bg-white rounded-lg shadow-sm border border-gray-200 p-1">
+                        <span class="px-3 text-xs font-bold text-gray-400 uppercase">Período:</span>
+                        <select id="period-selector-home" onchange="onPeriodChange(this)" class="text-sm font-semibold text-gray-800 bg-transparent outline-none cursor-pointer py-1 pr-2">
+                            <option>Carregando...</option>
+                        </select>
+                    </div>
+                </header>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 mb-8">
+                    <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col justify-between h-32 relative overflow-hidden group">
+                        <div class="absolute right-0 top-0 w-16 h-16 bg-blue-50 rounded-bl-full -mr-2 -mt-2"></div>
+                        <p class="text-gray-400 text-xs font-bold uppercase tracking-wider z-10">Horas Alocadas</p>
+                        <div class="flex items-end gap-1 z-10">
+                            <span id="kpi-alocadas" class="text-3xl font-extrabold text-gray-800">--</span>
+                            <span class="text-xs text-gray-400 font-medium mb-1.5">h</span>
+                        </div>
+                        <p class="text-[10px] text-gray-400 mt-1">Previsto na alocação</p>
+                    </div>
+
+                    <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col justify-between h-32 relative overflow-hidden">
+                        <div class="absolute right-0 top-0 w-16 h-16 bg-purple-50 rounded-bl-full -mr-2 -mt-2"></div>
+                        <p class="text-gray-400 text-xs font-bold uppercase tracking-wider z-10">Horas Lançadas</p>
+                        <div class="flex items-end gap-1 z-10">
+                            <span id="kpi-lancadas" class="text-3xl font-extrabold text-gray-800">--</span>
+                            <span class="text-xs text-gray-400 font-medium mb-1.5">h</span>
+                        </div>
+                        <p class="text-[10px] text-gray-400 mt-1">Realizado pela equipe</p>
+                    </div>
+
+                    <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col justify-between h-32 relative overflow-hidden">
+                        <div class="absolute right-0 top-0 w-16 h-16 bg-teal-50 rounded-bl-full -mr-2 -mt-2"></div>
+                        <p class="text-gray-400 text-xs font-bold uppercase tracking-wider z-10">Eficiência</p>
+                        <div class="flex items-end gap-1 z-10">
+                            <span id="kpi-eficiencia" class="text-3xl font-extrabold text-[#1DDDBD]">--</span>
+                            <span class="text-xs text-gray-400 font-medium mb-1.5">%</span>
+                        </div>
+                        <p class="text-[10px] text-gray-400 mt-1">Aprovado / Alocado</p>
+                    </div>
+
+                    <div class="bg-white p-6 rounded-xl shadow-sm border border-red-50 flex flex-col justify-between h-32 relative overflow-hidden">
+                        <div class="absolute right-0 top-0 w-16 h-16 bg-red-50 rounded-bl-full -mr-2 -mt-2"></div>
+                        <p class="text-red-400 text-xs font-bold uppercase tracking-wider z-10">Pendentes</p>
+                        <div class="flex items-end gap-1 z-10">
+                            <span id="kpi-pendentes" class="text-3xl font-extrabold text-red-600">--</span>
+                            <span class="text-xs text-red-400 font-medium mb-1.5">h</span>
+                        </div>
+                        <p class="text-[10px] text-red-400 font-bold mt-1">Necessita Aprovação</p>
+                    </div>
+                </div>
+
+                <div class="bg-gradient-to-r from-[#2978FF] to-[#1DDDBD] rounded-2xl p-8 text-white flex items-center justify-between shadow-lg">
+                    <div>
+                        <h3 class="text-xl font-bold mb-2">Aprovações Pendentes</h3>
+                        <p class="text-blue-50 text-sm max-w-md">Você tem períodos em aberto que impedem o faturamento.</p>
+                        <button onclick="navigate('approval')" class="mt-6 bg-white text-blue-600 text-sm font-bold px-5 py-2.5 rounded-lg hover:bg-blue-50 transition-colors shadow-md">
+                            Ir para Aprovações
+                        </button>
+                    </div>
+                    <div class="hidden md:block opacity-90">
+                        <i data-lucide="clock" class="w-24 h-24 text-white opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+
+            <div id="view-approval" class="hidden fade-in">
+                <header class="mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div>
+                        <h1 class="text-2xl font-bold text-gray-900 flex items-center gap-2">
+                            Aprovação de Horas
+                            <span class="bg-blue-100 text-blue-700 text-xs px-2 py-1 rounded-full">Gestor</span>
+                        </h1>
+                        <p class="text-gray-500 text-sm mt-1">Analise os lançamentos por Serviço.</p>
+                    </div>
+                    
+                    <div class="flex items-center bg-white rounded-lg shadow-sm border border-gray-200 p-1">
+                        <span class="px-3 text-xs font-bold text-gray-400 uppercase">Período:</span>
+                        <select id="period-selector-approval" onchange="onPeriodChange(this)" class="text-sm font-semibold text-gray-800 bg-transparent outline-none cursor-pointer py-1 pr-2">
+                            <option>Carregando...</option>
+                        </select>
+                    </div>
+                </header>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6" id="approval-cards-container">
+                    </div>
+            </div>
+
+        </div>
+    </main>
+
+    <div id="modal-approval" class="fixed inset-0 z-50 hidden">
+        <div class="absolute inset-0 bg-gray-900 bg-opacity-50 transition-opacity" onclick="closeModal()"></div>
+        
+        <div class="absolute inset-0 flex items-center justify-center p-4">
+            <div class="bg-white rounded-xl shadow-2xl w-full max-w-5xl overflow-hidden transform transition-all flex flex-col max-h-[90vh]">
+                
+                <div class="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-white shrink-0">
+                    <div>
+                        <h3 class="text-lg font-bold text-gray-900" id="modal-title">Detalhes do Projeto</h3>
+                        <p class="text-sm text-gray-500">Visão consolidada do período.</p>
+                    </div>
+                    <button onclick="closeModal()" class="text-gray-400 hover:text-gray-600">
+                        <i data-lucide="x" class="w-6 h-6"></i>
+                    </button>
+                </div>
+
+                <div class="px-6 py-4 bg-gray-50 border-b border-gray-100 grid grid-cols-2 md:grid-cols-4 gap-4 shrink-0">
+                    
+                    <div class="bg-white p-3 rounded-lg border border-gray-200 shadow-sm">
+                        <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Total Alocado</p>
+                        <p class="text-xl font-bold text-gray-900" id="modal-sum-alocado">--</p>
+                        <p class="text-[10px] text-gray-400">Alocação do período</p>
+                    </div>
+
+                    <div class="bg-white p-3 rounded-lg border border-gray-200 shadow-sm">
+                        <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Total</p>
+                        <p class="text-xl font-bold text-blue-600" id="modal-sum-ponderado">--</p>
+                        <p class="text-[10px] text-gray-400">Total realizado</p>
+                    </div>
+
+                    <div class="bg-white p-3 rounded-lg border border-gray-200 shadow-sm">
+                        <p class="text-[10px] font-bold text-red-400 uppercase tracking-wider">Total Extras</p>
+                        <p class="text-xl font-bold text-red-600" id="modal-sum-extra">--</p>
+                        <p class="text-[10px] text-gray-400">Impacto financeiro</p>
+                    </div>
+
+                    <div class="bg-white p-3 rounded-lg border border-gray-200 shadow-sm relative overflow-hidden">
+                        <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider relative z-10">Conformidade Geral</p>
+                        <p class="text-xl font-bold text-gray-900 relative z-10" id="modal-sum-conformidade">--</p>
+                        <div id="modal-bar-conformidade" class="absolute bottom-0 left-0 h-1 bg-green-500 transition-all" style="width: 0%"></div>
+                    </div>
+                </div>
+
+                <div class="px-6 py-2 bg-blue-50 border-b border-blue-100 flex items-center gap-2 shrink-0">
+                    <i data-lucide="info" class="w-4 h-4 text-blue-600"></i>
+                    <p class="text-xs text-blue-800">
+                        O índice considera <strong>peso 2x</strong> para horas extras. <span class="text-green-700 font-bold">100% é a alocação.</span>
+                    </p>
+                </div>
+
+                <div class="overflow-x-auto p-0 flex-1 overflow-y-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead class="sticky top-0 bg-white z-10 shadow-sm">
+                            <tr class="text-xs font-bold text-gray-400 uppercase tracking-wider border-b border-gray-100 bg-white">
+                                <th class="py-3 pl-6">Recurso</th>
+                                <th class="py-3 text-right">Alocado</th>
+                                <th class="py-3 text-right">Normal</th>
+                                <th class="py-3 text-right">Extra</th>
+                                <th class="py-3 text-right text-gray-800">Total</th>
+                                <th class="py-3 text-center">Conformidade</th>
+                                <th class="py-3 text-center px-2">Ação</th>
+                            </tr>
+                        </thead>
+                        <tbody id="modal-table-body" class="text-sm text-gray-600">
+                            </tbody>
+                    </table>
+                </div>
+
+                <div class="px-6 py-4 border-t border-gray-100 flex justify-end shrink-0 bg-white">
+                    <button onclick="closeModal()" class="px-4 py-2 bg-white border border-gray-200 text-gray-700 font-bold rounded-lg hover:bg-gray-50">
+                        Fechar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-activities" class="fixed inset-0 z-[60] hidden">
+        <div class="absolute inset-0 bg-black bg-opacity-20 transition-opacity" onclick="closeActivityModal()"></div>
+        <div class="absolute inset-0 flex items-center justify-center p-4">
+            <div class="bg-white rounded-lg shadow-xl w-full max-w-2xl overflow-hidden">
+                <div class="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
+                    <h3 class="font-bold text-gray-900">Extrato de Atividades</h3>
+                    <button onclick="closeActivityModal()"><i data-lucide="x" class="w-5 h-5 text-gray-400"></i></button>
+                </div>
+                <div class="p-0 overflow-y-auto max-h-[60vh]">
+                    <table class="w-full text-left text-sm">
+                        <thead class="bg-white text-gray-500 font-bold border-b border-gray-100">
+                            <tr>
+                                <th class="p-4">Atividade</th>
+                                <th class="p-4 text-right">Horas</th>
+                                <th class="p-4 text-right">Extras</th>
+                                <th class="p-4 text-center">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="activity-table-body" class="text-gray-700">
+                            </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        lucide.createIcons();
+        const API_URL = '/api';
+
+        // --- FUNÇÃO DE NAVEGAÇÃO (SPA) ---
+        function navigate(viewName) {
+            // 1. Atualiza Menu Lateral
+            document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+            const activeNav = document.getElementById(`nav-${viewName}`);
+            if(activeNav) activeNav.classList.add('active');
+
+            // 2. Esconde todas as Views
+            document.getElementById('view-home').classList.add('hidden');
+            document.getElementById('view-approval').classList.add('hidden');
+
+            // 3. Mostra View Alvo
+            const view = document.getElementById(`view-${viewName}`);
+            if(view) {
+                view.classList.remove('hidden');
+                // Reinicia animação
+                view.classList.remove('fade-in');
+                void view.offsetWidth; 
+                view.classList.add('fade-in');
+            }
+        }
+
+        // --- INICIALIZAÇÃO E DATAS ---
+        document.addEventListener('DOMContentLoaded', () => {
+            loadPeriods();
+        });
+
+        async function loadPeriods() {
+            try {
+                const res = await fetch(`${API_URL}/periods`);
+                if(res.status === 401) window.location.href = '/';
+                
+                const periods = await res.json();
+                
+                const selectors = [
+                    document.getElementById('period-selector-home'),
+                    document.getElementById('period-selector-approval')
+                ];
+
+                selectors.forEach(sel => {
+                    sel.innerHTML = '';
+                    if(periods.length === 0) {
+                        sel.innerHTML = '<option>Sem contratos</option>';
+                        return;
+                    }
+                    periods.forEach((p, idx) => {
+                        const opt = document.createElement('option');
+                        opt.value = JSON.stringify({ start: p.DataInicio__c, end: p.DataFim__c });
+                        opt.text = p.Name;
+                        if(idx === 0) opt.selected = true;
+                        sel.appendChild(opt);
+                    });
+                });
+
+                if (selectors[0].options.length > 0) {
+                    triggerDataLoad(selectors[0].value);
+                }
+
+            } catch (err) { console.error(err); }
+        }
+
+        function onPeriodChange(changedElement) {
+            const val = changedElement.value;
+            // Sincroniza selects
+            const homeSel = document.getElementById('period-selector-home');
+            const appSel = document.getElementById('period-selector-approval');
+
+            if (changedElement === homeSel) appSel.value = val;
+            else homeSel.value = val;
+
+            triggerDataLoad(val);
+        }
+
+        function triggerDataLoad(jsonDates) {
+            if(!jsonDates) return;
+            const dates = JSON.parse(jsonDates);
+            loadDashboardKPIs(dates.start, dates.end);
+            loadProjects(dates.start, dates.end);
+        }
+
+        // --- CARGA DE KPIS (4 CARDS) ---
+        async function loadDashboardKPIs(start, end) {
+            const ids = ['kpi-alocadas', 'kpi-lancadas', 'kpi-eficiencia', 'kpi-pendentes'];
+            const els = ids.map(id => document.getElementById(id));
+            els.forEach(el => el.style.opacity = '0.5');
+
+            try {
+                const res = await fetch(`${API_URL}/dashboard/metrics?inicio=${start}&fim=${end}`);
+                if (res.ok) {
+                    const data = await res.json();
+                    
+                    els[0].innerText = data.totalAlocadas.toFixed(0);
+                    els[1].innerText = data.totalLancadas.toFixed(1);
+                    els[2].innerText = data.eficiencia;
+                    els[3].innerText = data.totalPendentes.toFixed(1);
+
+                    // Cor Eficiência
+                    const elEfic = els[2];
+                    if(data.eficiencia > 100) elEfic.className = "text-3xl font-extrabold text-red-500";
+                    else if(data.eficiencia >= 95) elEfic.className = "text-3xl font-extrabold text-[#1DDDBD]";
+                    else elEfic.className = "text-3xl font-extrabold text-yellow-500";
+
+                } else {
+                    els.forEach(el => el.innerText = "-");
+                }
+            } catch (err) { console.error(err); } 
+            finally { els.forEach(el => el.style.opacity = '1'); }
+        }
+
+        // --- CARGA DE PROJETOS (GRID) ---
+        async function loadProjects(start, end) {
+            const container = document.getElementById('approval-cards-container');
+            container.innerHTML = '<p class="text-gray-400 col-span-2 text-center py-10">Carregando projetos...</p>';
+
+            try {
+                const res = await fetch(`${API_URL}/approvals/projects?inicio=${start}&fim=${end}`);
+                const projects = await res.json();
+                
+                container.innerHTML = '';
+
+                if(projects.length === 0) {
+                    container.innerHTML = '<p class="text-gray-400 col-span-2 text-center py-10">Nenhum projeto encontrado.</p>';
+                    return;
+                }
+
+                projects.forEach(item => {
+                    const isOpen = item.statusUI === 'Aberto';
+                    
+                    // Definição de Cores da Conformidade
+                    let percentClass = 'text-green-600';
+                    let barColor = 'bg-green-500';
+                    if(item.percentual > 105) { percentClass = 'text-red-600'; barColor = 'bg-red-500'; }
+                    else if(item.percentual < 95) { percentClass = 'text-yellow-600'; barColor = 'bg-yellow-500'; }
+
+                    const badge = isOpen 
+                        ? '<span class="bg-[#FFF9C4] text-[#FBC02D] text-[10px] font-bold px-2 py-0.5 rounded">Aberto</span>'
+                        : '<span class="bg-green-100 text-green-700 text-[10px] font-bold px-2 py-0.5 rounded">Ok</span>';
+
+                    const card = `
+                    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-5 flex flex-col h-full hover:shadow-md transition-shadow">
+                        <div class="flex justify-between items-start mb-4">
+                            <div>
+                                <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-0.5 truncate w-40" title="${item.client}">${item.client}</span>
+                                <h3 class="text-lg font-bold text-gray-900 leading-tight truncate w-64" title="${item.serviceName}">${item.serviceName}</h3>
+                            </div>
+                            ${badge}
+                        </div>
+                        
+                        <div class="grid grid-cols-4 gap-2 mb-5 bg-gray-50 rounded-lg p-3 border border-gray-100">
+                            
+                            <div class="text-center border-r border-gray-200 last:border-0">
+                                <p class="text-[10px] text-gray-400 font-bold uppercase">Alocação</p>
+                                <p class="text-sm font-bold text-gray-800">${item.metrics.alocado.toFixed(0)}h</p>
+                            </div>
+
+                            <div class="text-center border-r border-gray-200 last:border-0">
+                                <p class="text-[10px] text-gray-400 font-bold uppercase">Total</p>
+                                <p class="text-sm font-bold text-blue-600">${item.metrics.ponderado.toFixed(0)}h</p>
+                            </div>
+
+                            <div class="text-center border-r border-gray-200 last:border-0">
+                                <p class="text-[10px] text-gray-400 font-bold uppercase">Extra</p>
+                                <p class="text-sm font-bold ${item.metrics.extra > 0 ? 'text-red-500' : 'text-gray-400'}">
+                                    ${item.metrics.extra.toFixed(0)}h
+                                </p>
+                            </div>
+
+                            <div class="text-center relative">
+                                <p class="text-[10px] text-gray-400 font-bold uppercase">Conf.</p>
+                                <p class="text-sm font-bold ${percentClass}">${item.percentual}%</p>
+                                <div class="absolute bottom-0 left-2 right-2 h-0.5 bg-gray-200 rounded-full overflow-hidden mt-1">
+                                    <div class="h-full ${barColor}" style="width: ${Math.min(item.percentual, 100)}%"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mt-auto flex items-center justify-between pt-2">
+                            <span class="text-xs text-gray-400 font-medium flex items-center gap-1">
+                                <i data-lucide="users" class="w-3 h-3"></i> ${item.teamSize} Recurso(s)
+                            </span>
+                            <button onclick="openModal('${item.serviceId}', '${item.serviceName}')" class="px-4 py-1.5 bg-white border border-blue-200 text-blue-600 font-bold rounded-lg text-xs hover:bg-blue-50 transition-colors">
+                                Analisar
+                            </button>
+                        </div>
+                    </div>`;
+                    container.innerHTML += card;
+                });
+                
+                lucide.createIcons();
+
+            } catch (err) { container.innerHTML = '<p class="text-red-500">Erro ao carregar dados.</p>'; }
+        }
+        // --- LÓGICA DO MODAL ---
+        
+        async function openModal(serviceId, serviceName) {
+            const modal = document.getElementById('modal-approval');
+            const title = document.getElementById('modal-title');
+            const tbody = document.getElementById('modal-table-body');
+            
+            // Elementos dos Cards de Topo
+            const cardAlocado = document.getElementById('modal-sum-alocado');
+            const cardPonderado = document.getElementById('modal-sum-ponderado');
+            const cardExtra = document.getElementById('modal-sum-extra');
+            const cardConf = document.getElementById('modal-sum-conformidade');
+            const barConf = document.getElementById('modal-bar-conformidade');
+
+            title.innerText = serviceName;
+            tbody.innerHTML = '<tr><td colspan="7" class="text-center py-8">Carregando detalhes...</td></tr>';
+            
+            // Reseta cards
+            [cardAlocado, cardPonderado, cardExtra, cardConf].forEach(el => el.innerText = '...');
+            
+            modal.classList.remove('hidden');
+
+            const selector = document.getElementById('period-selector-approval');
+            const dates = JSON.parse(selector.value);
+
+            try {
+                // --- MUDANÇA 1: Adicionado &t=... para evitar cache e mostrar status atualizado ---
+                const timestamp = new Date().getTime();
+                const url = `${API_URL}/approvals/${serviceId}/resources?inicio=${dates.start}&fim=${dates.end}&t=${timestamp}`;
+                
+                const res = await fetch(url);
+                let resources = await res.json();
+
+                tbody.innerHTML = '';
+
+                if (resources.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="7" class="text-center py-8">Nenhum recurso encontrado.</td></tr>';
+                    [cardAlocado, cardPonderado, cardExtra, cardConf].forEach(el => el.innerText = '-');
+                    return;
+                }
+
+                // Ordenação
+                resources.sort((a, b) => b.totalPonderado - a.totalPonderado);
+
+                // Variáveis Totais
+                let sumAlocado = 0;
+                let sumExtra = 0;
+                let sumPonderado = 0;
+
+                resources.forEach(r => {
+                    sumAlocado += r.alocado;
+                    sumExtra += r.horasExtras;
+                    sumPonderado += r.totalPonderado;
+
+                    let badgeClass = '';
+                    if (r.statusClass === 'danger') badgeClass = 'bg-red-100 text-red-700';
+                    else if (r.statusClass === 'warning') badgeClass = 'bg-yellow-100 text-yellow-700';
+                    else badgeClass = 'bg-green-100 text-green-700';
+
+                    // --- MUDANÇA 2: Lógica de Status Corrigida ---
+                    const totalLancado = r.horasNormais + r.horasExtras;
+                    let actionHtml = '';
+
+                    // CASO 1: Zerado (Sem pendências)
+                    if (totalLancado === 0) {
+                        actionHtml = '<span class="text-xs text-gray-400 font-medium italic">Sem pendências</span>';
+                    } 
+                    // CASO 2: Tem Pendências (Botões aparecem)
+                    else if (r.countPending > 0) {
+                        actionHtml = `
+                        <div class="flex items-center justify-center gap-3">
+                            <a href="#" onclick="openActivityModal('${serviceId}', '${r.id}')" class="text-xs text-blue-600 font-bold hover:text-blue-800 hover:underline transition-colors" title="Ver extrato">
+                                Ver Detalhes
+                            </a>
+                            <button onclick="approveAction('${serviceId}', '${r.id}', 'reject')" class="px-3 py-1.5 text-xs font-bold text-red-600 bg-white border border-red-200 rounded hover:bg-red-50 transition-colors">
+                                Reprovar
+                            </button>
+                            <button onclick="approveAction('${serviceId}', '${r.id}', 'approve')" class="px-3 py-1.5 text-xs font-bold text-white bg-green-500 rounded hover:bg-green-600 shadow-sm transition-colors">
+                                Aprovar
+                            </button>
+                        </div>`;
+                    } 
+                    // CASO 3: Sem pendências, mas tem Reprovados (Prioridade visual de alerta)
+                    else if (r.countRejected > 0) {
+                        actionHtml = `
+                        <div class="flex items-center justify-center gap-3">
+                             <a href="#" onclick="openActivityModal('${serviceId}', '${r.id}')" class="text-xs text-gray-400 hover:text-blue-600">Ver Detalhes</a>
+                             <span class="text-xs text-red-600 font-bold flex items-center gap-1 bg-red-50 px-2 py-1 rounded border border-red-100">
+                                <i data-lucide="x-circle" class="w-4 h-4"></i> Reprovado
+                             </span>
+                        </div>`;
+                    }
+                    // CASO 4: Tudo Aprovado (Status Verde)
+                    else {
+                        actionHtml = `
+                        <div class="flex items-center justify-center gap-3">
+                             <a href="#" onclick="openActivityModal('${serviceId}', '${r.id}')" class="text-xs text-gray-400 hover:text-blue-600">Ver Detalhes</a>
+                             <span class="text-xs text-green-600 font-bold flex items-center gap-1 bg-green-50 px-2 py-1 rounded border border-green-100">
+                                <i data-lucide="check-circle-2" class="w-4 h-4"></i> Aprovado
+                             </span>
+                        </div>`;
+                    }
+
+                    const row = `
+                    <tr class="border-b border-gray-50 hover:bg-gray-50 transition-colors">
+                        <td class="py-4 pl-6 font-bold text-gray-900">${r.name}</td>
+                        <td class="py-4 text-right text-gray-500">${r.alocado.toFixed(0)}h</td>
+                        <td class="py-4 text-right text-gray-800">${r.horasNormais.toFixed(1)}h</td>
+                        <td class="py-4 text-right ${r.horasExtras > 0 ? 'text-red-500 font-bold' : 'text-gray-400'}">${r.horasExtras.toFixed(1)}h</td>
+                        <td class="py-4 text-right font-bold text-gray-900 bg-gray-50">${r.totalPonderado.toFixed(1)}h</td>
+                        <td class="py-4 text-center">
+                            <span class="px-3 py-1 rounded-full text-xs font-bold ${badgeClass}">
+                                ${r.percentual}%
+                            </span>
+                        </td>
+                        <td class="py-4 text-center px-2">
+                            ${actionHtml}
+                        </td>
+                    </tr>`;
+                    tbody.innerHTML += row;
+                });
+
+                // --- ATUALIZA CARDS (Sem alterações aqui, apenas renderização) ---
+                cardAlocado.innerText = sumAlocado.toFixed(0) + 'h';
+                cardPonderado.innerText = sumPonderado.toFixed(1) + 'h';
+                cardExtra.innerText = sumExtra.toFixed(1) + 'h';
+                cardExtra.className = sumExtra > 0 ? "text-xl font-bold text-red-600" : "text-xl font-bold text-gray-400";
+
+                let percentGeral = 0;
+                if(sumAlocado > 0) percentGeral = Math.round((sumPonderado / sumAlocado) * 100);
+                else if(sumPonderado > 0) percentGeral = 999; 
+                else percentGeral = 100;
+
+                cardConf.innerText = percentGeral + '%';
+                
+                let colorClass = 'text-green-600';
+                let barColor = 'bg-green-500';
+                if(percentGeral > 105) { colorClass = 'text-red-600'; barColor = 'bg-red-500'; } 
+                else if(percentGeral < 95) { colorClass = 'text-yellow-600'; barColor = 'bg-yellow-500'; }
+
+                cardConf.className = `text-xl font-bold ${colorClass} relative z-10`;
+                barConf.className = `absolute bottom-0 left-0 h-1 ${barColor} transition-all`;
+                
+                setTimeout(() => { barConf.style.width = Math.min(percentGeral, 100) + '%'; }, 100);
+                
+                // Renderiza ícones injetados
+                lucide.createIcons();
+
+            } catch (err) {
+                console.error(err);
+                tbody.innerHTML = '<tr><td colspan="7" class="text-center text-red-500 py-8">Erro ao carregar dados.</td></tr>';
+            }
+        }
+        function closeModal() {
+            document.getElementById('modal-approval').classList.add('hidden');
+        }
+
+        async function approveAction(serviceId, personId, action) {
+            // Feedback Visual imediato
+            const confirmed = confirm(`Confirma a ação de ${action === 'approve' ? 'APROVAR' : 'REPROVAR'} todas as horas deste recurso neste período?`);
+            if(!confirmed) return;
+
+            const selector = document.getElementById('period-selector-approval');
+            const dates = JSON.parse(selector.value);
+
+            try {
+                const res = await fetch(`${API_URL}/approvals/action`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        serviceId: serviceId,
+                        personId: personId,
+                        action: action,
+                        inicio: dates.start,
+                        fim: dates.end
+                    })
+                });
+
+                const result = await res.json();
+
+                if (result.success) {
+                    // Recarrega o modal principal para atualizar os status e totais
+                    // Usamos um pequeno timeout para dar tempo do SF processar se for muito rápido
+                    // Mas geralmente update é síncrono no retorno da API
+                    openModal(serviceId, document.getElementById('modal-title').innerText);
+                    
+                    // Opcional: Recarregar os cards do fundo também
+                    loadProjects(dates.start, dates.end);
+                } else {
+                    alert('Erro: ' + result.message);
+                }
+
+            } catch (err) {
+                console.error(err);
+                alert('Erro de comunicação com o servidor.');
+            }
+        }
+
+        async function openActivityModal(serviceId, personId) {
+            const modal = document.getElementById('modal-activities');
+            const tbody = document.getElementById('activity-table-body');
+            
+            tbody.innerHTML = '<tr><td colspan="4" class="text-center p-4">Carregando...</td></tr>';
+            modal.classList.remove('hidden');
+
+            const selector = document.getElementById('period-selector-approval');
+            const dates = JSON.parse(selector.value);
+
+            try {
+                const res = await fetch(`${API_URL}/approvals/${serviceId}/resources/${personId}/activities?inicio=${dates.start}&fim=${dates.end}`);
+                const activities = await res.json();
+
+                tbody.innerHTML = '';
+                
+                if(activities.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="4" class="text-center p-4 text-gray-400">Nenhuma atividade detalhada.</td></tr>';
+                    return;
+                }
+
+                activities.forEach(a => {
+                    tbody.innerHTML += `
+                        <tr class="border-b border-gray-50">
+                            <td class="p-4 font-medium">${a.atividade}</td>
+                            <td class="p-4 text-right">${a.total.toFixed(1)}h</td>
+                            <td class="p-4 text-right ${a.extra > 0 ? 'text-red-500 font-bold' : ''}">${a.extra.toFixed(1)}h</td>
+                            <td class="p-4 text-center text-xs">${a.status}</td>
+                        </tr>
+                    `;
+                });
+
+            } catch (err) {
+                console.error(err);
+                tbody.innerHTML = '<tr><td colspan="4" class="text-center p-4 text-red-500">Erro ao carregar.</td></tr>';
+            }
+        }
+
+        function closeActivityModal() {
+            document.getElementById('modal-activities').classList.add('hidden');
+        }
+
+    </script>
+</body>
+</html>

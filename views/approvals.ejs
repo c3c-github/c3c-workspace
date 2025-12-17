@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aprovação de Horas - C3C Workplace</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Montserrat', 'sans-serif'] },
+                    colors: { c3c: { blue: '#2978FF', teal: '#1DDDBD', gray: '#F2F2F2' } }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { font-family: 'Montserrat', sans-serif; background-color: #F8FAFC; }
+        .bg-c3c-gradient { background: linear-gradient(135deg, #2978FF 0%, #1DDDBD 100%); }
+        .fade-in { animation: fadeIn 0.4s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body class="h-screen flex overflow-hidden bg-[#F8FAFC]">
+
+    <div id="mobile-overlay" onclick="toggleMenu()" class="fixed inset-0 bg-black/50 z-30 hidden md:hidden transition-opacity opacity-0"></div>
+
+    <%- include('partials/sidebar') %>
+
+    <main class="flex-1 flex flex-col md:ml-64 relative w-full transition-all duration-300">
+        
+        <header class="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-4 md:px-8 sticky top-0 z-20">
+            <div class="flex items-center gap-4">
+                <button onclick="toggleMenu()" class="md:hidden p-2 text-gray-600 hover:bg-gray-100 rounded-lg">
+                    <i data-lucide="menu" class="w-6 h-6"></i>
+                </button>
+                <h1 class="text-lg md:text-xl font-bold text-gray-800 flex items-center gap-2">
+                    Aprovação de Horas
+                    <span class="bg-blue-100 text-blue-700 text-xs px-2 py-1 rounded-full">Gestor</span>
+                </h1>
+            </div>
+            
+            <div class="flex items-center bg-white rounded-lg shadow-sm border border-gray-200 p-1">
+                <span class="px-3 text-xs font-bold text-gray-400 uppercase hidden sm:block">Período:</span>
+                <select id="period-selector" onchange="triggerDataLoad(this.value)" class="text-sm font-semibold text-gray-800 bg-transparent outline-none cursor-pointer py-1 pr-2">
+                    <option>Carregando...</option>
+                </select>
+            </div>
+        </header>
+
+        <div class="flex-1 overflow-y-auto p-4 md:p-8 fade-in">
+            <p class="text-gray-500 text-sm mb-6">Analise os lançamentos por Serviço.</p>
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6" id="approval-cards-container">
+                </div>
+        </div>
+    </main>
+
+    <div id="modal-approval" class="fixed inset-0 z-50 hidden">
+        <div class="absolute inset-0 bg-gray-900 bg-opacity-50 transition-opacity" onclick="closeModal()"></div>
+        <div class="absolute inset-0 flex items-center justify-center p-4">
+            <div class="bg-white rounded-xl shadow-2xl w-full max-w-5xl overflow-hidden transform transition-all flex flex-col max-h-[90vh]">
+                <div class="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-white shrink-0">
+                    <div>
+                        <h3 class="text-lg font-bold text-gray-900" id="modal-title">Detalhes do Projeto</h3>
+                        <p class="text-sm text-gray-500">Visão consolidada do período.</p>
+                    </div>
+                    <button onclick="closeModal()" class="text-gray-400 hover:text-gray-600"><i data-lucide="x" class="w-6 h-6"></i></button>
+                </div>
+                <div class="px-6 py-4 bg-gray-50 border-b border-gray-100 grid grid-cols-2 md:grid-cols-4 gap-4 shrink-0">
+                    <div class="bg-white p-3 rounded-lg border border-gray-200 shadow-sm">
+                        <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Total Alocado</p>
+                        <p class="text-xl font-bold text-gray-900" id="modal-sum-alocado">--</p>
+                    </div>
+                    <div class="bg-white p-3 rounded-lg border border-gray-200 shadow-sm">
+                        <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Total</p>
+                        <p class="text-xl font-bold text-blue-600" id="modal-sum-ponderado">--</p>
+                    </div>
+                    <div class="bg-white p-3 rounded-lg border border-gray-200 shadow-sm">
+                        <p class="text-[10px] font-bold text-red-400 uppercase tracking-wider">Total Extras</p>
+                        <p class="text-xl font-bold text-red-600" id="modal-sum-extra">--</p>
+                    </div>
+                    <div class="bg-white p-3 rounded-lg border border-gray-200 shadow-sm relative overflow-hidden">
+                        <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider relative z-10">Conformidade Geral</p>
+                        <p class="text-xl font-bold text-gray-900 relative z-10" id="modal-sum-conformidade">--</p>
+                        <div id="modal-bar-conformidade" class="absolute bottom-0 left-0 h-1 bg-green-500 transition-all" style="width: 0%"></div>
+                    </div>
+                </div>
+                <div class="overflow-x-auto p-0 flex-1 overflow-y-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead class="sticky top-0 bg-white z-10 shadow-sm">
+                            <tr class="text-xs font-bold text-gray-400 uppercase tracking-wider border-b border-gray-100 bg-white">
+                                <th class="py-3 pl-6">Recurso</th>
+                                <th class="py-3 text-right">Alocado</th>
+                                <th class="py-3 text-right">Normal</th>
+                                <th class="py-3 text-right">Extra</th>
+                                <th class="py-3 text-right text-gray-800">Total</th>
+                                <th class="py-3 text-center">Conformidade</th>
+                                <th class="py-3 text-center px-2">Ação</th>
+                            </tr>
+                        </thead>
+                        <tbody id="modal-table-body" class="text-sm text-gray-600"></tbody>
+                    </table>
+                </div>
+                <div class="px-6 py-4 border-t border-gray-100 flex justify-end shrink-0 bg-white">
+                    <button onclick="closeModal()" class="px-4 py-2 bg-white border border-gray-200 text-gray-700 font-bold rounded-lg hover:bg-gray-50">Fechar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-activities" class="fixed inset-0 z-[60] hidden">
+        <div class="absolute inset-0 bg-black bg-opacity-20 transition-opacity" onclick="closeActivityModal()"></div>
+        <div class="absolute inset-0 flex items-center justify-center p-4">
+            <div class="bg-white rounded-lg shadow-xl w-full max-w-2xl overflow-hidden">
+                <div class="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
+                    <h3 class="font-bold text-gray-900">Extrato de Atividades</h3>
+                    <button onclick="closeActivityModal()"><i data-lucide="x" class="w-5 h-5 text-gray-400"></i></button>
+                </div>
+                <div class="p-0 overflow-y-auto max-h-[60vh]">
+                    <table class="w-full text-left text-sm">
+                        <thead class="bg-white text-gray-500 font-bold border-b border-gray-100">
+                            <tr>
+                                <th class="p-4">Atividade</th>
+                                <th class="p-4 text-right">Horas</th>
+                                <th class="p-4 text-right">Extras</th>
+                                <th class="p-4 text-center">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="activity-table-body" class="text-gray-700"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        lucide.createIcons();
+        const API_URL = '/api';
+
+        // --- MENU MOBILE ---
+        function toggleMenu() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('mobile-overlay');
+            const body = document.body;
+            if (sidebar.classList.contains('-translate-x-full')) {
+                sidebar.classList.remove('-translate-x-full');
+                overlay.classList.remove('hidden');
+                setTimeout(() => overlay.classList.remove('opacity-0'), 10);
+                if(window.innerWidth < 768) body.style.overflow = 'hidden';
+            } else {
+                sidebar.classList.add('-translate-x-full');
+                overlay.classList.add('opacity-0');
+                setTimeout(() => overlay.classList.add('hidden'), 300);
+                body.style.overflow = '';
+            }
+        }
+
+        // --- DADOS ---
+        document.addEventListener('DOMContentLoaded', () => { loadPeriods(); });
+
+        async function loadPeriods() {
+            try {
+                const res = await fetch(`${API_URL}/periods`);
+                if(res.status === 401) window.location.href = '/';
+                const periods = await res.json();
+                const sel = document.getElementById('period-selector');
+                sel.innerHTML = '';
+                if(periods.length === 0) { sel.innerHTML = '<option>Sem contratos</option>'; return; }
+                
+                periods.forEach((p, idx) => {
+                    const opt = document.createElement('option');
+                    opt.value = JSON.stringify({ start: p.DataInicio__c, end: p.DataFim__c });
+                    opt.text = p.Name;
+                    if(idx === 0) opt.selected = true;
+                    sel.appendChild(opt);
+                });
+                if (sel.options.length > 0) triggerDataLoad(sel.value);
+            } catch (err) { console.error(err); }
+        }
+
+        function triggerDataLoad(jsonDates) {
+            if(!jsonDates) return;
+            const dates = JSON.parse(jsonDates);
+            loadProjects(dates.start, dates.end);
+        }
+
+        // --- LÓGICA DE PROJETOS E MODAIS (A MESMA DO DASHBOARD ANTIGO) ---
+        async function loadProjects(start, end) {
+            const container = document.getElementById('approval-cards-container');
+            container.innerHTML = '<p class="text-gray-400 col-span-2 text-center py-10">Carregando projetos...</p>';
+            try {
+                const res = await fetch(`${API_URL}/approvals/projects?inicio=${start}&fim=${end}`);
+                const projects = await res.json();
+                container.innerHTML = '';
+                if(projects.length === 0) {
+                    container.innerHTML = '<p class="text-gray-400 col-span-2 text-center py-10">Nenhum projeto encontrado.</p>';
+                    return;
+                }
+                projects.forEach(item => {
+                    const isOpen = item.statusUI === 'Aberto';
+                    let percentClass = 'text-green-600';
+                    let barColor = 'bg-green-500';
+                    if(item.percentual > 105) { percentClass = 'text-red-600'; barColor = 'bg-red-500'; }
+                    else if(item.percentual < 95) { percentClass = 'text-yellow-600'; barColor = 'bg-yellow-500'; }
+
+                    const badge = isOpen 
+                        ? '<span class="bg-[#FFF9C4] text-[#FBC02D] text-[10px] font-bold px-2 py-0.5 rounded">Aberto</span>'
+                        : '<span class="bg-green-100 text-green-700 text-[10px] font-bold px-2 py-0.5 rounded">Ok</span>';
+
+                    const card = `
+                    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-5 flex flex-col h-full hover:shadow-md transition-shadow">
+                        <div class="flex justify-between items-start mb-4">
+                            <div>
+                                <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-0.5 truncate w-40" title="${item.client}">${item.client}</span>
+                                <h3 class="text-lg font-bold text-gray-900 leading-tight truncate w-64" title="${item.serviceName}">${item.serviceName}</h3>
+                            </div>
+                            ${badge}
+                        </div>
+                        <div class="grid grid-cols-4 gap-2 mb-5 bg-gray-50 rounded-lg p-3 border border-gray-100">
+                            <div class="text-center border-r border-gray-200 last:border-0">
+                                <p class="text-[10px] text-gray-400 font-bold uppercase">Alocação</p>
+                                <p class="text-sm font-bold text-gray-800">${item.metrics.alocado.toFixed(0)}h</p>
+                            </div>
+                            <div class="text-center border-r border-gray-200 last:border-0">
+                                <p class="text-[10px] text-gray-400 font-bold uppercase">Total</p>
+                                <p class="text-sm font-bold text-blue-600">${item.metrics.ponderado.toFixed(0)}h</p>
+                            </div>
+                            <div class="text-center border-r border-gray-200 last:border-0">
+                                <p class="text-[10px] text-gray-400 font-bold uppercase">Extra</p>
+                                <p class="text-sm font-bold ${item.metrics.extra > 0 ? 'text-red-500' : 'text-gray-400'}">
+                                    ${item.metrics.extra.toFixed(0)}h
+                                </p>
+                            </div>
+                            <div class="text-center relative">
+                                <p class="text-[10px] text-gray-400 font-bold uppercase">Conf.</p>
+                                <p class="text-sm font-bold ${percentClass}">${item.percentual}%</p>
+                                <div class="absolute bottom-0 left-2 right-2 h-0.5 bg-gray-200 rounded-full overflow-hidden mt-1">
+                                    <div class="h-full ${barColor}" style="width: ${Math.min(item.percentual, 100)}%"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mt-auto flex items-center justify-between pt-2">
+                            <span class="text-xs text-gray-400 font-medium flex items-center gap-1">
+                                <i data-lucide="users" class="w-3 h-3"></i> ${item.teamSize} Recurso(s)
+                            </span>
+                            <button onclick="openModal('${item.serviceId}', '${item.serviceName}')" class="px-4 py-1.5 bg-white border border-blue-200 text-blue-600 font-bold rounded-lg text-xs hover:bg-blue-50 transition-colors">
+                                Analisar
+                            </button>
+                        </div>
+                    </div>`;
+                    container.innerHTML += card;
+                });
+                lucide.createIcons();
+            } catch (err) { container.innerHTML = '<p class="text-red-500">Erro ao carregar dados.</p>'; }
+        }
+
+        async function openModal(serviceId, serviceName) {
+            const modal = document.getElementById('modal-approval');
+            const title = document.getElementById('modal-title');
+            const tbody = document.getElementById('modal-table-body');
+            const cardAlocado = document.getElementById('modal-sum-alocado');
+            const cardPonderado = document.getElementById('modal-sum-ponderado');
+            const cardExtra = document.getElementById('modal-sum-extra');
+            const cardConf = document.getElementById('modal-sum-conformidade');
+            const barConf = document.getElementById('modal-bar-conformidade');
+
+            title.innerText = serviceName;
+            tbody.innerHTML = '<tr><td colspan="7" class="text-center py-8">Carregando detalhes...</td></tr>';
+            [cardAlocado, cardPonderado, cardExtra, cardConf].forEach(el => el.innerText = '...');
+            modal.classList.remove('hidden');
+
+            const selector = document.getElementById('period-selector');
+            const dates = JSON.parse(selector.value);
+
+            try {
+                const timestamp = new Date().getTime();
+                const url = `${API_URL}/approvals/${serviceId}/resources?inicio=${dates.start}&fim=${dates.end}&t=${timestamp}`;
+                const res = await fetch(url);
+                let resources = await res.json();
+
+                tbody.innerHTML = '';
+                if (resources.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="7" class="text-center py-8">Nenhum recurso encontrado.</td></tr>';
+                    [cardAlocado, cardPonderado, cardExtra, cardConf].forEach(el => el.innerText = '-');
+                    return;
+                }
+
+                resources.sort((a, b) => b.totalPonderado - a.totalPonderado);
+                let sumAlocado = 0, sumExtra = 0, sumPonderado = 0;
+
+                resources.forEach(r => {
+                    sumAlocado += r.alocado;
+                    sumExtra += r.horasExtras;
+                    sumPonderado += r.totalPonderado;
+                    
+                    let badgeClass = 'bg-green-100 text-green-700';
+                    if (r.statusClass === 'danger') badgeClass = 'bg-red-100 text-red-700';
+                    else if (r.statusClass === 'warning') badgeClass = 'bg-yellow-100 text-yellow-700';
+
+                    const totalLancado = r.horasNormais + r.horasExtras;
+                    let actionHtml = '';
+
+                    if (totalLancado === 0) {
+                        actionHtml = '<span class="text-xs text-gray-400 font-medium italic">Sem pendências</span>';
+                    } else if (r.countPending > 0) {
+                        actionHtml = `
+                        <div class="flex items-center justify-center gap-3">
+                            <a href="#" onclick="openActivityModal('${serviceId}', '${r.id}')" class="text-xs text-blue-600 font-bold hover:text-blue-800 hover:underline transition-colors">Ver Detalhes</a>
+                            <button onclick="approveAction('${serviceId}', '${r.id}', 'reject')" class="px-3 py-1.5 text-xs font-bold text-red-600 bg-white border border-red-200 rounded hover:bg-red-50">Reprovar</button>
+                            <button onclick="approveAction('${serviceId}', '${r.id}', 'approve')" class="px-3 py-1.5 text-xs font-bold text-white bg-green-500 rounded hover:bg-green-600 shadow-sm">Aprovar</button>
+                        </div>`;
+                    } else if (r.countRejected > 0) {
+                        actionHtml = `<div class="flex items-center justify-center gap-3"><a href="#" onclick="openActivityModal('${serviceId}', '${r.id}')" class="text-xs text-gray-400 hover:text-blue-600">Ver Detalhes</a><span class="text-xs text-red-600 font-bold flex items-center gap-1 bg-red-50 px-2 py-1 rounded border border-red-100"><i data-lucide="x-circle" class="w-4 h-4"></i> Reprovado</span></div>`;
+                    } else {
+                        actionHtml = `<div class="flex items-center justify-center gap-3"><a href="#" onclick="openActivityModal('${serviceId}', '${r.id}')" class="text-xs text-gray-400 hover:text-blue-600">Ver Detalhes</a><span class="text-xs text-green-600 font-bold flex items-center gap-1 bg-green-50 px-2 py-1 rounded border border-green-100"><i data-lucide="check-circle-2" class="w-4 h-4"></i> Aprovado</span></div>`;
+                    }
+
+                    tbody.innerHTML += `
+                    <tr class="border-b border-gray-50 hover:bg-gray-50 transition-colors">
+                        <td class="py-4 pl-6 font-bold text-gray-900">${r.name}</td>
+                        <td class="py-4 text-right text-gray-500">${r.alocado.toFixed(0)}h</td>
+                        <td class="py-4 text-right text-gray-800">${r.horasNormais.toFixed(1)}h</td>
+                        <td class="py-4 text-right ${r.horasExtras > 0 ? 'text-red-500 font-bold' : 'text-gray-400'}">${r.horasExtras.toFixed(1)}h</td>
+                        <td class="py-4 text-right font-bold text-gray-900 bg-gray-50">${r.totalPonderado.toFixed(1)}h</td>
+                        <td class="py-4 text-center"><span class="px-3 py-1 rounded-full text-xs font-bold ${badgeClass}">${r.percentual}%</span></td>
+                        <td class="py-4 text-center px-2">${actionHtml}</td>
+                    </tr>`;
+                });
+
+                cardAlocado.innerText = sumAlocado.toFixed(0) + 'h';
+                cardPonderado.innerText = sumPonderado.toFixed(1) + 'h';
+                cardExtra.innerText = sumExtra.toFixed(1) + 'h';
+                cardExtra.className = sumExtra > 0 ? "text-xl font-bold text-red-600" : "text-xl font-bold text-gray-400";
+                
+                let percentGeral = 0;
+                if(sumAlocado > 0) percentGeral = Math.round((sumPonderado / sumAlocado) * 100);
+                else if(sumPonderado > 0) percentGeral = 999;
+                else percentGeral = 100;
+
+                cardConf.innerText = percentGeral + '%';
+                let colorClass = 'text-green-600', barColor = 'bg-green-500';
+                if(percentGeral > 105) { colorClass = 'text-red-600'; barColor = 'bg-red-500'; } 
+                else if(percentGeral < 95) { colorClass = 'text-yellow-600'; barColor = 'bg-yellow-500'; }
+                
+                cardConf.className = `text-xl font-bold ${colorClass} relative z-10`;
+                barConf.className = `absolute bottom-0 left-0 h-1 ${barColor} transition-all`;
+                setTimeout(() => { barConf.style.width = Math.min(percentGeral, 100) + '%'; }, 100);
+                lucide.createIcons();
+
+            } catch (err) {
+                console.error(err);
+                tbody.innerHTML = '<tr><td colspan="7" class="text-center text-red-500 py-8">Erro ao carregar dados.</td></tr>';
+            }
+        }
+
+        function closeModal() { document.getElementById('modal-approval').classList.add('hidden'); }
+
+        async function approveAction(serviceId, personId, action) {
+            const confirmed = confirm(`Confirma a ação de ${action === 'approve' ? 'APROVAR' : 'REPROVAR'} todas as horas deste recurso neste período?`);
+            if(!confirmed) return;
+            const selector = document.getElementById('period-selector');
+            const dates = JSON.parse(selector.value);
+            try {
+                const res = await fetch(`${API_URL}/approvals/action`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ serviceId, personId, action, inicio: dates.start, fim: dates.end })
+                });
+                const result = await res.json();
+                if (result.success) {
+                    openModal(serviceId, document.getElementById('modal-title').innerText);
+                    loadProjects(dates.start, dates.end);
+                } else { alert('Erro: ' + result.message); }
+            } catch (err) { console.error(err); alert('Erro de comunicação.'); }
+        }
+
+        async function openActivityModal(serviceId, personId) {
+            const modal = document.getElementById('modal-activities');
+            const tbody = document.getElementById('activity-table-body');
+            tbody.innerHTML = '<tr><td colspan="4" class="text-center p-4">Carregando...</td></tr>';
+            modal.classList.remove('hidden');
+            const selector = document.getElementById('period-selector');
+            const dates = JSON.parse(selector.value);
+            try {
+                const res = await fetch(`${API_URL}/approvals/${serviceId}/resources/${personId}/activities?inicio=${dates.start}&fim=${dates.end}`);
+                const activities = await res.json();
+                tbody.innerHTML = '';
+                if(activities.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="4" class="text-center p-4 text-gray-400">Nenhuma atividade detalhada.</td></tr>';
+                    return;
+                }
+                activities.forEach(a => {
+                    tbody.innerHTML += `
+                        <tr class="border-b border-gray-50">
+                            <td class="p-4 font-medium">${a.atividade}</td>
+                            <td class="p-4 text-right">${a.total.toFixed(1)}h</td>
+                            <td class="p-4 text-right ${a.extra > 0 ? 'text-red-500 font-bold' : ''}">${a.extra.toFixed(1)}h</td>
+                            <td class="p-4 text-center text-xs">${a.status}</td>
+                        </tr>`;
+                });
+            } catch (err) { console.error(err); tbody.innerHTML = '<tr><td colspan="4" class="text-center p-4 text-red-500">Erro ao carregar.</td></tr>'; }
+        }
+        function closeActivityModal() { document.getElementById('modal-activities').classList.add('hidden'); }
+    </script>
+</body>
+</html>

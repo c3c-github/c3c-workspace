@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Acesso Restrito - C3C Software</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Montserrat', sans-serif; background-color: #F2F2F2; }
+        .fade-in { animation: fadeIn 0.5s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body class="h-screen w-full flex items-center justify-center p-4">
+
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden fade-in relative">
+        
+        <div class="bg-red-500 h-2 w-full"></div>
+
+        <div class="p-8 md:p-12 text-center">
+            
+            <div class="mb-8 flex justify-center">
+                <img src="https://c3c.my.site.com/resource/1752735833000/logo" alt="C3C" class="h-8 w-auto opacity-80 grayscale hover:grayscale-0 transition-all duration-500">
+            </div>
+
+            <div class="relative w-20 h-20 mx-auto mb-6">
+                <div class="absolute inset-0 bg-red-100 rounded-full animate-pulse"></div>
+                <div class="relative w-20 h-20 bg-white rounded-full border-4 border-red-500 flex items-center justify-center">
+                    <svg class="w-8 h-8 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+                    </svg>
+                </div>
+            </div>
+
+            <h1 class="text-2xl font-bold text-gray-800 mb-2">Acesso Restrito</h1>
+            <p class="text-gray-500 text-sm font-medium mb-8">Não foi possível validar suas credenciais no Salesforce.</p>
+
+            <div class="bg-red-50 border border-red-100 rounded-xl p-4 mb-8 text-left">
+                <div class="flex items-start gap-3">
+                    <svg class="w-5 h-5 text-red-500 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    <div>
+                        <p class="text-xs font-bold text-red-800 uppercase tracking-wide mb-1">Motivo do Bloqueio</p>
+                        <p class="text-sm text-gray-700 leading-relaxed">
+                            <%= mensagem %>
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="space-y-3">
+                <button onclick="window.location.href='/'" class="w-full bg-gray-900 hover:bg-black text-white font-semibold py-3 px-6 rounded-xl transition-all duration-300 shadow-lg transform hover:-translate-y-0.5">
+                    Tentar Novamente
+                </button>
+                
+                <a href="#" class="block text-xs font-semibold text-gray-400 hover:text-[#2978FF] transition-colors py-2">
+                    Entrar em contato com o suporte
+                </a>
+            </div>
+        </div>
+
+        <div class="bg-gray-50 p-4 text-center border-t border-gray-100">
+            <p class="text-[10px] text-gray-400 uppercase tracking-widest font-bold">
+                C3C Security Gateway
+            </p>
+        </div>
+    </div>
+
+</body>
+</html>

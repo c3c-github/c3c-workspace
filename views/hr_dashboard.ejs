@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestão de Ponto (RH) - C3C Workplace</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Montserrat', 'sans-serif'] },
+                    colors: { c3c: { blue: '#2978FF', teal: '#1DDDBD', gray: '#F2F2F2' } }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { font-family: 'Montserrat', sans-serif; background-color: #F8FAFC; }
+        .bg-c3c-gradient { background: linear-gradient(135deg, #2978FF 0%, #1DDDBD 100%); }
+        .fade-in { animation: fadeIn 0.4s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .modal-backdrop { background-color: rgba(0, 0, 0, 0.5); backdrop-filter: blur(2px); }
+    </style>
+</head>
+<body class="h-screen flex overflow-hidden bg-[#F8FAFC]">
+
+    <div id="mobile-overlay" onclick="toggleMenu()" class="fixed inset-0 bg-black/50 z-30 hidden md:hidden transition-opacity opacity-0"></div>
+
+    <%- include('partials/sidebar') %>
+
+    <main class="flex-1 flex flex-col md:ml-64 relative w-full transition-all duration-300">
+        
+        <header class="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-4 md:px-8 sticky top-0 z-20">
+            <div class="flex items-center gap-4">
+                <button onclick="toggleMenu()" class="md:hidden p-2 text-gray-600 hover:bg-gray-100 rounded-lg focus:outline-none">
+                    <i data-lucide="menu" class="w-6 h-6"></i>
+                </button>
+                
+                <h1 class="text-lg md:text-xl font-bold text-gray-800 flex items-center gap-2">
+                    Gestão de Ponto
+                    <span class="hidden md:inline-flex bg-purple-100 text-purple-700 text-xs px-2 py-1 rounded-full items-center gap-1">
+                        <i data-lucide="lock" class="w-3 h-3"></i> RH
+                    </span>
+                </h1>
+            </div>
+            
+            <div class="flex items-center gap-3">
+                <select id="period-selector" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2 cursor-pointer outline-none min-w-[150px]">
+                    <option>Carregando...</option>
+                </select>
+                <button class="bg-blue-600 hover:bg-blue-700 text-white p-2 rounded-lg shadow-sm transition-colors">
+                    <i data-lucide="download" class="w-5 h-5"></i>
+                </button>
+            </div>
+        </header>
+
+        <div class="flex-1 overflow-y-auto p-4 md:p-8 fade-in">
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                <div class="bg-white p-5 rounded-xl border border-gray-200 shadow-sm flex items-center gap-4">
+                    <div class="w-12 h-12 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center"><i data-lucide="users" class="w-6 h-6"></i></div>
+                    <div>
+                        <p class="text-xs text-gray-500 uppercase font-bold tracking-wider">Colaboradores</p>
+                        <p class="text-2xl font-bold text-gray-900" id="kpi-total">--</p>
+                    </div>
+                </div>
+                <div class="bg-white p-5 rounded-xl border border-red-100 shadow-sm flex items-center gap-4 relative overflow-hidden">
+                    <div class="absolute right-0 top-0 w-16 h-16 bg-red-50 rounded-bl-full -mr-2 -mt-2"></div>
+                    <div class="w-12 h-12 rounded-full bg-red-50 text-red-600 flex items-center justify-center z-10"><i data-lucide="alert-triangle" class="w-6 h-6"></i></div>
+                    <div class="z-10">
+                        <p class="text-xs text-gray-500 uppercase font-bold tracking-wider">Risco Burnout</p>
+                        <p class="text-2xl font-bold text-gray-900" id="kpi-burnout">--</p>
+                    </div>
+                </div>
+                <div class="bg-white p-5 rounded-xl border border-yellow-100 shadow-sm flex items-center gap-4">
+                    <div class="w-12 h-12 rounded-full bg-yellow-50 text-yellow-600 flex items-center justify-center"><i data-lucide="coffee" class="w-6 h-6"></i></div>
+                    <div>
+                        <p class="text-xs text-gray-500 uppercase font-bold tracking-wider">Ociosidade</p>
+                        <p class="text-2xl font-bold text-gray-900" id="kpi-ociosos">--</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 flex flex-col">
+                <div class="p-6 border-b border-gray-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <h2 class="text-lg font-bold text-gray-900">Saúde da Alocação & Folha</h2>
+                    <div class="relative w-full sm:w-auto">
+                        <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400"></i>
+                        <input type="text" id="search-input" onkeyup="filterTable()" placeholder="Buscar colaborador..." class="pl-9 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 w-full sm:w-64">
+                    </div>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm text-left">
+                        <thead class="bg-gray-50 text-gray-500 uppercase text-xs font-bold border-b border-gray-200">
+                            <tr>
+                                <th class="px-6 py-4 whitespace-nowrap">Colaborador</th>
+                                <th class="px-6 py-4 whitespace-nowrap text-center">Qtd. Projetos</th>
+                                <th class="px-6 py-4 whitespace-nowrap min-w-[200px]">Carga vs Realizado</th>
+                                <th class="px-6 py-4 whitespace-nowrap text-center">Status</th>
+                                <th class="px-6 py-4 whitespace-nowrap text-right">Ação RH</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-100" id="hr-table-body">
+                            <tr><td colspan="5" class="text-center py-10 text-gray-400">Carregando...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <div id="logs-modal" class="fixed inset-0 modal-backdrop z-50 hidden flex items-center justify-center opacity-0 transition-opacity duration-300 p-4">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-3xl transform scale-95 transition-transform duration-300 flex flex-col max-h-[90vh]">
+            <div class="p-6 bg-gray-900 text-white rounded-t-xl flex justify-between items-start shrink-0">
+                <div>
+                    <h3 class="text-xl font-bold" id="modal-name">Nome</h3>
+                    <p class="text-gray-400 text-xs mt-1 uppercase tracking-wider">Extrato Detalhado</p>
+                    <div class="flex gap-6 mt-4">
+                        <div><span class="block text-2xl font-bold text-[#1DDDBD]" id="modal-total">0h</span><span class="text-xs text-gray-400">Total</span></div>
+                        <div><span class="block text-2xl font-bold text-gray-200" id="modal-contract">168h</span><span class="text-xs text-gray-400">Meta</span></div>
+                        <div><span class="block text-2xl font-bold text-red-400" id="modal-extra">0h</span><span class="text-xs text-gray-400">Banco</span></div>
+                    </div>
+                </div>
+                <button onclick="closeModal()" class="bg-gray-800 hover:bg-gray-700 p-2 rounded-lg text-gray-300 transition-colors"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            <div class="px-6 py-3 bg-gray-100 border-b border-gray-200">
+                <p class="text-xs font-bold text-gray-500 uppercase mb-2">Projetos:</p>
+                <div id="modal-projects-list" class="flex flex-wrap gap-2"></div>
+            </div>
+            <div class="overflow-y-auto flex-1 bg-gray-50">
+                <table class="w-full text-sm text-left border-collapse">
+                    <thead class="bg-white text-gray-500 uppercase text-xs font-bold sticky top-0 shadow-sm z-10">
+                        <tr>
+                            <th class="px-6 py-4 border-b border-gray-100">Dia</th>
+                            <th class="px-6 py-4 border-b border-gray-100">Detalhe</th>
+                            <th class="px-6 py-4 border-b border-gray-100 text-center">Gráfico</th>
+                            <th class="px-6 py-4 border-b border-gray-100 text-right">Qtd.</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-100 bg-white" id="modal-logs-body"></tbody>
+                </table>
+            </div>
+            <div class="p-4 border-t border-gray-100 bg-white rounded-b-xl flex justify-end shrink-0">
+                <button onclick="closeModal()" class="px-4 py-2 bg-gray-100 text-gray-700 font-bold rounded-lg hover:bg-gray-200">Fechar</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        lucide.createIcons();
+        const API_URL = '/api';
+
+        document.addEventListener('DOMContentLoaded', () => { loadPeriods(); });
+
+        // --- MENU MOBILE ---
+        function toggleMenu() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('mobile-overlay');
+            const body = document.body;
+            
+            if (!sidebar || !overlay) {
+                console.error("Erro: Sidebar ou Overlay não encontrados no DOM.");
+                return;
+            }
+
+            if (sidebar.classList.contains('-translate-x-full')) {
+                // Abrir
+                sidebar.classList.remove('-translate-x-full');
+                overlay.classList.remove('hidden');
+                setTimeout(() => overlay.classList.remove('opacity-0'), 10);
+                if(window.innerWidth < 768) body.style.overflow = 'hidden';
+            } else {
+                // Fechar
+                sidebar.classList.add('-translate-x-full');
+                overlay.classList.add('opacity-0');
+                setTimeout(() => overlay.classList.add('hidden'), 300);
+                body.style.overflow = '';
+            }
+        }
+
+        // --- CARGA DE DADOS ---
+        async function loadPeriods() {
+            try {
+                const res = await fetch(`${API_URL}/periods`);
+                if(res.status === 401) window.location.href = '/';
+                const periods = await res.json();
+                
+                const sel = document.getElementById('period-selector');
+                sel.innerHTML = '';
+                
+                if(periods.length === 0) {
+                    sel.innerHTML = '<option>Sem contratos</option>';
+                    return;
+                }
+                
+                periods.forEach((p, idx) => {
+                    const opt = document.createElement('option');
+                    opt.value = JSON.stringify({ start: p.DataInicio__c, end: p.DataFim__c });
+                    opt.text = p.Name;
+                    if(idx === 0) opt.selected = true;
+                    sel.appendChild(opt);
+                });
+
+                sel.onchange = (e) => triggerDataLoad(e.target.value);
+                if (sel.options.length > 0) triggerDataLoad(sel.value);
+            } catch (err) { console.error(err); }
+        }
+
+        function triggerDataLoad(jsonDates) {
+            if(!jsonDates) return;
+            const dates = JSON.parse(jsonDates);
+            loadTableData(dates.start, dates.end);
+        }
+
+async function loadTableData(start, end) {
+        const tbody = document.getElementById('hr-table-body');
+        tbody.innerHTML = '<tr><td colspan="5" class="text-center py-10"><div class="animate-pulse text-blue-600 font-bold">Carregando dados...</div></td></tr>';
+
+        try {
+            const res = await fetch(`${API_URL}/hr/employees?inicio=${start}&fim=${end}`);
+            const response = await res.json();
+            
+            // KPIs
+            if(response.kpis) {
+                document.getElementById('kpi-total').innerText = response.kpis.total || 0;
+                document.getElementById('kpi-burnout').innerText = response.kpis.burnout || 0;
+                document.getElementById('kpi-ociosos').innerText = response.kpis.ociosos || 0;
+            }
+
+            const data = response.data;
+            tbody.innerHTML = '';
+
+            if (!data || data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" class="text-center py-10 text-gray-400">Nenhum dado encontrado.</td></tr>';
+                return;
+            }
+
+            data.forEach(person => {
+                // ... (Lógica de cores/status igual) ...
+                const percent = person.contract > 0 ? (person.total / person.contract) * 100 : 0;
+                const projectCount = person.projects.length;
+                let projectCountClass = projectCount > 3 ? "bg-orange-50 text-orange-700 border-orange-100" : "bg-blue-50 text-blue-700 border-blue-100";
+                
+                // === NOVA LÓGICA DE STATUS (Copie e Cole este bloco) ===
+                let statusLabelClass = '';
+                let statusIcon = '';
+
+                // Define cor e ícone baseado no texto que vem do Backend (statusUI)
+                switch (person.statusUI) {
+                    case 'Aguardando Aprovação':
+                        statusLabelClass = 'bg-yellow-100 text-yellow-800 border-yellow-200'; // Amarelo
+                        statusIcon = '<i data-lucide="clock" class="w-3 h-3"></i>';
+                        break;
+                    case 'Pronto para Fechamento':
+                        statusLabelClass = 'bg-green-100 text-green-800 border-green-200 font-bold'; // Verde
+                        statusIcon = '<i data-lucide="check-circle" class="w-3 h-3"></i>';
+                        break;
+                    case 'Aguardando Faturamento':
+                        statusLabelClass = 'bg-purple-100 text-purple-800 border-purple-200'; // Roxo (Fechado)
+                        statusIcon = '<i data-lucide="lock" class="w-3 h-3"></i>';
+                        break;
+                    case 'Faturado':
+                        statusLabelClass = 'bg-blue-100 text-blue-800 border-blue-200 font-bold'; // Azul
+                        statusIcon = '<i data-lucide="dollar-sign" class="w-3 h-3"></i>';
+                        break;
+                    default: // "Pendente/Misto" ou outro
+                        statusLabelClass = 'bg-gray-100 text-gray-600 border-gray-200';
+                        statusIcon = '<i data-lucide="help-circle" class="w-3 h-3"></i>';
+                }
+
+                // Cria o HTML do Badge
+                const statusBadge = `<span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs border ${statusLabelClass}">${statusIcon} ${person.statusUI}</span>`;
+                
+                // === BARRA DE PROGRESSO (Manteve igual) ===
+                let progressColor;
+                if (person.status === 'danger') progressColor = 'bg-red-500';
+                else if (person.status === 'risk') progressColor = 'bg-yellow-500';
+                else if (person.status === 'under') progressColor = 'bg-gray-400';
+                else progressColor = 'bg-green-500';
+
+                const projectsStr = person.projects.join(','); 
+                
+                // === BOTÕES DE AÇÃO (Lógica Atualizada) ===
+                let actionHtml = '';
+                
+                if (person.canAction) {
+                    // Se canAction = true (Tudo Aprovado), mostra botões coloridos
+                    actionHtml = `
+                        <div class="flex items-center justify-end gap-2">
+                                <button onclick="openModal('${person.id}', '${person.name}', ${person.total}, ${person.contract}, '${projectsStr}')" class="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="Ver Detalhes">
+                                <i data-lucide="eye" class="w-4 h-4"></i>
+                                </button>
+                                
+                                <button onclick="performAction('${person.id}', '${person.name}', 'reject')" class="px-3 py-1.5 bg-red-100 hover:bg-red-200 text-red-700 text-xs font-bold rounded shadow-sm transition-colors whitespace-nowrap flex items-center gap-1">
+                                <i data-lucide="x-circle" class="w-3 h-3"></i> Reprovar
+                                </button>
+
+                                <button onclick="performAction('${person.id}', '${person.name}', 'close')" class="px-3 py-1.5 bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold rounded shadow-sm transition-colors whitespace-nowrap flex items-center gap-1">
+                                <i data-lucide="check-square" class="w-3 h-3"></i> Fechar
+                                </button>
+                        </div>
+                    `;
+                } else {
+                    // Se não pode agir, mostra apenas o olho
+                    actionHtml = `
+                        <div class="flex items-center justify-end gap-2">
+                                <button onclick="openModal('${person.id}', '${person.name}', ${person.total}, ${person.contract}, '${projectsStr}')" class="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="Ver Detalhes">
+                                <i data-lucide="eye" class="w-4 h-4"></i>
+                                </button>
+                        </div>
+                    `;
+                }
+
+                // === CRIAÇÃO DA LINHA (ROW) ===
+                const row = `
+                <tr class="hover:bg-gray-50 transition-colors group">
+                    <td class="px-6 py-4">
+                        <div class="flex items-center gap-3">
+                            <div class="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center text-xs font-bold text-gray-600 border border-gray-200">${person.name.charAt(0)}</div>
+                            <div>
+                                <p class="font-bold text-gray-900">${person.name}</p>
+                                <p class="text-xs text-gray-400">${person.role}</p>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="px-6 py-4 text-center">
+                        <span class="inline-flex items-center justify-center px-3 py-1 rounded-full text-xs font-bold border ${projectCountClass}">
+                            ${projectCount} Projeto${projectCount !== 1 ? 's' : ''}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 align-middle">
+                        <div class="flex justify-between text-xs font-bold mb-1">
+                            <span class="text-gray-700">${person.total.toFixed(1)}h</span>
+                            <span class="text-gray-400">Meta: ${person.contract}h</span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+                            <div class="${progressColor} h-2 rounded-full" style="width: ${Math.min(percent, 100)}%"></div>
+                        </div>
+                    </td>
+                    <td class="px-6 py-4 text-center">${statusBadge}</td> <td class="px-6 py-4 text-right">
+                        ${actionHtml} </td>
+                </tr>`;
+                
+                tbody.innerHTML += row;
+            });
+                
+            lucide.createIcons();
+        } catch (err) {
+            console.error(err);
+            tbody.innerHTML = '<tr><td colspan="5" class="text-center py-10 text-red-500">Erro ao carregar dados.</td></tr>';
+        }
+    }
+        // --- FILTRO E AÇÕES ---
+        function filterTable() {
+            const input = document.getElementById("search-input");
+            const filter = input.value.toUpperCase();
+            const table = document.getElementById("hr-table-body");
+            const tr = table.getElementsByTagName("tr");
+            for (let i = 0; i < tr.length; i++) {
+                const td = tr[i].getElementsByTagName("td")[0];
+                if (td) {
+                    const txtValue = td.textContent || td.innerText;
+                    tr[i].style.display = txtValue.toUpperCase().indexOf(filter) > -1 ? "" : "none";
+                }       
+            }
+        }
+
+async function openModal(id, name, total, contract, projectsStr) {
+            const modal = document.getElementById('logs-modal');
+            const tbody = document.getElementById('modal-logs-body');
+            const projectsContainer = document.getElementById('modal-projects-list');
+            
+            // Setup Visual
+            document.getElementById('modal-name').innerText = name;
+            document.getElementById('modal-total').innerText = total.toFixed(1) + 'h';
+            document.getElementById('modal-contract').innerText = contract.toFixed(0) + 'h'; // Meta calculada no Back
+            
+            const diff = total - contract;
+            const extraEl = document.getElementById('modal-extra');
+            extraEl.innerText = (diff > 0 ? '+' : '') + diff.toFixed(1) + 'h';
+            extraEl.className = `block text-2xl font-bold ${diff > 10 ? 'text-red-500' : (diff >= 0 ? 'text-green-500' : 'text-gray-400')}`;
+
+            const projects = projectsStr ? projectsStr.split(',') : [];
+            projectsContainer.innerHTML = projects.map(p => 
+                `<span class="inline-block text-xs bg-gray-200 text-gray-700 px-2 py-1 rounded border border-gray-300">${p}</span>`
+            ).join('');
+
+            tbody.innerHTML = '<tr><td colspan="4" class="text-center py-6 text-gray-500">Buscando detalhes...</td></tr>';
+            
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                modal.classList.remove('opacity-0');
+                modal.querySelector('div').classList.remove('scale-95');
+            }, 10);
+
+            const sel = document.getElementById('period-selector');
+            const dates = JSON.parse(sel.value);
+
+            try {
+                const res = await fetch(`${API_URL}/hr/employees/${id}/details?inicio=${dates.start}&fim=${dates.end}`);
+                const logs = await res.json();
+                
+                tbody.innerHTML = '';
+                
+                if(logs.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="4" class="text-center py-6 text-gray-400">Sem lançamentos detalhados.</td></tr>';
+                    return;
+                }
+
+                logs.forEach(log => {
+                    const barColor = log.isExtra ? 'bg-red-400' : 'bg-blue-500';
+                    const textColor = log.isExtra ? 'text-red-600 font-bold' : 'text-gray-900';
+
+                    // [CORREÇÃO]: Usamos o log.date direto (sem split) e adicionamos o log.tipoDia embaixo
+                    const cellData = `
+                        <div class="flex flex-col">
+                            <span class="font-bold text-gray-900 text-sm">${log.date}</span>
+                            <span class="text-[10px] text-gray-400 uppercase tracking-wide mt-0.5">${log.tipoDia || '-'}</span>
+                        </div>
+                    `;
+
+                    tbody.innerHTML += `
+                    <tr class="hover:bg-gray-50 border-b border-gray-50 last:border-0">
+                        <td class="px-6 py-4">
+                            ${cellData}
+                        </td>
+                        <td class="px-6 py-4 text-gray-600">
+                            <span class="block font-bold text-xs">${log.project}</span>
+                            <span class="text-xs italic">${log.description || '-'}</span>
+                        </td>
+                        <td class="px-6 py-4 align-middle">
+                            <div class="flex items-center gap-2">
+                                <span class="text-[10px] text-gray-400 w-3">0</span>
+                                <div class="flex-1 bg-gray-200 rounded-full h-1.5 overflow-hidden">
+                                    <div class="${barColor} h-1.5 rounded-full" style="width: ${Math.min((log.hours/12)*100, 100)}%"></div>
+                                </div>
+                                <span class="text-[10px] text-gray-400 w-3">12</span>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 text-right ${textColor}">${log.hours.toFixed(1)}h</td>
+                    </tr>`;
+                });
+
+            } catch (err) {
+                console.error(err);
+                tbody.innerHTML = '<tr><td colspan="4" class="text-center text-red-500">Erro ao carregar detalhes.</td></tr>';
+            }
+        }
+
+
+        function closeModal() {
+            const modal = document.getElementById('logs-modal');
+            modal.classList.add('opacity-0');
+            modal.querySelector('div').classList.add('scale-95');
+            setTimeout(() => { modal.classList.add('hidden'); }, 300);
+        }
+
+        async function closeSheet(personId, personName) {
+            const confirmed = confirm(`ATENÇÃO RH:\n\nVocê vai FECHAR a folha de ${personName}.\n\nConfirma?`);
+            if(!confirmed) return;
+
+            const selector = document.getElementById('period-selector');
+            const dates = JSON.parse(selector.value);
+            
+            try {
+                const res = await fetch(`${API_URL}/hr/close`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ personId, inicio: dates.start, fim: dates.end })
+                });
+                const result = await res.json();
+                if (result.success) {
+                    alert('Sucesso! Folha fechada.');
+                    triggerDataLoad(selector.value); 
+                } else {
+                    alert('Erro: ' + result.message);
+                }
+            } catch (err) {
+                console.error(err);
+                alert('Erro de comunicação.');
+            }
+        }
+
+        async function performAction(personId, personName, actionType) {
+        const actionVerb = actionType === 'close' ? 'FECHAR' : 'REPROVAR';
+        const actionMsg = actionType === 'close' ? 'bloqueará edições' : 'devolverá para o gestor';
+        
+        const confirmed = confirm(`ATENÇÃO RH:\n\nVocê vai ${actionVerb} a folha de ${personName}.\nIsso ${actionMsg}.\n\nConfirma?`);
+        if(!confirmed) return;
+
+        const selector = document.getElementById('period-selector');
+        const dates = JSON.parse(selector.value);
+        
+        try {
+            const res = await fetch(`${API_URL}/hr/action`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    personId, 
+                    action: actionType, // 'close' ou 'reject'
+                    inicio: dates.start, 
+                    fim: dates.end 
+                })
+            });
+            const result = await res.json();
+            if (result.success) {
+                alert(result.message);
+                triggerDataLoad(selector.value); 
+            } else {
+                alert('Erro: ' + result.message);
+            }
+        } catch (err) {
+            console.error(err);
+            alert('Erro de comunicação.');
+        }
+    }
+    </script>
+</body>
+</html>
