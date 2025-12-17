@@ -152,9 +152,17 @@ exports.getEmployeeDetails = async (req, res) => {
         const { personId } = req.params;
         const { inicio, fim } = req.query;
 
-        // 1. Encontrar Período
+        // 1. Encontrar Período e buscar TOTALIZADORES (A "Análise Fiel")
         const soqlPeriodo = `
-            SELECT Id FROM Periodo__c 
+            SELECT Id, 
+                   Horas__c,                
+                   HorasBanco__c,           
+                   HorasExtras__c,          
+                   HorasFerias__c,          
+                   HorasLicencaRemunerada__c, 
+                   QuantidadeDiasUteis__c,
+                   ContratoPessoa__r.Hora__c
+            FROM Periodo__c 
             WHERE ContratoPessoa__r.Pessoa__c = '${personId}' 
             AND DataInicio__c >= ${inicio} 
             AND DataFim__c <= ${fim}
@@ -162,19 +170,27 @@ exports.getEmployeeDetails = async (req, res) => {
         `;
         const resPeriodo = await conn.query(soqlPeriodo);
         
-        if (resPeriodo.totalSize === 0) return res.json([]);
-        const periodoId = resPeriodo.records[0].Id;
+        if (resPeriodo.totalSize === 0) return res.json({ logs: [], summary: null });
+        
+        const per = resPeriodo.records[0];
+        const periodoId = per.Id;
 
-        // 2. Buscar Dias (Incluindo Name e Tipo__c)
-        const soqlDias = `
-            SELECT Id, Name, Tipo__c, Data__c
-            FROM DiaPeriodo__c 
-            WHERE Periodo__c = '${periodoId}'
-            ORDER BY Data__c ASC
-        `;
+        // Monta o objeto de Resumo Oficial
+        const summary = {
+            normal: per.Horas__c || 0,
+            banco: per.HorasBanco__c || 0,
+            extra: per.HorasExtras__c || 0,
+            ferias: per.HorasFerias__c || 0,
+            licenca: per.HorasLicencaRemunerada__c || 0,
+            // Cálculo do Realizado (Conforme sua regra: Normal + Banco + 2xExtra + Licença)
+            totalRealizado: (per.Horas__c || 0) + (per.HorasBanco__c || 0) + ((per.HorasExtras__c || 0) * 2) + (per.HorasLicencaRemunerada__c || 0)
+        };
+
+        // 2. Buscar Dias (Mantém igual)
+        const soqlDias = `SELECT Id, Name, Tipo__c, Data__c FROM DiaPeriodo__c WHERE Periodo__c = '${periodoId}' ORDER BY Data__c ASC`;
         const resDias = await conn.query(soqlDias);
 
-        if (resDias.totalSize === 0) return res.json([]);
+        if (resDias.totalSize === 0) return res.json({ logs: [], summary });
 
         const diasMap = {};
         const diaIds = [];
@@ -183,7 +199,7 @@ exports.getEmployeeDetails = async (req, res) => {
             diaIds.push(`'${d.Id}'`);
         });
 
-        // 3. Buscar Lançamentos
+        // 3. Buscar Lançamentos (Mantém igual)
         const soqlLancamentos = `
             SELECT Id, DiaPeriodo__c, Servico__r.Name, Atividade__r.Name, 
                    Horas__c, HorasExtras__c, JustificativaExtra__c
@@ -193,35 +209,63 @@ exports.getEmployeeDetails = async (req, res) => {
         `;
         const resLancamentos = await conn.query(soqlLancamentos);
 
-        // 4. Montar JSON
+        // 4. Processar Logs (Mantém lógica visual)
+        // src/controllers/hrController.js
+
         const logs = resLancamentos.records.map(lanc => {
             const dia = diasMap[lanc.DiaPeriodo__c];
-            
-            let desc = '';
-            const hExtra = lanc.HorasExtras__c || 0;
             const hNormal = lanc.Horas__c || 0;
+            const hExtra = lanc.HorasExtras__c || 0;
             
-            if (hExtra > 0) {
-                desc = `${lanc.JustificativaExtra__c || 'Hora Extra'} (${lanc.Atividade__r?.Name || ''})`;
-            } else {
-                desc = lanc.Atividade__r?.Name || 'Apontamento normal';
+            // Análise da Justificativa para classificar o tipo de Extra
+            const justificativa = (lanc.JustificativaExtra__c || '').toLowerCase();
+            const activityName = (lanc.Atividade__r?.Name || '').toLowerCase();
+
+            // Lógica de Categorização
+            let category = 'normal';
+            let isExtraReal = false;
+            let isBancoHora = false;
+
+            // 1. Verifica Férias/Licença
+            if (activityName.includes('férias') || activityName.includes('ferias')) {
+                category = 'ferias';
+            } else if (activityName.includes('licença') || activityName.includes('licenca')) {
+                category = 'licenca';
+            } 
+            // 2. Verifica Horas Extras vs Banco
+            else if (hExtra > 0) {
+                // Se a justificativa tiver "banco", tratamos como Banco de Horas (Peso 1x)
+                if (justificativa.includes('banco')) {
+                    category = 'banco_lancamento'; // Categoria nova
+                    isBancoHora = true;
+                } else {
+                    // Caso contrário, é Extra Pura (Peso 2x)
+                    category = 'extra';
+                    isExtraReal = true;
+                }
             }
 
-            // O campo Name do DiaPeriodo__c geralmente traz "DD/MM - DiaDaSemana"
-            // Vamos passar ele direto para o front exibir
-            const dateDisplay = dia.Name || dia.Data__c; 
+            // Cálculo do Impacto Visual na Lista
+            // Se for Banco, soma 1x. Se for Extra Real, soma 2x.
+            const totalImpact = hNormal + (isBancoHora ? hExtra : 0) + (isExtraReal ? (hExtra * 2) : 0);
 
             return {
-                date: dateDisplay, 
-                tipoDia: dia.Tipo__c, // Novo campo para o Front
+                date: dia.Name || dia.Data__c, 
+                weekDay: dia.Tipo__c,
                 project: lanc.Servico__r?.Name || 'N/A',
-                hours: hNormal + hExtra,
-                isExtra: hExtra > 0,
-                description: desc
+                description: lanc.Atividade__r?.Name || '-',
+                justification: lanc.JustificativaExtra__c || '', // Passamos a justificativa pura para o front usar
+                rawNormal: hNormal,
+                rawExtra: hExtra,
+                totalImpact: totalImpact,
+                category: category,
+                isExtra: isExtraReal,
+                isBanco: isBancoHora // Nova flag
             };
         });
 
-        res.json(logs);
+        // Retorna Logs + Resumo
+        res.json({ logs, summary });
 
     } catch (e) {
         console.error("Erro Detail:", e);
