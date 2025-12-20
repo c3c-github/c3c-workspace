@@ -6,6 +6,7 @@ const authController = require('./controllers/authController');
 const dashboardController = require('./controllers/dashboardController');
 const apiController = require('./controllers/apiController');
 const hrController = require('./controllers/hrController');
+const timesheetController = require('./controllers/timesheetController');
 
 // Middleware Básico de Autenticação
 const requireAuth = (req, res, next) => {
@@ -50,6 +51,9 @@ router.get('/approvals', requireAuth, requireGroup('GESTOR'), dashboardControlle
 // Página de RH (Apenas ADMIN_RH)
 router.get('/hr', requireAuth, requireGroup('ADMIN_RH'), hrController.renderHrDashboard);
 
+// Rota da Folha de Ponto (Timesheet)
+router.get('/timesheet', requireAuth, timesheetController.renderTimesheetPage);
+
 // =========================================
 // 3. APIS - DADOS GERAIS
 // =========================================
@@ -71,4 +75,10 @@ router.get('/api/hr/employees', requireAuth, requireGroup('ADMIN_RH'), hrControl
 router.get('/api/hr/employees/:personId/details', requireAuth, requireGroup('ADMIN_RH'), hrController.getEmployeeDetails);
 router.post('/api/hr/action', requireAuth, requireGroup('ADMIN_RH'), hrController.handleHrAction);
 
+
+router.get('/api/timesheet/periods', requireAuth, timesheetController.getUserPeriods);
+router.get('/api/timesheet/calendar', requireAuth, timesheetController.getCalendarData); // Grid Leve
+router.get('/api/timesheet/day', requireAuth, timesheetController.getDayDetails);        // Detalhes Lazy
+router.post('/api/timesheet/entry', requireAuth, timesheetController.saveEntry);
+router.delete('/api/timesheet/entry/:id', requireAuth, timesheetController.deleteEntry);
 module.exports = router;

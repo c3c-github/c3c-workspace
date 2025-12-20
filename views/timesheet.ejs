@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Minhas Horas - C3C Workplace</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Montserrat', 'sans-serif'] },
+                    colors: { c3c: { blue: '#2978FF', teal: '#1DDDBD' } }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { font-family: 'Montserrat', sans-serif; background-color: #F8FAFC; }
+        .slide-over { transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
+        .slide-over.closed { transform: translateX(100%); }
+        .slide-over.open { transform: translateX(0); }
+        .input-c3c { transition: all 0.2s; border: 1px solid #E2E8F0; }
+        .input-c3c:focus { border-color: #2978FF; box-shadow: 0 0 0 3px rgba(41, 120, 255, 0.1); outline: none; }
+        .input-c3c:disabled { background-color: #F3F4F6; color: #9CA3AF; cursor: not-allowed; border-color: #E5E7EB; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+    </style>
+</head>
+<body class="h-screen flex overflow-hidden bg-[#F8FAFC]">
+
+    <%- include('partials/sidebar') %>
+
+    <main class="flex-1 flex flex-col md:ml-64 relative w-full overflow-hidden transition-all duration-300">
+        
+        <header class="h-20 bg-white border-b border-gray-200 flex items-center justify-between px-8 shrink-0">
+            <div class="flex items-center gap-4">
+                <button onclick="document.getElementById('sidebar').classList.toggle('-translate-x-full')" class="md:hidden text-gray-400"><i data-lucide="menu"></i></button>
+                <h1 class="text-xl font-bold text-gray-800">Folha de Ponto</h1>
+                <div class="flex items-center bg-gray-50 border border-gray-200 rounded-lg p-1 hidden sm:flex">
+                    <button onclick="changePeriod(1)" class="p-1 hover:bg-white rounded shadow-sm text-gray-500 transition-colors"><i data-lucide="chevron-left" class="w-4 h-4"></i></button>
+                    <span id="period-display" class="px-4 text-sm font-bold text-gray-700 min-w-[180px] text-center">Carregando...</span>
+                    <button onclick="changePeriod(-1)" class="p-1 hover:bg-white rounded shadow-sm text-gray-500 transition-colors"><i data-lucide="chevron-right" class="w-4 h-4"></i></button>
+                </div>
+            </div>
+            <div class="flex items-center gap-6">
+                <div class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center font-bold text-blue-600 border border-blue-200"><%= user.nome ? user.nome.charAt(0) : 'U' %></div>
+            </div>
+        </header>
+
+        <div class="flex-1 overflow-y-auto p-8">
+            <div class="flex flex-wrap gap-4 mb-6 bg-white p-4 rounded-lg border border-gray-100 shadow-sm items-center text-xs text-gray-600">
+                <span class="font-bold text-gray-400 uppercase mr-2 border-r border-gray-200 pr-4">Legenda:</span>
+                <div class="flex items-center gap-1"><span class="w-2 h-2 rounded-full border border-gray-400"></span> Rascunho</div>
+                <div class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-blue-400"></span> Lançado</div>
+                <div class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-green-500"></span> Aprovado</div>
+                <div class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-red-500"></span> Reprovado</div>
+                <div class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-slate-500"></span> Fechado</div>
+                <div class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-amber-500"></span> Faturado</div>
+            </div>
+
+            <div class="grid grid-cols-7 gap-4 mb-2 text-center">
+                <div class="text-xs font-bold text-red-400 uppercase">Dom</div>
+                <div class="text-xs font-bold text-gray-400 uppercase">Seg</div>
+                <div class="text-xs font-bold text-gray-400 uppercase">Ter</div>
+                <div class="text-xs font-bold text-gray-400 uppercase">Qua</div>
+                <div class="text-xs font-bold text-gray-400 uppercase">Qui</div>
+                <div class="text-xs font-bold text-gray-400 uppercase">Sex</div>
+                <div class="text-xs font-bold text-gray-400 uppercase">Sáb</div>
+            </div>
+
+            <div class="grid grid-cols-7 gap-4" id="calendar-grid">
+                <div class="col-span-7 text-center py-10 text-gray-400">Carregando...</div>
+            </div>
+        </div>
+
+        <div id="slide-overlay" onclick="closeDayPanel()" class="fixed inset-0 bg-black/20 backdrop-blur-sm z-30 hidden transition-opacity opacity-0"></div>
+        <div id="day-panel" class="fixed inset-y-0 right-0 w-full md:w-[600px] bg-white shadow-2xl z-40 slide-over closed flex flex-col">
+            
+            <div class="bg-gray-50 border-b border-gray-200 p-6 shrink-0">
+                <div class="flex justify-between items-start mb-4">
+                    <div>
+                        <div class="flex items-center gap-2 mb-1">
+                            <span class="text-[10px] font-bold px-2 py-1 rounded uppercase bg-blue-100 text-blue-700" id="panel-weekday">...</span>
+                        </div>
+                        <h2 class="text-3xl font-bold text-gray-800" id="panel-date">...</h2>
+                    </div>
+                    <button onclick="closeDayPanel()" class="p-2 hover:bg-gray-200 rounded-full transition-colors text-gray-500"><i data-lucide="x"></i></button>
+                </div>
+                <div id="readonly-alert" class="hidden bg-blue-50 border-l-4 border-blue-400 p-3 rounded-r shadow-sm mb-2"><p class="text-xs text-blue-700 font-medium" id="readonly-reason">Bloqueado.</p></div>
+                <div id="rejection-alert" class="hidden bg-red-50 border-l-4 border-red-500 p-3 rounded-r shadow-sm mb-2"><p class="text-xs text-red-700 font-bold">Itens Reprovados.</p><p class="text-[10px] text-red-600" id="rejection-reason"></p></div>
+            </div>
+
+            <div class="flex-1 overflow-y-auto p-6 bg-white relative">
+                
+                <div class="mb-8">
+                    <div class="flex justify-between items-end mb-3">
+                        <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wider">ALOCAÇÕES</h3>
+                        <span class="text-[10px] text-gray-400 flex items-center gap-1"><i data-lucide="arrow-right" class="w-3 h-3"></i> Deslize</span>
+                    </div>
+                    <div id="allocations-list" class="flex overflow-x-auto gap-4 pb-2 -mx-2 px-2 no-scrollbar snap-x"></div>
+                </div>
+
+                <div class="mb-6">
+                    <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Atividades Lançadas</h3>
+                    <div id="entries-list" class="space-y-3"></div>
+                </div>
+
+                <div id="add-activity-container" class="bg-gray-50 rounded-xl p-5 border border-gray-200 shadow-inner transition-opacity">
+                    <h3 class="text-sm font-bold text-gray-800 mb-4 flex items-center gap-2"><i data-lucide="plus-circle" class="w-4 h-4 text-blue-600"></i> Nova Atividade</h3>
+                    
+                    <div class="grid grid-cols-1 gap-4 mb-4">
+                        <div>
+                            <label class="block text-xs font-bold text-gray-500 mb-1">Projeto</label>
+                            <select id="input-project" onchange="resetActivitySearch()" class="w-full input-c3c p-2 rounded-lg text-sm bg-white"></select>
+                        </div>
+                        <div class="relative">
+                            <label class="block text-xs font-bold text-gray-500 mb-1">Atividade / Chamado</label>
+                            <div class="relative">
+                                <input type="text" id="input-activity-search" oninput="filterActivities()" onfocus="filterActivities()" placeholder="Busque ou digite para criar..." class="w-full input-c3c p-2 rounded-lg text-sm bg-white pr-8" autocomplete="off">
+                                <button onclick="clearActivity()" id="btn-clear-activity" class="absolute right-2 top-2 text-gray-400 hidden hover:text-gray-600" type="button"><i data-lucide="x" class="w-4 h-4"></i></button>
+                            </div>
+                            <input type="hidden" id="input-activity-id">
+                            <ul id="activity-dropdown" class="hidden absolute z-[100] w-full bg-white border border-gray-200 rounded-lg shadow-xl mt-1 max-h-60 overflow-y-auto"></ul>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-3 gap-3 mb-4">
+                        <div>
+                            <label class="block text-[10px] font-bold text-gray-500 mb-1 uppercase">Normais</label>
+                            <input type="number" id="input-normal" value="0" min="0" max="8" step="0.5" 
+                                   onblur="sanitizeField(this)" oninput="validateRules('normal')" 
+                                   class="w-full input-c3c p-2 rounded-lg text-center font-bold text-gray-700">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-gray-500 mb-1 uppercase">Extras</label>
+                            <input type="number" id="input-extra" value="0" min="0" step="0.5" 
+                                   onblur="sanitizeField(this)" oninput="validateRules('extra')"
+                                   class="w-full input-c3c p-2 rounded-lg text-center font-bold text-gray-700 disabled:bg-gray-100 disabled:text-gray-400" disabled>
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-gray-500 mb-1 uppercase">Ausência</label>
+                            <input type="number" id="input-leave" value="0" min="0" max="8" step="0.5" 
+                                   onblur="sanitizeField(this)" oninput="validateRules('leave')"
+                                   class="w-full input-c3c p-2 rounded-lg text-center font-bold text-gray-700">
+                        </div>
+                    </div>
+
+                    <div id="options-extra" class="hidden mb-4 p-3 bg-blue-50 rounded-lg border border-blue-100">
+                        <label class="block text-[10px] font-bold text-blue-600 mb-2 uppercase">Destino Extra:</label>
+                        <div class="flex gap-4">
+                            <label class="flex items-center gap-2 text-xs text-gray-700 cursor-pointer"><input type="radio" name="radio-extra" value="Banco" checked class="text-blue-600"> Banco</label>
+                            <label class="flex items-center gap-2 text-xs text-gray-700 cursor-pointer"><input type="radio" name="radio-extra" value="Pagamento" class="text-blue-600"> Pagamento</label>
+                        </div>
+                    </div>
+
+                    <div id="options-absence" class="hidden mb-4 p-3 bg-orange-50 rounded-lg border border-orange-100">
+                        <label class="block text-[10px] font-bold text-orange-600 mb-2 uppercase">Tipo Ausência:</label>
+                        <select id="select-absence-type" class="w-full p-1.5 text-xs border border-orange-200 rounded bg-white text-gray-700">
+                            <option value="Abonada">Remunerada (Atestado)</option>
+                            <option value="Desconto">Não Remunerada (Desconto)</option>
+                            <option value="Banco">Abater Banco</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="block text-xs font-bold text-gray-500 mb-1">Justificativa <span id="req-justification" class="text-red-500 hidden">*</span></label>
+                        <textarea id="input-reason" rows="2" placeholder="Obrigatório para Extras/Ausência..." class="w-full input-c3c p-2 rounded-lg text-sm bg-white"></textarea>
+                    </div>
+
+                    <div class="flex justify-end">
+                        <button type="button" id="btn-add-entry" onclick="addEntry()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-xs font-bold shadow-md transition-transform active:scale-95">Adicionar</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white border-t border-gray-200 p-6 shrink-0 z-50 shadow-[0_-5px_15px_-5px_rgba(0,0,0,0.1)]">
+                <div class="flex justify-between items-end mb-4">
+                    <div>
+                        <p class="text-xs text-gray-400 font-bold uppercase tracking-wider">Total do Dia (Real + Novo)</p>
+                        <p class="text-4xl font-extrabold text-gray-800" id="footer-total">0.0h</p>
+                    </div>
+                    <div class="text-right">
+                        <p class="text-xs text-gray-400 font-bold uppercase tracking-wider">Saldo vs Contrato</p>
+                        <p class="text-2xl font-extrabold text-purple-600" id="footer-balance">+0.0h</p>
+                    </div>
+                </div>
+                <div class="flex justify-between items-center pt-4 border-t border-gray-100">
+                    <p class="text-sm text-gray-500 font-medium" id="footer-status">Status: Rascunho</p>
+                    <button class="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-bold text-sm shadow-md transition-transform active:scale-95" onclick="closeDayPanel()">
+                        Salvar / Fechar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        lucide.createIcons();
+        
+        let currentPeriods=[], currentPeriodIndex=0, currentGridData={}, currentOpenDayId=null;
+        let dayProjects=[], dayActivities=[], dayEntries=[];
+        
+        const DAILY_CONTRACT = 8.0; 
+        let isNonBusinessDay = false;
+
+        document.addEventListener('DOMContentLoaded', loadPeriods);
+
+        async function loadPeriods() {
+            try {
+                const res = await fetch('/api/timesheet/periods');
+                const data = await res.json();
+                if(data.length>0) { currentPeriods=data; currentPeriodIndex=0; updateHeader(); loadCalendar(currentPeriods[0].Id); }
+                else document.getElementById('period-display').innerText="Sem períodos";
+            } catch(e){ console.error(e); }
+        }
+        function changePeriod(dir) {
+            const idx = currentPeriodIndex + dir;
+            if(idx >= 0 && idx < currentPeriods.length) { currentPeriodIndex=idx; updateHeader(); loadCalendar(currentPeriods[idx].Id); }
+        }
+        function updateHeader() { document.getElementById('period-display').innerText = currentPeriods[currentPeriodIndex].Name; }
+
+        async function loadCalendar(pId) {
+            const el = document.getElementById('calendar-grid');
+            el.innerHTML='<div class="col-span-7 text-center py-10 text-gray-400">Carregando...</div>';
+            try {
+                const res = await fetch(`/api/timesheet/calendar?periodId=${pId}`);
+                const data = await res.json();
+                currentGridData = data.grid;
+                renderGrid(data.grid);
+            } catch(e) { el.innerHTML='<div class="text-red-400 text-center col-span-7">Erro ao carregar</div>'; }
+        }
+
+        function renderGrid(grid) {
+            const el = document.getElementById('calendar-grid');
+            el.innerHTML='';
+            const dates = Object.keys(grid).sort();
+            if(dates.length===0) return;
+            const startDay = new Date(dates[0]+'T12:00:00').getDay();
+            for(let i=0; i<startDay; i++) el.innerHTML += `<div class="h-28 bg-gray-50 border-2 border-transparent opacity-20 hidden md:block"></div>`;
+
+            dates.forEach(key => {
+                const d = grid[key];
+                const dayNum = new Date(key+'T12:00:00').getDate();
+                let bg='bg-white border-gray-200 hover:border-blue-300', ind='', cnt='<span class="text-gray-300 text-xs">0h</span>';
+                
+                if(d.total>0 || d.entries.length>0) {
+                    cnt=`<span class="font-bold text-gray-700 text-sm">${d.total}h</span>`;
+                    const stMap={'rejected':'red','draft':'gray','submitted':'blue','approved':'green','closed':'slate','billed':'amber'};
+                    if(d.status_approval==='draft') { bg='bg-white border-gray-300 border-dashed'; ind='<div class="absolute top-2 right-2 w-2 h-2 border border-gray-400 rounded-full bg-white"></div>'; }
+                    else if(d.status_approval==='submitted') { bg='bg-blue-50 border-blue-200'; ind='<div class="absolute top-2 right-2 w-2 h-2 bg-blue-400 rounded-full animate-pulse"></div>'; }
+                    else if(d.status_approval==='approved') { bg='bg-green-50 border-green-200'; ind='<div class="absolute top-2 right-2 w-2 h-2 bg-green-500 rounded-full"></div>'; }
+                    else if(d.status_approval==='rejected') { bg='bg-red-50 border-red-300'; ind='<i data-lucide="alert-circle" class="absolute top-2 right-2 w-4 h-4 text-red-600"></i>'; }
+                    else if(d.status_approval==='closed') { bg='bg-slate-100 border-slate-300'; ind='<i data-lucide="lock" class="absolute top-2 right-2 w-3 h-3 text-slate-500"></i>'; }
+                    else if(d.status_approval==='billed') { bg='bg-amber-50 border-amber-300'; ind='<i data-lucide="check-circle-2" class="absolute top-2 right-2 w-3 h-3 text-amber-600"></i>'; }
+                } else {
+                    if(d.status_day==='holiday') { bg='bg-rose-50 border-rose-200'; cnt=`<span class="bg-rose-200 text-rose-700 text-[10px] px-2 py-0.5 rounded-full">${d.label}</span>`; }
+                    else if(d.status_day==='vacation') { bg='bg-cyan-50 border-cyan-200'; cnt=`<span class="bg-cyan-100 text-cyan-700 text-[10px] px-2 py-0.5 rounded-full">${d.label}</span>`; }
+                    else if(d.status_day==='weekend') bg='bg-gray-50 opacity-60';
+                }
+                el.innerHTML += `<div onclick="openDayPanel('${key}')" class="relative h-28 rounded-xl border-2 p-4 cursor-pointer transition-all flex flex-col justify-between group ${bg}">${ind}<span class="font-bold text-gray-400 group-hover:text-blue-600">${dayNum}</span><div class="mt-auto w-full">${cnt}</div></div>`;
+            });
+            lucide.createIcons();
+        }
+
+        async function openDayPanel(key) {
+            const g = currentGridData[key]; if(!g) return;
+            currentOpenDayId = g.id;
+            isNonBusinessDay = (g.status_day==='weekend'||g.status_day==='holiday'||g.status_day==='vacation');
+
+            document.getElementById('panel-date').innerText=new Date(key+'T12:00:00').toLocaleDateString('pt-BR',{day:'numeric',month:'long'});
+            const stMap={'draft':'Rascunho', 'submitted':'Lançado', 'approved':'Aprovado', 'rejected':'Reprovado', 'closed':'Fechado', 'billed':'Faturado', 'empty':'Novo'};
+            document.getElementById('footer-status').innerText = "Status: " + (stMap[g.status_approval] || 'Rascunho');
+
+            resetActivitySearch();
+            const allocL=document.getElementById('allocations-list');
+            const entL=document.getElementById('entries-list');
+            const projSel=document.getElementById('input-project');
+            allocL.innerHTML='<span class="text-xs text-gray-400 p-2 animate-pulse">Carregando...</span>';
+            entL.innerHTML='<span class="text-xs text-gray-400 p-2 animate-pulse">Carregando...</span>';
+            projSel.innerHTML='<option value="" disabled selected>Carregando...</option>';
+            
+            // RESET FIELDS
+            document.getElementById('input-reason').value='';
+            ['input-normal', 'input-extra', 'input-leave'].forEach(id => {
+                const el = document.getElementById(id);
+                el.value = 0; el.disabled = false;
+            });
+
+            const overlay=document.getElementById('slide-overlay');
+            const panel=document.getElementById('day-panel');
+            overlay.classList.remove('hidden'); setTimeout(()=>overlay.classList.remove('opacity-0'),10);
+            panel.classList.remove('closed'); panel.classList.add('open');
+
+            try {
+                const res = await fetch(`/api/timesheet/day?date=${key}&diaPeriodoId=${g.id}`);
+                const d = await res.json();
+                
+                dayProjects=d.allocations||[]; dayActivities=d.activities||[]; dayEntries=d.entries||[];
+
+                // Allocations
+                allocL.innerHTML=''; projSel.innerHTML='<option value="" disabled selected>Selecione...</option>';
+                if(dayProjects.length>0) {
+                    dayProjects.forEach(p => {
+                        projSel.innerHTML+=`<option value="${p.id}">${p.name}</option>`;
+                        const isMain=p.percent>=50;
+                        const cls=isMain?'bg-blue-50 border-blue-100 hover:ring-blue-300':'bg-teal-50 border-teal-100 hover:ring-teal-300';
+                        const txt=isMain?'text-blue-600':'text-teal-600';
+                        const ico=isMain?'text-blue-500':'text-teal-500';
+                        const lbl=isMain?'Principal':'Secundário';
+                        allocL.innerHTML+=`<div onclick="selectProjectFromCard('${p.id}')" class="snap-start ${cls} border rounded-xl p-4 min-w-[220px] cursor-pointer transition-all relative group shadow-sm"><div class="absolute top-3 right-3 opacity-0 group-hover:opacity-100"><i data-lucide="check-circle-2" class="w-5 h-5 ${ico}"></i></div><p class="text-xs ${txt} font-bold mb-1 uppercase tracking-wide">${lbl} (${p.percent}%)</p><p class="font-bold text-gray-800 text-sm truncate" title="${p.name}">${p.name}</p></div>`;
+                    });
+                    if(dayProjects.length===1) projSel.value=dayProjects[0].id;
+                } else allocL.innerHTML='<div class="text-xs text-gray-400 p-2 italic border border-dashed border-gray-200 rounded-lg w-full text-center">Sem alocação.</div>';
+
+                // Entries & Validations
+                renderEntriesList();
+                validateRules('init'); 
+
+            } catch(e) { console.error(e); allocL.innerHTML='Erro carregar'; }
+
+            const isEd=['empty','draft','rejected'].includes(g.status_approval);
+            const frm=document.getElementById('add-activity-container');
+            const alert=document.getElementById('readonly-alert');
+            const rej=document.getElementById('rejection-alert');
+            alert.classList.add('hidden'); rej.classList.add('hidden'); frm.classList.remove('opacity-50','pointer-events-none');
+            
+            if(!isEd) { frm.classList.add('opacity-50','pointer-events-none'); alert.classList.remove('hidden'); document.getElementById('readonly-reason').innerText=`Bloqueado pelo status ${stMap[g.status_approval]}.`; }
+            if(g.status_approval==='rejected') rej.classList.remove('hidden');
+
+            lucide.createIcons();
+        }
+
+        function renderEntriesList() {
+            const entL = document.getElementById('entries-list');
+            entL.innerHTML='';
+            if(dayEntries.length>0) {
+                dayEntries.forEach(e => {
+                    let brd='border-gray-200', msg='';
+                    if(e.status==='Reprovado') { brd='border-red-200 bg-red-50'; msg=`<div class="text-xs text-red-600 mt-1"><i data-lucide="alert-circle" class="w-3 h-3 inline"></i> ${e.reason||'Sem motivo'}</div>`; }
+                    const canDel=['Rascunho','Reprovado'].includes(e.status);
+                    entL.innerHTML+=`<div class="bg-white border ${brd} rounded-lg p-3 shadow-sm relative group"><div class="flex justify-between"><div><p class="text-xs font-bold text-blue-600">${e.project}</p><p class="text-sm text-gray-800">${e.activity}</p></div><p class="text-sm font-bold">${e.hours}h</p></div>${msg}${canDel?`<button onclick="removeEntry('${e.id}')" class="absolute top-2 right-2 text-red-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"><i data-lucide="trash-2" class="w-4 h-4"></i></button>`:''}</div>`;
+                });
+            } else entL.innerHTML='<p class="text-center text-gray-400 text-sm py-4">Sem lançamentos.</p>';
+        }
+
+        // --- SANITIZAÇÃO DE INPUTS (Limpa zeros, valida números) ---
+        function sanitizeField(el) {
+            let val = parseFloat(el.value);
+            if (isNaN(val) || val < 0) val = 0;
+            // Se o valor for muito absurdo, corta em 24h
+            if (val > 24) val = 24; 
+            el.value = val; // Remove zeros a esquerda
+            validateRules('blur');
+        }
+
+        // --- VALIDAÇÃO DE REGRAS (O Cérebro) ---
+        function validateRules(source) {
+            const hN = document.getElementById('input-normal');
+            const hE = document.getElementById('input-extra');
+            const hL = document.getElementById('input-leave');
+
+            let vN = parseFloat(hN.value) || 0;
+            let vL = parseFloat(hL.value) || 0;
+            let vE = parseFloat(hE.value) || 0;
+
+            const boxEx=document.getElementById('options-extra'); const boxLe=document.getElementById('options-absence'); const reqJ=document.getElementById('req-justification');
+
+            if(isNonBusinessDay) {
+                // Feriado: Apenas Extras
+                hN.disabled = true; hN.value = 0;
+                hL.disabled = true; hL.value = 0;
+                hE.disabled = false;
+            } else {
+                hN.disabled = false;
+                
+                // REGRA 1: Normais não pode passar de 8h
+                if(vN > DAILY_CONTRACT) { 
+                    vN = DAILY_CONTRACT; hN.value = vN; 
+                }
+
+                // REGRA 2: Ausência não pode passar do saldo restante (8 - Normais)
+                const maxAbsence = Math.max(0, DAILY_CONTRACT - vN);
+                
+                // Se eu estou editando Normais, e isso espreme a Ausência, a Ausência diminui
+                if (vL > maxAbsence) {
+                    vL = maxAbsence; hL.value = vL;
+                }
+
+                // Se eu estou editando Ausência, eu não posso ultrapassar o saldo
+                // (O input 'max' ajuda, mas aqui forçamos)
+                if (source === 'leave' && vL > maxAbsence) {
+                    vL = maxAbsence; hL.value = vL;
+                }
+
+                // REGRA 3: Se Normais já bateu 8h, bloqueia Ausência
+                if (vN >= DAILY_CONTRACT) {
+                    hL.disabled = true; hL.value = 0; vL = 0;
+                } else {
+                    hL.disabled = false;
+                }
+
+                // REGRA 4: Extra só libera se (Normais + Ausência) == 8h
+                // Ou seja, cumpriu o contrato do dia
+                if ((vN + vL) >= DAILY_CONTRACT) {
+                    hE.disabled = false;
+                } else {
+                    hE.disabled = true; hE.value = 0; vE = 0;
+                }
+            }
+
+            // Visibilidade
+            if(vE > 0) { boxEx.classList.remove('hidden'); reqJ.classList.remove('hidden'); } else boxEx.classList.add('hidden');
+            if(vL > 0) { boxLe.classList.remove('hidden'); reqJ.classList.remove('hidden'); } else boxLe.classList.add('hidden');
+            if(vE===0 && vL===0) reqJ.classList.add('hidden');
+
+            updateRealTimeFooter();
+        }
+
+        function updateRealTimeFooter() {
+            const savedTotal = dayEntries.reduce((acc, curr) => acc + curr.hours, 0);
+            const inputTotal = (parseFloat(document.getElementById('input-normal').value)||0) + 
+                               (parseFloat(document.getElementById('input-extra').value)||0) + 
+                               (parseFloat(document.getElementById('input-leave').value)||0);
+            
+            const grandTotal = savedTotal + inputTotal;
+            const balance = grandTotal - DAILY_CONTRACT;
+
+            document.getElementById('footer-total').innerText = grandTotal.toFixed(1) + 'h';
+            
+            const balEl = document.getElementById('footer-balance');
+            const sign = balance > 0 ? '+' : '';
+            balEl.innerText = `${sign}${balance.toFixed(1)}h`;
+            
+            if(balance > 0) balEl.className = "text-2xl font-extrabold text-purple-600";
+            else if(balance < 0) balEl.className = "text-2xl font-extrabold text-red-400";
+            else balEl.className = "text-2xl font-extrabold text-gray-400";
+        }
+
+        // --- AUTOCOMPLETE ---
+        function resetActivitySearch() { document.getElementById('input-activity-search').value=''; document.getElementById('input-activity-id').value=''; document.getElementById('activity-dropdown').classList.add('hidden'); document.getElementById('btn-clear-activity').classList.add('hidden'); }
+        function clearActivity(){ resetActivitySearch(); }
+        function filterActivities() {
+            const pId=document.getElementById('input-project').value; const term=document.getElementById('input-activity-search').value.toLowerCase().trim(); const drp=document.getElementById('activity-dropdown'); const clr=document.getElementById('btn-clear-activity');
+            document.getElementById('input-activity-id').value=''; 
+            if(!pId) return; if(term.length>0) clr.classList.remove('hidden'); else clr.classList.add('hidden');
+            const matches=dayActivities.filter(a=>String(a.projectId)===String(pId)&&a.name.toLowerCase().includes(term));
+            drp.innerHTML=''; let exact=false;
+            matches.forEach(a=>{ if(a.name.toLowerCase()===term) exact=true; drp.innerHTML+=`<li onclick="selectExistingActivity('${a.id}','${a.name}')" class="px-4 py-2 hover:bg-gray-50 cursor-pointer text-sm text-gray-700 border-b border-gray-100 last:border-0 block">${a.name}</li>`; });
+            if(term.length>0 && !exact) drp.innerHTML+=`<li onclick="selectNewActivity()" class="px-4 py-3 bg-blue-50 hover:bg-blue-100 cursor-pointer text-sm text-blue-700 font-bold flex items-center gap-2 border-t border-blue-100 block"><i data-lucide="plus" class="w-4 h-4"></i> Criar: "${document.getElementById('input-activity-search').value}"</li>`;
+            if(matches.length>0 || (term.length>0 && !exact)) { drp.classList.remove('hidden'); lucide.createIcons(); } else drp.classList.add('hidden');
+        }
+        function selectExistingActivity(id,name) { document.getElementById('input-activity-search').value=name; document.getElementById('input-activity-id').value=id; document.getElementById('activity-dropdown').classList.add('hidden'); }
+        function selectNewActivity() { document.getElementById('input-activity-id').value='NEW'; document.getElementById('activity-dropdown').classList.add('hidden'); }
+        document.addEventListener('click', function(e) {
+            const inp=document.getElementById('input-activity-search'); const drp=document.getElementById('activity-dropdown'); const clr=document.getElementById('btn-clear-activity'); const hid=document.getElementById('input-activity-id');
+            if(!inp.contains(e.target)&&!drp.contains(e.target)&&!clr.contains(e.target)) { drp.classList.add('hidden'); if(hid.value==='') { inp.value=''; clr.classList.add('hidden'); } }
+        });
+        document.addEventListener('keydown', function(e) { if(e.key==='Escape') { const drp=document.getElementById('activity-dropdown'); if(!drp.classList.contains('hidden')) { drp.classList.add('hidden'); document.getElementById('input-activity-search').blur(); } else if(!document.getElementById('slide-overlay').classList.contains('hidden')) closeDayPanel(); } });
+        function closeDayPanel() { document.getElementById('day-panel').classList.remove('open'); document.getElementById('day-panel').classList.add('closed'); const ov=document.getElementById('slide-overlay'); ov.classList.add('opacity-0'); setTimeout(()=>ov.classList.add('hidden'),300); }
+        function selectProjectFromCard(id) { document.getElementById('input-project').value=id; resetActivitySearch(); }
+
+        // --- CRUD ---
+        async function addEntry() {
+            const pId=document.getElementById('input-project').value; let rawId=document.getElementById('input-activity-id').value; const actName=document.getElementById('input-activity-search').value; const actId=(rawId==='NEW')?'':rawId;
+            const hN=parseFloat(document.getElementById('input-normal').value)||0; const hE=parseFloat(document.getElementById('input-extra').value)||0; const hA=parseFloat(document.getElementById('input-leave').value)||0; const reason=document.getElementById('input-reason').value.trim();
+
+            if(!pId) return alert("Selecione projeto."); if(!actName) return alert("Informe atividade."); if((hN+hE+hA)===0) return alert("Informe horas."); if((hE>0||hA>0)&&reason.length<5) return alert("Justificativa obrigatória.");
+            let exType=''; if(hE>0) document.getElementsByName('radio-extra').forEach(r=>{if(r.checked) exType=r.value});
+            let abType=''; if(hA>0) abType=document.getElementById('select-absence-type').value;
+
+            const btn=document.getElementById('btn-add-entry'); btn.innerText='Salvando...'; btn.disabled=true;
+            try {
+                const res = await fetch('/api/timesheet/entry', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ diaPeriodoId:currentOpenDayId, projectId:pId, activityId:actId, activityName:actName, hoursNormal:hN, hoursExtra:hE, hoursAbsence:hA, reason:reason, extraType:exType, absenceType:abType }) });
+                const d = await res.json();
+                if(d.success) {
+                    loadCalendar(currentPeriods[currentPeriodIndex].Id).then(() => {
+                         return fetch(`/api/timesheet/day?date=${currentGridData[Object.keys(currentGridData).find(k=>currentGridData[k].id===currentOpenDayId)]?.date}&diaPeriodoId=${currentOpenDayId}`);
+                    }).then(r=>r.json()).then(newData => {
+                         dayEntries=newData.entries; renderEntriesList(); validateRules('init');
+                         resetActivitySearch(); 
+                         document.getElementById('input-normal').value=0; 
+                         document.getElementById('input-extra').value=0; 
+                         document.getElementById('input-leave').value=0; 
+                         document.getElementById('input-reason').value='';
+                    });
+                } else alert('Erro: '+d.message);
+            } catch(e){ console.error(e); } finally { btn.innerText='Adicionar'; btn.disabled=false; }
+        }
+
+        async function removeEntry(id) {
+            if(!confirm("Excluir?")) return;
+            try {
+                const res = await fetch(`/api/timesheet/entry/${id}`, {method:'DELETE'});
+                const d = await res.json();
+                if(d.success) {
+                     loadCalendar(currentPeriods[currentPeriodIndex].Id).then(() => {
+                         return fetch(`/api/timesheet/day?date=${currentGridData[Object.keys(currentGridData).find(k=>currentGridData[k].id===currentOpenDayId)]?.date}&diaPeriodoId=${currentOpenDayId}`);
+                    }).then(r=>r.json()).then(newData => { dayEntries=newData.entries; renderEntriesList(); validateRules('init'); });
+                } else alert('Erro: '+d.message);
+            } catch(e) { alert('Erro técnico'); }
+        }
+    </script>
+</body>
+</html>
