@@ -1,5 +1,23 @@
 const { getSfConnection } = require('../config/salesforce');
 
+// --- HELPER: GARANTIR QUE EXISTE O BANCO DE HORAS PAI ---
+async function getOrCreateBancoHoras(conn, pessoaId) {
+    const query = `SELECT Id FROM BancoHoras__c WHERE Pessoa__c = '${pessoaId}' LIMIT 1`;
+    const result = await conn.query(query);
+
+    if (result.totalSize > 0) {
+        return result.records[0].Id;
+    }
+
+    // Se não existe, cria
+    const novoBanco = await conn.sobject('BancoHoras__c').create({
+        Pessoa__c: pessoaId
+    });
+
+    if (novoBanco.success) return novoBanco.id;
+    throw new Error("Falha ao criar Banco de Horas para o colaborador.");
+}
+
 // --- 1. PAINEL PRINCIPAL ---
 exports.getHrEmployees = async (req, res) => {
     try {
@@ -13,11 +31,10 @@ exports.getHrEmployees = async (req, res) => {
             WHERE DataInicio__c >= ${inicio} AND DataFim__c <= ${fim}
         `;
 
-        // CORREÇÃO NO FILTRO: Usar > 0 e < 0 para Banco elimina problemas com NULL
         const filtroHoras = `(
             Horas__c > 0 
             OR HorasExtras__c > 0 
-            OR HorasBanco__c > 0 OR HorasBanco__c < 0
+            OR HorasBanco__c > 0 OR HorasBanco__c < 0 
             OR HorasAusenciaRemunerada__c > 0 
             OR HorasAusenciaNaoRemunerada__c > 0
         )`;
@@ -60,6 +77,7 @@ exports.getHrEmployees = async (req, res) => {
             const pId = r.Periodo__c;
             if (!periodDataMap[pId]) return;
             const st = r.Status__c;
+            
             if (st === 'Aprovado') periodDataMap[pId].approved++;
             else if (st === 'Fechado') periodDataMap[pId].closed++;
             else if (st === 'Faturado') periodDataMap[pId].billed++;
@@ -79,6 +97,7 @@ exports.getHrEmployees = async (req, res) => {
             const totalHoras = data ? data.totalRealizado : 0;
 
             let statusUI = 'Pendente', canAction = false;
+            
             if (!data || (data.approved + data.closed + data.billed + data.pending === 0)) statusUI = 'Sem Lançamentos';
             else if (data.pending > 0) statusUI = 'Aguardando Aprovação';
             else if (data.approved > 0 && data.closed === 0) { statusUI = 'Pronto para Fechamento'; canAction = true; }
@@ -109,18 +128,17 @@ exports.getHrEmployees = async (req, res) => {
     } catch (e) { res.status(500).json({ error: e.message }); }
 };
 
-// --- 2. DETALHES (MODAL) ---
+// --- 2. DETALHES ---
 exports.getEmployeeDetails = async (req, res) => {
     try {
         const conn = await getSfConnection();
         const { personId } = req.params;
         const { inicio, fim } = req.query;
 
-        // FILTRO REFORÇADO PARA ELIMINAR LINHAS VAZIAS/ZERADAS
         const filtroHoras = `(
             Horas__c > 0 
             OR HorasExtras__c > 0 
-            OR HorasBanco__c > 0 OR HorasBanco__c < 0
+            OR HorasBanco__c > 0 OR HorasBanco__c < 0 
             OR HorasAusenciaRemunerada__c > 0 
             OR HorasAusenciaNaoRemunerada__c > 0
         )`;
@@ -133,7 +151,7 @@ exports.getEmployeeDetails = async (req, res) => {
             WHERE Pessoa__c = '${personId}'
             AND DiaPeriodo__r.Data__c >= ${inicio} AND DiaPeriodo__r.Data__c <= ${fim}
             AND ${filtroHoras}
-            ORDER BY DiaPeriodo__r.Data__c ASC, Servico__r.Name ASC
+            ORDER BY DiaPeriodo__r.Data__c ASC, Atividade__r.Name ASC
         `);
 
         let sumNormal=0, sumExtra=0, sumBanco=0, sumAusencia=0;
@@ -147,7 +165,7 @@ exports.getEmployeeDetails = async (req, res) => {
 
             return {
                 date: r.DiaPeriodo__r ? r.DiaPeriodo__r.Data__c : '-',
-                project: r.Servico__r ? r.Servico__r.Name : '-', // NOME DO SERVIÇO
+                project: r.Servico__r ? r.Servico__r.Name : '-',
                 activity: r.Atividade__r ? r.Atividade__r.Name : 'Geral',
                 justification: r.Justificativa__c || '',
                 status: r.Status__c,
@@ -173,24 +191,89 @@ exports.getEmployeeDetails = async (req, res) => {
     } catch (e) { res.status(500).json({ error: e.message }); }
 };
 
+// --- 3. AÇÃO RH (CORRIGIDA: 1 LANÇAMENTO -> 1 REGISTRO BANCO) ---
 exports.handleHrAction = async (req, res) => {
-    // ... (Mantenha a lógica de ação que já estava correta no anterior)
     const { personId, action, inicio, fim, motivo } = req.body;
     let novoStatus = action === 'close' ? 'Fechado' : 'Reprovado';
+
     try {
         const conn = await getSfConnection();
         const statusFilter = action === 'close' ? "Status__c = 'Aprovado'" : "Status__c IN ('Lançado', 'Aprovado')";
-        const soql = `SELECT Id FROM LancamentoHora__c WHERE Pessoa__c = '${personId}' AND DiaPeriodo__r.Data__c >= ${inicio} AND DiaPeriodo__r.Data__c <= ${fim} AND ${statusFilter}`;
+        
+        // ADICIONADO: DiaPeriodo__r.Data__c para usar a data correta no extrato
+        const soql = `
+            SELECT Id, HorasBanco__c, DiaPeriodo__r.Data__c 
+            FROM LancamentoHora__c 
+            WHERE Pessoa__c = '${personId}'
+            AND DiaPeriodo__r.Data__c >= ${inicio} AND DiaPeriodo__r.Data__c <= ${fim}
+            AND ${statusFilter}
+        `;
+        
         const result = await conn.query(soql);
-        if (result.totalSize === 0) return res.json({ success: false, message: 'Nenhum lançamento elegível.' });
+        
+        if (result.totalSize === 0) {
+            return res.json({ success: false, message: 'Nenhum lançamento elegível para esta ação.' });
+        }
+
+        // --- LÓGICA DE FECHAMENTO COM BANCO ITEM A ITEM ---
+        if (action === 'close') {
+            try {
+                // 1. Garante que existe a "Conta" Pai
+                const bancoHorasId = await getOrCreateBancoHoras(conn, personId);
+                
+                const bankRecords = [];
+
+                // 2. Itera sobre cada lançamento para criar o espelho no banco
+                result.records.forEach(r => {
+                    // Verifica se tem horas de banco (Positivas ou Negativas)
+                    if (r.HorasBanco__c && r.HorasBanco__c !== 0) {
+                        bankRecords.push({
+                            BancoHoras__c: bancoHorasId,
+                            LancamentoHora__c: r.Id, // Vínculo 1 para 1
+                            Quantidade__c: r.HorasBanco__c,
+                            Data__c: r.DiaPeriodo__r ? r.DiaPeriodo__r.Data__c : fim, // Data do dia trabalhado
+                            Tipo__c: r.HorasBanco__c > 0 ? 'Crédito (Extra)' : 'Débito (Ausência)', // Ajuste conforme sua picklist
+                            Observacao__c: 'Fechamento Automático RH'
+                        });
+                    }
+                });
+
+                // 3. Bulk Insert dos registros de banco
+                if (bankRecords.length > 0) {
+                    const insertRes = await conn.sobject('RegistroBancoHoras__c').create(bankRecords);
+                    // Opcional: verificar erros no insertRes
+                    const failures = insertRes.filter(res => !res.success);
+                    if (failures.length > 0) {
+                        console.error("Erros ao criar registros de banco:", JSON.stringify(failures));
+                        // Dependendo da regra, pode dar throw aqui para não fechar os lançamentos
+                        throw new Error("Falha parcial ao gerar registros de banco. Operação abortada.");
+                    }
+                }
+
+            } catch (bancoError) {
+                console.error("Erro crítico banco de horas:", bancoError);
+                return res.status(500).json({ success: false, message: "Erro no Banco de Horas: " + bancoError.message });
+            }
+        }
+
+        // --- ATUALIZAÇÃO DOS STATUS (SE PASSOU PELO BANCO) ---
         const updates = result.records.map(r => {
             const obj = { Id: r.Id, Status__c: novoStatus };
             if (action === 'reject' && motivo) obj.MotivoReprovacao__c = motivo;
+            if (action === 'close') obj.MotivoReprovacao__c = null;
             return obj;
         });
+        
         await conn.update('LancamentoHora__c', updates);
-        res.json({ success: true, message: action === 'close' ? 'Período fechado.' : 'Período reprovado.' });
-    } catch (e) { res.status(500).json({ success: false, error: e.message }); }
+
+        res.json({ success: true, message: action === 'close' ? 'Período fechado e banco atualizado.' : 'Período reprovado.' });
+
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ success: false, error: e.message });
+    }
 };
 
-exports.renderHrDashboard = (req, res) => { res.render('hr_dashboard', { user: req.session.user, page: 'hr' }); };
+exports.renderHrDashboard = (req, res) => {
+    res.render('hr_dashboard', { user: req.session.user, page: 'hr' });
+};

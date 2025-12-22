@@ -164,17 +164,17 @@
                         <div>
                             <label class="block text-[10px] font-bold text-gray-500 mb-1 uppercase">Normais</label>
                             <input type="number" id="input-normal" value="0" min="0" max="8" step="0.5" onblur="sanitizeField(this)" oninput="validateRules('normal')" class="w-full input-c3c p-2 rounded-lg text-center font-bold text-gray-700">
-                            <p id="msg-normal" class="text-[10px] text-red-500 mt-1 hidden font-bold"></p>
+                            <p id="msg-normal" class="text-[10px] text-red-500 mt-1 hidden font-medium"></p>
                         </div>
                         <div>
                             <label class="block text-[10px] font-bold text-gray-500 mb-1 uppercase">Extras</label>
                             <input type="number" id="input-extra" value="0" min="0" step="0.5" onblur="sanitizeField(this)" oninput="validateRules('extra')" class="w-full input-c3c p-2 rounded-lg text-center font-bold text-gray-700 disabled:bg-gray-100 disabled:text-gray-400" disabled>
-                            <p id="msg-extra" class="text-[10px] text-red-500 mt-1 hidden font-bold"></p>
+                            <p id="msg-extra" class="text-[10px] text-red-500 mt-1 hidden font-medium"></p>
                         </div>
                         <div>
                             <label class="block text-[10px] font-bold text-gray-500 mb-1 uppercase">Ausência</label>
                             <input type="number" id="input-leave" value="0" min="0" max="8" step="0.5" onblur="sanitizeField(this)" oninput="validateRules('leave')" class="w-full input-c3c p-2 rounded-lg text-center font-bold text-gray-700">
-                            <p id="msg-leave" class="text-[10px] text-red-500 mt-1 hidden font-bold"></p>
+                            <p id="msg-leave" class="text-[10px] text-red-500 mt-1 hidden font-medium"></p>
                         </div>
                     </div>
 
@@ -355,7 +355,6 @@
             currentOpenDayId = g.id;
             isNonBusinessDay = (g.status_day==='weekend'||g.status_day==='holiday'||g.status_day==='vacation');
             
-            // CORREÇÃO: Atualiza o Badge do Cabeçalho do Painel (Dia da Semana)
             document.getElementById('panel-weekday').innerText=new Date(key+'T12:00:00').toLocaleDateString('pt-BR',{weekday:'long'});
             document.getElementById('panel-date').innerText=new Date(key+'T12:00:00').toLocaleDateString('pt-BR',{day:'numeric',month:'long'});
             
@@ -388,7 +387,6 @@
                 if(dayProjects.length>0) {
                     dayProjects.forEach(p => {
                         projectAllocationMap[p.id] = p.alocacaoId;
-                        // CORREÇÃO: Inserir card em allocL e option em projSel
                         allocL.innerHTML+=`<div onclick="selectProjectFromCard('${p.id}')" class="snap-start bg-blue-50 border border-blue-100 hover:ring-blue-300 rounded-xl p-4 min-w-[220px] cursor-pointer transition-all relative group shadow-sm"><p class="text-xs text-blue-600 font-bold mb-1 uppercase tracking-wide">Projeto</p><p class="font-bold text-gray-800 text-sm truncate" title="${p.name}">${p.name}</p></div>`;
                         projSel.innerHTML+=`<option value="${p.id}">${p.name}</option>`;
                     });
@@ -418,7 +416,6 @@
             lucide.createIcons();
         }
 
-        // --- RENDERIZAÇÃO DA LISTA DE ATIVIDADES (CARDS MELHORADOS) ---
         function renderEntriesList() {
             const entL = document.getElementById('entries-list');
             entL.innerHTML='';
@@ -429,7 +426,13 @@
                     if(e.status==='Reprovado') { brd='border-red-200 bg-red-50'; msg=`<div class="text-xs text-red-600 mt-1"><i data-lucide="alert-circle" class="w-3 h-3 inline"></i> ${e.reason||'Sem motivo'}</div>`; }
                     const canEdit=['Rascunho','Reprovado'].includes(e.status);
                     
-                    // CARD DETALHADO (BADGES)
+                    // --- CORREÇÃO: BADGES SEPARADOS ---
+                    let badges = '';
+                    if(e.hours > 0) badges += `<span class="bg-gray-100 text-gray-700 px-2 py-0.5 rounded text-[10px] font-bold">Normal: ${e.hours}h</span> `;
+                    if(e.hoursExtra > 0) badges += `<span class="bg-green-50 text-green-700 px-2 py-0.5 rounded text-[10px] font-bold">Extra($): ${e.hoursExtra}h</span> `;
+                    if(e.hoursBank > 0) badges += `<span class="bg-teal-50 text-teal-700 px-2 py-0.5 rounded text-[10px] font-bold">Banco(+): ${e.hoursBank}h</span> `;
+                    if(e.hoursAbsence > 0) badges += `<span class="bg-orange-50 text-orange-700 px-2 py-0.5 rounded text-[10px] font-bold">Ausência: ${e.hoursAbsence}h</span> `;
+
                     entL.innerHTML+=`
                         <div onclick="editEntry(${canEdit ? entryJson : '{}'})" class="bg-white border ${brd} rounded-lg p-3 shadow-sm relative group hover:shadow-md transition-shadow ${canEdit ? 'cursor-pointer' : ''} pr-8">
                             <div class="flex justify-between items-start">
@@ -439,9 +442,7 @@
                                 </div>
                             </div>
                             <div class="flex flex-wrap gap-2 mt-2">
-                                ${e.hours > 0 ? `<span class="bg-gray-100 text-gray-700 px-2 py-0.5 rounded text-[10px] font-bold">Normal: ${e.hours}h</span>` : ''}
-                                ${e.hoursExtra > 0 ? `<span class="bg-blue-50 text-blue-700 px-2 py-0.5 rounded text-[10px] font-bold">Extra: ${e.hoursExtra}h</span>` : ''}
-                                ${e.hoursAbsence > 0 ? `<span class="bg-orange-50 text-orange-700 px-2 py-0.5 rounded text-[10px] font-bold">Ausência: ${e.hoursAbsence}h</span>` : ''}
+                                ${badges}
                             </div>
                             ${msg}
                             ${canEdit ? `<button onclick="event.stopPropagation(); removeEntry('${e.id}')" class="absolute top-2 right-2 text-red-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"><i data-lucide="trash-2" class="w-4 h-4"></i></button>` : ''}
@@ -451,15 +452,56 @@
             } else entL.innerHTML='<p class="text-center text-gray-400 text-sm py-4">Sem lançamentos.</p>';
         }
 
-        // --- CÁLCULO E VALIDAÇÃO ---
+        // --- CORREÇÃO DE EDIÇÃO (POPULAR FORMULÁRIO) ---
+        function editEntry(entry) {
+            if (!entry || !entry.id) return;
+            document.getElementById('input-entry-id').value = entry.id;
+            document.getElementById('form-title').innerText = 'Editar Atividade';
+            document.getElementById('input-project').value = entry.projectId;
+            document.getElementById('input-activity-search').value = entry.activity;
+            document.getElementById('input-activity-id').value = entry.activityId;
+            document.getElementById('input-normal').value = entry.hours;
+            
+            // Popula Campo Extra (seja Banco ou Pagamento)
+            const extraField = document.getElementById('input-extra');
+            const radios = document.getElementsByName('radio-extra');
+            
+            if (entry.hoursExtra > 0) { // É Pagamento
+                extraField.value = entry.hoursExtra;
+                radios.forEach(r => { if(r.value === 'Pagamento') r.checked = true; });
+            } else if (entry.hoursBank > 0) { // É Banco
+                extraField.value = entry.hoursBank;
+                radios.forEach(r => { if(r.value === 'Banco') r.checked = true; });
+            } else {
+                extraField.value = 0;
+                radios.forEach(r => { if(r.value === 'Banco') r.checked = true; });
+            }
+
+            document.getElementById('input-leave').value = entry.hoursAbsence;
+            
+            // Tenta inferir tipo de ausência
+            const selAbs = document.getElementById('select-absence-type');
+            if (entry.hoursBank < 0) selAbs.value = 'Banco';
+            else selAbs.value = 'Abonada'; // Default
+
+            document.getElementById('input-reason').value = entry.justification || '';
+            document.getElementById('btn-add-entry').innerText = 'Salvar Alteração';
+            document.getElementById('btn-cancel-edit').classList.remove('hidden');
+            document.getElementById('activity-dropdown').classList.add('hidden');
+            
+            validateRules('init');
+        }
+
+        // --- Cálculos e Validações (Mantidos) ---
         function calculateDayTotals(excludeId = null) {
             let totalNormal = 0, totalExtra = 0, totalAbsence = 0, totalAll = 0;
             dayEntries.forEach(e => {
                 if (e.id !== excludeId) {
                     totalNormal += e.hours;
-                    totalExtra += e.hoursExtra;
+                    // Soma Banco e ExtraPgto como "Extras" para validação
+                    totalExtra += (e.hoursExtra + (e.hoursBank > 0 ? e.hoursBank : 0));
                     totalAbsence += e.hoursAbsence;
-                    totalAll += (e.hours + e.hoursExtra + e.hoursAbsence);
+                    totalAll += (e.hours + e.hoursExtra + Math.abs(e.hoursBank) + e.hoursAbsence);
                 }
             });
             return { totalNormal, totalExtra, totalAbsence, totalAll };
@@ -480,7 +522,6 @@
             const hE = document.getElementById('input-extra');
             const hL = document.getElementById('input-leave');
             
-            // FEEDBACK VISUAL
             const msgN = document.getElementById('msg-normal');
             const msgE = document.getElementById('msg-extra');
             const msgL = document.getElementById('msg-leave');
@@ -506,26 +547,20 @@
                 msgN.innerText = "Dia não útil"; msgN.classList.remove('hidden');
                 msgL.innerText = "Dia não útil"; msgL.classList.remove('hidden');
             } else {
-                // --- REGRA: Normal + Ausência <= 8h ---
-                
-                // 1. BLOQUEIO DE NORMAL (Se ausência já ocupa tudo)
                 const currentAbsence = existing.totalAbsence + inL;
                 if (currentAbsence >= DAILY_CONTRACT) {
                     hN.disabled = true; hN.value = 0; inN = 0;
                     msgN.innerText = "Contrato preenchido (Ausência)";
                     msgN.classList.remove('hidden');
                 } else {
-                    // Limita o input de normal ao que sobra
                     const maxN = Math.max(0, DAILY_CONTRACT - currentAbsence - existing.totalNormal);
                     if (inN > maxN) { 
                         inN = maxN; hN.value = inN; 
-                        // AVISO VISUAL SE ATINGIU O TETO
                         msgN.innerText = `Máximo permitido: ${maxN}h`;
                         msgN.classList.remove('hidden');
                     }
                 }
 
-                // 2. BLOQUEIO DE AUSÊNCIA (Se normal já ocupa tudo)
                 const currentNormal = existing.totalNormal + inN;
                 if (currentNormal >= DAILY_CONTRACT) {
                     hL.disabled = true; hL.value = 0; inL = 0;
@@ -540,7 +575,6 @@
                     }
                 }
 
-                // 3. BLOQUEIO DE EXTRA (Se não cumpriu jornada)
                 const effective = (existing.totalNormal + inN) + (existing.totalAbsence + inL);
                 if (effective < DAILY_CONTRACT) {
                     hE.disabled = true; hE.value = 0; inE = 0;
@@ -549,7 +583,6 @@
                 }
             }
 
-            // Justificativa
             const boxEx=document.getElementById('options-extra'); 
             const boxLe=document.getElementById('options-absence'); 
             const reqJ=document.getElementById('req-justification');
@@ -581,7 +614,6 @@
             else balEl.className = "text-2xl font-extrabold text-gray-400";
         }
 
-        // ... (Funções resetForm, editEntry, addEntry, removeEntry, search, submits mantidas) ...
         function resetForm() {
             document.getElementById('input-entry-id').value = '';
             document.getElementById('form-title').innerText = 'Nova Atividade';
@@ -592,23 +624,6 @@
             resetActivitySearch();
             document.getElementById('btn-add-entry').innerText = 'Adicionar';
             document.getElementById('btn-cancel-edit').classList.add('hidden');
-            validateRules('init');
-        }
-
-        function editEntry(entry) {
-            if (!entry || !entry.id) return;
-            document.getElementById('input-entry-id').value = entry.id;
-            document.getElementById('form-title').innerText = 'Editar Atividade';
-            document.getElementById('input-project').value = entry.projectId;
-            document.getElementById('input-activity-search').value = entry.activity;
-            document.getElementById('input-activity-id').value = entry.activityId;
-            document.getElementById('input-normal').value = entry.hours;
-            document.getElementById('input-extra').value = entry.hoursExtra;
-            document.getElementById('input-leave').value = entry.hoursAbsence;
-            document.getElementById('input-reason').value = entry.justification || '';
-            document.getElementById('btn-add-entry').innerText = 'Salvar Alteração';
-            document.getElementById('btn-cancel-edit').classList.remove('hidden');
-            document.getElementById('activity-dropdown').classList.add('hidden');
             validateRules('init');
         }
 

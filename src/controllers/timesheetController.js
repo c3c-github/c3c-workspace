@@ -45,7 +45,7 @@ exports.getUserPeriods = async (req, res) => {
     }
 };
 
-// 3. API: CALENDÁRIO
+// 3. API: CALENDÁRIO (RESUMO MENSAL)
 exports.getCalendarData = async (req, res) => {
     try {
         const conn = await getSfConnection();
@@ -97,7 +97,10 @@ exports.getCalendarData = async (req, res) => {
             const hBanco = l.HorasBanco__c || 0;
             const hAusencias = (l.HorasAusenciaRemunerada__c || 0) + (l.HorasAusenciaNaoRemunerada__c || 0);
 
+            // Total visual do dia (Absoluto para banco negativo contar como "horas de atividade")
             const totalItem = hNormais + hExtras + hAusencias + Math.abs(hBanco);
+            
+            // Total KPI
             totalLancadoNoPeriodo += (hNormais + hExtras + hAusencias);
             totalBancoPeriodo += hBanco;
 
@@ -173,7 +176,7 @@ exports.getCalendarData = async (req, res) => {
     }
 };
 
-// 4. API: DETALHES DO DIA
+// 4. API: DETALHES DO DIA (CORRIGIDO PARA SEPARAR BANCO E EXTRA)
 exports.getDayDetails = async (req, res) => {
     const { date } = req.query;
     const userId = req.session.user.id;
@@ -216,12 +219,17 @@ exports.getDayDetails = async (req, res) => {
             activityId: l.Atividade__c,
             activity: l.Atividade__r ? l.Atividade__r.Name : 'N/A',
             hours: (l.Horas__c||0),
-            hoursExtra: (l.HorasExtras__c||0),
+            
+            // --- CORREÇÃO: Envia valores separados para o front saber quem é quem
+            hoursExtra: (l.HorasExtras__c||0), // Dinheiro
+            hoursBank: (l.HorasBanco__c||0),   // Banco (+ ou -)
+            
+            // Visualização de Ausência (inclui banco negativo para o card)
             hoursAbsence: (l.HorasAusenciaRemunerada__c||0) + (l.HorasAusenciaNaoRemunerada__c||0) + (l.HorasBanco__c < 0 ? Math.abs(l.HorasBanco__c) : 0),
+            
             status: l.Status__c,
             reason: l.MotivoReprovacao__c,
-            justification: l.Justificativa__c,
-            isBank: (l.HorasBanco__c && l.HorasBanco__c !== 0)
+            justification: l.Justificativa__c
         }));
 
         res.json({ date, allocations, activities, entries });
@@ -232,7 +240,7 @@ exports.getDayDetails = async (req, res) => {
     }
 };
 
-// 5. API: SALVAR LANÇAMENTO (SEPARADO INSERT/UPDATE)
+// 5. API: SALVAR LANÇAMENTO (SEPARAÇÃO INSERT/UPDATE + LOGICA DE BANCO)
 exports.saveEntry = async (req, res) => {
     const { 
         entryId, diaPeriodoId, projectId, alocacaoId, 
@@ -257,8 +265,9 @@ exports.saveEntry = async (req, res) => {
         const hAusenciaInput = parseFloat(hoursAbsence) || 0;
         let finalJustificativa = reason || '';
 
+        // Lógica de Extras (Pagamento vs Banco)
         if (hExtraInput > 0) {
-            if (extraType === 'Banco') {
+            if (extraType && extraType.trim() === 'Banco') {
                 valBanco += hExtraInput;
                 if (!finalJustificativa.includes('[EXTRA: Banco]')) finalJustificativa = `[EXTRA: Banco] ` + finalJustificativa;
             } else {
@@ -267,9 +276,10 @@ exports.saveEntry = async (req, res) => {
             }
         }
 
+        // Lógica de Ausências (Banco vs Abonada vs Desconto)
         if (hAusenciaInput > 0) {
             if (absenceType === 'Banco') {
-                valBanco -= hAusenciaInput;
+                valBanco -= hAusenciaInput; // Negativo no banco
                 if (!finalJustificativa.includes('[AUSÊNCIA: Banco]')) finalJustificativa = `[AUSÊNCIA: Banco] ` + finalJustificativa;
             } else if (absenceType === 'Abonada') {
                 valAusenciaRem = hAusenciaInput;
@@ -293,7 +303,7 @@ exports.saveEntry = async (req, res) => {
             HorasExtras__c: valExtras,
             HorasAusenciaRemunerada__c: valAusenciaRem,
             HorasAusenciaNaoRemunerada__c: valAusenciaNaoRem,
-            HorasBanco__c: valBanco,
+            HorasBanco__c: valBanco, // Salva explicitamente no banco
             Justificativa__c: finalJustificativa,
             Status__c: 'Rascunho',
             Servico__c: projectId,
