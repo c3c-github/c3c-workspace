@@ -8,16 +8,8 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-
     <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    fontFamily: { sans: ['Montserrat', 'sans-serif'] },
-                    colors: { c3c: { blue: '#2978FF', teal: '#1DDDBD' } }
-                }
-            }
-        }
+        tailwind.config = { theme: { extend: { fontFamily: { sans: ['Montserrat', 'sans-serif'] }, colors: { c3c: { blue: '#2978FF', teal: '#1DDDBD' } } } } }
     </script>
     <style>
         body { font-family: 'Montserrat', sans-serif; background-color: #F8FAFC; }
@@ -36,18 +28,56 @@
 
     <main class="flex-1 flex flex-col md:ml-64 relative w-full overflow-hidden transition-all duration-300">
         
-        <header class="h-20 bg-white border-b border-gray-200 flex items-center justify-between px-8 shrink-0">
-            <div class="flex items-center gap-4">
-                <button onclick="document.getElementById('sidebar').classList.toggle('-translate-x-full')" class="md:hidden text-gray-400"><i data-lucide="menu"></i></button>
-                <h1 class="text-xl font-bold text-gray-800">Folha de Ponto</h1>
-                <div class="flex items-center bg-gray-50 border border-gray-200 rounded-lg p-1 hidden sm:flex">
-                    <button onclick="changePeriod(1)" class="p-1 hover:bg-white rounded shadow-sm text-gray-500 transition-colors"><i data-lucide="chevron-left" class="w-4 h-4"></i></button>
-                    <span id="period-display" class="px-4 text-sm font-bold text-gray-700 min-w-[180px] text-center">Carregando...</span>
-                    <button onclick="changePeriod(-1)" class="p-1 hover:bg-white rounded shadow-sm text-gray-500 transition-colors"><i data-lucide="chevron-right" class="w-4 h-4"></i></button>
+        <header class="h-auto bg-white border-b border-gray-200 flex flex-col px-8 py-4 shrink-0">
+            <div class="flex items-center justify-between mb-4">
+                <div class="flex items-center gap-4">
+                    <button onclick="document.getElementById('sidebar').classList.toggle('-translate-x-full')" class="md:hidden text-gray-400"><i data-lucide="menu"></i></button>
+                    <h1 class="text-xl font-bold text-gray-800">Folha de Ponto</h1>
+                    
+                    <div class="flex items-center bg-gray-50 border border-gray-200 rounded-lg p-1 hidden sm:flex">
+                        <button onclick="changePeriod(1)" class="p-1 hover:bg-white rounded shadow-sm text-gray-500 transition-colors"><i data-lucide="chevron-left" class="w-4 h-4"></i></button>
+                        <span id="period-display" class="px-4 text-sm font-bold text-gray-700 min-w-[180px] text-center">Carregando...</span>
+                        <button onclick="changePeriod(-1)" class="p-1 hover:bg-white rounded shadow-sm text-gray-500 transition-colors"><i data-lucide="chevron-right" class="w-4 h-4"></i></button>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-4">
+                    <button onclick="submitPeriod()" class="hidden md:flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-bold shadow-sm transition-all active:scale-95">
+                        <i data-lucide="send" class="w-4 h-4"></i> Enviar Folha Mês
+                    </button>
+                    <div class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center font-bold text-blue-600 border border-blue-200">
+                        <%= user.nome ? user.nome.charAt(0) : 'U' %>
+                    </div>
                 </div>
             </div>
-            <div class="flex items-center gap-6">
-                <div class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center font-bold text-blue-600 border border-blue-200"><%= user.nome ? user.nome.charAt(0) : 'U' %></div>
+
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div class="bg-slate-50 border border-slate-200 rounded-lg p-3 flex items-center justify-between">
+                    <div>
+                        <p class="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Contratado</p>
+                        <p class="text-xl font-extrabold text-slate-700" id="card-contratado">--h</p>
+                    </div>
+                    <div class="p-2 bg-white rounded-full text-slate-400"><i data-lucide="calendar-clock" class="w-5 h-5"></i></div>
+                </div>
+                <div class="bg-blue-50 border border-blue-200 rounded-lg p-3 flex items-center justify-between">
+                    <div>
+                        <p class="text-[10px] uppercase font-bold text-blue-400 tracking-wider">Lançado (Mês)</p>
+                        <p class="text-xl font-extrabold text-blue-700" id="card-realizado">--h</p>
+                    </div>
+                    <div class="p-2 bg-white rounded-full text-blue-400"><i data-lucide="check-circle" class="w-5 h-5"></i></div>
+                </div>
+                <div class="bg-white border border-gray-200 rounded-lg p-3 flex items-center justify-between relative overflow-hidden">
+                    <div class="absolute left-0 top-0 bottom-0 w-1 bg-gray-300" id="card-banco-bar"></div>
+                    <div>
+                        <p class="text-[10px] uppercase font-bold text-gray-400 tracking-wider">Saldo Banco (Total)</p>
+                        <p class="text-xl font-extrabold text-gray-700" id="card-banco">--h</p>
+                    </div>
+                    <div class="p-2 bg-gray-50 rounded-full text-gray-400" id="card-banco-icon"><i data-lucide="scale" class="w-5 h-5"></i></div>
+                </div>
+                <div class="bg-white border border-gray-200 rounded-lg p-3 flex flex-col justify-center items-center">
+                    <p class="text-[10px] uppercase font-bold text-gray-400 tracking-wider mb-1">Status Folha</p>
+                    <span id="card-status-label" class="px-3 py-1 bg-gray-100 text-gray-500 text-xs font-bold rounded-full">Carregando...</span>
+                </div>
             </div>
         </header>
 
@@ -110,7 +140,9 @@
                 </div>
 
                 <div id="add-activity-container" class="bg-gray-50 rounded-xl p-5 border border-gray-200 shadow-inner transition-opacity">
-                    <h3 class="text-sm font-bold text-gray-800 mb-4 flex items-center gap-2"><i data-lucide="plus-circle" class="w-4 h-4 text-blue-600"></i> Nova Atividade</h3>
+                    <input type="hidden" id="input-entry-id">
+                    
+                    <h3 class="text-sm font-bold text-gray-800 mb-4 flex items-center gap-2"><i data-lucide="plus-circle" class="w-4 h-4 text-blue-600"></i> <span id="form-title">Nova Atividade</span></h3>
                     
                     <div class="grid grid-cols-1 gap-4 mb-4">
                         <div>
@@ -131,21 +163,18 @@
                     <div class="grid grid-cols-3 gap-3 mb-4">
                         <div>
                             <label class="block text-[10px] font-bold text-gray-500 mb-1 uppercase">Normais</label>
-                            <input type="number" id="input-normal" value="0" min="0" max="8" step="0.5" 
-                                   onblur="sanitizeField(this)" oninput="validateRules('normal')" 
-                                   class="w-full input-c3c p-2 rounded-lg text-center font-bold text-gray-700">
+                            <input type="number" id="input-normal" value="0" min="0" max="8" step="0.5" onblur="sanitizeField(this)" oninput="validateRules('normal')" class="w-full input-c3c p-2 rounded-lg text-center font-bold text-gray-700">
+                            <p id="msg-normal" class="text-[10px] text-red-500 mt-1 hidden font-bold"></p>
                         </div>
                         <div>
                             <label class="block text-[10px] font-bold text-gray-500 mb-1 uppercase">Extras</label>
-                            <input type="number" id="input-extra" value="0" min="0" step="0.5" 
-                                   onblur="sanitizeField(this)" oninput="validateRules('extra')"
-                                   class="w-full input-c3c p-2 rounded-lg text-center font-bold text-gray-700 disabled:bg-gray-100 disabled:text-gray-400" disabled>
+                            <input type="number" id="input-extra" value="0" min="0" step="0.5" onblur="sanitizeField(this)" oninput="validateRules('extra')" class="w-full input-c3c p-2 rounded-lg text-center font-bold text-gray-700 disabled:bg-gray-100 disabled:text-gray-400" disabled>
+                            <p id="msg-extra" class="text-[10px] text-red-500 mt-1 hidden font-bold"></p>
                         </div>
                         <div>
                             <label class="block text-[10px] font-bold text-gray-500 mb-1 uppercase">Ausência</label>
-                            <input type="number" id="input-leave" value="0" min="0" max="8" step="0.5" 
-                                   onblur="sanitizeField(this)" oninput="validateRules('leave')"
-                                   class="w-full input-c3c p-2 rounded-lg text-center font-bold text-gray-700">
+                            <input type="number" id="input-leave" value="0" min="0" max="8" step="0.5" onblur="sanitizeField(this)" oninput="validateRules('leave')" class="w-full input-c3c p-2 rounded-lg text-center font-bold text-gray-700">
+                            <p id="msg-leave" class="text-[10px] text-red-500 mt-1 hidden font-bold"></p>
                         </div>
                     </div>
 
@@ -171,28 +200,43 @@
                         <textarea id="input-reason" rows="2" placeholder="Obrigatório para Extras/Ausência..." class="w-full input-c3c p-2 rounded-lg text-sm bg-white"></textarea>
                     </div>
 
-                    <div class="flex justify-end">
+                    <div class="flex justify-end gap-2">
+                        <button type="button" id="btn-cancel-edit" onclick="resetForm()" class="hidden text-gray-500 px-3 py-2 text-xs font-bold hover:bg-gray-100 rounded">Cancelar</button>
                         <button type="button" id="btn-add-entry" onclick="addEntry()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-xs font-bold shadow-md transition-transform active:scale-95">Adicionar</button>
                     </div>
                 </div>
             </div>
 
-            <div class="bg-white border-t border-gray-200 p-6 shrink-0 z-50 shadow-[0_-5px_15px_-5px_rgba(0,0,0,0.1)]">
-                <div class="flex justify-between items-end mb-4">
-                    <div>
-                        <p class="text-xs text-gray-400 font-bold uppercase tracking-wider">Total do Dia (Real + Novo)</p>
-                        <p class="text-4xl font-extrabold text-gray-800" id="footer-total">0.0h</p>
+            <div class="bg-white border-t border-gray-200 p-4 shrink-0 z-50 shadow-[0_-5px_15px_-5px_rgba(0,0,0,0.1)]">
+                <div class="flex justify-between items-center mb-3 pb-3 border-b border-gray-100">
+                    <div class="flex gap-4">
+                        <div class="text-center">
+                            <p class="text-[10px] uppercase font-bold text-gray-400">Normais</p>
+                            <p class="text-sm font-bold text-gray-700" id="footer-normal">0.0h</p>
+                        </div>
+                        <div class="text-center">
+                            <p class="text-[10px] uppercase font-bold text-gray-400">Ausências</p>
+                            <p class="text-sm font-bold text-orange-600" id="footer-absence">0.0h</p>
+                        </div>
+                        <div class="text-center">
+                            <p class="text-[10px] uppercase font-bold text-gray-400">Extras</p>
+                            <p class="text-sm font-bold text-blue-600" id="footer-extra">0.0h</p>
+                        </div>
                     </div>
                     <div class="text-right">
-                        <p class="text-xs text-gray-400 font-bold uppercase tracking-wider">Saldo vs Contrato</p>
-                        <p class="text-2xl font-extrabold text-purple-600" id="footer-balance">+0.0h</p>
+                        <p class="text-[10px] uppercase font-bold text-gray-400">Saldo Dia</p>
+                        <p class="text-xl font-extrabold text-gray-400" id="footer-balance">+0.0h</p>
                     </div>
                 </div>
-                <div class="flex justify-between items-center pt-4 border-t border-gray-100">
-                    <p class="text-sm text-gray-500 font-medium" id="footer-status">Status: Rascunho</p>
-                    <button class="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-bold text-sm shadow-md transition-transform active:scale-95" onclick="closeDayPanel()">
-                        Salvar / Fechar
-                    </button>
+
+                <div class="flex justify-between items-center">
+                    <p class="text-sm text-gray-500 font-medium" id="footer-status">Rascunho</p>
+                    <div class="flex gap-2">
+                         <button class="px-4 py-2 border border-gray-300 text-gray-600 rounded-lg font-bold text-sm hover:bg-gray-50 transition-colors" onclick="closeDayPanel()">Fechar</button>
+                        <button id="btn-submit-day" onclick="submitDay()" class="px-6 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-bold text-sm shadow-md transition-transform active:scale-95 flex items-center gap-2">
+                           <span>🚀</span> Lançar Dia
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -203,8 +247,10 @@
         
         let currentPeriods=[], currentPeriodIndex=0, currentGridData={}, currentOpenDayId=null;
         let dayProjects=[], dayActivities=[], dayEntries=[];
+        let projectAllocationMap = {}; 
         
         const DAILY_CONTRACT = 8.0; 
+        const MAX_DAY_HOURS = 24.0;
         let isNonBusinessDay = false;
 
         document.addEventListener('DOMContentLoaded', loadPeriods);
@@ -217,6 +263,7 @@
                 else document.getElementById('period-display').innerText="Sem períodos";
             } catch(e){ console.error(e); }
         }
+        
         function changePeriod(dir) {
             const idx = currentPeriodIndex + dir;
             if(idx >= 0 && idx < currentPeriods.length) { currentPeriodIndex=idx; updateHeader(); loadCalendar(currentPeriods[idx].Id); }
@@ -225,13 +272,46 @@
 
         async function loadCalendar(pId) {
             const el = document.getElementById('calendar-grid');
+            updateCards({ totalContratado:0, totalRealizado:0, saldoBancoTotal:0, variacaoPeriodo:0 }, true);
             el.innerHTML='<div class="col-span-7 text-center py-10 text-gray-400">Carregando...</div>';
             try {
                 const res = await fetch(`/api/timesheet/calendar?periodId=${pId}`);
                 const data = await res.json();
                 currentGridData = data.grid;
                 renderGrid(data.grid);
+                if(data.summary) updateCards(data.summary);
             } catch(e) { el.innerHTML='<div class="text-red-400 text-center col-span-7">Erro ao carregar</div>'; }
+        }
+
+        function updateCards(summary, isLoading = false) {
+            const lbl = document.getElementById('card-status-label');
+            if(isLoading) {
+                document.getElementById('card-contratado').innerText = '--';
+                document.getElementById('card-realizado').innerText = '--';
+                document.getElementById('card-banco').innerText = '--';
+                lbl.className = "px-3 py-1 bg-gray-100 text-gray-400 text-xs font-bold rounded-full";
+                lbl.innerText = "Carregando...";
+                return;
+            }
+            document.getElementById('card-contratado').innerText = summary.totalContratado.toFixed(1) + 'h';
+            document.getElementById('card-realizado').innerText = summary.totalRealizado.toFixed(1) + 'h';
+            
+            const saldo = summary.saldoBancoTotal || 0;
+            const variacao = summary.variacaoPeriodo || 0;
+            const saldoEl = document.getElementById('card-banco');
+            const sign = saldo > 0 ? '+' : '';
+            
+            saldoEl.innerHTML = `<span class="text-lg">${sign}${saldo.toFixed(2)}h</span> <span class="text-xs text-gray-400 font-normal ml-1">(${variacao > 0 ? '+' : ''}${variacao.toFixed(1)}h mês)</span>`;
+
+            if (saldo > 0) saldoEl.className = "font-extrabold text-teal-600 flex items-baseline";
+            else if (saldo < 0) saldoEl.className = "font-extrabold text-red-600 flex items-baseline";
+            else saldoEl.className = "font-extrabold text-gray-700 flex items-baseline";
+
+            const st = summary.statusGeral || 'Em Aberto';
+            lbl.innerText = st;
+            const mapClass = { 'Faturado': 'amber', 'Fechado': 'slate', 'Aprovado': 'green', 'Aguardando Aprovação': 'blue', 'Novo': 'gray' };
+            const color = mapClass[st] || 'yellow';
+            lbl.className = `px-3 py-1 bg-${color}-100 text-${color}-700 text-xs font-bold rounded-full border border-${color}-200`;
         }
 
         function renderGrid(grid) {
@@ -241,7 +321,7 @@
             if(dates.length===0) return;
             const startDay = new Date(dates[0]+'T12:00:00').getDay();
             for(let i=0; i<startDay; i++) el.innerHTML += `<div class="h-28 bg-gray-50 border-2 border-transparent opacity-20 hidden md:block"></div>`;
-
+            
             dates.forEach(key => {
                 const d = grid[key];
                 const dayNum = new Date(key+'T12:00:00').getDate();
@@ -249,16 +329,19 @@
                 
                 if(d.total>0 || d.entries.length>0) {
                     cnt=`<span class="font-bold text-gray-700 text-sm">${d.total}h</span>`;
-                    const stMap={'rejected':'red','draft':'gray','submitted':'blue','approved':'green','closed':'slate','billed':'amber'};
-                    if(d.status_approval==='draft') { bg='bg-white border-gray-300 border-dashed'; ind='<div class="absolute top-2 right-2 w-2 h-2 border border-gray-400 rounded-full bg-white"></div>'; }
-                    else if(d.status_approval==='submitted') { bg='bg-blue-50 border-blue-200'; ind='<div class="absolute top-2 right-2 w-2 h-2 bg-blue-400 rounded-full animate-pulse"></div>'; }
-                    else if(d.status_approval==='approved') { bg='bg-green-50 border-green-200'; ind='<div class="absolute top-2 right-2 w-2 h-2 bg-green-500 rounded-full"></div>'; }
-                    else if(d.status_approval==='rejected') { bg='bg-red-50 border-red-300'; ind='<i data-lucide="alert-circle" class="absolute top-2 right-2 w-4 h-4 text-red-600"></i>'; }
-                    else if(d.status_approval==='closed') { bg='bg-slate-100 border-slate-300'; ind='<i data-lucide="lock" class="absolute top-2 right-2 w-3 h-3 text-slate-500"></i>'; }
-                    else if(d.status_approval==='billed') { bg='bg-amber-50 border-amber-300'; ind='<i data-lucide="check-circle-2" class="absolute top-2 right-2 w-3 h-3 text-amber-600"></i>'; }
+                    const mapSt = {'draft':'gray','submitted':'blue','approved':'green','rejected':'red','closed':'slate','billed':'amber'};
+                    const c = mapSt[d.status_approval] || 'gray';
+                    if(d.status_approval !== 'draft') bg = `bg-${c}-50 border-${c}-200`;
+                    
+                    if(d.status_approval==='draft') bg='bg-white border-gray-300 border-dashed'; 
+                    else if(d.status_approval==='rejected') ind='<i data-lucide="alert-circle" class="absolute top-2 right-2 w-4 h-4 text-red-600"></i>';
+                    else if(d.status_approval==='submitted') ind='<div class="absolute top-2 right-2 w-2 h-2 bg-blue-400 rounded-full animate-pulse"></div>';
+                    else if(d.status_approval==='approved') ind='<div class="absolute top-2 right-2 w-2 h-2 bg-green-500 rounded-full"></div>';
+                    else if(d.status_approval==='closed') ind='<i data-lucide="lock" class="absolute top-2 right-2 w-3 h-3 text-slate-500"></i>';
+                    else if(d.status_approval==='billed') ind='<i data-lucide="check-circle-2" class="absolute top-2 right-2 w-3 h-3 text-amber-600"></i>';
                 } else {
-                    if(d.status_day==='holiday') { bg='bg-rose-50 border-rose-200'; cnt=`<span class="bg-rose-200 text-rose-700 text-[10px] px-2 py-0.5 rounded-full">${d.label}</span>`; }
-                    else if(d.status_day==='vacation') { bg='bg-cyan-50 border-cyan-200'; cnt=`<span class="bg-cyan-100 text-cyan-700 text-[10px] px-2 py-0.5 rounded-full">${d.label}</span>`; }
+                    if(d.status_day==='holiday') cnt=`<span class="bg-rose-200 text-rose-700 text-[10px] px-2 py-0.5 rounded-full">${d.label}</span>`;
+                    else if(d.status_day==='vacation') cnt=`<span class="bg-cyan-100 text-cyan-700 text-[10px] px-2 py-0.5 rounded-full">${d.label}</span>`;
                     else if(d.status_day==='weekend') bg='bg-gray-50 opacity-60';
                 }
                 el.innerHTML += `<div onclick="openDayPanel('${key}')" class="relative h-28 rounded-xl border-2 p-4 cursor-pointer transition-all flex flex-col justify-between group ${bg}">${ind}<span class="font-bold text-gray-400 group-hover:text-blue-600">${dayNum}</span><div class="mt-auto w-full">${cnt}</div></div>`;
@@ -267,29 +350,26 @@
         }
 
         async function openDayPanel(key) {
-            const g = currentGridData[key]; if(!g) return;
+            const g = currentGridData[key];
+            if(!g) return;
             currentOpenDayId = g.id;
             isNonBusinessDay = (g.status_day==='weekend'||g.status_day==='holiday'||g.status_day==='vacation');
-
+            
+            // CORREÇÃO: Atualiza o Badge do Cabeçalho do Painel (Dia da Semana)
+            document.getElementById('panel-weekday').innerText=new Date(key+'T12:00:00').toLocaleDateString('pt-BR',{weekday:'long'});
             document.getElementById('panel-date').innerText=new Date(key+'T12:00:00').toLocaleDateString('pt-BR',{day:'numeric',month:'long'});
+            
             const stMap={'draft':'Rascunho', 'submitted':'Lançado', 'approved':'Aprovado', 'rejected':'Reprovado', 'closed':'Fechado', 'billed':'Faturado', 'empty':'Novo'};
             document.getElementById('footer-status').innerText = "Status: " + (stMap[g.status_approval] || 'Rascunho');
-
             resetActivitySearch();
+            resetForm(); 
+            projectAllocationMap = {}; 
+            
             const allocL=document.getElementById('allocations-list');
-            const entL=document.getElementById('entries-list');
             const projSel=document.getElementById('input-project');
             allocL.innerHTML='<span class="text-xs text-gray-400 p-2 animate-pulse">Carregando...</span>';
-            entL.innerHTML='<span class="text-xs text-gray-400 p-2 animate-pulse">Carregando...</span>';
             projSel.innerHTML='<option value="" disabled selected>Carregando...</option>';
             
-            // RESET FIELDS
-            document.getElementById('input-reason').value='';
-            ['input-normal', 'input-extra', 'input-leave'].forEach(id => {
-                const el = document.getElementById(id);
-                el.value = 0; el.disabled = false;
-            });
-
             const overlay=document.getElementById('slide-overlay');
             const panel=document.getElementById('day-panel');
             overlay.classList.remove('hidden'); setTimeout(()=>overlay.classList.remove('opacity-0'),10);
@@ -299,24 +379,22 @@
                 const res = await fetch(`/api/timesheet/day?date=${key}&diaPeriodoId=${g.id}`);
                 const d = await res.json();
                 
-                dayProjects=d.allocations||[]; dayActivities=d.activities||[]; dayEntries=d.entries||[];
-
-                // Allocations
-                allocL.innerHTML=''; projSel.innerHTML='<option value="" disabled selected>Selecione...</option>';
+                dayProjects=d.allocations||[]; 
+                dayActivities=d.activities||[]; 
+                dayEntries=d.entries||[];
+                
+                allocL.innerHTML='';
+                projSel.innerHTML='<option value="" disabled selected>Selecione...</option>';
                 if(dayProjects.length>0) {
                     dayProjects.forEach(p => {
+                        projectAllocationMap[p.id] = p.alocacaoId;
+                        // CORREÇÃO: Inserir card em allocL e option em projSel
+                        allocL.innerHTML+=`<div onclick="selectProjectFromCard('${p.id}')" class="snap-start bg-blue-50 border border-blue-100 hover:ring-blue-300 rounded-xl p-4 min-w-[220px] cursor-pointer transition-all relative group shadow-sm"><p class="text-xs text-blue-600 font-bold mb-1 uppercase tracking-wide">Projeto</p><p class="font-bold text-gray-800 text-sm truncate" title="${p.name}">${p.name}</p></div>`;
                         projSel.innerHTML+=`<option value="${p.id}">${p.name}</option>`;
-                        const isMain=p.percent>=50;
-                        const cls=isMain?'bg-blue-50 border-blue-100 hover:ring-blue-300':'bg-teal-50 border-teal-100 hover:ring-teal-300';
-                        const txt=isMain?'text-blue-600':'text-teal-600';
-                        const ico=isMain?'text-blue-500':'text-teal-500';
-                        const lbl=isMain?'Principal':'Secundário';
-                        allocL.innerHTML+=`<div onclick="selectProjectFromCard('${p.id}')" class="snap-start ${cls} border rounded-xl p-4 min-w-[220px] cursor-pointer transition-all relative group shadow-sm"><div class="absolute top-3 right-3 opacity-0 group-hover:opacity-100"><i data-lucide="check-circle-2" class="w-5 h-5 ${ico}"></i></div><p class="text-xs ${txt} font-bold mb-1 uppercase tracking-wide">${lbl} (${p.percent}%)</p><p class="font-bold text-gray-800 text-sm truncate" title="${p.name}">${p.name}</p></div>`;
                     });
-                    if(dayProjects.length===1) projSel.value=dayProjects[0].id;
+                    if(dayProjects.length===1) { projSel.value=dayProjects[0].id; resetActivitySearch(); }
                 } else allocL.innerHTML='<div class="text-xs text-gray-400 p-2 italic border border-dashed border-gray-200 rounded-lg w-full text-center">Sem alocação.</div>';
-
-                // Entries & Validations
+                
                 renderEntriesList();
                 validateRules('init'); 
 
@@ -326,110 +404,173 @@
             const frm=document.getElementById('add-activity-container');
             const alert=document.getElementById('readonly-alert');
             const rej=document.getElementById('rejection-alert');
+            const btnSubmit = document.getElementById('btn-submit-day');
+            
             alert.classList.add('hidden'); rej.classList.add('hidden'); frm.classList.remove('opacity-50','pointer-events-none');
             
-            if(!isEd) { frm.classList.add('opacity-50','pointer-events-none'); alert.classList.remove('hidden'); document.getElementById('readonly-reason').innerText=`Bloqueado pelo status ${stMap[g.status_approval]}.`; }
+            if(!isEd) { 
+                frm.classList.add('opacity-50','pointer-events-none'); 
+                alert.classList.remove('hidden'); 
+                document.getElementById('readonly-reason').innerText=`Bloqueado: ${g.status_approval}`;
+                btnSubmit.style.display = 'none'; 
+            } else { btnSubmit.style.display = 'flex'; }
             if(g.status_approval==='rejected') rej.classList.remove('hidden');
-
             lucide.createIcons();
         }
 
+        // --- RENDERIZAÇÃO DA LISTA DE ATIVIDADES (CARDS MELHORADOS) ---
         function renderEntriesList() {
             const entL = document.getElementById('entries-list');
             entL.innerHTML='';
             if(dayEntries.length>0) {
                 dayEntries.forEach(e => {
+                    const entryJson = JSON.stringify(e).replace(/"/g, '&quot;');
                     let brd='border-gray-200', msg='';
                     if(e.status==='Reprovado') { brd='border-red-200 bg-red-50'; msg=`<div class="text-xs text-red-600 mt-1"><i data-lucide="alert-circle" class="w-3 h-3 inline"></i> ${e.reason||'Sem motivo'}</div>`; }
-                    const canDel=['Rascunho','Reprovado'].includes(e.status);
-                    entL.innerHTML+=`<div class="bg-white border ${brd} rounded-lg p-3 shadow-sm relative group"><div class="flex justify-between"><div><p class="text-xs font-bold text-blue-600">${e.project}</p><p class="text-sm text-gray-800">${e.activity}</p></div><p class="text-sm font-bold">${e.hours}h</p></div>${msg}${canDel?`<button onclick="removeEntry('${e.id}')" class="absolute top-2 right-2 text-red-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"><i data-lucide="trash-2" class="w-4 h-4"></i></button>`:''}</div>`;
+                    const canEdit=['Rascunho','Reprovado'].includes(e.status);
+                    
+                    // CARD DETALHADO (BADGES)
+                    entL.innerHTML+=`
+                        <div onclick="editEntry(${canEdit ? entryJson : '{}'})" class="bg-white border ${brd} rounded-lg p-3 shadow-sm relative group hover:shadow-md transition-shadow ${canEdit ? 'cursor-pointer' : ''} pr-8">
+                            <div class="flex justify-between items-start">
+                                <div class="overflow-hidden">
+                                    <p class="text-xs font-bold text-blue-600 truncate">${e.project}</p>
+                                    <p class="text-sm text-gray-800 truncate">${e.activity}</p>
+                                </div>
+                            </div>
+                            <div class="flex flex-wrap gap-2 mt-2">
+                                ${e.hours > 0 ? `<span class="bg-gray-100 text-gray-700 px-2 py-0.5 rounded text-[10px] font-bold">Normal: ${e.hours}h</span>` : ''}
+                                ${e.hoursExtra > 0 ? `<span class="bg-blue-50 text-blue-700 px-2 py-0.5 rounded text-[10px] font-bold">Extra: ${e.hoursExtra}h</span>` : ''}
+                                ${e.hoursAbsence > 0 ? `<span class="bg-orange-50 text-orange-700 px-2 py-0.5 rounded text-[10px] font-bold">Ausência: ${e.hoursAbsence}h</span>` : ''}
+                            </div>
+                            ${msg}
+                            ${canEdit ? `<button onclick="event.stopPropagation(); removeEntry('${e.id}')" class="absolute top-2 right-2 text-red-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"><i data-lucide="trash-2" class="w-4 h-4"></i></button>` : ''}
+                        </div>`;
                 });
+                lucide.createIcons();
             } else entL.innerHTML='<p class="text-center text-gray-400 text-sm py-4">Sem lançamentos.</p>';
         }
 
-        // --- SANITIZAÇÃO DE INPUTS (Limpa zeros, valida números) ---
+        // --- CÁLCULO E VALIDAÇÃO ---
+        function calculateDayTotals(excludeId = null) {
+            let totalNormal = 0, totalExtra = 0, totalAbsence = 0, totalAll = 0;
+            dayEntries.forEach(e => {
+                if (e.id !== excludeId) {
+                    totalNormal += e.hours;
+                    totalExtra += e.hoursExtra;
+                    totalAbsence += e.hoursAbsence;
+                    totalAll += (e.hours + e.hoursExtra + e.hoursAbsence);
+                }
+            });
+            return { totalNormal, totalExtra, totalAbsence, totalAll };
+        }
+
         function sanitizeField(el) {
             let val = parseFloat(el.value);
             if (isNaN(val) || val < 0) val = 0;
-            // Se o valor for muito absurdo, corta em 24h
-            if (val > 24) val = 24; 
-            el.value = val; // Remove zeros a esquerda
-            validateRules('blur');
+            el.value = val; 
+            validateRules(el.id.replace('input-', '')); 
         }
 
-        // --- VALIDAÇÃO DE REGRAS (O Cérebro) ---
         function validateRules(source) {
+            const inputId = document.getElementById('input-entry-id').value; 
+            const existing = calculateDayTotals(inputId); 
+            
             const hN = document.getElementById('input-normal');
             const hE = document.getElementById('input-extra');
             const hL = document.getElementById('input-leave');
+            
+            // FEEDBACK VISUAL
+            const msgN = document.getElementById('msg-normal');
+            const msgE = document.getElementById('msg-extra');
+            const msgL = document.getElementById('msg-leave');
+            
+            msgN.classList.add('hidden'); msgE.classList.add('hidden'); msgL.classList.add('hidden');
+            hN.disabled = false; hE.disabled = false; hL.disabled = false;
 
-            let vN = parseFloat(hN.value) || 0;
-            let vL = parseFloat(hL.value) || 0;
-            let vE = parseFloat(hE.value) || 0;
+            let inN = parseFloat(hN.value) || 0;
+            let inE = parseFloat(hE.value) || 0;
+            let inL = parseFloat(hL.value) || 0;
 
-            const boxEx=document.getElementById('options-extra'); const boxLe=document.getElementById('options-absence'); const reqJ=document.getElementById('req-justification');
+            const totalSoFar = existing.totalAll + inN + inE + inL;
+            if (totalSoFar > MAX_DAY_HOURS) {
+                const cap = Math.max(0, MAX_DAY_HOURS - existing.totalAll - (inN+inE+inL) + (source==='normal'?inN : source==='extra'?inE : inL));
+                if (source === 'normal') { inN = cap; hN.value = inN; }
+                if (source === 'extra') { inE = cap; hE.value = inE; }
+                if (source === 'leave') { inL = cap; hL.value = inL; }
+            }
 
-            if(isNonBusinessDay) {
-                // Feriado: Apenas Extras
-                hN.disabled = true; hN.value = 0;
-                hL.disabled = true; hL.value = 0;
-                hE.disabled = false;
+            if (isNonBusinessDay) {
+                hN.disabled = true; hN.value = 0; inN = 0;
+                hL.disabled = true; hL.value = 0; inL = 0;
+                msgN.innerText = "Dia não útil"; msgN.classList.remove('hidden');
+                msgL.innerText = "Dia não útil"; msgL.classList.remove('hidden');
             } else {
-                hN.disabled = false;
+                // --- REGRA: Normal + Ausência <= 8h ---
                 
-                // REGRA 1: Normais não pode passar de 8h
-                if(vN > DAILY_CONTRACT) { 
-                    vN = DAILY_CONTRACT; hN.value = vN; 
-                }
-
-                // REGRA 2: Ausência não pode passar do saldo restante (8 - Normais)
-                const maxAbsence = Math.max(0, DAILY_CONTRACT - vN);
-                
-                // Se eu estou editando Normais, e isso espreme a Ausência, a Ausência diminui
-                if (vL > maxAbsence) {
-                    vL = maxAbsence; hL.value = vL;
-                }
-
-                // Se eu estou editando Ausência, eu não posso ultrapassar o saldo
-                // (O input 'max' ajuda, mas aqui forçamos)
-                if (source === 'leave' && vL > maxAbsence) {
-                    vL = maxAbsence; hL.value = vL;
-                }
-
-                // REGRA 3: Se Normais já bateu 8h, bloqueia Ausência
-                if (vN >= DAILY_CONTRACT) {
-                    hL.disabled = true; hL.value = 0; vL = 0;
+                // 1. BLOQUEIO DE NORMAL (Se ausência já ocupa tudo)
+                const currentAbsence = existing.totalAbsence + inL;
+                if (currentAbsence >= DAILY_CONTRACT) {
+                    hN.disabled = true; hN.value = 0; inN = 0;
+                    msgN.innerText = "Contrato preenchido (Ausência)";
+                    msgN.classList.remove('hidden');
                 } else {
-                    hL.disabled = false;
+                    // Limita o input de normal ao que sobra
+                    const maxN = Math.max(0, DAILY_CONTRACT - currentAbsence - existing.totalNormal);
+                    if (inN > maxN) { 
+                        inN = maxN; hN.value = inN; 
+                        // AVISO VISUAL SE ATINGIU O TETO
+                        msgN.innerText = `Máximo permitido: ${maxN}h`;
+                        msgN.classList.remove('hidden');
+                    }
                 }
 
-                // REGRA 4: Extra só libera se (Normais + Ausência) == 8h
-                // Ou seja, cumpriu o contrato do dia
-                if ((vN + vL) >= DAILY_CONTRACT) {
-                    hE.disabled = false;
+                // 2. BLOQUEIO DE AUSÊNCIA (Se normal já ocupa tudo)
+                const currentNormal = existing.totalNormal + inN;
+                if (currentNormal >= DAILY_CONTRACT) {
+                    hL.disabled = true; hL.value = 0; inL = 0;
+                    msgL.innerText = "Contrato preenchido (Normal)";
+                    msgL.classList.remove('hidden');
                 } else {
-                    hE.disabled = true; hE.value = 0; vE = 0;
+                    const maxL = Math.max(0, DAILY_CONTRACT - currentNormal - existing.totalAbsence);
+                    if (inL > maxL) { 
+                        inL = maxL; hL.value = inL; 
+                        msgL.innerText = `Máximo permitido: ${maxL}h`;
+                        msgL.classList.remove('hidden');
+                    }
+                }
+
+                // 3. BLOQUEIO DE EXTRA (Se não cumpriu jornada)
+                const effective = (existing.totalNormal + inN) + (existing.totalAbsence + inL);
+                if (effective < DAILY_CONTRACT) {
+                    hE.disabled = true; hE.value = 0; inE = 0;
+                    msgE.innerText = "Complete as 8h primeiro";
+                    msgE.classList.remove('hidden');
                 }
             }
 
-            // Visibilidade
-            if(vE > 0) { boxEx.classList.remove('hidden'); reqJ.classList.remove('hidden'); } else boxEx.classList.add('hidden');
-            if(vL > 0) { boxLe.classList.remove('hidden'); reqJ.classList.remove('hidden'); } else boxLe.classList.add('hidden');
-            if(vE===0 && vL===0) reqJ.classList.add('hidden');
+            // Justificativa
+            const boxEx=document.getElementById('options-extra'); 
+            const boxLe=document.getElementById('options-absence'); 
+            const reqJ=document.getElementById('req-justification');
 
-            updateRealTimeFooter();
+            if(inE > 0) { boxEx.classList.remove('hidden'); reqJ.classList.remove('hidden'); } else boxEx.classList.add('hidden');
+            if(inL > 0) { boxLe.classList.remove('hidden'); reqJ.classList.remove('hidden'); } else boxLe.classList.add('hidden');
+            if(inE===0 && inL===0) reqJ.classList.add('hidden');
+
+            updateRealTimeFooter(existing, inN, inE, inL);
         }
 
-        function updateRealTimeFooter() {
-            const savedTotal = dayEntries.reduce((acc, curr) => acc + curr.hours, 0);
-            const inputTotal = (parseFloat(document.getElementById('input-normal').value)||0) + 
-                               (parseFloat(document.getElementById('input-extra').value)||0) + 
-                               (parseFloat(document.getElementById('input-leave').value)||0);
-            
-            const grandTotal = savedTotal + inputTotal;
-            const balance = grandTotal - DAILY_CONTRACT;
+        function updateRealTimeFooter(existing, inN, inE, inL) {
+            const finalNormal = existing.totalNormal + inN;
+            const finalAbsence = existing.totalAbsence + inL;
+            const finalExtra = existing.totalExtra + inE;
+            const grandTotal = finalNormal + finalAbsence + finalExtra;
+            let balance = isNonBusinessDay ? grandTotal : grandTotal - DAILY_CONTRACT;
 
-            document.getElementById('footer-total').innerText = grandTotal.toFixed(1) + 'h';
+            document.getElementById('footer-normal').innerText = finalNormal.toFixed(1) + 'h';
+            document.getElementById('footer-absence').innerText = finalAbsence.toFixed(1) + 'h';
+            document.getElementById('footer-extra').innerText = finalExtra.toFixed(1) + 'h';
             
             const balEl = document.getElementById('footer-balance');
             const sign = balance > 0 ? '+' : '';
@@ -440,13 +581,41 @@
             else balEl.className = "text-2xl font-extrabold text-gray-400";
         }
 
-        // --- AUTOCOMPLETE ---
+        // ... (Funções resetForm, editEntry, addEntry, removeEntry, search, submits mantidas) ...
+        function resetForm() {
+            document.getElementById('input-entry-id').value = '';
+            document.getElementById('form-title').innerText = 'Nova Atividade';
+            document.getElementById('input-normal').value = 0;
+            document.getElementById('input-extra').value = 0;
+            document.getElementById('input-leave').value = 0;
+            document.getElementById('input-reason').value = '';
+            resetActivitySearch();
+            document.getElementById('btn-add-entry').innerText = 'Adicionar';
+            document.getElementById('btn-cancel-edit').classList.add('hidden');
+            validateRules('init');
+        }
+
+        function editEntry(entry) {
+            if (!entry || !entry.id) return;
+            document.getElementById('input-entry-id').value = entry.id;
+            document.getElementById('form-title').innerText = 'Editar Atividade';
+            document.getElementById('input-project').value = entry.projectId;
+            document.getElementById('input-activity-search').value = entry.activity;
+            document.getElementById('input-activity-id').value = entry.activityId;
+            document.getElementById('input-normal').value = entry.hours;
+            document.getElementById('input-extra').value = entry.hoursExtra;
+            document.getElementById('input-leave').value = entry.hoursAbsence;
+            document.getElementById('input-reason').value = entry.justification || '';
+            document.getElementById('btn-add-entry').innerText = 'Salvar Alteração';
+            document.getElementById('btn-cancel-edit').classList.remove('hidden');
+            document.getElementById('activity-dropdown').classList.add('hidden');
+            validateRules('init');
+        }
+
         function resetActivitySearch() { document.getElementById('input-activity-search').value=''; document.getElementById('input-activity-id').value=''; document.getElementById('activity-dropdown').classList.add('hidden'); document.getElementById('btn-clear-activity').classList.add('hidden'); }
         function clearActivity(){ resetActivitySearch(); }
         function filterActivities() {
-            const pId=document.getElementById('input-project').value; const term=document.getElementById('input-activity-search').value.toLowerCase().trim(); const drp=document.getElementById('activity-dropdown'); const clr=document.getElementById('btn-clear-activity');
-            document.getElementById('input-activity-id').value=''; 
-            if(!pId) return; if(term.length>0) clr.classList.remove('hidden'); else clr.classList.add('hidden');
+            const pId=document.getElementById('input-project').value; const term=document.getElementById('input-activity-search').value.toLowerCase().trim(); const drp=document.getElementById('activity-dropdown'); const clr=document.getElementById('btn-clear-activity'); document.getElementById('input-activity-id').value=''; if(!pId) return; if(term.length>0) clr.classList.remove('hidden'); else clr.classList.add('hidden');
             const matches=dayActivities.filter(a=>String(a.projectId)===String(pId)&&a.name.toLowerCase().includes(term));
             drp.innerHTML=''; let exact=false;
             matches.forEach(a=>{ if(a.name.toLowerCase()===term) exact=true; drp.innerHTML+=`<li onclick="selectExistingActivity('${a.id}','${a.name}')" class="px-4 py-2 hover:bg-gray-50 cursor-pointer text-sm text-gray-700 border-b border-gray-100 last:border-0 block">${a.name}</li>`; });
@@ -455,53 +624,76 @@
         }
         function selectExistingActivity(id,name) { document.getElementById('input-activity-search').value=name; document.getElementById('input-activity-id').value=id; document.getElementById('activity-dropdown').classList.add('hidden'); }
         function selectNewActivity() { document.getElementById('input-activity-id').value='NEW'; document.getElementById('activity-dropdown').classList.add('hidden'); }
-        document.addEventListener('click', function(e) {
-            const inp=document.getElementById('input-activity-search'); const drp=document.getElementById('activity-dropdown'); const clr=document.getElementById('btn-clear-activity'); const hid=document.getElementById('input-activity-id');
-            if(!inp.contains(e.target)&&!drp.contains(e.target)&&!clr.contains(e.target)) { drp.classList.add('hidden'); if(hid.value==='') { inp.value=''; clr.classList.add('hidden'); } }
-        });
+        document.addEventListener('click', function(e) { const inp=document.getElementById('input-activity-search'); const drp=document.getElementById('activity-dropdown'); const clr=document.getElementById('btn-clear-activity'); const hid=document.getElementById('input-activity-id'); if(!inp.contains(e.target)&&!drp.contains(e.target)&&!clr.contains(e.target)) { drp.classList.add('hidden'); if(hid.value==='') { inp.value=''; clr.classList.add('hidden'); } } });
         document.addEventListener('keydown', function(e) { if(e.key==='Escape') { const drp=document.getElementById('activity-dropdown'); if(!drp.classList.contains('hidden')) { drp.classList.add('hidden'); document.getElementById('input-activity-search').blur(); } else if(!document.getElementById('slide-overlay').classList.contains('hidden')) closeDayPanel(); } });
         function closeDayPanel() { document.getElementById('day-panel').classList.remove('open'); document.getElementById('day-panel').classList.add('closed'); const ov=document.getElementById('slide-overlay'); ov.classList.add('opacity-0'); setTimeout(()=>ov.classList.add('hidden'),300); }
         function selectProjectFromCard(id) { document.getElementById('input-project').value=id; resetActivitySearch(); }
 
-        // --- CRUD ---
         async function addEntry() {
-            const pId=document.getElementById('input-project').value; let rawId=document.getElementById('input-activity-id').value; const actName=document.getElementById('input-activity-search').value; const actId=(rawId==='NEW')?'':rawId;
-            const hN=parseFloat(document.getElementById('input-normal').value)||0; const hE=parseFloat(document.getElementById('input-extra').value)||0; const hA=parseFloat(document.getElementById('input-leave').value)||0; const reason=document.getElementById('input-reason').value.trim();
+            const entryId = document.getElementById('input-entry-id').value; 
+            const pId = document.getElementById('input-project').value;
+            const alocacaoId = projectAllocationMap[pId]; 
+            let rawId=document.getElementById('input-activity-id').value; 
+            const actName=document.getElementById('input-activity-search').value; 
+            const actId=(rawId==='NEW')?'':rawId;
+            const hN=parseFloat(document.getElementById('input-normal').value)||0; 
+            const hE=parseFloat(document.getElementById('input-extra').value)||0; 
+            const hA=parseFloat(document.getElementById('input-leave').value)||0; 
+            const reason=document.getElementById('input-reason').value.trim();
 
-            if(!pId) return alert("Selecione projeto."); if(!actName) return alert("Informe atividade."); if((hN+hE+hA)===0) return alert("Informe horas."); if((hE>0||hA>0)&&reason.length<5) return alert("Justificativa obrigatória.");
+            if(!pId) return alert("Selecione projeto.");
+            if(!actName) return alert("Informe atividade."); 
+            if((hN+hE+hA)===0) return alert("Informe horas."); 
+            if((hE>0||hA>0)&&reason.length<5) return alert("Justificativa obrigatória.");
+            
             let exType=''; if(hE>0) document.getElementsByName('radio-extra').forEach(r=>{if(r.checked) exType=r.value});
             let abType=''; if(hA>0) abType=document.getElementById('select-absence-type').value;
 
-            const btn=document.getElementById('btn-add-entry'); btn.innerText='Salvando...'; btn.disabled=true;
+            const btn=document.getElementById('btn-add-entry'); 
+            const originalText = btn.innerText; btn.innerText='Salvando...'; btn.disabled=true;
+            
             try {
-                const res = await fetch('/api/timesheet/entry', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ diaPeriodoId:currentOpenDayId, projectId:pId, activityId:actId, activityName:actName, hoursNormal:hN, hoursExtra:hE, hoursAbsence:hA, reason:reason, extraType:exType, absenceType:abType }) });
+                const res = await fetch('/api/timesheet/entry', { 
+                    method:'POST', headers:{'Content-Type':'application/json'}, 
+                    body:JSON.stringify({ entryId: entryId || null, diaPeriodoId: currentOpenDayId, projectId: pId, alocacaoId: alocacaoId, activityId: actId, activityName: actName, hoursNormal: hN, hoursExtra: hE, hoursAbsence: hA, reason: reason, extraType: exType, absenceType: abType }) 
+                });
                 const d = await res.json();
                 if(d.success) {
-                    loadCalendar(currentPeriods[currentPeriodIndex].Id).then(() => {
-                         return fetch(`/api/timesheet/day?date=${currentGridData[Object.keys(currentGridData).find(k=>currentGridData[k].id===currentOpenDayId)]?.date}&diaPeriodoId=${currentOpenDayId}`);
-                    }).then(r=>r.json()).then(newData => {
-                         dayEntries=newData.entries; renderEntriesList(); validateRules('init');
-                         resetActivitySearch(); 
-                         document.getElementById('input-normal').value=0; 
-                         document.getElementById('input-extra').value=0; 
-                         document.getElementById('input-leave').value=0; 
-                         document.getElementById('input-reason').value='';
-                    });
+                    loadCalendar(currentPeriods[currentPeriodIndex].Id).then(() => { return fetch(`/api/timesheet/day?date=${currentGridData[Object.keys(currentGridData).find(k=>currentGridData[k].id===currentOpenDayId)]?.date}&diaPeriodoId=${currentOpenDayId}`); }).then(r=>r.json()).then(newData => { dayEntries=newData.entries; renderEntriesList(); validateRules('init'); resetForm(); });
                 } else alert('Erro: '+d.message);
-            } catch(e){ console.error(e); } finally { btn.innerText='Adicionar'; btn.disabled=false; }
+            } catch(e){ console.error(e); } finally { btn.innerText=originalText; btn.disabled=false; }
         }
 
         async function removeEntry(id) {
-            if(!confirm("Excluir?")) return;
+            if(!confirm("Excluir lançamento?")) return;
             try {
                 const res = await fetch(`/api/timesheet/entry/${id}`, {method:'DELETE'});
                 const d = await res.json();
                 if(d.success) {
-                     loadCalendar(currentPeriods[currentPeriodIndex].Id).then(() => {
-                         return fetch(`/api/timesheet/day?date=${currentGridData[Object.keys(currentGridData).find(k=>currentGridData[k].id===currentOpenDayId)]?.date}&diaPeriodoId=${currentOpenDayId}`);
-                    }).then(r=>r.json()).then(newData => { dayEntries=newData.entries; renderEntriesList(); validateRules('init'); });
+                     loadCalendar(currentPeriods[currentPeriodIndex].Id).then(() => { return fetch(`/api/timesheet/day?date=${currentGridData[Object.keys(currentGridData).find(k=>currentGridData[k].id===currentOpenDayId)]?.date}&diaPeriodoId=${currentOpenDayId}`); }).then(r=>r.json()).then(newData => { dayEntries=newData.entries; renderEntriesList(); validateRules('init'); resetForm(); });
                 } else alert('Erro: '+d.message);
             } catch(e) { alert('Erro técnico'); }
+        }
+
+        async function submitDay() {
+            if(!confirm("Enviar dia para aprovação?")) return;
+            const btn = document.getElementById('btn-submit-day'); btn.disabled = true; btn.innerHTML = "<span>⏳</span> Enviando...";
+            try {
+                const res = await fetch('/api/timesheet/submit-day', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ diaPeriodoId: currentOpenDayId }) });
+                const d = await res.json();
+                if (d.success) { alert(d.message); closeDayPanel(); loadCalendar(currentPeriods[currentPeriodIndex].Id); } else { alert('Erro: ' + d.message); }
+            } catch (e) { alert('Erro de conexão.'); } finally { btn.disabled = false; btn.innerHTML = "<span>🚀</span> Lançar Dia"; }
+        }
+
+        async function submitPeriod() {
+            if(!currentPeriods[currentPeriodIndex]) return;
+            const pId = currentPeriods[currentPeriodIndex].Id;
+            if(!confirm("Enviar FOLHA DO MÊS inteira para aprovação?")) return;
+            try {
+                const res = await fetch('/api/timesheet/submit-period', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ periodId: pId }) });
+                const d = await res.json();
+                if (d.success) { alert(d.message); loadCalendar(pId); } else { alert('Erro: ' + d.message); }
+            } catch (e) { alert('Erro de conexão.'); }
         }
     </script>
 </body>

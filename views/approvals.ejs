@@ -12,21 +12,18 @@
             theme: {
                 extend: {
                     fontFamily: { sans: ['Montserrat', 'sans-serif'] },
-                    colors: { c3c: { blue: '#2978FF', teal: '#1DDDBD', gray: '#F2F2F2' } }
+                    colors: { c3c: { blue: '#2978FF', teal: '#1DDDBD' } }
                 }
             }
         }
     </script>
     <style>
         body { font-family: 'Montserrat', sans-serif; background-color: #F8FAFC; }
-        .bg-c3c-gradient { background: linear-gradient(135deg, #2978FF 0%, #1DDDBD 100%); }
         .fade-in { animation: fadeIn 0.4s ease-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
 <body class="h-screen flex overflow-hidden bg-[#F8FAFC]">
-
-    <div id="mobile-overlay" onclick="toggleMenu()" class="fixed inset-0 bg-black/50 z-30 hidden md:hidden transition-opacity opacity-0"></div>
 
     <%- include('partials/sidebar') %>
 
@@ -34,15 +31,11 @@
         
         <header class="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-4 md:px-8 sticky top-0 z-20">
             <div class="flex items-center gap-4">
-                <button onclick="toggleMenu()" class="md:hidden p-2 text-gray-600 hover:bg-gray-100 rounded-lg">
-                    <i data-lucide="menu" class="w-6 h-6"></i>
-                </button>
+                <button onclick="document.getElementById('sidebar').classList.toggle('-translate-x-full')" class="md:hidden p-2 text-gray-600 hover:bg-gray-100 rounded-lg"><i data-lucide="menu"></i></button>
                 <h1 class="text-lg md:text-xl font-bold text-gray-800 flex items-center gap-2">
-                    Aprovação de Horas
-                    <span class="bg-blue-100 text-blue-700 text-xs px-2 py-1 rounded-full">Gestor</span>
+                    Aprovação de Horas <span class="bg-blue-100 text-blue-700 text-xs px-2 py-1 rounded-full">Gestor</span>
                 </h1>
             </div>
-            
             <div class="flex items-center bg-white rounded-lg shadow-sm border border-gray-200 p-1">
                 <span class="px-3 text-xs font-bold text-gray-400 uppercase hidden sm:block">Período:</span>
                 <select id="period-selector" onchange="triggerDataLoad(this.value)" class="text-sm font-semibold text-gray-800 bg-transparent outline-none cursor-pointer py-1 pr-2">
@@ -61,47 +54,29 @@
     <div id="modal-approval" class="fixed inset-0 z-50 hidden">
         <div class="absolute inset-0 bg-gray-900 bg-opacity-50 transition-opacity" onclick="closeModal()"></div>
         <div class="absolute inset-0 flex items-center justify-center p-4">
-            <div class="bg-white rounded-xl shadow-2xl w-full max-w-5xl overflow-hidden transform transition-all flex flex-col max-h-[90vh]">
+            <div class="bg-white rounded-xl shadow-2xl w-full max-w-7xl overflow-hidden flex flex-col max-h-[90vh]">
                 <div class="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-white shrink-0">
-                    <div>
-                        <h3 class="text-lg font-bold text-gray-900" id="modal-title">Detalhes do Projeto</h3>
-                        <p class="text-sm text-gray-500">Visão consolidada do período.</p>
-                    </div>
-                    <button onclick="closeModal()" class="text-gray-400 hover:text-gray-600"><i data-lucide="x" class="w-6 h-6"></i></button>
+                    <h3 class="text-lg font-bold text-gray-900" id="modal-title">Projeto</h3>
+                    <button onclick="closeModal()"><i data-lucide="x" class="w-6 h-6 text-gray-400"></i></button>
                 </div>
-                <div class="px-6 py-4 bg-gray-50 border-b border-gray-100 grid grid-cols-2 md:grid-cols-4 gap-4 shrink-0">
-                    <div class="bg-white p-3 rounded-lg border border-gray-200 shadow-sm">
-                        <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Total Alocado</p>
-                        <p class="text-xl font-bold text-gray-900" id="modal-sum-alocado">--</p>
-                    </div>
-                    <div class="bg-white p-3 rounded-lg border border-gray-200 shadow-sm">
-                        <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Total</p>
-                        <p class="text-xl font-bold text-blue-600" id="modal-sum-ponderado">--</p>
-                    </div>
-                    <div class="bg-white p-3 rounded-lg border border-gray-200 shadow-sm">
-                        <p class="text-[10px] font-bold text-red-400 uppercase tracking-wider">Total Extras</p>
-                        <p class="text-xl font-bold text-red-600" id="modal-sum-extra">--</p>
-                    </div>
-                    <div class="bg-white p-3 rounded-lg border border-gray-200 shadow-sm relative overflow-hidden">
-                        <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider relative z-10">Conformidade Geral</p>
-                        <p class="text-xl font-bold text-gray-900 relative z-10" id="modal-sum-conformidade">--</p>
-                        <div id="modal-bar-conformidade" class="absolute bottom-0 left-0 h-1 bg-green-500 transition-all" style="width: 0%"></div>
-                    </div>
-                </div>
+                
                 <div class="overflow-x-auto p-0 flex-1 overflow-y-auto">
-                    <table class="w-full text-left border-collapse">
-                        <thead class="sticky top-0 bg-white z-10 shadow-sm">
-                            <tr class="text-xs font-bold text-gray-400 uppercase tracking-wider border-b border-gray-100 bg-white">
+                    <table class="w-full text-left text-sm">
+                        <thead class="bg-gray-50 border-b border-gray-200 sticky top-0 z-10 shadow-sm">
+                            <tr class="text-xs font-bold text-gray-500 uppercase tracking-wider">
                                 <th class="py-3 pl-6">Recurso</th>
                                 <th class="py-3 text-right">Alocado</th>
-                                <th class="py-3 text-right">Normal</th>
-                                <th class="py-3 text-right">Extra</th>
-                                <th class="py-3 text-right text-gray-800">Total</th>
-                                <th class="py-3 text-center">Conformidade</th>
-                                <th class="py-3 text-center px-2">Ação</th>
+                                <th class="py-3 text-center bg-blue-50 text-blue-700 border-l border-white">Normais</th>
+                                <th class="py-3 text-center bg-green-50 text-green-700 border-l border-white">Ex. Pgto</th>
+                                <th class="py-3 text-center bg-teal-50 text-teal-700 border-l border-white">Ex. Banco</th>
+                                <th class="py-3 text-center bg-orange-50 text-orange-700 border-l border-white">Aus. Banco</th>
+                                <th class="py-3 text-center bg-red-50 text-red-700 border-l border-white">Aus. Outras</th>
+                                <th class="py-3 text-right text-gray-900 font-extrabold border-l border-gray-100">Total</th>
+                                <th class="py-3 text-center">Status</th>
+                                <th class="py-3 text-center px-4">Ação</th>
                             </tr>
                         </thead>
-                        <tbody id="modal-table-body" class="text-sm text-gray-600"></tbody>
+                        <tbody id="modal-table-body" class="divide-y divide-gray-100 text-gray-700"></tbody>
                     </table>
                 </div>
                 <div class="px-6 py-4 border-t border-gray-100 flex justify-end shrink-0 bg-white">
@@ -112,25 +87,43 @@
     </div>
 
     <div id="modal-activities" class="fixed inset-0 z-[60] hidden">
-        <div class="absolute inset-0 bg-black bg-opacity-20 transition-opacity" onclick="closeActivityModal()"></div>
+        <div class="absolute inset-0 bg-black bg-opacity-30 backdrop-blur-sm transition-opacity" onclick="closeActivityModal()"></div>
         <div class="absolute inset-0 flex items-center justify-center p-4">
-            <div class="bg-white rounded-lg shadow-xl w-full max-w-2xl overflow-hidden">
+            <div class="bg-white rounded-lg shadow-xl w-full max-w-4xl overflow-hidden flex flex-col max-h-[80vh]">
                 <div class="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
-                    <h3 class="font-bold text-gray-900">Extrato de Atividades</h3>
+                    <h3 class="font-bold text-gray-900 flex items-center gap-2"><i data-lucide="list" class="w-5 h-5 text-indigo-600"></i> Extrato Detalhado</h3>
                     <button onclick="closeActivityModal()"><i data-lucide="x" class="w-5 h-5 text-gray-400"></i></button>
                 </div>
-                <div class="p-0 overflow-y-auto max-h-[60vh]">
-                    <table class="w-full text-left text-sm">
-                        <thead class="bg-white text-gray-500 font-bold border-b border-gray-100">
+                <div class="overflow-auto p-0 flex-1">
+                    <table class="w-full text-left text-xs">
+                        <thead class="bg-white text-gray-500 font-bold border-b border-gray-100 sticky top-0 shadow-sm">
                             <tr>
-                                <th class="p-4">Atividade</th>
-                                <th class="p-4 text-right">Horas</th>
-                                <th class="p-4 text-right">Extras</th>
-                                <th class="p-4 text-center">Status</th>
+                                <th class="p-3">Data</th>
+                                <th class="p-3">Atividade / Justificativa</th>
+                                <th class="p-3 text-right text-blue-600">Normal</th>
+                                <th class="p-3 text-right text-green-600">Ex. Pgto</th>
+                                <th class="p-3 text-right text-teal-600">Banco</th>
+                                <th class="p-3 text-right text-orange-600">Ausência</th>
+                                <th class="p-3 text-center">Status</th>
                             </tr>
                         </thead>
-                        <tbody id="activity-table-body" class="text-gray-700"></tbody>
+                        <tbody id="activity-table-body" class="text-gray-700 divide-y divide-gray-50"></tbody>
                     </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-reject" class="fixed inset-0 z-[70] hidden">
+        <div class="absolute inset-0 bg-black bg-opacity-40 backdrop-blur-sm flex items-center justify-center p-4">
+            <div class="bg-white rounded-lg shadow-xl w-full max-w-md p-6">
+                <h3 class="text-lg font-bold text-red-600 mb-2">Reprovar Lançamentos</h3>
+                <p class="text-sm text-gray-600 mb-4">Motivo da reprovação para <strong id="reject-person-name"></strong>:</p>
+                <input type="hidden" id="reject-service-id"><input type="hidden" id="reject-person-id">
+                <textarea id="reject-reason" rows="3" class="w-full border border-gray-300 rounded-lg p-3 text-sm focus:ring-2 focus:ring-red-500 outline-none mb-4" placeholder="Ex: Justificativa insuficiente..."></textarea>
+                <div class="flex justify-end gap-3">
+                    <button onclick="document.getElementById('modal-reject').classList.add('hidden')" class="px-4 py-2 text-gray-500 font-bold hover:bg-gray-100 rounded">Cancelar</button>
+                    <button onclick="confirmReject()" class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-bold rounded shadow-sm">Confirmar</button>
                 </div>
             </div>
         </div>
@@ -140,26 +133,7 @@
         lucide.createIcons();
         const API_URL = '/api';
 
-        // --- MENU MOBILE ---
-        function toggleMenu() {
-            const sidebar = document.getElementById('sidebar');
-            const overlay = document.getElementById('mobile-overlay');
-            const body = document.body;
-            if (sidebar.classList.contains('-translate-x-full')) {
-                sidebar.classList.remove('-translate-x-full');
-                overlay.classList.remove('hidden');
-                setTimeout(() => overlay.classList.remove('opacity-0'), 10);
-                if(window.innerWidth < 768) body.style.overflow = 'hidden';
-            } else {
-                sidebar.classList.add('-translate-x-full');
-                overlay.classList.add('opacity-0');
-                setTimeout(() => overlay.classList.add('hidden'), 300);
-                body.style.overflow = '';
-            }
-        }
-
-        // --- DADOS ---
-        document.addEventListener('DOMContentLoaded', () => { loadPeriods(); });
+        document.addEventListener('DOMContentLoaded', loadPeriods);
 
         async function loadPeriods() {
             try {
@@ -177,7 +151,7 @@
                     if(idx === 0) opt.selected = true;
                     sel.appendChild(opt);
                 });
-                if (sel.options.length > 0) triggerDataLoad(sel.value);
+                triggerDataLoad(sel.value);
             } catch (err) { console.error(err); }
         }
 
@@ -187,7 +161,7 @@
             loadProjects(dates.start, dates.end);
         }
 
-        // --- LÓGICA DE PROJETOS E MODAIS (A MESMA DO DASHBOARD ANTIGO) ---
+        // --- 1. LISTAGEM DE PROJETOS (LAYOUT ORIGINAL - RESTAURADO) ---
         async function loadProjects(start, end) {
             const container = document.getElementById('approval-cards-container');
             container.innerHTML = '<p class="text-gray-400 col-span-2 text-center py-10">Carregando projetos...</p>';
@@ -195,20 +169,16 @@
                 const res = await fetch(`${API_URL}/approvals/projects?inicio=${start}&fim=${end}`);
                 const projects = await res.json();
                 container.innerHTML = '';
-                if(projects.length === 0) {
-                    container.innerHTML = '<p class="text-gray-400 col-span-2 text-center py-10">Nenhum projeto encontrado.</p>';
-                    return;
-                }
+                
+                if(projects.length === 0) { container.innerHTML = '<p class="text-gray-400 col-span-2 text-center py-10">Nenhum projeto encontrado.</p>'; return; }
+
                 projects.forEach(item => {
                     const isOpen = item.statusUI === 'Aberto';
-                    let percentClass = 'text-green-600';
-                    let barColor = 'bg-green-500';
+                    let percentClass = 'text-green-600', barColor = 'bg-green-500';
                     if(item.percentual > 105) { percentClass = 'text-red-600'; barColor = 'bg-red-500'; }
                     else if(item.percentual < 95) { percentClass = 'text-yellow-600'; barColor = 'bg-yellow-500'; }
 
-                    const badge = isOpen 
-                        ? '<span class="bg-[#FFF9C4] text-[#FBC02D] text-[10px] font-bold px-2 py-0.5 rounded">Aberto</span>'
-                        : '<span class="bg-green-100 text-green-700 text-[10px] font-bold px-2 py-0.5 rounded">Ok</span>';
+                    const badge = isOpen ? '<span class="bg-[#FFF9C4] text-[#FBC02D] text-[10px] font-bold px-2 py-0.5 rounded">Aberto</span>' : '<span class="bg-green-100 text-green-700 text-[10px] font-bold px-2 py-0.5 rounded">Ok</span>';
 
                     const card = `
                     <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-5 flex flex-col h-full hover:shadow-md transition-shadow">
@@ -230,9 +200,7 @@
                             </div>
                             <div class="text-center border-r border-gray-200 last:border-0">
                                 <p class="text-[10px] text-gray-400 font-bold uppercase">Extra</p>
-                                <p class="text-sm font-bold ${item.metrics.extra > 0 ? 'text-red-500' : 'text-gray-400'}">
-                                    ${item.metrics.extra.toFixed(0)}h
-                                </p>
+                                <p class="text-sm font-bold ${item.metrics.extra > 0 ? 'text-red-500' : 'text-gray-400'}">${item.metrics.extra.toFixed(0)}h</p>
                             </div>
                             <div class="text-center relative">
                                 <p class="text-[10px] text-gray-400 font-bold uppercase">Conf.</p>
@@ -243,12 +211,8 @@
                             </div>
                         </div>
                         <div class="mt-auto flex items-center justify-between pt-2">
-                            <span class="text-xs text-gray-400 font-medium flex items-center gap-1">
-                                <i data-lucide="users" class="w-3 h-3"></i> ${item.teamSize} Recurso(s)
-                            </span>
-                            <button onclick="openModal('${item.serviceId}', '${item.serviceName}')" class="px-4 py-1.5 bg-white border border-blue-200 text-blue-600 font-bold rounded-lg text-xs hover:bg-blue-50 transition-colors">
-                                Analisar
-                            </button>
+                            <span class="text-xs text-gray-400 font-medium flex items-center gap-1"><i data-lucide="users" class="w-3 h-3"></i> ${item.teamSize} Recurso(s)</span>
+                            <button onclick="openModal('${item.serviceId}', '${item.serviceName}')" class="px-4 py-1.5 bg-white border border-blue-200 text-blue-600 font-bold rounded-lg text-xs hover:bg-blue-50 transition-colors">Analisar</button>
                         </div>
                     </div>`;
                     container.innerHTML += card;
@@ -257,153 +221,125 @@
             } catch (err) { container.innerHTML = '<p class="text-red-500">Erro ao carregar dados.</p>'; }
         }
 
+        // --- 2. MODAL DETALHADO (NOVO) ---
         async function openModal(serviceId, serviceName) {
             const modal = document.getElementById('modal-approval');
-            const title = document.getElementById('modal-title');
             const tbody = document.getElementById('modal-table-body');
-            const cardAlocado = document.getElementById('modal-sum-alocado');
-            const cardPonderado = document.getElementById('modal-sum-ponderado');
-            const cardExtra = document.getElementById('modal-sum-extra');
-            const cardConf = document.getElementById('modal-sum-conformidade');
-            const barConf = document.getElementById('modal-bar-conformidade');
-
-            title.innerText = serviceName;
-            tbody.innerHTML = '<tr><td colspan="7" class="text-center py-8">Carregando detalhes...</td></tr>';
-            [cardAlocado, cardPonderado, cardExtra, cardConf].forEach(el => el.innerText = '...');
+            document.getElementById('modal-title').innerText = serviceName;
+            tbody.innerHTML = '<tr><td colspan="10" class="text-center py-8">Carregando...</td></tr>';
             modal.classList.remove('hidden');
 
-            const selector = document.getElementById('period-selector');
-            const dates = JSON.parse(selector.value);
-
+            const dates = JSON.parse(document.getElementById('period-selector').value);
+            
             try {
-                const timestamp = new Date().getTime();
-                const url = `${API_URL}/approvals/${serviceId}/resources?inicio=${dates.start}&fim=${dates.end}&t=${timestamp}`;
+                const url = `${API_URL}/approvals/${serviceId}/resources?inicio=${dates.start}&fim=${dates.end}`;
                 const res = await fetch(url);
-                let resources = await res.json();
-
+                const resources = await res.json();
+                
                 tbody.innerHTML = '';
-                if (resources.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="7" class="text-center py-8">Nenhum recurso encontrado.</td></tr>';
-                    [cardAlocado, cardPonderado, cardExtra, cardConf].forEach(el => el.innerText = '-');
-                    return;
-                }
+                if (resources.length === 0) { tbody.innerHTML = '<tr><td colspan="10" class="text-center py-8">Nenhum dado.</td></tr>'; return; }
 
-                resources.sort((a, b) => b.totalPonderado - a.totalPonderado);
-                let sumAlocado = 0, sumExtra = 0, sumPonderado = 0;
-
+                resources.sort((a, b) => b.totalRealizado - a.totalRealizado);
+                
                 resources.forEach(r => {
-                    sumAlocado += r.alocado;
-                    sumExtra += r.horasExtras;
-                    sumPonderado += r.totalPonderado;
-                    
-                    let badgeClass = 'bg-green-100 text-green-700';
-                    if (r.statusClass === 'danger') badgeClass = 'bg-red-100 text-red-700';
-                    else if (r.statusClass === 'warning') badgeClass = 'bg-yellow-100 text-yellow-700';
+                    const colNorm = r.horasNormais > 0 ? `<span class="font-bold text-gray-700">${r.horasNormais.toFixed(1)}</span>` : '-';
+                    const colExPg = r.horasExtrasPgto > 0 ? `<span class="font-bold text-green-600">${r.horasExtrasPgto.toFixed(1)}</span>` : '-';
+                    const colExBc = r.horasExtrasBanco > 0 ? `<span class="font-bold text-teal-600">${r.horasExtrasBanco.toFixed(1)}</span>` : '-';
+                    let ausText = '-', ausOutra = '-';
+                    if (r.horasAusenciaBanco > 0) ausText = `<span class="font-bold text-orange-500">${r.horasAusenciaBanco.toFixed(1)}</span>`;
+                    if (r.horasAusenciaOutras > 0) ausOutra = `<span class="font-bold text-red-500">${r.horasAusenciaOutras.toFixed(1)}</span>`;
 
-                    const totalLancado = r.horasNormais + r.horasExtras;
-                    let actionHtml = '';
-
-                    if (totalLancado === 0) {
-                        actionHtml = '<span class="text-xs text-gray-400 font-medium italic">Sem pendências</span>';
-                    } else if (r.countPending > 0) {
-                        actionHtml = `
-                        <div class="flex items-center justify-center gap-3">
-                            <a href="#" onclick="openActivityModal('${serviceId}', '${r.id}')" class="text-xs text-blue-600 font-bold hover:text-blue-800 hover:underline transition-colors">Ver Detalhes</a>
-                            <button onclick="approveAction('${serviceId}', '${r.id}', 'reject')" class="px-3 py-1.5 text-xs font-bold text-red-600 bg-white border border-red-200 rounded hover:bg-red-50">Reprovar</button>
-                            <button onclick="approveAction('${serviceId}', '${r.id}', 'approve')" class="px-3 py-1.5 text-xs font-bold text-white bg-green-500 rounded hover:bg-green-600 shadow-sm">Aprovar</button>
-                        </div>`;
-                    } else if (r.countRejected > 0) {
-                        actionHtml = `<div class="flex items-center justify-center gap-3"><a href="#" onclick="openActivityModal('${serviceId}', '${r.id}')" class="text-xs text-gray-400 hover:text-blue-600">Ver Detalhes</a><span class="text-xs text-red-600 font-bold flex items-center gap-1 bg-red-50 px-2 py-1 rounded border border-red-100"><i data-lucide="x-circle" class="w-4 h-4"></i> Reprovado</span></div>`;
+                    let actions = '';
+                    if(r.countPending > 0) {
+                        actions = `
+                            <div class="flex justify-center gap-2 items-center">
+                                <button onclick="openActivityModal('${serviceId}', '${r.id}')" class="text-gray-400 hover:text-blue-600 mr-2" title="Extrato"><i data-lucide="eye" class="w-5 h-5"></i></button>
+                                <button onclick="openRejectModal('${serviceId}', '${r.id}', '${r.name}')" class="p-1.5 text-red-500 hover:bg-red-50 rounded border border-red-200"><i data-lucide="x" class="w-4 h-4"></i></button>
+                                <button onclick="approveAction('${serviceId}', '${r.id}', 'approve')" class="p-1.5 text-white bg-green-500 hover:bg-green-600 rounded shadow-sm"><i data-lucide="check" class="w-4 h-4"></i></button>
+                            </div>`;
                     } else {
-                        actionHtml = `<div class="flex items-center justify-center gap-3"><a href="#" onclick="openActivityModal('${serviceId}', '${r.id}')" class="text-xs text-gray-400 hover:text-blue-600">Ver Detalhes</a><span class="text-xs text-green-600 font-bold flex items-center gap-1 bg-green-50 px-2 py-1 rounded border border-green-100"><i data-lucide="check-circle-2" class="w-4 h-4"></i> Aprovado</span></div>`;
+                        actions = `<div class="flex justify-center items-center gap-2"><button onclick="openActivityModal('${serviceId}', '${r.id}')" class="text-gray-400 hover:text-blue-600"><i data-lucide="eye" class="w-5 h-5"></i></button><span class="text-xs font-bold text-gray-400">${r.countRejected > 0 ? 'Reprovado' : 'Aprovado'}</span></div>`;
                     }
 
                     tbody.innerHTML += `
-                    <tr class="border-b border-gray-50 hover:bg-gray-50 transition-colors">
-                        <td class="py-4 pl-6 font-bold text-gray-900">${r.name}</td>
-                        <td class="py-4 text-right text-gray-500">${r.alocado.toFixed(0)}h</td>
-                        <td class="py-4 text-right text-gray-800">${r.horasNormais.toFixed(1)}h</td>
-                        <td class="py-4 text-right ${r.horasExtras > 0 ? 'text-red-500 font-bold' : 'text-gray-400'}">${r.horasExtras.toFixed(1)}h</td>
-                        <td class="py-4 text-right font-bold text-gray-900 bg-gray-50">${r.totalPonderado.toFixed(1)}h</td>
-                        <td class="py-4 text-center"><span class="px-3 py-1 rounded-full text-xs font-bold ${badgeClass}">${r.percentual}%</span></td>
-                        <td class="py-4 text-center px-2">${actionHtml}</td>
-                    </tr>`;
+                        <tr class="hover:bg-gray-50 border-b border-gray-50 last:border-0">
+                            <td class="py-4 pl-6 font-medium text-gray-900">${r.name}</td>
+                            <td class="py-4 text-right text-gray-400 text-xs">${r.alocado.toFixed(0)}h</td>
+                            <td class="py-4 text-center bg-blue-50/30 border-l border-white">${colNorm}</td>
+                            <td class="py-4 text-center bg-green-50/30 border-l border-white">${colExPg}</td>
+                            <td class="py-4 text-center bg-teal-50/30 border-l border-white">${colExBc}</td>
+                            <td class="py-4 text-center bg-orange-50/30 border-l border-white">${ausText}</td>
+                            <td class="py-4 text-center bg-red-50/30 border-l border-white">${ausOutra}</td>
+                            <td class="py-4 text-right font-extrabold text-gray-800 pr-4 border-l border-gray-100">${r.totalRealizado.toFixed(1)}h</td>
+                            <td class="py-4 text-center text-xs">${r.percentual}%</td>
+                            <td class="py-4 text-center px-4">${actions}</td>
+                        </tr>`;
                 });
-
-                cardAlocado.innerText = sumAlocado.toFixed(0) + 'h';
-                cardPonderado.innerText = sumPonderado.toFixed(1) + 'h';
-                cardExtra.innerText = sumExtra.toFixed(1) + 'h';
-                cardExtra.className = sumExtra > 0 ? "text-xl font-bold text-red-600" : "text-xl font-bold text-gray-400";
-                
-                let percentGeral = 0;
-                if(sumAlocado > 0) percentGeral = Math.round((sumPonderado / sumAlocado) * 100);
-                else if(sumPonderado > 0) percentGeral = 999;
-                else percentGeral = 100;
-
-                cardConf.innerText = percentGeral + '%';
-                let colorClass = 'text-green-600', barColor = 'bg-green-500';
-                if(percentGeral > 105) { colorClass = 'text-red-600'; barColor = 'bg-red-500'; } 
-                else if(percentGeral < 95) { colorClass = 'text-yellow-600'; barColor = 'bg-yellow-500'; }
-                
-                cardConf.className = `text-xl font-bold ${colorClass} relative z-10`;
-                barConf.className = `absolute bottom-0 left-0 h-1 ${barColor} transition-all`;
-                setTimeout(() => { barConf.style.width = Math.min(percentGeral, 100) + '%'; }, 100);
                 lucide.createIcons();
-
-            } catch (err) {
-                console.error(err);
-                tbody.innerHTML = '<tr><td colspan="7" class="text-center text-red-500 py-8">Erro ao carregar dados.</td></tr>';
-            }
+            } catch(e) { console.error(e); tbody.innerHTML = '<tr><td colspan="10" class="text-center text-red-500">Erro.</td></tr>'; }
         }
 
-        function closeModal() { document.getElementById('modal-approval').classList.add('hidden'); }
-
-        async function approveAction(serviceId, personId, action) {
-            const confirmed = confirm(`Confirma a ação de ${action === 'approve' ? 'APROVAR' : 'REPROVAR'} todas as horas deste recurso neste período?`);
-            if(!confirmed) return;
-            const selector = document.getElementById('period-selector');
-            const dates = JSON.parse(selector.value);
-            try {
-                const res = await fetch(`${API_URL}/approvals/action`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ serviceId, personId, action, inicio: dates.start, fim: dates.end })
-                });
-                const result = await res.json();
-                if (result.success) {
-                    openModal(serviceId, document.getElementById('modal-title').innerText);
-                    loadProjects(dates.start, dates.end);
-                } else { alert('Erro: ' + result.message); }
-            } catch (err) { console.error(err); alert('Erro de comunicação.'); }
-        }
-
+        // --- 3. EXTRATO DETALHADO (ATIVIDADES) ---
         async function openActivityModal(serviceId, personId) {
             const modal = document.getElementById('modal-activities');
             const tbody = document.getElementById('activity-table-body');
-            tbody.innerHTML = '<tr><td colspan="4" class="text-center p-4">Carregando...</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="7" class="text-center p-4">Carregando...</td></tr>';
             modal.classList.remove('hidden');
-            const selector = document.getElementById('period-selector');
-            const dates = JSON.parse(selector.value);
+            const dates = JSON.parse(document.getElementById('period-selector').value);
             try {
                 const res = await fetch(`${API_URL}/approvals/${serviceId}/resources/${personId}/activities?inicio=${dates.start}&fim=${dates.end}`);
                 const activities = await res.json();
                 tbody.innerHTML = '';
-                if(activities.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="4" class="text-center p-4 text-gray-400">Nenhuma atividade detalhada.</td></tr>';
-                    return;
-                }
+                if(activities.length === 0) { tbody.innerHTML = '<tr><td colspan="7" class="text-center p-4 text-gray-400">Nenhum registro.</td></tr>'; return; }
                 activities.forEach(a => {
+                    const justificativa = a.justificativa ? `<br><span class="text-[10px] text-gray-400 italic">"${a.justificativa}"</span>` : '';
+                    const dateFmt = new Date(a.data).toLocaleDateString('pt-BR');
                     tbody.innerHTML += `
-                        <tr class="border-b border-gray-50">
-                            <td class="p-4 font-medium">${a.atividade}</td>
-                            <td class="p-4 text-right">${a.total.toFixed(1)}h</td>
-                            <td class="p-4 text-right ${a.extra > 0 ? 'text-red-500 font-bold' : ''}">${a.extra.toFixed(1)}h</td>
-                            <td class="p-4 text-center text-xs">${a.status}</td>
+                        <tr class="hover:bg-gray-50">
+                            <td class="p-3 text-xs text-gray-500">${dateFmt}</td>
+                            <td class="p-3 font-medium text-gray-800">${a.atividade}${justificativa}</td>
+                            <td class="p-3 text-right text-blue-600 font-bold">${a.normal > 0 ? a.normal.toFixed(1)+'h' : '-'}</td>
+                            <td class="p-3 text-right text-green-600 font-bold">${a.extraPgto > 0 ? a.extraPgto.toFixed(1)+'h' : '-'}</td>
+                            <td class="p-3 text-right text-teal-600 font-bold">${a.extraBanco + a.ausenciaBanco > 0 ? (a.extraBanco > 0 ? '+' : '-') + (a.extraBanco + a.ausenciaBanco).toFixed(1)+'h' : '-'}</td>
+                            <td class="p-3 text-right text-orange-600 font-bold">${a.ausenciaOutras > 0 ? a.ausenciaOutras.toFixed(1)+'h' : '-'}</td>
+                            <td class="p-3 text-center text-xs text-gray-400">${a.status}</td>
                         </tr>`;
                 });
-            } catch (err) { console.error(err); tbody.innerHTML = '<tr><td colspan="4" class="text-center p-4 text-red-500">Erro ao carregar.</td></tr>'; }
+            } catch (err) { console.error(err); tbody.innerHTML = '<tr><td colspan="7" class="text-center p-4 text-red-500">Erro.</td></tr>'; }
         }
+
+        // --- HELPERS ---
+        function closeModal() { document.getElementById('modal-approval').classList.add('hidden'); }
         function closeActivityModal() { document.getElementById('modal-activities').classList.add('hidden'); }
+        async function approveAction(serviceId, personId, action, motivo = null) {
+            const msg = action === 'approve' ? 'APROVAR' : 'REPROVAR';
+            if(!motivo && !confirm(`Confirma ${msg}?`)) return;
+            const dates = JSON.parse(document.getElementById('period-selector').value);
+            try {
+                const res = await fetch(`${API_URL}/approvals/action`, {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ serviceId, personId, action, inicio: dates.start, fim: dates.end, motivo })
+                });
+                const result = await res.json();
+                if (result.success) { openModal(serviceId, document.getElementById('modal-title').innerText); } 
+                else { alert('Erro: ' + result.message); }
+            } catch (err) { alert('Erro de comunicação.'); }
+        }
+        function openRejectModal(serviceId, personId, name) {
+            document.getElementById('reject-service-id').value = serviceId;
+            document.getElementById('reject-person-id').value = personId;
+            document.getElementById('reject-person-name').innerText = name;
+            document.getElementById('reject-reason').value = '';
+            document.getElementById('modal-reject').classList.remove('hidden');
+        }
+        function confirmReject() {
+            const sId = document.getElementById('reject-service-id').value;
+            const pId = document.getElementById('reject-person-id').value;
+            const reason = document.getElementById('reject-reason').value.trim();
+            if(!reason) { alert("Motivo obrigatório."); return; }
+            approveAction(sId, pId, 'reject', reason);
+            document.getElementById('modal-reject').classList.add('hidden');
+        }
     </script>
 </body>
 </html>
