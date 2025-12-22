@@ -1,350 +1,196 @@
 const { getSfConnection } = require('../config/salesforce');
 
-// --- FUNÇÃO 1: BUSCAR DADOS (TABELA PRINCIPAL VIA PERÍODO) ---
+// --- 1. PAINEL PRINCIPAL ---
 exports.getHrEmployees = async (req, res) => {
     try {
         const conn = await getSfConnection();
         const { inicio, fim } = req.query;
 
-        // 1. Busca dos Períodos, Pessoas e Variáveis de Meta
-        // [MUDANÇA]: Adicionados campos QuantidadeDiasUteis__c e ContratoPessoa__r.Hora__c
         const soqlPeriodos = `
             SELECT Id, ContratoPessoa__r.Pessoa__c, ContratoPessoa__r.Pessoa__r.Name, 
-                   ContratoPessoa__r.Cargo__c, 
-                   Horas__c, HorasBanco__c, HorasExtras__c, HorasLicencaRemunerada__c,
-                   QuantidadeDiasUteis__c, ContratoPessoa__r.Hora__c,
-                   DataInicio__c, DataFim__c
+                   ContratoPessoa__r.Cargo__c, QuantidadeDiasUteis__c, ContratoPessoa__r.Hora__c
             FROM Periodo__c
-            WHERE DataInicio__c >= ${inicio}
-            AND DataFim__c <= ${fim}
+            WHERE DataInicio__c >= ${inicio} AND DataFim__c <= ${fim}
         `;
 
-        // 2. Busca dos Status (Agrupado por Período)
-        const soqlStatus = `
-            SELECT Periodo__c, Status__c, COUNT(Id) total
+        // CORREÇÃO NO FILTRO: Usar > 0 e < 0 para Banco elimina problemas com NULL
+        const filtroHoras = `(
+            Horas__c > 0 
+            OR HorasExtras__c > 0 
+            OR HorasBanco__c > 0 OR HorasBanco__c < 0
+            OR HorasAusenciaRemunerada__c > 0 
+            OR HorasAusenciaNaoRemunerada__c > 0
+        )`;
+
+        const soqlAgregado = `
+            SELECT DiaPeriodo__r.Periodo__c, Status__c,
+                   SUM(Horas__c) normal, 
+                   SUM(HorasExtras__c) extra, 
+                   SUM(HorasBanco__c) banco,
+                   SUM(HorasAusenciaRemunerada__c) ausRem,
+                   SUM(HorasAusenciaNaoRemunerada__c) ausNaoRem
             FROM LancamentoHora__c 
-            WHERE DiaPeriodo__r.Data__c >= ${inicio}
-            AND DiaPeriodo__r.Data__c <= ${fim}
-            AND (Horas__c > 0 OR HorasExtras__c > 0)
-            GROUP BY Periodo__c, Status__c
+            WHERE DiaPeriodo__r.Data__c >= ${inicio} AND DiaPeriodo__r.Data__c <= ${fim}
+            AND ${filtroHoras}
+            GROUP BY DiaPeriodo__r.Periodo__c, Status__c
         `;
 
-        // 3. Busca de Lista de Projetos (Agrupado por Período)
         const soqlProjetos = `
-            SELECT Periodo__c, Servico__r.Name
+            SELECT DiaPeriodo__r.Periodo__c, Servico__r.Name
             FROM LancamentoHora__c 
-            WHERE DiaPeriodo__r.Data__c >= ${inicio}
-            AND DiaPeriodo__r.Data__c <= ${fim}
-            AND (Horas__c > 0 OR HorasExtras__c > 0)
-            GROUP BY Periodo__c, Servico__r.Name
+            WHERE DiaPeriodo__r.Data__c >= ${inicio} AND DiaPeriodo__r.Data__c <= ${fim}
+            AND ${filtroHoras}
+            GROUP BY DiaPeriodo__r.Periodo__c, Servico__r.Name
         `;
 
-        const [resPeriodos, resStatus, resProjetos] = await Promise.all([
-            conn.query(soqlPeriodos),
-            conn.query(soqlStatus),
-            conn.query(soqlProjetos)
+        const [resPeriodos, resAgregado, resProjetos] = await Promise.all([
+            conn.query(soqlPeriodos), conn.query(soqlAgregado), conn.query(soqlProjetos)
         ]);
 
-        // --- PROCESSAMENTO ---
-
-        const statusMap = {};
-        resStatus.records.forEach(r => {
-            const pId = r.Periodo__c;
-            const st = r.Status__c;
-            const count = r.total || r.expr0 || 0;
-
-            if (!statusMap[pId]) statusMap[pId] = { approved: 0, closed: 0, billed: 0, pending: 0 };
-            
-            if (st === 'Aprovado') statusMap[pId].approved += count;
-            else if (st === 'Fechado') statusMap[pId].closed += count;
-            else if (st === 'Faturado') statusMap[pId].billed += count;
-            else statusMap[pId].pending += count; 
+        const periodDataMap = {};
+        resPeriodos.records.forEach(p => {
+            periodDataMap[p.Id] = { approved: 0, closed: 0, billed: 0, pending: 0, totalRealizado: 0, projects: new Set() };
         });
 
-        const projectMap = {};
         resProjetos.records.forEach(r => {
+            if (periodDataMap[r.Periodo__c] && r.Name) periodDataMap[r.Periodo__c].projects.add(r.Name);
+        });
+
+        resAgregado.records.forEach(r => {
             const pId = r.Periodo__c;
-            const pName = r.Name || (r.Servico__r ? r.Servico__r.Name : null);
-            if (!projectMap[pId]) projectMap[pId] = new Set();
-            if (pName) projectMap[pId].add(pName);
+            if (!periodDataMap[pId]) return;
+            const st = r.Status__c;
+            if (st === 'Aprovado') periodDataMap[pId].approved++;
+            else if (st === 'Fechado') periodDataMap[pId].closed++;
+            else if (st === 'Faturado') periodDataMap[pId].billed++;
+            else periodDataMap[pId].pending++;
+
+            const vol = (r.normal||0) + (r.extra||0) + Math.abs(r.banco||0) + (r.ausRem||0) + (r.ausNaoRem||0);
+            periodDataMap[pId].totalRealizado += vol;
         });
 
         let kpiBurnout = 0, kpiOciosos = 0;
-        
         const tableData = resPeriodos.records.map(per => {
             const pId = per.Id;
-            const pessoaId = per.ContratoPessoa__r?.Pessoa__c;
-            const nome = per.ContratoPessoa__r?.Pessoa__r?.Name || 'Sem Nome';
-            const cargo = per.ContratoPessoa__r?.Cargo__c || 'Consultor';
-            const hNormal = per.Horas__c || 0;
-            const hBanco = per.HorasBanco__c || 0;
-            const hExtra = per.HorasExtras__c || 0;
-            const hLicenca = per.HorasLicencaRemunerada__c || 0;
-            const totalHoras = hNormal + hBanco + (hExtra * 2) + hLicenca;
-            
+            const data = periodDataMap[pId];
             const diasUteis = per.QuantidadeDiasUteis__c || 0;
-            const horasDiarias = per.ContratoPessoa__r?.Hora__c || 8; // Default 8h se nulo
-            const contractHours = diasUteis * horasDiarias;
+            const carga = per.ContratoPessoa__r?.Hora__c || 8;
+            const contractHours = diasUteis * carga;
+            const totalHoras = data ? data.totalRealizado : 0;
 
-            const s = statusMap[pId] || { approved: 0, closed: 0, billed: 0, pending: 0 };
-            const projects = projectMap[pId] ? Array.from(projectMap[pId]) : [];
+            let statusUI = 'Pendente', canAction = false;
+            if (!data || (data.approved + data.closed + data.billed + data.pending === 0)) statusUI = 'Sem Lançamentos';
+            else if (data.pending > 0) statusUI = 'Aguardando Aprovação';
+            else if (data.approved > 0 && data.closed === 0) { statusUI = 'Pronto para Fechamento'; canAction = true; }
+            else if (data.closed > 0) statusUI = 'Fechado';
+            else if (data.billed > 0) statusUI = 'Faturado';
 
-            // Lógica de Status UI e Ação (Mesma logica anterior corrigida)
-            const hasActivity = (s.approved + s.closed + s.billed) > 0;
-            let statusUI = 'Pendente';
-            let canAction = false;
-
-            if (s.pending > 0) {
-                statusUI = 'Aguardando Aprovação';
-            } else if (s.approved > 0 && s.closed === 0 && s.billed === 0) {
-                statusUI = 'Pronto para Fechamento';
-                canAction = true;
-            } else if (s.closed > 0 && s.approved === 0) {
-                statusUI = 'Aguardando Faturamento';
-            } else if (s.billed > 0) {
-                statusUI = 'Faturado';
-            } else if (!hasActivity) {
-                statusUI = 'Sem Lançamentos';
-            } else {
-                statusUI = 'Status Misto';
-            }
-
-            // KPIs
             let statusKPI = 'healthy';
-            if (totalHoras > (contractHours + 20)) { statusKPI = 'danger'; kpiBurnout++; }
+            if (totalHoras > (contractHours * 1.2)) { statusKPI = 'danger'; kpiBurnout++; }
             else if (totalHoras > contractHours) { statusKPI = 'risk'; }
-            else if (totalHoras < (contractHours * 0.5)) { statusKPI = 'under'; kpiOciosos++; }
+            else if (totalHoras < (contractHours * 0.7)) { statusKPI = 'under'; kpiOciosos++; }
 
             return {
-                id: pessoaId,
-                name: nome,
-                role: cargo,
-                total: totalHoras,
-                contract: contractHours, // Meta Calculada
-                projects: projects,
-                statusUI: statusUI,
-                status: statusKPI,
-                canAction: canAction,
-                periodId: pId 
+                id: per.ContratoPessoa__r?.Pessoa__c,
+                name: per.ContratoPessoa__r?.Pessoa__r?.Name || 'Desconhecido',
+                role: per.ContratoPessoa__r?.Cargo__c || 'Consultor',
+                total: totalHoras, contract: contractHours,
+                projects: data ? Array.from(data.projects) : [],
+                statusUI, statusKPI, canAction, periodId: pId
             };
         });
 
         tableData.sort((a, b) => {
-            if (a.canAction === b.canAction) return b.total - a.total;
-            return a.canAction ? -1 : 1;
+            if (a.canAction !== b.canAction) return a.canAction ? -1 : 1;
+            return b.total - a.total;
         });
 
-        res.json({
-            kpis: { total: tableData.length, burnout: kpiBurnout, ociosos: kpiOciosos },
-            data: tableData
-        });
-
-    } catch (e) {
-        console.error("Erro HR Employees:", e);
-        res.status(500).json({ error: e.message });
-    }
+        res.json({ kpis: { total: tableData.length, burnout: kpiBurnout, ociosos: kpiOciosos }, data: tableData });
+    } catch (e) { res.status(500).json({ error: e.message }); }
 };
 
-// --- FUNÇÃO 2: DETALHES (MODAL VIA DIAS DO PERÍODO) ---
+// --- 2. DETALHES (MODAL) ---
 exports.getEmployeeDetails = async (req, res) => {
     try {
         const conn = await getSfConnection();
         const { personId } = req.params;
         const { inicio, fim } = req.query;
 
-        // 1. Encontrar Período e buscar TOTALIZADORES (A "Análise Fiel")
-        const soqlPeriodo = `
-            SELECT Id, 
-                   Horas__c,                
-                   HorasBanco__c,           
-                   HorasExtras__c,          
-                   HorasFerias__c,          
-                   HorasLicencaRemunerada__c, 
-                   QuantidadeDiasUteis__c,
-                   ContratoPessoa__r.Hora__c
-            FROM Periodo__c 
-            WHERE ContratoPessoa__r.Pessoa__c = '${personId}' 
-            AND DataInicio__c >= ${inicio} 
-            AND DataFim__c <= ${fim}
-            LIMIT 1
-        `;
-        const resPeriodo = await conn.query(soqlPeriodo);
-        
-        if (resPeriodo.totalSize === 0) return res.json({ logs: [], summary: null });
-        
-        const per = resPeriodo.records[0];
-        const periodoId = per.Id;
+        // FILTRO REFORÇADO PARA ELIMINAR LINHAS VAZIAS/ZERADAS
+        const filtroHoras = `(
+            Horas__c > 0 
+            OR HorasExtras__c > 0 
+            OR HorasBanco__c > 0 OR HorasBanco__c < 0
+            OR HorasAusenciaRemunerada__c > 0 
+            OR HorasAusenciaNaoRemunerada__c > 0
+        )`;
 
-        // Monta o objeto de Resumo Oficial
-        const summary = {
-            normal: per.Horas__c || 0,
-            banco: per.HorasBanco__c || 0,
-            extra: per.HorasExtras__c || 0,
-            ferias: per.HorasFerias__c || 0,
-            licenca: per.HorasLicencaRemunerada__c || 0,
-            // Cálculo do Realizado (Conforme sua regra: Normal + Banco + 2xExtra + Licença)
-            totalRealizado: (per.Horas__c || 0) + (per.HorasBanco__c || 0) + ((per.HorasExtras__c || 0) * 2) + (per.HorasLicencaRemunerada__c || 0)
-        };
-
-        // 2. Buscar Dias (Mantém igual)
-        const soqlDias = `SELECT Id, Name, Tipo__c, Data__c FROM DiaPeriodo__c WHERE Periodo__c = '${periodoId}' ORDER BY Data__c ASC`;
-        const resDias = await conn.query(soqlDias);
-
-        if (resDias.totalSize === 0) return res.json({ logs: [], summary });
-
-        const diasMap = {};
-        const diaIds = [];
-        resDias.records.forEach(d => {
-            diasMap[d.Id] = d;
-            diaIds.push(`'${d.Id}'`);
-        });
-
-        // 3. Buscar Lançamentos (Mantém igual)
-        const soqlLancamentos = `
-            SELECT Id, DiaPeriodo__c, Servico__r.Name, Atividade__r.Name, 
-                   Horas__c, HorasExtras__c, JustificativaExtra__c
+        const result = await conn.query(`
+            SELECT DiaPeriodo__r.Data__c, Servico__r.Name, Atividade__r.Name, Justificativa__c, Status__c,
+                   Horas__c, HorasExtras__c, HorasBanco__c, 
+                   HorasAusenciaRemunerada__c, HorasAusenciaNaoRemunerada__c
             FROM LancamentoHora__c 
-            WHERE DiaPeriodo__c IN (${diaIds.join(',')})
-            AND (Horas__c > 0 OR HorasExtras__c > 0)
-        `;
-        const resLancamentos = await conn.query(soqlLancamentos);
+            WHERE Pessoa__c = '${personId}'
+            AND DiaPeriodo__r.Data__c >= ${inicio} AND DiaPeriodo__r.Data__c <= ${fim}
+            AND ${filtroHoras}
+            ORDER BY DiaPeriodo__r.Data__c ASC, Servico__r.Name ASC
+        `);
 
-        // 4. Processar Logs (Mantém lógica visual)
-        // src/controllers/hrController.js
-
-        const logs = resLancamentos.records.map(lanc => {
-            const dia = diasMap[lanc.DiaPeriodo__c];
-            const hNormal = lanc.Horas__c || 0;
-            const hExtra = lanc.HorasExtras__c || 0;
+        let sumNormal=0, sumExtra=0, sumBanco=0, sumAusencia=0;
+        const logs = result.records.map(r => {
+            const hN = r.Horas__c||0;
+            const hE = r.HorasExtras__c||0;
+            const hB = r.HorasBanco__c||0;
+            const hA = (r.HorasAusenciaRemunerada__c||0)+(r.HorasAusenciaNaoRemunerada__c||0);
             
-            // Análise da Justificativa para classificar o tipo de Extra
-            const justificativa = (lanc.JustificativaExtra__c || '').toLowerCase();
-            const activityName = (lanc.Atividade__r?.Name || '').toLowerCase();
-
-            // Lógica de Categorização
-            let category = 'normal';
-            let isExtraReal = false;
-            let isBancoHora = false;
-
-            // 1. Verifica Férias/Licença
-            if (activityName.includes('férias') || activityName.includes('ferias')) {
-                category = 'ferias';
-            } else if (activityName.includes('licença') || activityName.includes('licenca')) {
-                category = 'licenca';
-            } 
-            // 2. Verifica Horas Extras vs Banco
-            else if (hExtra > 0) {
-                // Se a justificativa tiver "banco", tratamos como Banco de Horas (Peso 1x)
-                if (justificativa.includes('banco')) {
-                    category = 'banco_lancamento'; // Categoria nova
-                    isBancoHora = true;
-                } else {
-                    // Caso contrário, é Extra Pura (Peso 2x)
-                    category = 'extra';
-                    isExtraReal = true;
-                }
-            }
-
-            // Cálculo do Impacto Visual na Lista
-            // Se for Banco, soma 1x. Se for Extra Real, soma 2x.
-            const totalImpact = hNormal + (isBancoHora ? hExtra : 0) + (isExtraReal ? (hExtra * 2) : 0);
+            sumNormal += hN; sumExtra += hE; sumBanco += hB; sumAusencia += hA;
 
             return {
-                date: dia.Name || dia.Data__c, 
-                weekDay: dia.Tipo__c,
-                project: lanc.Servico__r?.Name || 'N/A',
-                description: lanc.Atividade__r?.Name || '-',
-                justification: lanc.JustificativaExtra__c || '', // Passamos a justificativa pura para o front usar
-                rawNormal: hNormal,
-                rawExtra: hExtra,
-                totalImpact: totalImpact,
-                category: category,
-                isExtra: isExtraReal,
-                isBanco: isBancoHora // Nova flag
+                date: r.DiaPeriodo__r ? r.DiaPeriodo__r.Data__c : '-',
+                project: r.Servico__r ? r.Servico__r.Name : '-', // NOME DO SERVIÇO
+                activity: r.Atividade__r ? r.Atividade__r.Name : 'Geral',
+                justification: r.Justificativa__c || '',
+                status: r.Status__c,
+                normal: hN, extraPgto: hE, banco: hB, ausencia: hA
             };
         });
 
-        // Retorna Logs + Resumo
-        res.json({ logs, summary });
+        const resMeta = await conn.query(`SELECT QuantidadeDiasUteis__c, ContratoPessoa__r.Hora__c FROM Periodo__c WHERE ContratoPessoa__r.Pessoa__c = '${personId}' AND DataInicio__c >= ${inicio} AND DataFim__c <= ${fim} LIMIT 1`);
+        let contractHours = 0;
+        if(resMeta.totalSize > 0) {
+            contractHours = (resMeta.records[0].QuantidadeDiasUteis__c || 0) * (resMeta.records[0].ContratoPessoa__r?.Hora__c || 8);
+        }
 
-    } catch (e) {
-        console.error("Erro Detail:", e);
-        res.status(500).json({ error: e.message });
-    }
+        res.json({ 
+            logs, 
+            summary: {
+                normal: sumNormal, extra: sumExtra, banco: sumBanco,
+                ausencia: sumAusencia, 
+                totalRealizado: sumNormal + sumExtra + Math.abs(sumBanco) + sumAusencia,
+                contract: contractHours
+            } 
+        });
+    } catch (e) { res.status(500).json({ error: e.message }); }
 };
 
-// --- FUNÇÃO 3: AÇÃO DE FECHAR/REPROVAR (QUERY 3 DO PROMPT) ---
 exports.handleHrAction = async (req, res) => {
-    const { personId, action, inicio, fim } = req.body;
-    
-    let novoStatus = '';
-    if (action === 'close') novoStatus = 'Fechado';
-    else if (action === 'reject') novoStatus = 'Reprovado';
-    else return res.status(400).json({ success: false, message: 'Ação inválida.' });
-
+    // ... (Mantenha a lógica de ação que já estava correta no anterior)
+    const { personId, action, inicio, fim, motivo } = req.body;
+    let novoStatus = action === 'close' ? 'Fechado' : 'Reprovado';
     try {
         const conn = await getSfConnection();
-        
-        // 1. Encontrar o Período primeiro (Segurança)
-        const soqlPeriodo = `
-            SELECT Id FROM Periodo__c 
-            WHERE ContratoPessoa__r.Pessoa__c = '${personId}' 
-            AND DataInicio__c >= ${inicio} 
-            AND DataFim__c <= ${fim}
-            LIMIT 1
-        `;
-        const resultPeriodo = await conn.query(soqlPeriodo);
-        
-        if (resultPeriodo.totalSize === 0) {
-            return res.status(404).json({ success: false, message: 'Período não encontrado.' });
-        }
-        const periodoId = resultPeriodo.records[0].Id;
-
-        // 2. Buscar Lançamentos "Aprovados" dentro desse Período
-        // (Continua a mesma lógica: fecha o lançamento)
-        const soqlBusca = `
-            SELECT Id FROM LancamentoHora__c 
-            WHERE DiaPeriodo__r.Periodo__c = '${periodoId}'
-            AND Status__c = 'Aprovado'
-            AND (Horas__c > 0 OR HorasExtras__c > 0) 
-        `;
-        
-        const resultBusca = await conn.query(soqlBusca);
-
-        if (resultBusca.totalSize === 0) {
-            return res.json({ success: false, message: 'Nenhum lançamento elegível (Aprovado) encontrado neste período.' });
-        }
-
-        // 3. Update
-        const allUpdates = resultBusca.records.map(rec => ({ Id: rec.Id, Status__c: novoStatus }));
-        
-        // Batching
-        const BATCH_SIZE = 200;
-        const batches = [];
-        for (let i = 0; i < allUpdates.length; i += BATCH_SIZE) {
-            batches.push(allUpdates.slice(i, i + BATCH_SIZE));
-        }
-
-        const results = await Promise.all(
-            batches.map(batch => conn.update('LancamentoHora__c', batch))
-        );
-
-        const flatResults = results.flat();
-        const erros = flatResults.filter(r => !r.success);
-        
-        if (erros.length > 0) {
-            return res.status(400).json({ success: false, message: 'Erro parcial ao atualizar Salesforce.' });
-        }
-
-        const msg = action === 'close' ? 'Folha fechada com sucesso.' : 'Folha reprovada.';
-        res.json({ success: true, message: msg });
-
-    } catch (e) {
-        console.error("Erro HR Action:", e);
-        res.status(500).json({ success: false, error: e.message });
-    }
+        const statusFilter = action === 'close' ? "Status__c = 'Aprovado'" : "Status__c IN ('Lançado', 'Aprovado')";
+        const soql = `SELECT Id FROM LancamentoHora__c WHERE Pessoa__c = '${personId}' AND DiaPeriodo__r.Data__c >= ${inicio} AND DiaPeriodo__r.Data__c <= ${fim} AND ${statusFilter}`;
+        const result = await conn.query(soql);
+        if (result.totalSize === 0) return res.json({ success: false, message: 'Nenhum lançamento elegível.' });
+        const updates = result.records.map(r => {
+            const obj = { Id: r.Id, Status__c: novoStatus };
+            if (action === 'reject' && motivo) obj.MotivoReprovacao__c = motivo;
+            return obj;
+        });
+        await conn.update('LancamentoHora__c', updates);
+        res.json({ success: true, message: action === 'close' ? 'Período fechado.' : 'Período reprovado.' });
+    } catch (e) { res.status(500).json({ success: false, error: e.message }); }
 };
 
-exports.renderHrDashboard = (req, res) => {
-    res.render('hr_dashboard', { user: req.session.user, page: 'hr' });
-};
+exports.renderHrDashboard = (req, res) => { res.render('hr_dashboard', { user: req.session.user, page: 'hr' }); };

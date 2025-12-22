@@ -2,26 +2,13 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gestão de Ponto (RH) - C3C Workplace</title>
-    
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    fontFamily: { sans: ['Montserrat', 'sans-serif'] },
-                    colors: { c3c: { blue: '#2978FF', teal: '#1DDDBD', gray: '#F2F2F2' } }
-                }
-            }
-        }
-    </script>
+    <script>tailwind.config = { theme: { extend: { fontFamily: { sans: ['Montserrat', 'sans-serif'] } } } }</script>
     <style>
         body { font-family: 'Montserrat', sans-serif; background-color: #F8FAFC; }
-        .bg-c3c-gradient { background: linear-gradient(135deg, #2978FF 0%, #1DDDBD 100%); }
         .fade-in { animation: fadeIn 0.4s ease-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         .modal-backdrop { background-color: rgba(0, 0, 0, 0.5); backdrop-filter: blur(2px); }
@@ -30,77 +17,38 @@
 <body class="h-screen flex overflow-hidden bg-[#F8FAFC]">
 
     <div id="mobile-overlay" onclick="toggleMenu()" class="fixed inset-0 bg-black/50 z-30 hidden md:hidden transition-opacity opacity-0"></div>
-
     <%- include('partials/sidebar') %>
 
     <main class="flex-1 flex flex-col md:ml-64 relative w-full transition-all duration-300">
-        
         <header class="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-4 md:px-8 sticky top-0 z-20">
             <div class="flex items-center gap-4">
-                <button onclick="toggleMenu()" class="md:hidden p-2 text-gray-600 hover:bg-gray-100 rounded-lg focus:outline-none">
-                    <i data-lucide="menu" class="w-6 h-6"></i>
-                </button>
-                
-                <h1 class="text-lg md:text-xl font-bold text-gray-800 flex items-center gap-2">
-                    Gestão de Ponto
-                    <span class="hidden md:inline-flex bg-purple-100 text-purple-700 text-xs px-2 py-1 rounded-full items-center gap-1">
-                        <i data-lucide="lock" class="w-3 h-3"></i> RH
-                    </span>
-                </h1>
+                <button onclick="toggleMenu()" class="md:hidden p-2 text-gray-600 hover:bg-gray-100 rounded-lg"><i data-lucide="menu" class="w-6 h-6"></i></button>
+                <h1 class="text-lg md:text-xl font-bold text-gray-800 flex items-center gap-2">Gestão de Ponto <span class="hidden md:inline-flex bg-purple-100 text-purple-700 text-xs px-2 py-1 rounded-full items-center gap-1"><i data-lucide="lock" class="w-3 h-3"></i> RH</span></h1>
             </div>
-            
             <div class="flex items-center gap-3">
-                <select id="period-selector" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2 cursor-pointer outline-none min-w-[150px]">
-                    <option>Carregando...</option>
-                </select>
-                <button class="bg-blue-600 hover:bg-blue-700 text-white p-2 rounded-lg shadow-sm transition-colors">
-                    <i data-lucide="download" class="w-5 h-5"></i>
-                </button>
+                <select id="period-selector" onchange="triggerDataLoad(this.value)" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2 cursor-pointer outline-none min-w-[150px]"><option>Carregando...</option></select>
+                <button onclick="triggerDataLoad(document.getElementById('period-selector').value)" class="bg-blue-600 hover:bg-blue-700 text-white p-2 rounded-lg shadow-sm transition-colors" title="Atualizar"><i data-lucide="refresh-cw" class="w-5 h-5"></i></button>
             </div>
         </header>
 
         <div class="flex-1 overflow-y-auto p-4 md:p-8 fade-in">
-            
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                <div class="bg-white p-5 rounded-xl border border-gray-200 shadow-sm flex items-center gap-4">
-                    <div class="w-12 h-12 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center"><i data-lucide="users" class="w-6 h-6"></i></div>
-                    <div>
-                        <p class="text-xs text-gray-500 uppercase font-bold tracking-wider">Colaboradores</p>
-                        <p class="text-2xl font-bold text-gray-900" id="kpi-total">--</p>
-                    </div>
-                </div>
-                <div class="bg-white p-5 rounded-xl border border-red-100 shadow-sm flex items-center gap-4 relative overflow-hidden">
-                    <div class="absolute right-0 top-0 w-16 h-16 bg-red-50 rounded-bl-full -mr-2 -mt-2"></div>
-                    <div class="w-12 h-12 rounded-full bg-red-50 text-red-600 flex items-center justify-center z-10"><i data-lucide="alert-triangle" class="w-6 h-6"></i></div>
-                    <div class="z-10">
-                        <p class="text-xs text-gray-500 uppercase font-bold tracking-wider">Risco Burnout</p>
-                        <p class="text-2xl font-bold text-gray-900" id="kpi-burnout">--</p>
-                    </div>
-                </div>
-                <div class="bg-white p-5 rounded-xl border border-yellow-100 shadow-sm flex items-center gap-4">
-                    <div class="w-12 h-12 rounded-full bg-yellow-50 text-yellow-600 flex items-center justify-center"><i data-lucide="coffee" class="w-6 h-6"></i></div>
-                    <div>
-                        <p class="text-xs text-gray-500 uppercase font-bold tracking-wider">Ociosidade</p>
-                        <p class="text-2xl font-bold text-gray-900" id="kpi-ociosos">--</p>
-                    </div>
-                </div>
+                <div class="bg-white p-5 rounded-xl border border-gray-200 shadow-sm flex items-center gap-4"><div class="w-12 h-12 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center"><i data-lucide="users" class="w-6 h-6"></i></div><div><p class="text-xs text-gray-500 uppercase font-bold tracking-wider">Colaboradores</p><p class="text-2xl font-bold text-gray-900" id="kpi-total">--</p></div></div>
+                <div class="bg-white p-5 rounded-xl border border-red-100 shadow-sm flex items-center gap-4"><div class="w-12 h-12 rounded-full bg-red-50 text-red-600 flex items-center justify-center"><i data-lucide="alert-triangle" class="w-6 h-6"></i></div><div><p class="text-xs text-gray-500 uppercase font-bold tracking-wider">Risco Burnout</p><p class="text-2xl font-bold text-gray-900" id="kpi-burnout">--</p></div></div>
+                <div class="bg-white p-5 rounded-xl border border-yellow-100 shadow-sm flex items-center gap-4"><div class="w-12 h-12 rounded-full bg-yellow-50 text-yellow-600 flex items-center justify-center"><i data-lucide="coffee" class="w-6 h-6"></i></div><div><p class="text-xs text-gray-500 uppercase font-bold tracking-wider">Ociosidade</p><p class="text-2xl font-bold text-gray-900" id="kpi-ociosos">--</p></div></div>
             </div>
 
             <div class="bg-white rounded-xl shadow-sm border border-gray-200 flex flex-col">
                 <div class="p-6 border-b border-gray-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <h2 class="text-lg font-bold text-gray-900">Saúde da Alocação & Folha</h2>
-                    <div class="relative w-full sm:w-auto">
-                        <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400"></i>
-                        <input type="text" id="search-input" onkeyup="filterTable()" placeholder="Buscar colaborador..." class="pl-9 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 w-full sm:w-64">
-                    </div>
+                    <div class="relative w-full sm:w-auto"><i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400"></i><input type="text" id="search-input" onkeyup="filterTable()" placeholder="Buscar colaborador..." class="pl-9 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 w-full sm:w-64"></div>
                 </div>
-
                 <div class="overflow-x-auto">
                     <table class="w-full text-sm text-left">
                         <thead class="bg-gray-50 text-gray-500 uppercase text-xs font-bold border-b border-gray-200">
                             <tr>
                                 <th class="px-6 py-4 whitespace-nowrap">Colaborador</th>
-                                <th class="px-6 py-4 whitespace-nowrap text-center">Qtd. Projetos</th>
+                                <th class="px-6 py-4 whitespace-nowrap text-center">Projetos</th>
                                 <th class="px-6 py-4 whitespace-nowrap min-w-[200px]">Carga vs Realizado</th>
                                 <th class="px-6 py-4 whitespace-nowrap text-center">Status</th>
                                 <th class="px-6 py-4 whitespace-nowrap text-right">Ação RH</th>
@@ -116,58 +64,50 @@
     </main>
 
     <div id="logs-modal" class="fixed inset-0 modal-backdrop z-50 hidden flex items-center justify-center opacity-0 transition-opacity duration-300 p-4">
-        <div class="bg-white rounded-xl shadow-2xl w-full max-w-3xl transform scale-95 transition-transform duration-300 flex flex-col max-h-[90vh]">
-            
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-6xl transform scale-95 transition-transform duration-300 flex flex-col max-h-[90vh]">
             <div class="bg-gray-900 text-white rounded-t-xl shrink-0 flex flex-col">
-                
-                <div class="p-6 pb-2 flex justify-between items-start">
-                    <div>
-                        <h3 class="text-xl font-bold" id="modal-name">Nome do Colaborador</h3>
-                        <p class="text-gray-400 text-xs mt-0.5 uppercase tracking-wider">Extrato de Horas & Composição</p>
-                    </div>
-                    <button onclick="closeModal()" class="bg-gray-800 hover:bg-gray-700 p-2 rounded-lg text-gray-300 transition-colors">
-                        <i data-lucide="x" class="w-5 h-5"></i>
-                    </button>
+                <div class="p-6 pb-4 flex justify-between items-start">
+                    <div><h3 class="text-xl font-bold" id="modal-name">Colaborador</h3><p class="text-gray-400 text-xs mt-0.5 uppercase tracking-wider">Fechamento de Período</p></div>
+                    <button onclick="closeModal()" class="bg-gray-800 hover:bg-gray-700 p-2 rounded-lg text-gray-300 transition-colors"><i data-lucide="x" class="w-5 h-5"></i></button>
                 </div>
-
-                <div class="px-6 py-4 grid grid-cols-3 gap-4 border-b border-gray-800">
-                    <div>
-                        <span class="block text-3xl font-bold text-[#1DDDBD]" id="modal-total">--</span>
-                        <span class="text-xs text-gray-400 uppercase font-bold tracking-wider">Realizado</span>
-                    </div>
-                    <div class="border-l border-gray-800 pl-4">
-                        <span class="block text-3xl font-bold text-gray-200" id="modal-contract">--</span>
-                        <span class="text-xs text-gray-400 uppercase font-bold tracking-wider">Meta Contratual</span>
-                    </div>
-                    <div class="border-l border-gray-800 pl-4">
-                        <span class="block text-3xl font-bold text-gray-500" id="modal-saldo">--</span>
-                        <span class="text-xs text-gray-400 uppercase font-bold tracking-wider">Saldo Final</span>
-                    </div>
-                </div>
-
-                <div class="px-6 py-3 bg-gray-800/50 flex flex-wrap gap-x-6 gap-y-2 text-sm items-center min-h-[40px]" id="modal-composition">
-                    <span class="text-gray-500 italic text-xs">Carregando composição...</span>
+                <div class="px-6 pb-6 grid grid-cols-2 md:grid-cols-7 gap-4 text-center md:text-left">
+                    <div class="border-r border-gray-800 pr-2"><span class="block text-xl font-bold text-gray-300" id="modal-normal">--</span><span class="text-[10px] text-gray-500 uppercase font-bold">Normais</span></div>
+                    <div class="border-r border-gray-800 pr-2"><span class="block text-xl font-bold text-green-400" id="modal-extra">--</span><span class="text-[10px] text-gray-500 uppercase font-bold">Extra ($)</span></div>
+                    <div class="border-r border-gray-800 pr-2"><span class="block text-xl font-bold text-indigo-400" id="modal-banco">--</span><span class="text-[10px] text-gray-500 uppercase font-bold">Banco</span></div>
+                    <div class="border-r border-gray-800 pr-2"><span class="block text-xl font-bold text-orange-400" id="modal-ausencia">--</span><span class="text-[10px] text-gray-500 uppercase font-bold">Ausências</span></div>
+                    <div class="border-r border-gray-800 pr-2"><span class="block text-xl font-bold text-white" id="modal-total">--</span><span class="text-[10px] text-gray-500 uppercase font-bold">Realizado</span></div>
+                    <div class="border-r border-gray-800 pr-2"><span class="block text-xl font-bold text-blue-200" id="modal-meta">--</span><span class="text-[10px] text-blue-400 uppercase font-bold">Meta</span></div>
+                    <div><span class="block text-xl font-bold" id="modal-saldo">--</span><span class="text-[10px] text-gray-500 uppercase font-bold">Saldo</span></div>
                 </div>
             </div>
-
-            <div id="modal-projects-list" class="hidden"></div>
-
             <div class="overflow-y-auto flex-1 bg-white">
                 <table class="w-full text-sm text-left border-collapse">
                     <thead class="bg-gray-50 text-gray-500 uppercase text-xs font-bold sticky top-0 shadow-sm z-10 border-b border-gray-100">
                         <tr>
-                            <th class="px-6 py-3 bg-gray-50">Data</th>
-                            <th class="px-6 py-3 bg-gray-50">Atividade / Contexto</th>
-                            <th class="px-6 py-3 bg-gray-50">Composição</th>
-                            <th class="px-6 py-3 bg-gray-50 text-right">Impacto</th>
+                            <th class="px-6 py-3">Data</th>
+                            <th class="px-6 py-3">Serviço</th> <th class="px-6 py-3">Atividade / Justificativa</th>
+                            <th class="px-6 py-3 text-right text-blue-600 border-l border-white">Normal</th>
+                            <th class="px-6 py-3 text-right text-green-600 border-l border-white">Extra</th>
+                            <th class="px-6 py-3 text-right text-indigo-600 border-l border-white">Banco</th>
+                            <th class="px-6 py-3 text-right text-orange-600 border-l border-white">Ausência</th>
+                            <th class="px-6 py-3 text-center border-l border-white">Status</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-gray-100 bg-white" id="modal-logs-body"></tbody>
                 </table>
             </div>
+            <div class="p-4 border-t border-gray-100 bg-white rounded-b-xl flex justify-end shrink-0"><button onclick="closeModal()" class="px-4 py-2 bg-gray-100 text-gray-700 font-bold rounded-lg hover:bg-gray-200">Fechar</button></div>
+        </div>
+    </div>
 
-            <div class="p-4 border-t border-gray-100 bg-white rounded-b-xl flex justify-end shrink-0">
-                <button onclick="closeModal()" class="px-4 py-2 bg-gray-100 text-gray-700 font-bold rounded-lg hover:bg-gray-200">Fechar</button>
+    <div id="modal-reject" class="fixed inset-0 z-[60] hidden">
+        <div class="absolute inset-0 bg-black bg-opacity-40 backdrop-blur-sm flex items-center justify-center p-4">
+            <div class="bg-white rounded-lg shadow-xl w-full max-w-md p-6">
+                <h3 class="text-lg font-bold text-red-600 mb-2">Reprovar Folha</h3>
+                <p class="text-sm text-gray-600 mb-4">Motivo para <strong id="reject-person-name"></strong>:</p>
+                <input type="hidden" id="reject-person-id">
+                <textarea id="reject-reason" rows="3" class="w-full border border-gray-300 rounded-lg p-3 text-sm focus:ring-2 focus:ring-red-500 outline-none mb-4" placeholder="Justificativa..."></textarea>
+                <div class="flex justify-end gap-3"><button onclick="document.getElementById('modal-reject').classList.add('hidden')" class="px-4 py-2 text-gray-500 font-bold hover:bg-gray-100 rounded">Cancelar</button><button onclick="confirmReject()" class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-bold rounded shadow-sm">Confirmar</button></div>
             </div>
         </div>
     </div>
@@ -177,416 +117,143 @@
         const API_URL = '/api';
 
         document.addEventListener('DOMContentLoaded', () => { loadPeriods(); });
+        function toggleMenu() { const s=document.getElementById('sidebar'); const o=document.getElementById('mobile-overlay'); if(s.classList.contains('-translate-x-full')){s.classList.remove('-translate-x-full');o.classList.remove('hidden');setTimeout(()=>o.classList.remove('opacity-0'),10);}else{s.classList.add('-translate-x-full');o.classList.add('opacity-0');setTimeout(()=>o.classList.add('hidden'),300);} }
 
-        // --- MENU MOBILE ---
-        function toggleMenu() {
-            const sidebar = document.getElementById('sidebar');
-            const overlay = document.getElementById('mobile-overlay');
-            const body = document.body;
-            
-            if (!sidebar || !overlay) return;
-
-            if (sidebar.classList.contains('-translate-x-full')) {
-                sidebar.classList.remove('-translate-x-full');
-                overlay.classList.remove('hidden');
-                setTimeout(() => overlay.classList.remove('opacity-0'), 10);
-                if(window.innerWidth < 768) body.style.overflow = 'hidden';
-            } else {
-                sidebar.classList.add('-translate-x-full');
-                overlay.classList.add('opacity-0');
-                setTimeout(() => overlay.classList.add('hidden'), 300);
-                body.style.overflow = '';
-            }
-        }
-
-        // --- CARGA DE PERIODOS ---
         async function loadPeriods() {
             try {
                 const res = await fetch(`${API_URL}/periods`);
-                if(res.status === 401) window.location.href = '/';
+                if(res.status===401) window.location.href='/';
                 const periods = await res.json();
-                
                 const sel = document.getElementById('period-selector');
                 sel.innerHTML = '';
-                if(periods.length === 0) {
-                    sel.innerHTML = '<option>Sem contratos</option>';
-                    return;
-                }
-                
-                periods.forEach((p, idx) => {
-                    const opt = document.createElement('option');
-                    opt.value = JSON.stringify({ start: p.DataInicio__c, end: p.DataFim__c });
-                    opt.text = p.Name;
-                    if(idx === 0) opt.selected = true;
+                if(periods.length===0){ sel.innerHTML='<option>Sem contratos</option>'; return; }
+                periods.forEach((p,i) => {
+                    const opt=document.createElement('option');
+                    opt.value=JSON.stringify({start:p.DataInicio__c, end:p.DataFim__c}); opt.text=p.Name; if(i===0)opt.selected=true;
                     sel.appendChild(opt);
                 });
-                sel.onchange = (e) => triggerDataLoad(e.target.value);
-                if (sel.options.length > 0) triggerDataLoad(sel.value);
-            } catch (err) { console.error(err); }
+                if(sel.options.length>0) triggerDataLoad(sel.value);
+            } catch(e) { console.error(e); }
         }
 
-        function triggerDataLoad(jsonDates) {
-            if(!jsonDates) return;
-            const dates = JSON.parse(jsonDates);
-            loadTableData(dates.start, dates.end);
-        }
+        function triggerDataLoad(v) { if(!v)return; const d=JSON.parse(v); loadTableData(d.start, d.end); }
 
         async function loadTableData(start, end) {
             const tbody = document.getElementById('hr-table-body');
             tbody.innerHTML = '<tr><td colspan="5" class="text-center py-10"><div class="animate-pulse text-blue-600 font-bold">Carregando dados...</div></td></tr>';
             try {
                 const res = await fetch(`${API_URL}/hr/employees?inicio=${start}&fim=${end}`);
-                const response = await res.json();
+                const r = await res.json();
                 
-                // KPIs
-                if(response.kpis) {
-                    document.getElementById('kpi-total').innerText = response.kpis.total || 0;
-                    document.getElementById('kpi-burnout').innerText = response.kpis.burnout || 0;
-                    document.getElementById('kpi-ociosos').innerText = response.kpis.ociosos || 0;
+                if(r.kpis) {
+                    document.getElementById('kpi-total').innerText = r.kpis.total;
+                    document.getElementById('kpi-burnout').innerText = r.kpis.burnout;
+                    document.getElementById('kpi-ociosos').innerText = r.kpis.ociosos;
                 }
-
-                const data = response.data;
+                const data = r.data;
                 tbody.innerHTML = '';
-                if (!data || data.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="5" class="text-center py-10 text-gray-400">Nenhum dado encontrado.</td></tr>';
-                    return;
-                }
+                if(!data || data.length===0) { tbody.innerHTML='<tr><td colspan="5" class="text-center py-10 text-gray-400">Nenhum dado.</td></tr>'; return; }
 
-                data.forEach(person => {
-                    const percent = person.contract > 0 ? (person.total / person.contract) * 100 : 0;
-                    const projectCount = person.projects.length;
-                    let projectCountClass = projectCount > 3 ? "bg-orange-50 text-orange-700 border-orange-100" : "bg-blue-50 text-blue-700 border-blue-100";
+                data.forEach(p => {
+                    const pct = p.contract>0 ? (p.total/p.contract)*100 : 0;
+                    let barColor = p.statusKPI==='danger'?'bg-red-500':(p.statusKPI==='risk'?'bg-yellow-500':'bg-green-500');
+                    let stClass = 'bg-gray-100 text-gray-600';
+                    if(p.statusUI==='Pronto para Fechamento') stClass='bg-green-100 text-green-800 font-bold';
+                    else if(p.statusUI.includes('Faturado')) stClass='bg-blue-100 text-blue-800 font-bold';
                     
-                    // STATUS UI
-                    let statusLabelClass = '';
-                    let statusIcon = '';
-                    switch (person.statusUI) {
-                        case 'Aguardando Aprovação':
-                            statusLabelClass = 'bg-yellow-100 text-yellow-800 border-yellow-200';
-                            statusIcon = '<i data-lucide="clock" class="w-3 h-3"></i>';
-                            break;
-                        case 'Pronto para Fechamento':
-                            statusLabelClass = 'bg-green-100 text-green-800 border-green-200 font-bold';
-                            statusIcon = '<i data-lucide="check-circle" class="w-3 h-3"></i>';
-                            break;
-                        case 'Aguardando Faturamento':
-                            statusLabelClass = 'bg-purple-100 text-purple-800 border-purple-200';
-                            statusIcon = '<i data-lucide="lock" class="w-3 h-3"></i>';
-                            break;
-                        case 'Faturado':
-                            statusLabelClass = 'bg-blue-100 text-blue-800 border-blue-200 font-bold';
-                            statusIcon = '<i data-lucide="dollar-sign" class="w-3 h-3"></i>';
-                            break;
-                        default:
-                            statusLabelClass = 'bg-gray-100 text-gray-600 border-gray-200';
-                            statusIcon = '<i data-lucide="help-circle" class="w-3 h-3"></i>';
-                    }
-                    const statusBadge = `<span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs border ${statusLabelClass}">${statusIcon} ${person.statusUI}</span>`;
-
-                    // PROGRESS BAR
-                    let progressColor;
-                    if (person.status === 'danger') progressColor = 'bg-red-500';
-                    else if (person.status === 'risk') progressColor = 'bg-yellow-500';
-                    else if (person.status === 'under') progressColor = 'bg-gray-400';
-                    else progressColor = 'bg-green-500';
-
-                    // ACTION BUTTONS
-                    const projectsStr = person.projects.join(',');
-                    let actionHtml = '';
-                    
-                    if (person.canAction) {
-                        actionHtml = `
-                            <div class="flex items-center justify-end gap-2">
-                                <button onclick="openModal('${person.id}', '${person.name}', ${person.total}, ${person.contract}, '${projectsStr}')" class="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="Ver Detalhes"><i data-lucide="eye" class="w-4 h-4"></i></button>
-                                <button onclick="performAction('${person.id}', '${person.name}', 'reject')" class="px-3 py-1.5 bg-red-100 hover:bg-red-200 text-red-700 text-xs font-bold rounded shadow-sm transition-colors whitespace-nowrap flex items-center gap-1"><i data-lucide="x-circle" class="w-3 h-3"></i> Reprovar</button>
-                                <button onclick="performAction('${person.id}', '${person.name}', 'close')" class="px-3 py-1.5 bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold rounded shadow-sm transition-colors whitespace-nowrap flex items-center gap-1"><i data-lucide="check-square" class="w-3 h-3"></i> Fechar</button>
-                            </div>`;
-                    } else {
-                        actionHtml = `
-                            <div class="flex items-center justify-end gap-2">
-                                <button onclick="openModal('${person.id}', '${person.name}', ${person.total}, ${person.contract}, '${projectsStr}')" class="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="Ver Detalhes"><i data-lucide="eye" class="w-4 h-4"></i></button>
-                            </div>`;
+                    let actHtml = `<div class="flex items-center justify-end gap-2"><button onclick="openModal('${p.id}','${p.name}')" class="p-2 text-gray-400 hover:text-blue-600 bg-gray-50 rounded-lg"><i data-lucide="eye" class="w-4 h-4"></i></button></div>`;
+                    if(p.canAction) {
+                        actHtml = `<div class="flex items-center justify-end gap-2">
+                            <button onclick="openModal('${p.id}','${p.name}')" class="p-2 text-gray-400 hover:text-blue-600 bg-gray-50 rounded-lg"><i data-lucide="eye" class="w-4 h-4"></i></button>
+                            <button onclick="openRejectModal('${p.id}','${p.name}')" class="px-3 py-1.5 bg-red-100 hover:bg-red-200 text-red-700 text-xs font-bold rounded">Reprovar</button>
+                            <button onclick="performAction('${p.id}','${p.name}','close')" class="px-3 py-1.5 bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold rounded shadow-sm">Fechar</button>
+                        </div>`;
                     }
 
-                    const row = `
-                    <tr class="hover:bg-gray-50 transition-colors group">
-                        <td class="px-6 py-4">
-                            <div class="flex items-center gap-3">
-                                <div class="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center text-xs font-bold text-gray-600 border border-gray-200">${person.name.charAt(0)}</div>
-                                <div><p class="font-bold text-gray-900">${person.name}</p><p class="text-xs text-gray-400">${person.role}</p></div>
-                            </div>
-                        </td>
-                        <td class="px-6 py-4 text-center">
-                            <span class="inline-flex items-center justify-center px-3 py-1 rounded-full text-xs font-bold border ${projectCountClass}">${projectCount} Projeto${projectCount !== 1 ? 's' : ''}</span>
-                        </td>
-                        <td class="px-6 py-4 align-middle">
-                            <div class="flex justify-between text-xs font-bold mb-1"><span class="text-gray-700">${person.total.toFixed(1)}h</span><span class="text-gray-400">Meta: ${person.contract}h</span></div>
-                            <div class="w-full bg-gray-200 rounded-full h-2 overflow-hidden"><div class="${progressColor} h-2 rounded-full" style="width: ${Math.min(percent, 100)}%"></div></div>
-                        </td>
-                        <td class="px-6 py-4 text-center">${statusBadge}</td>
-                        <td class="px-6 py-4 text-right">${actionHtml}</td>
+                    tbody.innerHTML += `
+                    <tr class="hover:bg-gray-50 transition-colors border-b border-gray-50">
+                        <td class="px-6 py-4"><div class="flex items-center gap-3"><div class="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-xs font-bold text-blue-600">${p.name.charAt(0)}</div><div><p class="font-bold text-gray-900">${p.name}</p><p class="text-xs text-gray-400">${p.role}</p></div></div></td>
+                        <td class="px-6 py-4 text-center"><span class="bg-gray-100 text-gray-600 px-2 py-1 rounded text-xs font-bold">${p.projects.length} Proj.</span></td>
+                        <td class="px-6 py-4 align-middle"><div class="flex justify-between text-xs font-bold mb-1"><span class="text-gray-700">${p.total.toFixed(1)}h</span><span class="text-gray-400">Meta: ${p.contract}h</span></div><div class="w-full bg-gray-200 rounded-full h-1.5 overflow-hidden"><div class="${barColor} h-1.5 rounded-full" style="width:${Math.min(pct,100)}%"></div></div></td>
+                        <td class="px-6 py-4 text-center"><span class="px-2 py-1 rounded-full text-xs ${stClass}">${p.statusUI}</span></td>
+                        <td class="px-6 py-4 text-right">${actHtml}</td>
                     </tr>`;
-                    tbody.innerHTML += row;
                 });
                 lucide.createIcons();
-            } catch (err) {
-                console.error(err);
-                tbody.innerHTML = '<tr><td colspan="5" class="text-center py-10 text-red-500">Erro ao carregar dados.</td></tr>';
-            }
+            } catch(e){ console.error(e); tbody.innerHTML='<tr><td colspan="5" class="text-center text-red-500 py-10">Erro.</td></tr>'; }
         }
 
-        // --- FILTRO ---
         function filterTable() {
-            const input = document.getElementById("search-input");
-            const filter = input.value.toUpperCase();
-            const table = document.getElementById("hr-table-body");
-            const tr = table.getElementsByTagName("tr");
-            for (let i = 0; i < tr.length; i++) {
-                const td = tr[i].getElementsByTagName("td")[0];
-                if (td) {
-                    const txtValue = td.textContent || td.innerText;
-                    tr[i].style.display = txtValue.toUpperCase().indexOf(filter) > -1 ? "" : "none";
-                }       
-            }
+            const v = document.getElementById("search-input").value.toUpperCase();
+            const tr = document.getElementById("hr-table-body").getElementsByTagName("tr");
+            for(let i=0;i<tr.length;i++){ const td=tr[i].getElementsByTagName("td")[0]; if(td) tr[i].style.display=td.textContent.toUpperCase().indexOf(v)>-1?"":"none"; }
         }
 
-        // --- OPEN MODAL (CORRIGIDO PARA O CABEÇALHO PRETO) ---
-        async function openModal(id, name, total, contract, projectsStr) {
-            const modal = document.getElementById('logs-modal');
-            const tbody = document.getElementById('modal-logs-body');
-            
-            // 1. Setup Inicial do Modal (Reset)
+        async function openModal(id, name) {
+            const m = document.getElementById('logs-modal');
+            const tb = document.getElementById('modal-logs-body');
             document.getElementById('modal-name').innerText = name;
-            
-            // Define Meta (Valor Estático vindo da tabela)
-            document.getElementById('modal-contract').innerText = contract.toFixed(1) + 'h';
-            
-            // Valores temporários até carregar
-            document.getElementById('modal-total').innerText = '...';
-            document.getElementById('modal-saldo').innerText = '...';
-            document.getElementById('modal-saldo').className = "block text-3xl font-bold text-gray-500";
-            document.getElementById('modal-composition').innerHTML = '<span class="text-gray-500 italic text-xs">Carregando composição...</span>';
-            
-            tbody.innerHTML = '<tr><td colspan="4" class="text-center py-6 text-gray-500">Buscando detalhes...</td></tr>';
-            
-            // Exibir Modal
-            modal.classList.remove('hidden');
-            setTimeout(() => {
-                modal.classList.remove('opacity-0');
-                modal.querySelector('div').classList.remove('scale-95');
-            }, 10);
+            ['modal-normal','modal-extra','modal-banco','modal-ausencia','modal-total','modal-meta','modal-saldo'].forEach(e=>document.getElementById(e).innerText='...');
+            tb.innerHTML='<tr><td colspan="8" class="text-center py-8">Carregando...</td></tr>';
+            m.classList.remove('hidden'); setTimeout(()=>{m.classList.remove('opacity-0');m.querySelector('div').classList.remove('scale-95');},10);
 
-            const sel = document.getElementById('period-selector');
-            const dates = JSON.parse(sel.value);
-
+            const dates = JSON.parse(document.getElementById('period-selector').value);
             try {
                 const res = await fetch(`${API_URL}/hr/employees/${id}/details?inicio=${dates.start}&fim=${dates.end}`);
-                const responseData = await res.json();
+                const d = await res.json();
+                const s = d.summary;
+
+                document.getElementById('modal-normal').innerText = s.normal.toFixed(1)+'h';
+                document.getElementById('modal-extra').innerText = s.extra.toFixed(1)+'h';
+                const b = document.getElementById('modal-banco'); b.innerText=(s.banco>0?'+':'')+s.banco.toFixed(1)+'h';
+                b.className = s.banco>0 ? "block text-xl font-bold text-indigo-400":(s.banco<0?"block text-xl font-bold text-yellow-400":"block text-xl font-bold text-gray-500");
+                document.getElementById('modal-ausencia').innerText = s.ausencia.toFixed(1)+'h';
+                document.getElementById('modal-total').innerText = s.totalRealizado.toFixed(1)+'h';
+                document.getElementById('modal-meta').innerText = s.contract.toFixed(1)+'h';
                 
-                const logs = responseData.logs || responseData; 
-                const summary = responseData.summary || null;
+                const saldo = s.totalRealizado - s.contract;
+                const salEl = document.getElementById('modal-saldo');
+                salEl.innerText = (saldo>0?'+':'')+saldo.toFixed(1)+'h';
+                salEl.className = saldo>0 ? "block text-xl font-bold text-green-400" : (saldo<0?"block text-xl font-bold text-red-400":"block text-xl font-bold text-gray-400");
 
-                // 2. HEADER: PREENCHER COM DADOS REAIS
-                if (summary) {
-                    // Realizado (Fiel do Período)
-                    document.getElementById('modal-total').innerText = summary.totalRealizado.toFixed(1) + 'h';
+                tb.innerHTML = '';
+                if(d.logs.length===0){ tb.innerHTML='<tr><td colspan="8" class="text-center py-8 text-gray-400">Sem registros.</td></tr>'; return; }
+
+                d.logs.forEach(l => {
+                    // FILTRO DE ZEROS VISUAL PARA GARANTIR LIMPEZA
+                    const totalLinha = l.normal + l.extraPgto + Math.abs(l.banco) + l.ausencia;
+                    if(totalLinha === 0) return;
+
+                    const date = new Date(l.date+'T12:00:00').toLocaleDateString('pt-BR', {day:'2-digit', month:'2-digit', weekday:'short'});
+                    const just = l.justification ? `<br><span class="text-[10px] text-gray-400 italic">"${l.justification}"</span>`:'';
                     
-                    // Saldo (Realizado - Meta)
-                    const contractVal = parseFloat(document.getElementById('modal-contract').innerText);
-                    const diff = summary.totalRealizado - contractVal;
-                    
-                    const saldoEl = document.getElementById('modal-saldo');
-                    saldoEl.innerText = (diff > 0 ? '+' : '') + diff.toFixed(1) + 'h';
-                    
-                    // Cores do Saldo
-                    if (diff > 20) saldoEl.className = "block text-3xl font-bold text-red-400"; // Crítico
-                    else if (diff > 0) saldoEl.className = "block text-3xl font-bold text-blue-400"; // Positivo (Azul C3C)
-                    else if (diff < 0) saldoEl.className = "block text-3xl font-bold text-yellow-400"; // Negativo
-                    else saldoEl.className = "block text-3xl font-bold text-gray-500"; // Zerado
-
-                    // Composição Detalhada
-                    const compEl = document.getElementById('modal-composition');
-                    let htmlComp = ``;
-
-                    if (summary.normal > 0) {
-                        htmlComp += `
-                            <div class="flex items-baseline gap-1.5">
-                                <span class="w-2 h-2 rounded-full bg-gray-400"></span>
-                                <span class="text-gray-400 text-xs uppercase font-bold">Normal:</span>
-                                <span class="text-white font-mono font-bold">${summary.normal.toFixed(1)}h</span>
-                            </div>`;
-                    }
-                    if (summary.banco > 0) {
-                        htmlComp += `
-                            <div class="flex items-baseline gap-1.5 border-l border-gray-700 pl-4">
-                                <span class="w-2 h-2 rounded-full bg-indigo-400"></span>
-                                <span class="text-indigo-300 text-xs uppercase font-bold">Banco:</span>
-                                <span class="text-indigo-100 font-mono font-bold">${summary.banco.toFixed(1)}h</span>
-                            </div>`;
-                    }
-                    if (summary.extra > 0) {
-                        htmlComp += `
-                            <div class="flex items-baseline gap-1.5 border-l border-gray-700 pl-4">
-                                <span class="w-2 h-2 rounded-full bg-red-500"></span>
-                                <span class="text-red-400 text-xs uppercase font-bold">Extra:</span>
-                                <div class="flex items-center gap-1 bg-red-900/50 px-2 py-0.5 rounded border border-red-800">
-                                    <span class="text-white font-mono font-bold">${summary.extra.toFixed(1)}h</span>
-                                    <span class="text-[10px] text-red-400 font-bold">x2</span>
-                                    <span class="text-white font-mono font-bold">= ${(summary.extra * 2).toFixed(1)}h</span>
-                                </div>
-                            </div>`;
-                    }
-                    if (summary.ferias > 0) {
-                        htmlComp += `
-                            <div class="flex items-baseline gap-1.5 border-l border-gray-700 pl-4">
-                                <span class="w-2 h-2 rounded-full bg-green-400"></span>
-                                <span class="text-green-400 text-xs uppercase font-bold">Férias:</span>
-                                <span class="text-white font-mono font-bold">${summary.ferias.toFixed(1)}h</span>
-                            </div>`;
-                    }
-                    if (summary.licenca > 0) {
-                        htmlComp += `
-                            <div class="flex items-baseline gap-1.5 border-l border-gray-700 pl-4">
-                                <span class="w-2 h-2 rounded-full bg-purple-400"></span>
-                                <span class="text-purple-400 text-xs uppercase font-bold">Licença:</span>
-                                <span class="text-white font-mono font-bold">${summary.licenca.toFixed(1)}h</span>
-                            </div>`;
-                    }
-                    compEl.innerHTML = htmlComp || '<span class="text-gray-500 italic text-xs">Sem registros totalizados.</span>';
-                }
-
-                // 3. TABELA DE DETALHES
-                tbody.innerHTML = '';
-                if(logs.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="4" class="text-center py-6 text-gray-400">Sem lançamentos detalhados.</td></tr>';
-                    return;
-                }
-
-                // views/hr_dashboard.ejs (Dentro de openModal)
-
-logs.forEach(log => {
-    let iconHtml = '';
-    let rowClass = 'hover:bg-gray-50';
-    let activityClass = 'text-gray-800 font-bold';
-
-    // --- DEFINIÇÃO DE ÍCONES E CORES ---
-    if (log.category === 'ferias') {
-        iconHtml = '<span class="inline-flex items-center gap-1 bg-green-100 text-green-700 text-[10px] px-2 py-0.5 rounded-full font-bold uppercase"><i data-lucide="palmtree" class="w-3 h-3"></i> Férias</span>';
-        rowClass = 'bg-green-50/40 hover:bg-green-50';
-    } 
-    else if (log.category === 'licenca') {
-        iconHtml = '<span class="inline-flex items-center gap-1 bg-purple-100 text-purple-700 text-[10px] px-2 py-0.5 rounded-full font-bold uppercase"><i data-lucide="stethoscope" class="w-3 h-3"></i> Licença</span>';
-        rowClass = 'bg-purple-50/40 hover:bg-purple-50';
-    } 
-    // NOVA CATEGORIA: BANCO (Vindo do Lançamento)
-    else if (log.isBanco) {
-        iconHtml = '<span class="inline-flex items-center gap-1 bg-indigo-100 text-indigo-700 text-[10px] px-2 py-0.5 rounded-full font-bold uppercase border border-indigo-200"><i data-lucide="clock" class="w-3 h-3"></i> Banco</span>';
-        rowClass = 'bg-indigo-50/30 hover:bg-indigo-50';
-    }
-    else if (log.isExtra) {
-        iconHtml = '<span class="inline-flex items-center gap-1 bg-red-50 text-red-600 text-[10px] px-2 py-0.5 rounded-full font-bold uppercase border border-red-100">Extra</span>';
-    }
-
-    // --- CÁLCULO VISUAL (Matemática) ---
-    let mathHtml = `<span class="text-gray-500 text-xs">${log.rawNormal}h</span>`;
-    
-    if (log.rawExtra > 0) {
-        if (log.isExtra) {
-            // É EXTRA MESMO (x2)
-            mathHtml = `
-                <div class="flex items-center gap-2 text-xs">
-                    ${log.rawNormal > 0 ? `<span class="text-gray-400">${log.rawNormal}h +</span>` : ''}
-                    <div class="flex items-center bg-red-50 border border-red-100 px-2 py-0.5 rounded text-red-700">
-                        <span class="font-bold">${log.rawExtra}h</span><span class="text-[9px] mx-0.5">x</span><span class="font-bold">2</span>
-                    </div>
-                </div>`;
-        } else if (log.isBanco) {
-            // É BANCO (x1) - Mostramos diferente para indicar que foi para o banco
-            mathHtml = `
-                <div class="flex items-center gap-2 text-xs">
-                    ${log.rawNormal > 0 ? `<span class="text-gray-400">${log.rawNormal}h +</span>` : ''}
-                    <div class="flex items-center bg-indigo-50 border border-indigo-100 px-2 py-0.5 rounded text-indigo-700">
-                        <span class="font-bold">${log.rawExtra}h</span><span class="text-[9px] mx-1 font-normal text-indigo-400">(Banco)</span>
-                    </div>
-                </div>`;
-        }
-    }
-
-    // Descrição completa (inclui justificativa se houver)
-    const fullDesc = log.justification ? `${log.description} • ${log.justification}` : log.description;
-
-    const row = `
-    <tr class="${rowClass} border-b border-gray-100 last:border-0 transition-colors">
-        <td class="px-6 py-3 align-top">
-            <div class="flex flex-col">
-                <span class="font-bold text-gray-900 text-sm">${log.date}</span>
-                <span class="text-[10px] text-gray-400 uppercase tracking-wide">${log.weekDay || '-'}</span>
-            </div>
-        </td>
-        <td class="px-6 py-3 align-top">
-            <div class="flex flex-col gap-1">
-                <div class="flex items-center justify-between">
-                    <span class="${activityClass} text-xs">${log.project}</span>
-                    ${iconHtml}
-                </div>
-                <p class="text-xs text-gray-500 truncate max-w-[200px]" title="${fullDesc}">${fullDesc}</p>
-            </div>
-        </td>
-        <td class="px-6 py-3 align-middle">${mathHtml}</td>
-        <td class="px-6 py-3 align-middle text-right">
-            <span class="font-bold text-sm ${log.isExtra ? 'text-red-600' : (log.isBanco ? 'text-indigo-600' : 'text-gray-800')}">
-                ${log.totalImpact.toFixed(1)}h
-            </span>
-        </td>
-    </tr>`;
-    tbody.innerHTML += row;
-});
-lucide.createIcons();
-
-            } catch (err) {
-                console.error(err);
-                tbody.innerHTML = '<tr><td colspan="4" class="text-center text-red-500">Erro ao carregar detalhes.</td></tr>';
-            }
-        }
-
-        function closeModal() {
-            const modal = document.getElementById('logs-modal');
-            modal.classList.add('opacity-0');
-            modal.querySelector('div').classList.add('scale-95');
-            setTimeout(() => { modal.classList.add('hidden'); }, 300);
-        }
-
-        async function performAction(personId, personName, actionType) {
-            const actionVerb = actionType === 'close' ? 'FECHAR' : 'REPROVAR';
-            const actionMsg = actionType === 'close' ? 'bloqueará edições' : 'devolverá para o gestor';
-            const confirmed = confirm(`ATENÇÃO RH:\n\nVocê vai ${actionVerb} a folha de ${personName}.\nIsso ${actionMsg}.\n\nConfirma?`);
-            if(!confirmed) return;
-
-            const selector = document.getElementById('period-selector');
-            const dates = JSON.parse(selector.value);
-            
-            try {
-                const res = await fetch(`${API_URL}/hr/action`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ 
-                        personId, 
-                        action: actionType, 
-                        inicio: dates.start, 
-                        fim: dates.end 
-                    })
+                    tb.innerHTML += `
+                    <tr class="hover:bg-gray-50 border-b border-gray-50">
+                        <td class="px-6 py-3 text-xs text-gray-500 uppercase font-bold">${date}</td>
+                        <td class="px-6 py-3 text-xs font-bold text-blue-800">${l.project}</td> <td class="px-6 py-3 text-xs font-medium text-gray-900">${l.activity}${just}</td>
+                        <td class="px-6 py-3 text-xs text-right text-blue-600 bg-blue-50/20 font-bold">${l.normal>0?l.normal.toFixed(1):'-'}</td>
+                        <td class="px-6 py-3 text-xs text-right text-green-600 bg-green-50/20 font-bold">${l.extraPgto>0?l.extraPgto.toFixed(1):'-'}</td>
+                        <td class="px-6 py-3 text-xs text-right text-indigo-600 bg-indigo-50/20 font-bold">${l.banco!==0?l.banco.toFixed(1):'-'}</td>
+                        <td class="px-6 py-3 text-xs text-right text-orange-600 bg-orange-50/20 font-bold">${l.ausencia>0?l.ausencia.toFixed(1):'-'}</td>
+                        <td class="px-6 py-3 text-xs text-center text-gray-400">${l.status}</td>
+                    </tr>`;
                 });
-                const result = await res.json();
-                if (result.success) {
-                    alert(result.message);
-                    triggerDataLoad(selector.value); 
-                } else {
-                    alert('Erro: ' + result.message);
-                }
-            } catch (err) {
-                console.error(err);
-                alert('Erro de comunicação.');
-            }
+            } catch(e) { console.error(e); tb.innerHTML='<tr><td colspan="8" class="text-center text-red-500 py-8">Erro.</td></tr>'; }
+        }
+
+        function closeModal() { const m=document.getElementById('logs-modal'); m.classList.add('opacity-0'); m.querySelector('div').classList.add('scale-95'); setTimeout(()=>m.classList.add('hidden'),300); }
+
+        function openRejectModal(id,name) { document.getElementById('reject-person-id').value=id; document.getElementById('reject-person-name').innerText=name; document.getElementById('reject-reason').value=''; document.getElementById('modal-reject').classList.remove('hidden'); }
+        function confirmReject() { const id=document.getElementById('reject-person-id').value; const name=document.getElementById('reject-person-name').innerText; const r=document.getElementById('reject-reason').value.trim(); if(!r){alert("Motivo obrigatório");return;} performAction(id,name,'reject',r); document.getElementById('modal-reject').classList.add('hidden'); }
+
+        async function performAction(pid, pname, type, reason=null) {
+            if(type==='close' && !confirm(`Confirma o FECHAMENTO de ${pname}?`)) return;
+            const dates=JSON.parse(document.getElementById('period-selector').value);
+            try {
+                const res = await fetch(`${API_URL}/hr/action`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({personId:pid, action:type, inicio:dates.start, fim:dates.end, motivo:reason})});
+                const r = await res.json();
+                if(r.success) { alert(r.message); loadTableData(dates.start, dates.end); } else alert('Erro: '+r.message);
+            } catch(e){ alert('Erro de conexão'); }
         }
     </script>
 </body>
