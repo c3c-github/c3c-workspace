@@ -4,424 +4,349 @@ const { getSfConnection } = require('../config/salesforce');
 // HELPER FUNCTIONS
 // ==============================================================================
 
-/**
- * Garante que existe o registro de ligação 'Responsavel__c' entre a Atividade e a Alocação.
- * Isso é obrigatório no banco de dados para salvar horas.
- */
 async function getOrCreateResponsavel(conn, atividadeId, alocacaoId) {
     if (!atividadeId || !alocacaoId) return null;
-
-    // 1. Verifica se já existe
     const query = `SELECT Id FROM Responsavel__c WHERE Atividade__c = '${atividadeId}' AND Alocacao__c = '${alocacaoId}' LIMIT 1`;
     const result = await conn.query(query);
-
     if (result.totalSize > 0) return result.records[0].Id;
-
-    // 2. Se não existir, cria um novo
     try {
-        const novo = await conn.sobject('Responsavel__c').create({
-            Atividade__c: atividadeId,
-            Alocacao__c: alocacaoId
-        });
-        if (novo.success) return novo.id;
-        throw new Error(JSON.stringify(novo.errors));
-    } catch (e) {
-        console.error("Erro ao criar Responsável (vínculo):", e);
-        throw e;
-    }
+        const novo = await conn.sobject('Responsavel__c').create({ Atividade__c: atividadeId, Alocacao__c: alocacaoId });
+        return novo.id;
+    } catch (e) { throw e; }
 }
 
-/**
- * Renderiza a página principal
- */
+async function calculateDailyStats(conn, userId, targetDate) {
+    const dateStr = targetDate.includes('T') ? targetDate.split('T')[0] : targetDate;
+    const diaRes = await conn.sobject('DiaPeriodo__c')
+        .find({ Data__c: dateStr, 'Periodo__r.ContratoPessoa__r.Pessoa__c': userId }, 'Id, Periodo__c, Periodo__r.ContratoPessoa__r.Hora__c')
+        .limit(1)
+        .execute();
+    
+    if (diaRes.length === 0) return { exists: false, diaPeriodoId: null, limiteDia: 8, usedNormal: 0, usedExtra: 0, saldoNormalDia: 8 };
+    
+    const diaRecord = diaRes[0];
+    const limiteDia = (diaRecord.Periodo__r && diaRecord.Periodo__r.ContratoPessoa__r && diaRecord.Periodo__r.ContratoPessoa__r.Hora__c) ? diaRecord.Periodo__r.ContratoPessoa__r.Hora__c : 8;
+
+    const somaQuery = `
+        SELECT SUM(Horas__c) totalNormal, SUM(HorasExtras__c) totalExtra
+        FROM LancamentoHora__c 
+        WHERE DiaPeriodo__c = '${diaRecord.Id}' 
+        AND Pessoa__c = '${userId}'
+        AND (Horas__c > 0 OR HorasExtras__c > 0)
+    `;
+    
+    let usedNormal = 0, usedExtra = 0;
+    try {
+        const somaRes = await conn.query(somaQuery);
+        if (somaRes.totalSize > 0) {
+            usedNormal = somaRes.records[0].totalNormal || 0;
+            usedExtra = somaRes.records[0].totalExtra || 0;
+        }
+    } catch (e) {}
+
+    return { exists: true, diaPeriodoId: diaRecord.Id, periodoId: diaRecord.Periodo__c, limiteDia, usedNormal, usedExtra, saldoNormalDia: limiteDia - usedNormal };
+}
+
 exports.renderOperations = (req, res) => {
     const user = req.session.user || { nome: 'Usuário', grupos: [] };
     res.render('operations', { user: user, page: 'operations' });
 };
 
 // ==============================================================================
-// API: LEITURA DE DADOS
+// LEITURA
 // ==============================================================================
 
-/**
- * Lista chamados com base no filtro:
- * - 'my': Meus chamados (Pessoa__c = Eu)
- * - 'queue': Fila (Minhas Contas + Pessoa__c = Null)
- * - 'team': Equipe (Minhas Contas + Pessoa__c != Eu)
- */
+exports.getLimits = async (req, res) => {
+    try {
+        const { date } = req.query;
+        const userId = req.session.user.id;
+        if (!date) return res.status(400).json({ error: 'Data obrigatória.' });
+        const conn = await getSfConnection();
+        const stats = await calculateDailyStats(conn, userId, date);
+        res.json({ success: true, exists: stats.exists, limit: stats.limiteDia, usedNormal: stats.usedNormal, usedExtra: stats.usedExtra, remainingNormal: stats.saldoNormalDia });
+    } catch (err) { res.status(500).json({ success: false, error: err.message }); }
+};
+
 exports.getTickets = async (req, res) => {
     try {
-        const { filter } = req.query; // 'my', 'queue', 'team'
+        const { filter } = req.query; 
         const userId = req.session.user.id;
         const conn = await getSfConnection();
 
-        const pessoaId = userId;
-        // Filtro Padrão: Apenas chamados ABERTOS
-        let whereClause = { IsClosed: false };
+        let soql = `SELECT Id, CaseNumber, Subject, Status, Priority, Description, CreatedDate, Account.Name, Pessoa__c, Pessoa__r.Name, Type, Origin FROM Case WHERE IsClosed = false`;
 
         if (filter === 'my') {
-            whereClause.Pessoa__c = pessoaId;
+            soql += ` AND Pessoa__c = '${userId}'`;
         } else {
-            // Lógica de Território:
-            // O usuário só vê filas/equipe das contas onde ele tem ALOCAÇÃO VIGENTE HOJE.
             const today = new Date().toISOString().split('T')[0];
-            
-            // Query bruta para evitar problemas de aspas com datas no JSForce
-            const soqlAloc = `
-                SELECT Servico__r.Conta__c 
-                FROM Alocacao__c 
-                WHERE Pessoa__c = '${pessoaId}' 
-                AND DataInicio__c <= ${today} 
-                AND (DataFim__c >= ${today} OR DataFim__c = NULL)
-            `;
-            
+            const soqlAloc = `SELECT Servico__r.Conta__c FROM Alocacao__c WHERE Pessoa__c = '${userId}' AND DataInicio__c <= ${today} AND (DataFim__c >= ${today} OR DataFim__c = NULL)`;
             const alocacoes = await conn.query(soqlAloc);
-
-            // Extrai IDs únicos de contas
-            const accountIds = alocacoes.records
-                .map(a => a.Servico__r ? a.Servico__r.Conta__c : null)
-                .filter(id => id !== null);
-            
-            const myAccountIds = [...new Set(accountIds)];
-
-            // Se não tem alocação ativa, não vê nada nas filas
-            if (myAccountIds.length === 0) return res.json([]); 
-
-            whereClause.AccountId = { $in: myAccountIds };
-
-            if (filter === 'queue') {
-                whereClause.Pessoa__c = null;
-            } else if (filter === 'team') {
-                whereClause.Pessoa__c = { $ne: null, $ne: pessoaId };
-            }
+            const accountIds = [...new Set(alocacoes.records.map(a => a.Servico__r ? a.Servico__r.Conta__c : null).filter(id => id !== null))];
+            if (accountIds.length === 0) return res.json([]); 
+            const idsFormatados = accountIds.map(id => `'${id}'`).join(',');
+            soql += ` AND AccountId IN (${idsFormatados})`;
+            if (filter === 'queue') soql += ` AND Pessoa__c = null`;
+            else if (filter === 'team') soql += ` AND Pessoa__c != null AND Pessoa__c != '${userId}'`;
         }
 
-        const fields = 'Id, CaseNumber, Subject, Status, Priority, Description, CreatedDate, Account.Name, Pessoa__c, Pessoa__r.Name';
-        
-        const cases = await conn.sobject('Case')
-            .find(whereClause, fields)
-            .sort({ CreatedDate: -1 })
-            .limit(50)
-            .execute();
+        soql += ` ORDER BY CreatedDate DESC LIMIT 100`; 
+        const result = await conn.query(soql);
+        let records = result.records;
 
-        // Formata resposta para o frontend
-        const result = cases.map(c => ({
+        // Ordenação JS
+        const typeScore = { 'Bug': 0, 'Erro': 0, 'Melhoria': 1, 'Dúvida': 2 };
+        const priorityScore = { 'Critical': 0, 'High': 1, 'Medium': 2, 'Low': 3 };
+        
+        records.sort((a, b) => {
+            const sA = typeScore[a.Type] !== undefined ? typeScore[a.Type] : 99;
+            const sB = typeScore[b.Type] !== undefined ? typeScore[b.Type] : 99;
+            if (sA !== sB) return sA - sB;
+            const pA = priorityScore[a.Priority] !== undefined ? priorityScore[a.Priority] : 99;
+            const pB = priorityScore[b.Priority] !== undefined ? priorityScore[b.Priority] : 99;
+            if (pA !== pB) return pA - pB;
+            return new Date(a.CreatedDate) - new Date(b.CreatedDate);
+        });
+
+        res.json(records.map(c => ({
             id: c.Id,
             caseNumber: c.CaseNumber,
             title: c.Subject || 'Sem Assunto',
             client: c.Account ? c.Account.Name : 'N/A',
             status: c.Status,
             priority: c.Priority,
+            type: c.Type,
             desc: c.Description,
             ownerName: c.Pessoa__r ? c.Pessoa__r.Name : 'Fila',
-            date: new Date(c.CreatedDate).toLocaleDateString('pt-BR')
-        }));
-
-        res.json(result);
-
-    } catch (err) {
-        console.error("Erro getTickets:", err);
-        res.status(500).json({ error: 'Erro ao buscar chamados.' });
-    }
+            date: new Date(c.CreatedDate).toLocaleDateString('pt-BR'),
+            rawDate: c.CreatedDate
+        })));
+    } catch (err) { res.status(500).json({ error: 'Erro ao buscar chamados.' }); }
 };
 
-/**
- * Busca detalhes completos: Comentários e Logs de Tempo
- */
 exports.getTicketDetails = async (req, res) => {
     const { id } = req.params;
     try {
         const conn = await getSfConnection();
-
-        // 1. Comentários (CaseComment)
-        const comments = await conn.sobject('CaseComment')
-            .find({ ParentId: id }, 'CommentBody, CreatedDate, CreatedBy.Name, IsPublished')
-            .sort({ CreatedDate: -1 })
-            .execute();
-
-        // 2. Logs de Tempo (LancamentoHora__c)
-        // Filtra apenas registros com horas apontadas (>0) e traz Justificativa
-        const logsQuery = `
-            SELECT Id, DiaPeriodo__r.Data__c, Horas__c, HorasExtras__c, Justificativa__c, Atividade__r.Name 
-            FROM LancamentoHora__c 
-            WHERE Atividade__r.Caso__c = '${id}' 
-            AND (Horas__c > 0 OR HorasExtras__c > 0)
-            ORDER BY DiaPeriodo__r.Data__c DESC
-        `;
-        
+        // Busca campos customizados de data e LastModifiedDate
+        const t = await conn.sobject('Case').retrieve(id);
+        const comments = await conn.sobject('CaseComment').find({ ParentId: id }, 'CommentBody, CreatedDate, CreatedBy.Name, IsPublished').sort({ CreatedDate: -1 }).execute();
+        const logsQuery = `SELECT Id, DiaPeriodo__r.Data__c, Horas__c, HorasExtras__c, Justificativa__c, Atividade__r.Name FROM LancamentoHora__c WHERE Atividade__r.Caso__c = '${id}' AND (Horas__c > 0 OR HorasExtras__c > 0) ORDER BY DiaPeriodo__r.Data__c DESC`;
         const logsRes = await conn.query(logsQuery);
 
         res.json({
-            comments: comments.map(c => ({
-                text: c.CommentBody,
-                user: c.CreatedBy ? c.CreatedBy.Name : 'Sistema',
-                time: new Date(c.CreatedDate).toLocaleString('pt-BR'),
-                public: c.IsPublished
-            })),
+            ticket: {
+                Subject: t.Subject,
+                Description: t.Description,
+                Status: t.Status,
+                Type: t.Type,
+                Priority: t.Priority,
+                Origin: t.Origin,
+                CreatedDate: t.CreatedDate,
+                LastModifiedDate: t.LastModifiedDate,
+                // MAPEAR API NAMES CORRETOS DA SUA ORG:
+                DataExpectativaCliente__c: t.DataExpectativaCliente__c || null,
+                DataEstimativaEntrega__c: t.DataEstimativaEntrega__c || null
+            },
+            comments: comments.map(c => ({ text: c.CommentBody, user: c.CreatedBy ? c.CreatedBy.Name : 'Sistema', time: new Date(c.CreatedDate).toLocaleString('pt-BR'), public: c.IsPublished })),
             logs: logsRes.records.map(l => {
-                const isExtra = (l.HorasExtras__c || 0) > 0;
-                const valor = isExtra ? l.HorasExtras__c : l.Horas__c;
-                
-                return {
-                    date: l.DiaPeriodo__r ? new Date(l.DiaPeriodo__r.Data__c).toLocaleDateString('pt-BR') : '-',
-                    activity: l.Atividade__r ? l.Atividade__r.Name : 'Geral',
-                    desc: l.Justificativa__c || '-',
-                    hours: valor, // Valor numérico para cálculo
-                    type: isExtra ? 'Extra' : 'Normal'
-                };
+                let dateStr = '-';
+                if (l.DiaPeriodo__r && l.DiaPeriodo__r.Data__c) {
+                    const parts = l.DiaPeriodo__r.Data__c.split('-');
+                    dateStr = `${parts[2]}/${parts[1]}/${parts[0]}`;
+                }
+                return { date: dateStr, activity: l.Atividade__r ? l.Atividade__r.Name : 'Geral', desc: l.Justificativa__c || '-', hoursNormal: l.Horas__c || 0, hoursExtra: l.HorasExtras__c || 0 };
             })
         });
-
-    } catch (err) {
-        console.error("Erro getTicketDetails:", err);
-        res.status(500).json({ error: 'Erro ao buscar detalhes.' });
-    }
+    } catch (err) { res.status(500).json({ error: 'Erro ao buscar detalhes.' }); }
 };
 
-/**
- * Busca atividades vinculadas ao caso para preencher o select
- */
-exports.getTicketActivities = async (req, res) => {
-    const { id } = req.params;
+exports.getTicketActivities = async (req, res) => { try { const { id } = req.params; const conn = await getSfConnection(); const activities = await conn.sobject('Atividade__c').find({ Caso__c: id }, 'Id, Name, Servico__c').sort({ CreatedDate: -1 }).execute(); res.json(activities); } catch (err) { res.status(500).json({ error: 'Erro ao buscar atividades.' }); } };
+exports.getCreateOptions = async (req, res) => { try { const userId = req.session.user.id; const conn = await getSfConnection(); const today = new Date().toISOString().split('T')[0]; const soql = `SELECT Servico__c, Servico__r.Name, Servico__r.Conta__c, Servico__r.Conta__r.Name FROM Alocacao__c WHERE Pessoa__c = '${userId}' AND DataInicio__c <= ${today} AND (DataFim__c >= ${today} OR DataFim__c = NULL) ORDER BY Servico__r.Name ASC`; const result = await conn.query(soql); const options = result.records.map(r => ({ serviceId: r.Servico__c, serviceName: r.Servico__r ? r.Servico__r.Name : 'Serviço', accountId: r.Servico__r ? r.Servico__r.Conta__c : null, accountName: (r.Servico__r && r.Servico__r.Conta__r) ? r.Servico__r.Conta__r.Name : 'Conta' })); res.json(options); } catch (err) { res.status(500).json({ error: 'Erro ao buscar serviços.' }); } };
+exports.getAccountContacts = async (req, res) => { try { const { id } = req.params; const conn = await getSfConnection(); const soql = `SELECT Id, Name, Email FROM Contact WHERE AccountId = '${id}' ORDER BY Name ASC`; const result = await conn.query(soql); res.json(result.records); } catch (err) { res.status(500).json({ error: 'Erro ao buscar contatos.' }); } };
+
+// ==============================================================================
+// ESCRITA
+// ==============================================================================
+
+exports.createContact = async (req, res) => {
     try {
+        const { accountId, name, email, mobile } = req.body;
+        if (!accountId || !name) return res.status(400).json({ error: 'Conta e Nome obrigatórios.' });
+
+        const parts = name.trim().split(' ');
+        let firstName = '';
+        let lastName = name;
+        if (parts.length > 1) {
+            lastName = parts.pop();
+            firstName = parts.join(' ');
+        }
+
         const conn = await getSfConnection();
-        const activities = await conn.sobject('Atividade__c')
-            .find({ Caso__c: id }, 'Id, Name, Servico__c')
-            .sort({ CreatedDate: -1 })
-            .execute();
-        res.json(activities);
+        const payload = {
+            AccountId: accountId,
+            LastName: lastName,
+            FirstName: firstName,
+            Email: email,
+            MobilePhone: mobile || null // Envia null se vazio para evitar erro
+        };
+
+        const ret = await conn.sobject('Contact').create(payload);
+        if (ret.success) res.json({ success: true, id: ret.id, name: name });
+        else res.status(400).json({ success: false, errors: ret.errors });
+
+    } catch (err) { res.status(500).json({ error: 'Erro ao criar contato: ' + err.message }); }
+};
+
+exports.createTicket = async (req, res) => {
+    try {
+        const { serviceId, accountId, contactId, type, priority, origin, expectationDate, assignToMe, subject, desc } = req.body;
+        const conn = await getSfConnection();
+        
+        const caseData = {
+            Subject: subject,
+            Description: desc,
+            AccountId: accountId,
+            ContactId: contactId || null,
+            Type: type,
+            Priority: priority,
+            Origin: origin,
+            Status: 'New',
+            DataExpectativaCliente__c: expectationDate || null
+        };
+
+        if (assignToMe === true || assignToMe === 'true') {
+            caseData.Pessoa__c = req.session.user.id;
+            caseData.Status = 'In Progress';
+        }
+
+        const ret = await conn.sobject('Case').create(caseData);
+        if (ret.success) res.json({ success: true, id: ret.id });
+        else res.status(400).json({ success: false, errors: ret.errors });
+    } catch (err) { res.status(500).json({ error: 'Erro ao criar chamado.' }); }
+};
+
+exports.updateTicket = async (req, res) => {
+    try {
+        const { id, status, estimationDate, type, priority } = req.body;
+        const conn = await getSfConnection();
+        // Mapeia DataEstimativaEntrega__c
+        const updateData = {
+            Id: id,
+            Status: status,
+            Type: type,
+            Priority: priority,
+            DataEstimativaEntrega__c: estimationDate || null
+        };
+        const ret = await conn.sobject('Case').update(updateData);
+        if (ret.success) res.json({ success: true });
+        else res.status(400).json({ success: false, errors: ret.errors });
+    } catch (err) { res.status(500).json({ error: 'Erro ao atualizar.' }); }
+};
+
+exports.assignTicket = async (req, res) => { 
+    try { 
+        const { id } = req.body; 
+        const conn = await getSfConnection(); 
+        const ret = await conn.sobject('Case').update({ Id: id, Pessoa__c: req.session.user.id, Status: 'In Progress' }); 
+        if (ret.success) res.json({ success: true }); else res.status(400).json({ success: false }); 
+    } catch (err) { res.status(500).json({ error: 'Erro ao atribuir.' }); } 
+};
+
+// NOVA FUNÇÃO: DEVOLVER PARA FILA
+exports.returnToQueue = async (req, res) => {
+    try {
+        const { id } = req.body;
+        const conn = await getSfConnection();
+        // Limpar Pessoa__c coloca o caso de volta na fila (visível para quem não tem filtro 'my')
+        const ret = await conn.sobject('Case').update({ Id: id, Pessoa__c: null, Status: 'New' });
+        if (ret.success) res.json({ success: true }); 
+        else res.status(400).json({ success: false });
+    } catch (err) { res.status(500).json({ error: 'Erro ao devolver.' }); }
+};
+
+exports.transferTicket = async (req, res) => {
+    try {
+        const { id, target } = req.body; // target: 'queue' ou 'userId' (futuro)
+        const conn = await getSfConnection();
+        
+        let updateData = { Id: id };
+        
+        if (target === 'queue') {
+            // Devolver para fila = Remover Pessoa__c
+            // Salesforce exige enviar como nulo ou campos vazios
+            updateData.Pessoa__c = null;
+            updateData.Status = 'New'; // Volta para novo ou status de triagem
+        } else {
+            // Transferir para outro usuário (se implementado select de usuários)
+            updateData.Pessoa__c = target;
+        }
+
+        const ret = await conn.sobject('Case').update(updateData);
+        if (ret.success) res.json({ success: true });
+        else res.status(400).json({ success: false, errors: ret.errors });
+
     } catch (err) {
-        console.error("Erro getTicketActivities:", err);
-        res.status(500).json({ error: 'Erro ao buscar atividades.' });
+        console.error("Erro transferTicket:", err);
+        res.status(500).json({ error: 'Erro ao transferir.' });
     }
 };
 
-// ==============================================================================
-// API: ESCRITA (DML)
-// ==============================================================================
-
-/**
- * Salva o apontamento de horas.
- * Lógica complexa:
- * 1. Arredonda horas.
- * 2. Verifica contrato na DATA informada.
- * 3. Cria Atividade (com prefixo e limite) ou usa existente.
- * 4. Valida Alocação no serviço para a DATA informada.
- * 5. Garante Responsavel__c.
- * 6. Cria LancamentoHora__c.
- */
 exports.saveLog = async (req, res) => {
     try {
-        const { caseId, activityId, newActivityName, hours, isExtra, desc, date } = req.body;
+        const { caseId, activityId, newActivityName, hoursNormal, hoursExtra, desc, date } = req.body;
         const userId = req.session.user.id;
         const conn = await getSfConnection();
-
-        // 1. Definição da Data (Usa data informada ou Hoje)
-        const targetDate = date ? date : new Date().toISOString().split('T')[0];
+        const targetDate = date ? date.split('T')[0] : new Date().toISOString().split('T')[0];
         
-        // 2. Arredondamento de Horas (Regra: Incrementos de 0.5)
-        let rawHours = parseFloat(hours);
-        if (isNaN(rawHours) || rawHours <= 0) return res.status(400).json({ error: 'Horas inválidas.' });
-        
-        // Ex: 1.2 -> 1.0 | 1.3 -> 1.5 | 1.7 -> 1.5 | 1.8 -> 2.0
-        const finalHours = Math.round(rawHours * 2) / 2;
+        let hNorm = hoursNormal ? parseFloat(hoursNormal.toString().replace(',', '.')) : 0;
+        let hExtra = hoursExtra ? parseFloat(hoursExtra.toString().replace(',', '.')) : 0;
+        hNorm = Math.round(hNorm * 2) / 2; hExtra = Math.round(hExtra * 2) / 2;
 
-        if (finalHours === 0) return res.status(400).json({ error: 'O tempo mínimo registrálvel é 0.5h.' });
+        if (hNorm === 0 && hExtra === 0) return res.status(400).json({ error: 'Informe ao menos 0.5h.' });
 
-        // 3. Valida se existe Dia de Ponto gerado para a DATA ALVO
-        const diaQuery = `SELECT Id, Periodo__c FROM DiaPeriodo__c WHERE Data__c = ${targetDate} AND Periodo__r.ContratoPessoa__r.Pessoa__c = '${userId}' LIMIT 1`;
-        const diaRes = await conn.query(diaQuery);
-        
-        if (diaRes.totalSize === 0) {
-            return res.status(400).json({ error: `Sem dia de ponto gerado para a data ${targetDate}. Verifique se o contrato está ativo.` });
+        const stats = await calculateDailyStats(conn, userId, targetDate);
+        if (!stats.exists) return res.status(400).json({ error: `Sem dia de ponto gerado.` });
+
+        const { diaPeriodoId, periodoId, limiteDia, usedNormal, usedExtra } = stats;
+
+        if ((usedNormal + usedExtra + hNorm + hExtra) > 24) return res.status(400).json({ error: `Total diário excede 24h.` });
+        if ((usedNormal + hNorm) > (limiteDia + 0.01)) {
+             const saldo = Math.max(0, limiteDia - usedNormal);
+             return res.status(400).json({ error: `Limite contratual excedido. Saldo: ${saldo.toFixed(1)}h.` });
         }
-        
-        const diaPeriodoId = diaRes.records[0].Id;
-        const periodoId = diaRes.records[0].Periodo__c;
+        if (hExtra > 0) {
+            const totalNormalPrevisto = usedNormal + hNorm;
+            if (totalNormalPrevisto < (limiteDia - 0.01)) {
+                return res.status(400).json({ error: `Complete as horas normais antes de lançar extras.` });
+            }
+        }
 
         let finalActivityId = activityId;
         let serviceId = null;
         let alocacaoId = null;
 
-        // 4. Lógica de Atividade
         if (activityId === 'new') {
-            // --- CRIAR NOVA ATIVIDADE ---
-            if (!newActivityName) return res.status(400).json({ error: 'Nome da atividade obrigatório.' });
-            
-            // Busca dados do Caso (Número e Conta)
+            if (!newActivityName) return res.status(400).json({ error: 'Nome obrigatório.' });
             const caseRes = await conn.sobject('Case').retrieve(caseId);
-            if(!caseRes.AccountId) return res.status(400).json({ error: 'Caso sem Conta vinculada, impossível determinar Serviço.' });
-
-            // Busca Alocação Válida NA DATA ESCOLHIDA para a Conta do Caso
-            const alocQuery = `
-                SELECT Id, Servico__c FROM Alocacao__c 
-                WHERE Pessoa__c = '${userId}' 
-                AND Servico__r.Conta__c = '${caseRes.AccountId}' 
-                AND DataInicio__c <= ${targetDate} 
-                AND (DataFim__c >= ${targetDate} OR DataFim__c = NULL) 
-                LIMIT 1
-            `;
-            const alocRes = await conn.query(alocQuery);
-            
-            if (alocRes.totalSize === 0) {
-                return res.status(400).json({ error: `Sem alocação ativa no cliente para a data ${targetDate}.` });
-            }
-            
-            serviceId = alocRes.records[0].Servico__c;
-            alocacaoId = alocRes.records[0].Id;
-
-            // [REGRA DE NEGÓCIO]: Formatar Nome da Atividade
-            // Formato: "0001234 - Nome da Atividade"
-            // Limite: 80 caracteres (Padrão Salesforce Name)
-            let formattedName = `${caseRes.CaseNumber} - ${newActivityName}`;
-            if (formattedName.length > 80) {
-                formattedName = formattedName.substring(0, 80);
-            }
-
-            const newAct = await conn.sobject('Atividade__c').create({ 
-                Name: formattedName, 
-                Caso__c: caseId, 
-                Servico__c: serviceId 
-            });
-
-            if (!newAct.success) throw new Error('Falha ao criar registro de atividade.');
+            const alocRes = await conn.sobject('Alocacao__c').find({ Pessoa__c: userId, 'Servico__r.Conta__c': caseRes.AccountId, DataInicio__c: { $lte: targetDate }, $or: [{ DataFim__c: { $gte: targetDate } }, { DataFim__c: null }] }).limit(1).execute();
+            if (alocRes.length === 0) return res.status(400).json({ error: `Sem alocação ativa.` });
+            serviceId = alocRes[0].Servico__c; alocacaoId = alocRes[0].Id;
+            const newAct = await conn.sobject('Atividade__c').create({ Name: `${caseRes.CaseNumber} - ${newActivityName}`.substring(0, 80), Caso__c: caseId, Servico__c: serviceId });
             finalActivityId = newAct.id;
-
         } else {
-            // --- USAR ATIVIDADE EXISTENTE ---
             const actRes = await conn.sobject('Atividade__c').retrieve(finalActivityId);
             serviceId = actRes.Servico__c;
-            
-            // Valida se a alocação para ESSE serviço ainda é válida na DATA ESCOLHIDA
-            const alocQuery = `
-                SELECT Id FROM Alocacao__c 
-                WHERE Pessoa__c = '${userId}' 
-                AND Servico__c = '${serviceId}' 
-                AND DataInicio__c <= ${targetDate} 
-                AND (DataFim__c >= ${targetDate} OR DataFim__c = NULL) 
-                LIMIT 1
-            `;
-            const alocRes = await conn.query(alocQuery);
-            if (alocRes.totalSize === 0) {
-                return res.status(400).json({ error: `Sua alocação para este serviço não é válida na data ${targetDate}.` });
-            }
-            alocacaoId = alocRes.records[0].Id;
+            const alocRes = await conn.sobject('Alocacao__c').find({ Pessoa__c: userId, Servico__c: serviceId, DataInicio__c: { $lte: targetDate }, $or: [{ DataFim__c: { $gte: targetDate } }, { DataFim__c: null }] }).limit(1).execute();
+            if (alocRes.length === 0) return res.status(400).json({ error: `Alocação inválida.` });
+            alocacaoId = alocRes[0].Id;
         }
 
-        // 5. Garantir vínculo de Responsável (Atividade x Alocação)
         const responsavelId = await getOrCreateResponsavel(conn, finalActivityId, alocacaoId);
-
-        // 6. Preparar Lançamento
-        const logEntry = {
-            Pessoa__c: userId,
-            DiaPeriodo__c: diaPeriodoId,
-            Periodo__c: periodoId,
-            Servico__c: serviceId,
-            Atividade__c: finalActivityId,
-            Responsavel__c: responsavelId,
-            Justificativa__c: desc || 'Apontamento N2',
-            Status__c: 'Rascunho',
-            Horas__c: 0,
-            HorasExtras__c: 0
-        };
-
-        if (isExtra === true || isExtra === 'true') {
-            logEntry.HorasExtras__c = finalHours;
-            // Opcional: Adicionar prefixo visual na justificativa se quiser
-            // logEntry.Justificativa__c = '[EXTRA] ' + logEntry.Justificativa__c; 
-        } else {
-            logEntry.Horas__c = finalHours;
-        }
-
+        const logEntry = { Pessoa__c: userId, DiaPeriodo__c: diaPeriodoId, Periodo__c: periodoId, Servico__c: serviceId, Atividade__c: finalActivityId, Responsavel__c: responsavelId, Justificativa__c: desc || 'N2', Status__c: 'Rascunho', Horas__c: hNorm, HorasExtras__c: hExtra };
         const ret = await conn.sobject('LancamentoHora__c').create(logEntry);
+        if (ret.success) res.json({ success: true }); else res.status(400).json({ success: false, errors: ret.errors });
 
-        if (ret.success) res.json({ success: true });
-        else res.status(400).json({ success: false, errors: ret.errors });
-
-    } catch (err) {
-        console.error("Erro saveLog:", err);
-        res.status(500).json({ error: err.message });
-    }
+    } catch (err) { res.status(500).json({ error: err.message }); }
 };
 
-/**
- * Cria um novo Caso (Chamado)
- * Se accountId não for um ID válido, tenta buscar a conta pelo nome.
- */
-exports.createTicket = async (req, res) => {
-    try {
-        const { subject, desc, accountId, priority } = req.body; // accountId aqui pode vir como Nome (texto)
-        const conn = await getSfConnection();
-        
-        let finalAccountId = accountId;
-
-        // Verificação simples se é ID (tamanho 15 ou 18 chars). Se não for, busca por nome.
-        if (accountId && accountId.length !== 15 && accountId.length !== 18) {
-            const accQuery = `SELECT Id FROM Account WHERE Name LIKE '%${accountId}%' LIMIT 1`;
-            const accRes = await conn.query(accQuery);
-            if (accRes.totalSize > 0) {
-                finalAccountId = accRes.records[0].Id;
-            } else {
-                // Se não achar, pode dar erro ou criar sem conta. Vamos dar erro para forçar integridade.
-                return res.status(400).json({ error: 'Conta não encontrada com esse nome.' });
-            }
-        }
-
-        const ret = await conn.sobject('Case').create({
-            Subject: subject,
-            Description: desc,
-            Priority: priority || 'Medium',
-            Status: 'New',
-            AccountId: finalAccountId,
-            Origin: 'Web'
-        });
-
-        if (ret.success) res.json({ success: true, id: ret.id });
-        else res.status(400).json({ success: false, errors: ret.errors });
-
-    } catch (err) {
-        console.error("Erro createTicket:", err);
-        res.status(500).json({ error: 'Erro ao criar chamado.' });
-    }
-};
-
-/**
- * Adiciona comentário ao chamado
- */
-exports.addComment = async (req, res) => {
-    try {
-        const { caseId, text, isPublic } = req.body;
-        const conn = await getSfConnection();
-        const ret = await conn.sobject('CaseComment').create({
-            ParentId: caseId,
-            CommentBody: text,
-            IsPublished: isPublic || false
-        });
-        if (ret.success) res.json({ success: true });
-        else res.status(400).json({ success: false });
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ error: 'Erro ao comentar.' });
-    }
-};
-
-/**
- * Atribui o chamado ao usuário atual (Puxar da fila)
- */
-exports.assignTicket = async (req, res) => {
-    try {
-        const { id } = req.body;
-        const userId = req.session.user.id;
-        const conn = await getSfConnection();
-        const ret = await conn.sobject('Case').update({
-            Id: id,
-            Pessoa__c: userId,
-            Status: 'In Progress'
-        });
-        if (ret.success) res.json({ success: true });
-        else res.status(400).json({ success: false });
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ error: 'Erro ao atribuir.' });
-    }
-};
+exports.addComment = async (req, res) => { try { const { caseId, text } = req.body; const conn = await getSfConnection(); const ret = await conn.sobject('CaseComment').create({ ParentId: caseId, CommentBody: text, IsPublished: false }); if (ret.success) res.json({ success: true }); else res.status(400).json({ success: false }); } catch (err) { res.status(500).json({ error: 'Erro ao comentar.' }); } };

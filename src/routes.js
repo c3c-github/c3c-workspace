@@ -6,7 +6,7 @@ const dashboardController = require('./controllers/dashboardController');
 const apiController = require('./controllers/apiController');
 const hrController = require('./controllers/hrController');
 const timesheetController = require('./controllers/timesheetController');
-const operationsController = require('./controllers/operationsController'); // [Importante]
+const operationsController = require('./controllers/operationsController'); 
 
 // Middleware de Autenticação
 const requireAuth = (req, res, next) => {
@@ -41,24 +41,31 @@ router.get('/hr', requireAuth, requireGroup('ADMIN_RH'), hrController.renderHrDa
 router.get('/timesheet', requireAuth, timesheetController.renderTimesheetPage);
 
 // --- ROTAS DE OPERAÇÕES (MESA N2) ---
-// Página Principal
 router.get('/operations', requireAuth, requireGroup('OPERACAO'), operationsController.renderOperations);
 
-// APIs de Operações (Consumidas pelo Front-end)
-router.get('/api/ops/tickets', requireAuth, operationsController.getTickets); // ?filter=my|queue|team
+// APIs Leitura
+router.get('/api/ops/tickets', requireAuth, operationsController.getTickets); 
 router.get('/api/ops/tickets/:id/details', requireAuth, operationsController.getTicketDetails);
 router.get('/api/ops/tickets/:id/activities', requireAuth, operationsController.getTicketActivities);
+router.get('/api/ops/limits', requireAuth, operationsController.getLimits);
+router.get('/api/ops/create-options', requireAuth, operationsController.getCreateOptions);
+router.get('/api/ops/account/:id/contacts', requireAuth, operationsController.getAccountContacts);
+
+// APIs Escrita
 router.post('/api/ops/tickets/create', requireAuth, operationsController.createTicket);
+router.post('/api/ops/tickets/update', requireAuth, operationsController.updateTicket);
 router.post('/api/ops/tickets/assign', requireAuth, operationsController.assignTicket);
+router.post('/api/ops/tickets/return-queue', requireAuth, operationsController.returnToQueue); // NOVA
 router.post('/api/ops/log', requireAuth, operationsController.saveLog);
 router.post('/api/ops/comment', requireAuth, operationsController.addComment);
+router.post('/api/ops/contact/create', requireAuth, operationsController.createContact);
+router.post('/api/ops/tickets/transfer', requireAuth, operationsController.transferTicket); // NOVA
 
-
-// --- ROTAS DE API GERAIS (EXISTENTES) ---
+// --- ROTAS DE API GERAIS ---
 router.get('/api/periods', requireAuth, apiController.getPeriods);
 router.get('/api/dashboard/metrics', requireAuth, apiController.getDashboardMetrics);
 
-// Aprovações (Gestor)
+// Aprovações
 router.get('/api/approvals/projects', requireAuth, requireGroup('GESTOR'), apiController.getProjects);
 router.get('/api/approvals/:serviceId/resources', requireAuth, requireGroup('GESTOR'), apiController.getProjectResources);
 router.get('/api/approvals/:serviceId/resources/:personId/activities', requireAuth, requireGroup('GESTOR'), apiController.getResourceActivities);

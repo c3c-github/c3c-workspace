@@ -45,7 +45,6 @@
                 <button onclick="document.getElementById('sidebar').classList.toggle('-translate-x-full')" class="md:hidden text-gray-500 hover:text-gray-700">
                     <i data-lucide="menu" class="w-6 h-6"></i>
                 </button>
-
                 <h1 class="text-lg font-bold text-gray-800 flex items-center gap-2">
                     <i data-lucide="layers" class="w-5 h-5 text-indigo-600"></i>
                     Operação N2
@@ -63,72 +62,78 @@
                     </div>
                 </div>
             </div>
-
-            <div class="flex items-center gap-4">
-                <div class="flex items-center gap-2 bg-gray-50 px-3 py-1 rounded-lg border border-gray-200">
-                    <span class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
-                    <span class="text-xs text-gray-700 font-bold">Disponível</span>
-                </div>
-            </div>
         </header>
 
         <div class="flex-1 flex overflow-hidden">
-            
             <div class="w-full md:w-[400px] flex flex-col border-r border-gray-200 bg-white" id="ticket-list-panel">
-                
                 <div class="p-3 border-b border-gray-200 bg-white flex flex-col gap-3">
-                    <button onclick="openModal('new-ticket-modal')" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold py-2.5 rounded-lg flex items-center justify-center gap-2 shadow-sm transition-all active:scale-95">
+                    <button onclick="openNewTicketModal()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold py-2.5 rounded-lg flex items-center justify-center gap-2 shadow-sm transition-all active:scale-95">
                         <i data-lucide="plus-circle" class="w-4 h-4"></i> Novo Chamado
                     </button>
-                    
                     <div class="flex border-b border-gray-200">
                         <button onclick="changeFilter('my')" id="tab-my" class="flex-1 py-3 text-sm font-bold text-indigo-600 border-b-2 border-indigo-600 bg-indigo-50/50">Meus</button>
                         <button onclick="changeFilter('queue')" id="tab-queue" class="flex-1 py-3 text-sm font-bold text-gray-500 border-b-2 border-transparent hover:bg-gray-50">Fila</button>
                         <button onclick="changeFilter('team')" id="tab-team" class="flex-1 py-3 text-sm font-bold text-gray-500 border-b-2 border-transparent hover:bg-gray-50">Equipe</button>
                     </div>
                 </div>
-
                 <div id="tickets-list-container" class="flex-1 overflow-y-auto p-3 space-y-2 bg-gray-50/30">
                     <p class="text-center text-xs text-gray-400 mt-5">Carregando...</p>
                 </div>
             </div>
 
             <div class="hidden md:flex flex-1 bg-white flex-col relative w-full" id="ticket-workspace">
-                
                 <div class="md:hidden p-2 bg-gray-50 border-b border-gray-200">
                     <button onclick="closeTicketMobile()" class="text-sm text-gray-600 flex items-center gap-1 font-bold"><i data-lucide="arrow-left" class="w-4 h-4"></i> Voltar</button>
                 </div>
-
                 <div id="empty-state" class="absolute inset-0 flex flex-col items-center justify-center bg-gray-50 text-gray-400 z-0">
                     <i data-lucide="mouse-pointer-2" class="w-16 h-16 mb-4 text-gray-300"></i>
-                    <p class="text-sm font-medium">Selecione um chamado para iniciar.</p>
+                    <p class="text-sm font-medium">Selecione um chamado.</p>
                 </div>
-
+                
                 <div id="ticket-panel" class="flex-1 flex flex-col h-full hidden z-10 bg-white w-full">
                     
-                    <div class="px-6 py-4 border-b border-gray-200 bg-white flex flex-col md:flex-row justify-between items-start gap-4">
-                        <div class="flex-1">
-                            <div class="flex flex-wrap items-center gap-3 mb-1">
-                                <span class="bg-gray-100 text-gray-600 px-2 py-0.5 rounded text-xs font-mono font-bold" id="detail-number">#</span>
-                                <span class="text-xs text-indigo-600 font-bold uppercase tracking-wider" id="detail-client">CLIENTE</span>
+                    <div class="px-6 py-4 border-b border-gray-200 bg-white">
+                        <div class="flex flex-col md:flex-row justify-between items-start gap-4 mb-3">
+                            <div class="flex-1">
+                                <div class="flex flex-wrap items-center gap-3 mb-1">
+                                    <span class="bg-gray-100 text-gray-600 px-2 py-0.5 rounded text-xs font-mono font-bold" id="detail-number">#</span>
+                                    <span class="text-xs text-indigo-600 font-bold uppercase tracking-wider" id="detail-client">CLIENTE</span>
+                                </div>
+                                <h1 class="text-xl font-bold text-gray-900 mt-1" id="detail-title">Titulo</h1>
                             </div>
-                            <h1 class="text-xl font-bold text-gray-900 mt-1" id="detail-title">Titulo</h1>
+                            <div class="flex gap-2 shrink-0" id="header-actions">
+                                </div>
                         </div>
-                        <div class="flex gap-2 shrink-0" id="header-actions"></div>
+                        
+                        <div class="grid grid-cols-2 md:grid-cols-5 gap-2 text-[10px] text-gray-500 bg-gray-50 p-2 rounded border border-gray-100">
+                            <div><span class="block font-bold">Abertura</span><span id="ts-open">-</span></div>
+                            <div><span class="block font-bold">Expectativa</span><span id="ts-expect">-</span></div>
+                            <div><span class="block font-bold">Estimativa</span><span id="ts-estim">-</span></div>
+                            <div><span class="block font-bold">Últ. Cliente</span><span id="ts-last-cli">-</span></div>
+                            <div><span class="block font-bold">Últ. Operação</span><span id="ts-last-ops">-</span></div>
+                        </div>
                     </div>
 
                     <div class="px-6 pt-2 border-b border-gray-200 bg-gray-50/50 flex gap-6 overflow-x-auto">
                         <button onclick="switchDetailTab('info')" id="dt-info" class="pb-3 text-sm tab-active whitespace-nowrap">Informações</button>
                         <button onclick="switchDetailTab('logs')" id="dt-logs" class="pb-3 text-sm tab-inactive whitespace-nowrap">Histórico & Tempos</button>
+                        <button onclick="switchDetailTab('edit')" id="dt-edit" class="pb-3 text-sm tab-inactive whitespace-nowrap hidden">Editar</button>
+                        <button onclick="switchDetailTab('attach')" id="dt-attach" class="pb-3 text-sm tab-inactive whitespace-nowrap">Anexos</button>
                     </div>
 
                     <div class="flex-1 overflow-y-auto p-6 bg-gray-50">
+                        
                         <div id="view-info" class="space-y-6">
+                            <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm grid grid-cols-2 md:grid-cols-4 gap-4 text-xs">
+                                <div><span class="block text-gray-400 font-bold mb-1">Status</span><span id="info-status" class="font-bold text-gray-700">-</span></div>
+                                <div><span class="block text-gray-400 font-bold mb-1">Prioridade</span><span id="info-prio" class="font-bold text-gray-700">-</span></div>
+                                <div><span class="block text-gray-400 font-bold mb-1">Tipo</span><span id="info-type" class="font-bold text-gray-700">-</span></div>
+                                <div><span class="block text-gray-400 font-bold mb-1">Origem</span><span id="info-origin" class="font-bold text-gray-700">-</span></div>
+                            </div>
                             <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
                                 <h3 class="text-xs font-bold text-gray-400 uppercase mb-2">Descrição</h3>
                                 <p class="text-sm text-gray-700 leading-relaxed whitespace-pre-line" id="detail-desc">...</p>
                             </div>
-                            
                             <div>
                                 <h3 class="text-xs font-bold text-gray-400 uppercase mb-2">Comentários</h3>
                                 <div id="comments-list" class="space-y-3 mb-3"></div>
@@ -142,435 +147,257 @@
                         <div id="view-logs" class="hidden h-full flex flex-col">
                             <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden flex-1">
                                 <table class="w-full text-sm text-left">
-                                    <thead class="bg-gray-50 text-gray-500 text-xs uppercase font-bold sticky top-0">
-                                        <tr>
-                                            <th class="px-4 py-2">Data</th>
-                                            <th class="px-4 py-2">Tipo</th>
-                                            <th class="px-4 py-2">Atividade / Descrição</th>
-                                            <th class="px-4 py-2 text-right">Horas</th>
-                                        </tr>
-                                    </thead>
+                                    <thead class="bg-gray-50 text-gray-500 text-xs uppercase font-bold sticky top-0"><tr><th class="px-4 py-2">Data</th><th class="px-4 py-2">Atividade</th><th class="px-4 py-2 text-center text-blue-600">Normais</th><th class="px-4 py-2 text-center text-red-600">Extras</th></tr></thead>
                                     <tbody class="divide-y divide-gray-100" id="logs-table-body"></tbody>
                                 </table>
                             </div>
                         </div>
+
+                        <div id="view-edit" class="hidden h-full">
+                            <div class="bg-white p-6 rounded-xl border border-gray-200 shadow-sm max-w-2xl mx-auto">
+                                <div class="grid grid-cols-2 gap-4 mb-4">
+                                    <div><label class="block text-xs text-gray-500 font-bold mb-1">Status</label><select id="edit-status" class="w-full border border-gray-300 rounded p-2 text-sm bg-white"><option value="New">New</option><option value="In Progress">In Progress</option><option value="On Hold">On Hold</option><option value="Closed">Closed</option></select></div>
+                                    <div><label class="block text-xs text-gray-500 font-bold mb-1">Estimativa Entrega</label><input type="date" id="edit-estimation" class="w-full border border-gray-300 rounded p-2 text-sm"></div>
+                                </div>
+                                <div class="grid grid-cols-2 gap-4 mb-4">
+                                    <div><label class="block text-xs text-gray-500 font-bold mb-1">Tipo</label><select id="edit-type" class="w-full border border-gray-300 rounded p-2 text-sm bg-white"><option value="Melhoria">Melhoria</option><option value="Bug">Bug</option><option value="Dúvida">Dúvida</option></select></div>
+                                    <div><label class="block text-xs text-gray-500 font-bold mb-1">Prioridade</label><select id="edit-priority" class="w-full border border-gray-300 rounded p-2 text-sm bg-white"><option value="Medium">Média</option><option value="High">Alta</option><option value="Low">Baixa</option><option value="Critical">Crítica</option></select></div>
+                                </div>
+                                <div class="mb-4"><label class="block text-xs text-gray-500 font-bold mb-1">Novo Assunto</label><input type="text" id="edit-subject" class="w-full border border-gray-300 rounded p-2 text-sm"></div>
+                                <div class="mb-4"><label class="block text-xs text-gray-500 font-bold mb-1">Nova Descrição</label><textarea id="edit-desc" class="w-full border border-gray-300 rounded p-3 text-sm h-32 focus:ring-2 focus:ring-indigo-500 outline-none font-mono text-gray-700"></textarea></div>
+                                <div class="flex justify-end pt-4 border-t border-gray-100"><button onclick="saveTicketUpdates()" class="px-6 py-2 bg-indigo-600 text-white font-bold text-xs rounded hover:bg-indigo-700 shadow">Salvar Alterações</button></div>
+                            </div>
+                        </div>
+
+                        <div id="view-attach" class="hidden h-full">
+                            <div id="attach-list" class="grid grid-cols-2 gap-4"></div>
+                            <p class="text-center text-xs text-gray-400 mt-4">Anexos são somente leitura nesta versão.</p>
+                        </div>
+
                     </div>
                 </div>
             </div>
         </div>
     </main>
 
-    <div id="time-modal" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center p-4">
-        <div class="bg-white rounded-xl shadow-2xl w-full max-w-sm p-6 transform transition-all">
-            <h3 class="font-bold text-gray-800 mb-4 flex items-center gap-2">
-                <i data-lucide="clock" class="w-4 h-4 text-indigo-600"></i> Lançar Horas
-            </h3>
-            
-            <div class="mb-3">
-                <label class="block text-xs font-bold text-gray-500 mb-1">Data</label>
-                <input type="date" id="modal-date" class="w-full border border-gray-300 rounded p-2 text-sm bg-gray-50 focus:ring-2 focus:ring-indigo-500 outline-none">
+    <div id="new-ticket-modal" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-2xl transform transition-all flex flex-col max-h-[90vh]">
+            <div class="p-5 border-b border-gray-100 flex justify-between items-center bg-gray-50 rounded-t-xl shrink-0">
+                <h3 class="font-bold text-gray-800 flex items-center gap-2"><i data-lucide="plus-circle" class="w-5 h-5 text-indigo-600"></i> Novo Chamado</h3>
+                <button onclick="closeModal('new-ticket-modal')" class="text-gray-400 hover:text-gray-600"><i data-lucide="x" class="w-5 h-5"></i></button>
             </div>
-
-            <div class="mb-3">
-                <label class="block text-xs font-bold text-gray-500 mb-1">Atividade</label>
-                <select id="modal-activity-select" onchange="toggleNewActivityInput()" class="w-full border border-gray-300 rounded p-2 text-sm bg-white outline-none focus:ring-2 focus:ring-indigo-500"></select>
-                
-                <input type="text" id="modal-new-activity-name" class="w-full border border-indigo-300 rounded p-2 text-sm mt-2 hidden bg-indigo-50 focus:ring-2 focus:ring-indigo-500" placeholder="Nome da nova atividade">
-                <p class="text-[10px] text-gray-400 mt-1 hidden" id="modal-activity-hint">
-                    Será salvo como: <span id="case-prefix" class="font-bold"></span> - [Nome]
-                </p>
+            <div class="p-6 overflow-y-auto">
+                <form id="form-create-ticket" onsubmit="return false;">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                        <div>
+                            <label class="block text-xs text-gray-500 font-bold mb-1">Serviço / Cliente *</label>
+                            <select id="new-service" onchange="onServiceChange()" class="w-full border border-gray-300 rounded p-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none bg-white"><option value="">Carregando...</option></select>
+                            <input type="hidden" id="new-account-id">
+                        </div>
+                        <div>
+                            <label class="block text-xs text-gray-500 font-bold mb-1">Contato Solicitante</label>
+                            <div id="contact-select-mode" class="flex gap-1">
+                                <select id="new-contact" class="w-full border border-gray-300 rounded p-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none bg-white" disabled><option value="">Selecione o serviço</option></select>
+                                <button onclick="toggleContactMode()" class="bg-indigo-50 text-indigo-600 border border-indigo-200 rounded px-2 hover:bg-indigo-100"><i data-lucide="plus" class="w-4 h-4"></i></button>
+                            </div>
+                            <div id="contact-create-mode" class="hidden flex flex-col gap-2 p-2 bg-indigo-50 rounded border border-indigo-100">
+                                <input type="text" id="new-contact-name" placeholder="Nome *" class="w-full border border-gray-300 rounded p-1.5 text-xs">
+                                <input type="email" id="new-contact-email" placeholder="Email *" class="w-full border border-gray-300 rounded p-1.5 text-xs">
+                                <input type="text" id="new-contact-mobile" placeholder="Celular" class="w-full border border-gray-300 rounded p-1.5 text-xs">
+                                <div class="flex justify-end gap-1">
+                                    <button onclick="toggleContactMode()" class="text-xs text-gray-500 underline px-1">Cancelar</button>
+                                    <button onclick="saveNewContact()" class="bg-indigo-600 text-white text-xs px-2 py-1 rounded hover:bg-indigo-700">Salvar</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                        <div class="md:col-span-2"><label class="block text-xs text-gray-500 font-bold mb-1">Assunto *</label><input type="text" id="new-subject" class="w-full border border-gray-300 rounded p-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none"></div>
+                        <div>
+                            <label class="block text-xs text-gray-500 font-bold mb-1">Tipo *</label>
+                            <select id="new-type" onchange="updateDescriptionTemplate()" class="w-full border border-gray-300 rounded p-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none bg-white"><option value="Melhoria">Melhoria</option><option value="Bug">Bug / Erro</option><option value="Dúvida">Dúvida</option></select>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                        <div><label class="block text-xs text-gray-500 font-bold mb-1">Prioridade</label><select id="new-priority" class="w-full border border-gray-300 rounded p-2 text-sm bg-white"><option value="Medium">Média</option><option value="High">Alta</option><option value="Low">Baixa</option><option value="Critical">Crítica</option></select></div>
+                        <div><label class="block text-xs text-gray-500 font-bold mb-1">Origem</label><select id="new-origin" class="w-full border border-gray-300 rounded p-2 text-sm bg-white"><option value="Email">Email</option><option value="Phone">Telefone</option><option value="Web">Portal</option><option value="Chat">Chat</option></select></div>
+                        <div><label class="block text-xs text-gray-500 font-bold mb-1">Expectativa (Cliente)</label><input type="date" id="new-expectation" class="w-full border border-gray-300 rounded p-2 text-sm"></div>
+                        <div class="flex items-end pb-2"><label class="flex items-center cursor-pointer"><input type="checkbox" id="new-assign" class="form-checkbox h-4 w-4 text-indigo-600 rounded"><span class="ml-2 text-xs font-bold text-gray-700">Assumir?</span></label></div>
+                    </div>
+                    <div class="mb-4"><label class="block text-xs text-gray-500 font-bold mb-1">Descrição *</label><textarea id="new-desc" class="w-full border border-gray-300 rounded p-3 text-sm h-40 focus:ring-2 focus:ring-indigo-500 outline-none font-mono text-gray-700 leading-relaxed"></textarea></div>
+                    <div class="mb-4"><label class="block text-xs text-gray-500 font-bold mb-1">Anexos (Adicionar após criar)</label><input type="file" disabled class="block w-full text-xs text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-gray-100 file:text-gray-500 cursor-not-allowed"/></div>
+                </form>
             </div>
-
-            <div class="grid grid-cols-2 gap-3 mb-3">
-                <div>
-                    <label class="block text-xs font-bold text-gray-500 mb-1">Duração (h)</label>
-                    <input type="number" step="0.5" min="0.5" id="modal-hours" class="w-full border border-gray-300 rounded p-2 text-lg font-mono text-center font-bold text-indigo-600 outline-none focus:ring-2 focus:ring-indigo-500" placeholder="0.5">
-                    <p class="text-[9px] text-gray-400 text-center mt-1">Múltiplos de 0.5</p>
-                </div>
-                <div>
-                    <label class="block text-xs font-bold text-gray-500 mb-1">Tipo</label>
-                    <select id="modal-type" class="w-full border border-gray-300 rounded p-2 text-sm bg-white h-[46px] outline-none focus:ring-2 focus:ring-indigo-500">
-                        <option value="normal">Normal</option>
-                        <option value="extra" class="text-red-600 font-bold">Hora Extra</option>
-                    </select>
-                </div>
-            </div>
-
-            <div class="mb-4">
-                <label class="block text-xs font-bold text-gray-500 mb-1">Justificativa</label>
-                <input type="text" id="modal-desc" class="w-full border border-gray-300 rounded p-2 text-sm outline-none focus:ring-2 focus:ring-indigo-500">
-            </div>
-
-            <div class="flex justify-end gap-2">
-                <button onclick="closeModal('time-modal')" class="px-4 py-2 text-gray-500 font-bold text-xs hover:bg-gray-100 rounded">Cancelar</button>
-                <button onclick="saveLog()" class="px-4 py-2 bg-indigo-600 text-white font-bold text-xs rounded hover:bg-indigo-700 shadow-md">Salvar</button>
+            <div class="p-5 border-t border-gray-100 bg-gray-50 rounded-b-xl flex justify-end gap-2 shrink-0">
+                <button onclick="closeModal('new-ticket-modal')" class="px-4 py-2 text-gray-600 font-bold text-xs hover:bg-gray-200 rounded">Cancelar</button>
+                <button onclick="submitNewTicket()" class="px-6 py-2 bg-indigo-600 text-white font-bold text-xs rounded hover:bg-indigo-700 shadow-lg flex items-center gap-2"><i data-lucide="check" class="w-4 h-4"></i> Criar Chamado</button>
             </div>
         </div>
     </div>
 
-    <div id="new-ticket-modal" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center p-4">
-        <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg transform transition-all">
-            <div class="p-5 border-b border-gray-100 flex justify-between items-center bg-gray-50 rounded-t-xl">
-                <h3 class="font-bold text-gray-800 flex items-center gap-2">
-                    <i data-lucide="plus-circle" class="w-4 h-4 text-indigo-600"></i> Novo Chamado
-                </h3>
-                <button onclick="closeModal('new-ticket-modal')" class="text-gray-400 hover:text-gray-600">
-                    <i data-lucide="x" class="w-5 h-5"></i>
-                </button>
-            </div>
-            <div class="p-6">
-                <div class="mb-4">
-                    <label class="block text-xs text-gray-500 font-bold mb-1">Cliente (Nome da Conta)</label>
-                    <input type="text" id="new-client-name" class="w-full border border-gray-300 rounded p-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="Ex: Tech Solutions">
-                    <p class="text-[10px] text-gray-400 mt-1">O sistema buscará a conta pelo nome.</p>
-                </div>
-                <div class="mb-4">
-                    <label class="block text-xs text-gray-500 font-bold mb-1">Assunto</label>
-                    <input type="text" id="new-subject" class="w-full border border-gray-300 rounded p-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
-                </div>
-                <div class="mb-4">
-                    <label class="block text-xs text-gray-500 font-bold mb-1">Descrição</label>
-                    <textarea id="new-desc" class="w-full border border-gray-300 rounded p-2 text-sm h-24 resize-none focus:ring-2 focus:ring-indigo-500 outline-none"></textarea>
-                </div>
-                <div class="flex justify-end gap-2">
-                    <button onclick="closeModal('new-ticket-modal')" class="px-4 py-2 text-gray-600 font-bold text-xs hover:bg-gray-100 rounded">Cancelar</button>
-                    <button onclick="createTicket()" class="px-4 py-2 bg-indigo-600 text-white font-bold text-xs rounded hover:bg-indigo-700 shadow-md">Criar</button>
-                </div>
-            </div>
+    <div id="time-modal" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-sm p-6 transform transition-all">
+            <h3 class="font-bold text-gray-800 mb-4 flex items-center gap-2"><i data-lucide="clock" class="w-4 h-4 text-indigo-600"></i> Lançar Horas</h3>
+            <div class="mb-3"><label class="block text-xs font-bold text-gray-500 mb-1">Data</label><input type="date" id="modal-date" onchange="fetchLimits()" class="w-full border border-gray-300 rounded p-2 text-sm bg-gray-50 focus:ring-2 focus:ring-indigo-500 outline-none"></div>
+            <div class="mb-3"><label class="block text-xs font-bold text-gray-500 mb-1">Atividade</label><select id="modal-activity-select" onchange="toggleNewActivityInput()" class="w-full border border-gray-300 rounded p-2 text-sm bg-white outline-none focus:ring-2 focus:ring-indigo-500"></select><input type="text" id="modal-new-activity-name" class="w-full border border-indigo-300 rounded p-2 text-sm mt-2 hidden bg-indigo-50 focus:ring-2 focus:ring-indigo-500" placeholder="Nome da nova atividade"></div>
+            <div class="grid grid-cols-2 gap-3 mb-3"><div><label class="block text-xs font-bold text-blue-600 mb-1">Normal (h)</label><input type="text" inputmode="decimal" id="modal-hours-normal" onblur="formatHours(this)" onkeyup="checkLocks()" onchange="checkLocks()" class="w-full border border-gray-300 rounded p-2 text-lg font-mono text-center font-bold text-blue-600 outline-none focus:ring-2 focus:ring-blue-500" placeholder="0.0"></div><div><label class="block text-xs font-bold text-red-600 mb-1 flex justify-between">Extra (h) <i data-lucide="lock" id="icon-lock-extra" class="w-3 h-3 text-gray-400"></i></label><input type="text" inputmode="decimal" id="modal-hours-extra" onblur="formatHours(this)" onkeyup="checkLocks()" class="w-full border border-gray-200 bg-gray-100 rounded p-2 text-lg font-mono text-center font-bold text-gray-400 outline-none transition-colors" placeholder="Bloq" disabled></div></div>
+            <div class="mb-4"><label class="block text-xs font-bold text-gray-500 mb-1">Justificativa</label><input type="text" id="modal-desc" class="w-full border border-gray-300 rounded p-2 text-sm outline-none focus:ring-2 focus:ring-indigo-500"></div>
+            <div id="limit-summary" class="bg-gray-50 p-2.5 rounded border border-gray-200 mb-3 text-[11px] text-gray-600 flex justify-between items-center"><div class="text-center"><div class="font-bold text-gray-400 uppercase tracking-wide">Contrato</div><div id="val-limit" class="font-bold text-gray-800 text-sm">...</div></div><div class="h-6 w-px bg-gray-300"></div><div class="text-center"><div class="font-bold text-gray-400 uppercase tracking-wide">Lançado</div><div id="val-used" class="font-bold text-blue-600 text-sm">...</div></div><div class="h-6 w-px bg-gray-300"></div><div class="text-center"><div class="font-bold text-gray-400 uppercase tracking-wide">Saldo</div><div id="val-saldo" class="font-bold text-green-600 text-sm">...</div></div></div>
+            <div class="flex justify-end gap-2"><button onclick="closeModal('time-modal')" class="px-4 py-2 text-gray-500 font-bold text-xs hover:bg-gray-100 rounded">Cancelar</button><button onclick="saveLog()" class="px-4 py-2 bg-indigo-600 text-white font-bold text-xs rounded hover:bg-indigo-700 shadow-md">Salvar</button></div>
         </div>
     </div>
 
     <script>
         lucide.createIcons();
-        
-        // Estado Global
-        let activeTicketId = null;
-        let ticketsCache = [];
-        let currentFilter = 'my';
-        let globalSeconds = 0;
-        let globalInterval = null;
+        let activeTicketId = null, ticketsCache = [], currentFilter = 'my', createOptionsCache = [], currentDayLimit = 0, currentDayUsed = 0, currentDayUsedExtra = 0, currentTicketData = null;
 
-        // Inicialização
-        document.addEventListener('DOMContentLoaded', () => { changeFilter('my'); });
-
-        // --- LÓGICA DE LISTA E FILTROS ---
+        // JS CORRIGIDO (Funções definidas antes do uso)
         async function changeFilter(type) {
             currentFilter = type;
-            ['my','queue','team'].forEach(t => {
-                const b = document.getElementById(`tab-${t}`);
-                if(t===type) { 
-                    b.classList.add('text-indigo-600','border-indigo-600','bg-indigo-50/50'); 
-                    b.classList.remove('text-gray-500','border-transparent'); 
-                } else { 
-                    b.classList.remove('text-indigo-600','border-indigo-600','bg-indigo-50/50'); 
-                    b.classList.add('text-gray-500','border-transparent'); 
-                }
-            });
-
-            const list = document.getElementById('tickets-list-container');
-            list.innerHTML = '<p class="text-center text-xs text-gray-400 mt-4">Carregando...</p>';
-            
-            try {
-                const res = await fetch(`/api/ops/tickets?filter=${type}`);
-                const data = await res.json();
-                ticketsCache = data;
-                renderList(data);
-            } catch(e) { list.innerHTML = '<p class="text-center text-xs text-red-400">Erro ao carregar lista.</p>'; }
+            ['my','queue','team'].forEach(t => { const b = document.getElementById(`tab-${t}`); if(t===type) { b.classList.add('text-indigo-600','border-indigo-600','bg-indigo-50/50'); b.classList.remove('text-gray-500','border-transparent'); } else { b.classList.remove('text-indigo-600','border-indigo-600','bg-indigo-50/50'); b.classList.add('text-gray-500','border-transparent'); } });
+            const list = document.getElementById('tickets-list-container'); list.innerHTML = '<p class="text-center text-xs text-gray-400 mt-4">Carregando...</p>';
+            try { const res = await fetch(`/api/ops/tickets?filter=${type}`); const data = await res.json(); ticketsCache = data; renderList(data); } catch(e) { list.innerHTML = '<p class="text-center text-xs text-red-400">Erro ao carregar lista.</p>'; }
         }
 
         function renderList(data) {
-            const list = document.getElementById('tickets-list-container');
-            list.innerHTML = '';
+            const list = document.getElementById('tickets-list-container'); list.innerHTML = '';
             if(data.length === 0) return list.innerHTML = '<p class="text-center text-xs text-gray-400 mt-4">Nenhum chamado encontrado.</p>';
-            
             data.forEach(t => {
-                let badge = t.status === 'New' ? 'bg-blue-100 text-blue-700' : (t.status === 'In Progress' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600');
-                
-                list.innerHTML += `
-                <div onclick="loadTicketDetails('${t.id}')" class="ticket-card p-3 border border-gray-200 rounded mb-2 cursor-pointer hover:bg-indigo-50 bg-white transition-all">
-                    <div class="flex justify-between mb-1">
-                        <span class="font-bold text-xs text-gray-600">${t.caseNumber}</span>
-                        <span class="text-[10px] ${badge} px-1.5 rounded">${t.status}</span>
-                    </div>
-                    <div class="text-sm font-bold text-gray-800 truncate">${t.title}</div>
-                    <div class="text-xs text-gray-500 flex justify-between mt-1">
-                        <span>${t.client}</span>
-                        <span>${t.date}</span>
-                    </div>
-                </div>`;
+                let borderClass = t.priority === 'High' || t.priority === 'Critical' ? 'border-l-4 border-l-red-500' : 'border-l-4 border-l-gray-300';
+                list.innerHTML += `<div onclick="loadTicketDetails('${t.id}')" class="ticket-card p-3 border border-gray-200 rounded mb-2 cursor-pointer hover:bg-indigo-50 bg-white transition-all ${borderClass}"><div class="flex justify-between mb-1"><span class="font-bold text-xs text-gray-600 flex items-center gap-1">${t.caseNumber}</span><span class="text-[10px] bg-gray-100 text-gray-600 px-1.5 rounded">${t.status}</span></div><div class="text-sm font-bold text-gray-800 truncate">${t.title}</div><div class="text-xs text-gray-500 flex justify-between mt-1"><span class="uppercase font-bold text-gray-400">${t.client}</span><span>${t.date}</span></div></div>`;
             });
-        }
-
-        // --- LÓGICA DE DETALHES ---
-        async function loadTicketDetails(id) {
-            activeTicketId = id;
-            document.getElementById('ticket-panel').classList.remove('hidden');
-            document.getElementById('empty-state').classList.add('hidden');
-            
-            // Preenche dados do cache enquanto carrega detalhes
-            const t = ticketsCache.find(x => x.id === id) || {};
-            document.getElementById('detail-number').innerText = t.caseNumber || '#';
-            document.getElementById('detail-client').innerText = t.client || '...';
-            document.getElementById('detail-title').innerText = t.title || '...';
-            document.getElementById('detail-desc').innerText = t.desc || '...';
-            
-            // Para exibição no modal
-            document.getElementById('case-prefix').innerText = t.caseNumber;
-
-            setupActions();
-            switchDetailTab('info');
-
-            const res = await fetch(`/api/ops/tickets/${id}/details`);
-            const det = await res.json();
-            renderLogs(det.logs);
-            renderComments(det.comments);
-        }
-
-        function renderLogs(logs) {
-            const tbody = document.getElementById('logs-table-body');
-            tbody.innerHTML = '';
-            if(!logs || logs.length === 0) return tbody.innerHTML = '<tr><td colspan="4" class="p-4 text-center text-xs text-gray-400">Sem apontamentos.</td></tr>';
-            
-            logs.forEach(l => {
-                const badge = l.type === 'Extra' 
-                    ? '<span class="bg-red-100 text-red-700 px-2 py-0.5 rounded text-[10px] font-bold">EXTRA</span>'
-                    : '<span class="bg-blue-100 text-blue-700 px-2 py-0.5 rounded text-[10px] font-bold">NORMAL</span>';
-                
-                tbody.innerHTML += `
-                <tr class="border-b last:border-0 hover:bg-gray-50">
-                    <td class="px-4 py-2 text-xs text-gray-500">${l.date}</td>
-                    <td class="px-4 py-2">${badge}</td>
-                    <td class="px-4 py-2 text-xs text-gray-700 truncate max-w-[200px]" title="${l.desc}">
-                        <span class="font-bold block text-indigo-900">${l.activity}</span>${l.desc}
-                    </td>
-                    <td class="px-4 py-2 text-right font-mono text-xs font-bold text-indigo-600">${parseFloat(l.hours).toFixed(1)}h</td>
-                </tr>`;
-            });
-        }
-
-        function renderComments(comments) {
-            const cList = document.getElementById('comments-list');
-            cList.innerHTML = '';
-            if (!comments || comments.length === 0) return cList.innerHTML = '<p class="text-xs text-gray-400">Sem comentários.</p>';
-            
-            comments.forEach(c => {
-                cList.innerHTML += `<div class="bg-gray-50 p-2 rounded text-xs border border-gray-100">
-                    <span class="font-bold text-gray-700">${c.user}</span> 
-                    <span class="text-gray-400 text-[10px] ml-1">${c.time}</span>
-                    <p class="mt-1 text-gray-600">${c.text}</p>
-                </div>`;
-            });
-        }
-
-        // --- AÇÕES CONTEXTUAIS ---
-        function setupActions() {
-            const acts = document.getElementById('header-actions');
-            let btns = '';
-            
-            if(currentFilter === 'queue') {
-                btns = `<button onclick="assignTicket()" class="bg-indigo-600 text-white px-3 py-1.5 rounded text-xs font-bold hover:bg-indigo-700 flex gap-1"><i data-lucide="download" class="w-3 h-3"></i> Puxar</button>`;
-            } else if (currentFilter === 'my') {
-                btns = `
-                <button onclick="openLogModal(false)" class="bg-white border text-gray-700 px-3 py-1.5 rounded text-xs font-bold hover:bg-gray-50 shadow-sm">Lançar</button>
-                <button onclick="startGlobalTimer()" class="bg-green-600 text-white px-3 py-1.5 rounded text-xs font-bold hover:bg-green-700 shadow-sm flex gap-1"><i data-lucide="play" class="w-3 h-3 mt-0.5"></i> Timer</button>
-                `;
-            } else {
-                 btns = `<button onclick="openLogModal(false)" class="bg-white border text-gray-700 px-3 py-1.5 rounded text-xs font-bold hover:bg-gray-50">Apoio</button>`;
-            }
-            acts.innerHTML = btns;
             lucide.createIcons();
         }
 
-        // --- TIMER & MODAL DE HORAS ---
-        function startGlobalTimer() {
-            if(!activeTicketId) return alert("Selecione um chamado.");
-            if(globalInterval) return;
-            
-            document.getElementById('global-play').classList.add('hidden');
-            document.getElementById('global-stop').classList.remove('hidden');
-            document.getElementById('global-timer').classList.add('text-red-600', 'timer-pulse');
-            
-            globalInterval = setInterval(() => {
-                globalSeconds++;
-                const h = Math.floor(globalSeconds / 3600).toString().padStart(2,'0');
-                const m = Math.floor((globalSeconds % 3600) / 60).toString().padStart(2,'0');
-                const s = (globalSeconds % 60).toString().padStart(2,'0');
-                document.getElementById('global-timer').innerText = `${h}:${m}:${s}`;
-            }, 1000);
-        }
-
-        function stopGlobalTimer() {
-            clearInterval(globalInterval);
-            globalInterval = null;
-            openLogModal(true); // Abre modal convertendo tempo
-            
-            document.getElementById('global-stop').classList.add('hidden');
-            document.getElementById('global-play').classList.remove('hidden');
-            document.getElementById('global-timer').classList.remove('timer-pulse');
-        }
-
-        async function openLogModal(fromTimer) {
-            if(!activeTicketId) return alert("Selecione um chamado.");
-            openModal('time-modal');
-            
-            // Seta a data para HOJE por padrão
-            document.getElementById('modal-date').value = new Date().toISOString().split('T')[0];
-
-            const sel = document.getElementById('modal-activity-select');
-            sel.innerHTML = '<option>Carregando...</option>';
-            
-            const res = await fetch(`/api/ops/tickets/${activeTicketId}/activities`);
-            const acts = await res.json();
-            sel.innerHTML = '';
-            
-            if(acts.length === 0) sel.innerHTML = '<option value="new">-- Criar Nova --</option>';
-            else {
-                acts.forEach(a => sel.innerHTML += `<option value="${a.Id}">${a.Name}</option>`);
-                sel.innerHTML += `<option value="new" class="text-indigo-600 font-bold">+ Nova Atividade</option>`;
+        function setupActions() {
+            const acts = document.getElementById('header-actions');
+            let btns = '';
+            // Botão EDITAR (Escondido se fila)
+            let editBtn = '';
+            if (currentFilter !== 'queue') {
+                // Aba Edit já controla isso, mas podemos ter botão aqui também
             }
-            toggleNewActivityInput();
-
-            if(fromTimer) {
-                // Converte segundos para horas (arredonda para 0.5 mais próximo)
-                let h = globalSeconds / 3600;
-                h = Math.ceil(h * 2) / 2;
-                if(h === 0) h = 0.5;
-                document.getElementById('modal-hours').value = h.toFixed(1);
+            
+            if(currentFilter === 'queue') {
+                btns = `<button onclick="assignTicket()" class="bg-indigo-600 text-white px-3 py-1.5 rounded text-xs font-bold mr-2">Puxar</button>`;
+            } else if(currentFilter === 'my') {
+                btns = `<button onclick="openLogModal(false)" class="bg-white border text-gray-700 px-3 py-1.5 rounded text-xs font-bold shadow-sm mr-2">Lançar</button><button onclick="startGlobalTimer()" class="bg-green-600 text-white px-3 py-1.5 rounded text-xs font-bold mr-2">Timer</button><button onclick="transferTicket('queue')" class="bg-gray-100 text-gray-600 px-3 py-1.5 rounded text-xs font-bold border">Devolver</button>`;
             } else {
-                document.getElementById('modal-hours').value = '0.5';
+                 btns = `<button class="bg-white border text-gray-700 px-3 py-1.5 rounded text-xs font-bold">Colaborar</button>`;
             }
-        }
-
-        function toggleNewActivityInput() {
-            const val = document.getElementById('modal-activity-select').value;
-            const inp = document.getElementById('modal-new-activity-name');
-            const hint = document.getElementById('modal-activity-hint');
+            acts.innerHTML = btns; lucide.createIcons();
             
-            if(val === 'new') { 
-                inp.classList.remove('hidden'); 
-                hint.classList.remove('hidden'); 
-            } else { 
-                inp.classList.add('hidden'); 
-                hint.classList.add('hidden'); 
-            }
+            // Controle da Aba Editar
+            const editTab = document.getElementById('dt-edit');
+            if(editTab) { if(currentFilter === 'my') editTab.classList.remove('hidden'); else editTab.classList.add('hidden'); }
         }
 
-        async function saveLog() {
-            const date = document.getElementById('modal-date').value;
-            const hours = document.getElementById('modal-hours').value;
-            const type = document.getElementById('modal-type').value;
-            const actId = document.getElementById('modal-activity-select').value;
-            const newAct = document.getElementById('modal-new-activity-name').value;
-            const desc = document.getElementById('modal-desc').value;
-
-            if(!hours || parseFloat(hours) <= 0) return alert("Informe as horas.");
-            if(!date) return alert("Informe a data.");
-
-            try {
-                const res = await fetch('/api/ops/log', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({
-                        caseId: activeTicketId,
-                        activityId: actId,
-                        newActivityName: newAct,
-                        hours: hours,
-                        isExtra: (type === 'extra'),
-                        desc: desc,
-                        date: date
-                    })
-                });
-                const json = await res.json();
-                if(json.success) {
-                    closeModal('time-modal');
-                    loadTicketDetails(activeTicketId);
-                    // Reseta timer global se foi usado
-                    if(globalSeconds > 0) {
-                        globalSeconds = 0;
-                        document.getElementById('global-timer').innerText = "00:00:00";
-                    }
-                    showToast("Sucesso", "Horas registradas!");
-                } else {
-                    alert("Erro: " + (json.error || JSON.stringify(json.errors)));
-                }
-            } catch(e) { console.error(e); }
-        }
-
-        // --- OUTRAS AÇÕES ---
-        async function createTicket() {
-            const subject = document.getElementById('new-subject').value;
-            const clientName = document.getElementById('new-client-name').value;
-            const desc = document.getElementById('new-desc').value;
-
-            if(!subject || !clientName) return alert("Preencha Assunto e Cliente.");
-
-            try {
-                const res = await fetch('/api/ops/tickets/create', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ subject, desc, accountId: clientName })
-                });
-                const json = await res.json();
-                if(json.success) {
-                    closeModal('new-ticket-modal');
-                    changeFilter('my');
-                    alert("Chamado Criado com sucesso!");
-                } else {
-                    alert("Erro ao criar: " + (json.error || "Verifique o nome do cliente."));
-                }
-            } catch(e) { console.error(e); }
-        }
-
-        async function assignTicket() {
-            if(!confirm("Puxar este chamado para você?")) return;
-            const res = await fetch('/api/ops/tickets/assign', {
-                method: 'POST', headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ id: activeTicketId })
-            });
-            if(res.ok) { alert("Chamado atribuído!"); changeFilter('my'); }
-        }
-
-        async function postComment() {
-            const txt = document.getElementById('quick-comment').value;
-            if(!txt) return;
-            const res = await fetch('/api/ops/comment', {
-                method: 'POST', headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ caseId: activeTicketId, text: txt })
-            });
-            if(res.ok) { document.getElementById('quick-comment').value = ''; loadTicketDetails(activeTicketId); }
-        }
-
-        // --- UTILS UI ---
-        function switchDetailTab(t) {
-            document.getElementById('view-info').classList.add('hidden');
-            document.getElementById('view-logs').classList.add('hidden');
-            document.getElementById('dt-info').className = 'pb-3 text-sm tab-inactive';
-            document.getElementById('dt-logs').className = 'pb-3 text-sm tab-inactive';
+        async function loadTicketDetails(id) {
+            activeTicketId = id; document.getElementById('ticket-panel').classList.remove('hidden'); document.getElementById('empty-state').classList.add('hidden');
+            const t = ticketsCache.find(x => x.id === id) || {};
+            if(document.getElementById('detail-number')) document.getElementById('detail-number').innerText = t.caseNumber || '#';
+            if(document.getElementById('detail-client')) document.getElementById('detail-client').innerText = t.client || '...';
+            if(document.getElementById('detail-title')) document.getElementById('detail-title').innerText = t.title || '...';
+            setupActions(); switchDetailTab('info');
             
-            document.getElementById(`view-${t}`).classList.remove('hidden');
-            document.getElementById(`dt-${t}`).className = 'pb-3 text-sm tab-active';
+            const res = await fetch(`/api/ops/tickets/${id}/details`);
+            const det = await res.json();
+            currentTicketData = det.ticket; 
+            
+            // Leitura
+            document.getElementById('info-status').innerText = currentTicketData.Status || '-';
+            document.getElementById('info-prio').innerText = currentTicketData.Priority || '-';
+            document.getElementById('info-type').innerText = currentTicketData.Type || '-';
+            document.getElementById('info-origin').innerText = currentTicketData.Origin || '-';
+            document.getElementById('detail-desc').innerText = currentTicketData.Description || '-';
+            // Tempos
+            document.getElementById('ts-open').innerText = formatDate(currentTicketData.CreatedDate);
+            document.getElementById('ts-expect').innerText = formatDate(currentTicketData.DataExpectativaCliente__c);
+            document.getElementById('ts-estim').innerText = formatDate(currentTicketData.DataEstimativaEntrega__c);
+            document.getElementById('ts-last-ops').innerText = formatDate(currentTicketData.LastModifiedDate);
+
+            // Edição
+            document.getElementById('edit-status').value = currentTicketData.Status;
+            document.getElementById('edit-type').value = currentTicketData.Type;
+            document.getElementById('edit-priority').value = currentTicketData.Priority;
+            document.getElementById('edit-subject').value = currentTicketData.Subject;
+            document.getElementById('edit-desc').value = currentTicketData.Description;
+            document.getElementById('edit-estimation').value = currentTicketData.DataEstimativaEntrega__c || '';
+
+            renderLogs(det.logs); renderComments(det.comments); renderAttach(det.attachments);
         }
 
-        function showToast(title, msg) {
-            // Implementação simples de alerta para feedback rápido
-            // Em produção poderia ser um elemento flutuante
-            console.log(title, msg);
+        function formatDate(dt) { return dt ? new Date(dt).toLocaleDateString('pt-BR') : '-'; }
+        function renderLogs(logs) { const tb = document.getElementById('logs-table-body'); tb.innerHTML = ''; logs.forEach(l => tb.innerHTML += `<tr class="border-b"><td class="px-4 py-2 text-xs">${l.date}</td><td class="px-4 py-2 text-xs">${l.activity}</td><td class="px-4 py-2 text-center text-blue-600 font-bold">${l.hoursNormal}h</td><td class="px-4 py-2 text-center text-red-600 font-bold">${l.hoursExtra}h</td></tr>`); }
+        function renderComments(comments) { const l = document.getElementById('comments-list'); l.innerHTML = ''; comments.forEach(c => l.innerHTML += `<div class="bg-gray-50 p-2 rounded text-xs border border-gray-100"><span class="font-bold">${c.user}</span> <span class="text-gray-400">${c.time}</span><p>${c.text}</p></div>`); }
+        function renderAttach(atts) { const l = document.getElementById('attach-list'); l.innerHTML = ''; if(!atts||atts.length===0) return l.innerHTML='<p class="text-gray-400 text-xs">Sem anexos</p>'; atts.forEach(a => l.innerHTML += `<div class="flex items-center gap-2 p-2 bg-white border rounded"><i data-lucide="file" class="w-4 h-4 text-gray-400"></i><div class="truncate text-xs font-bold">${a.name}</div></div>`); lucide.createIcons(); }
+
+        // Contact / Ticket Logic
+        function toggleContactMode() { const s = document.getElementById('contact-select-mode'), c = document.getElementById('contact-create-mode'); if(s.classList.contains('hidden')) { s.classList.remove('hidden'); c.classList.add('hidden'); } else { s.classList.add('hidden'); c.classList.remove('hidden'); } }
+        async function saveNewContact() {
+            const acc = document.getElementById('new-account-id').value, name = document.getElementById('new-contact-name').value, email = document.getElementById('new-contact-email').value, mob = document.getElementById('new-contact-mobile').value;
+            if(!acc || !name) return alert("Preencha Nome e Conta");
+            const res = await fetch('/api/ops/contact/create', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ accountId: acc, name, email, mobile: mob }) });
+            const j = await res.json(); if(j.success) { toggleContactMode(); const s = document.getElementById('new-contact'); const o = document.createElement('option'); o.value = j.id; o.text = `${j.name} (Novo)`; o.selected = true; s.appendChild(o); alert("Salvo!"); } else alert("Erro: "+JSON.stringify(j.errors));
+        }
+        
+        async function openNewTicketModal() { 
+            openModal('new-ticket-modal'); document.getElementById('form-create-ticket').reset();
+            document.getElementById('new-contact').innerHTML='<option value="">Selecione...</option>'; document.getElementById('new-contact').disabled=true;
+            if(createOptionsCache.length===0) { const s = document.getElementById('new-service'); const res = await fetch('/api/ops/create-options'); createOptionsCache = await res.json(); s.innerHTML='<option value="">Selecione...</option>'; createOptionsCache.forEach(o => { const op=document.createElement('option'); op.value=o.serviceId; op.dataset.account=o.accountId; op.text=`${o.serviceName} (${o.accountName})`; s.appendChild(op); }); }
+            updateDescriptionTemplate(); 
+        }
+        async function onServiceChange() { const s = document.getElementById('new-service'), acc = s.options[s.selectedIndex].dataset.account; document.getElementById('new-account-id').value = acc||''; const c=document.getElementById('new-contact'); c.innerHTML='<option>Carregando...</option>'; c.disabled=true; if(acc) { const r=await fetch(`/api/ops/account/${acc}/contacts`); const d=await r.json(); c.innerHTML='<option value="">Sem contato</option>'; d.forEach(ct=>c.innerHTML+=`<option value="${ct.Id}">${ct.Name}</option>`); c.disabled=false; } }
+        const TEMPLATES = { 'Bug': `Ambiente:\nO que houve?\nPassos:\n`, 'Melhoria': `Objetivo:\nBenefício:\n`, 'Dúvida': `Dúvida:\n` };
+        function updateDescriptionTemplate() { document.getElementById('new-desc').placeholder = TEMPLATES[document.getElementById('new-type').value] || ''; }
+        
+        async function submitNewTicket() {
+            const p = { serviceId: document.getElementById('new-service').value, accountId: document.getElementById('new-account-id').value, contactId: document.getElementById('new-contact').value, subject: document.getElementById('new-subject').value, type: document.getElementById('new-type').value, priority: document.getElementById('new-priority').value, origin: document.getElementById('new-origin').value, expectationDate: document.getElementById('new-expectation').value, assignToMe: document.getElementById('new-assign').checked, desc: document.getElementById('new-desc').value };
+            if(!p.serviceId || !p.subject) return alert("Preencha campos");
+            // Anexo ignorado aqui propositalmente para evitar erro 500 em JSON
+            const res = await fetch('/api/ops/tickets/create', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(p) }); const j = await res.json(); if(j.success) { closeModal('new-ticket-modal'); alert("Criado! Adicione anexos na aba Anexos se necessário."); changeFilter('my'); } else alert("Erro: "+JSON.stringify(j.errors));
         }
 
-        function openModal(id) {
-            const m = document.getElementById(id);
-            m.classList.remove('hidden');
-            setTimeout(() => { m.querySelector('div').classList.remove('scale-95'); }, 10);
+        async function saveTicketUpdates() {
+            const p = { id: activeTicketId, subject: document.getElementById('edit-subject').value, description: document.getElementById('edit-desc').value, status: document.getElementById('edit-status').value, type: document.getElementById('edit-type').value, priority: document.getElementById('edit-priority').value, estimationDate: document.getElementById('edit-estimation').value };
+            const r = await fetch('/api/ops/tickets/update', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(p) }); if(r.ok) { loadTicketDetails(activeTicketId); alert("Atualizado!"); } else alert("Erro");
         }
-        function closeModal(id) {
-            const m = document.getElementById(id);
-            m.classList.add('hidden');
+        
+        async function transferTicket(target) { if(!confirm("Confirmar?")) return; const r = await fetch('/api/ops/tickets/transfer', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ id: activeTicketId, target: target }) }); if(r.ok) { alert("Transferido!"); changeFilter(currentFilter); document.getElementById('ticket-panel').classList.add('hidden'); } else alert("Erro"); }
+
+        // Hours Logic
+        async function fetchLimits() { const d = document.getElementById('modal-date').value; if(!d) return; try { const r = await fetch(`/api/ops/limits?date=${d}`); const j = await r.json(); if(!j.success) { currentDayLimit=0; currentDayUsed=0; currentDayUsedExtra=0; return; } currentDayLimit = j.limit; currentDayUsed = j.usedNormal; currentDayUsedExtra = j.usedExtra; document.getElementById('val-limit').innerText = currentDayLimit + 'h'; document.getElementById('val-used').innerText = (currentDayUsed+currentDayUsedExtra).toFixed(1) + 'h'; checkLocks(); } catch(e) { console.error(e); } }
+        function checkLocks() { 
+            let val = parseFloat(document.getElementById('modal-hours-normal').value.replace(',','.')) || 0; const tot = currentDayUsed + val; const sal = currentDayLimit - tot; 
+            document.getElementById('val-saldo').innerText = sal.toFixed(1) + 'h';
+            const ext = document.getElementById('modal-hours-extra'), lock = document.getElementById('icon-lock-extra');
+            if(tot >= (currentDayLimit-0.01)) { ext.disabled = false; ext.classList.remove('bg-gray-100', 'text-gray-400'); ext.classList.add('bg-white', 'text-red-600'); lock.classList.add('hidden'); } else { ext.disabled = true; ext.value = ''; ext.classList.add('bg-gray-100', 'text-gray-400'); lock.classList.remove('hidden'); }
         }
-        function closeTicketMobile() {
-            document.getElementById('ticket-list-panel').classList.remove('hidden');
-            document.getElementById('ticket-workspace').classList.add('hidden');
-            document.getElementById('ticket-workspace').classList.remove('flex');
+        function formatHours(inp) { let v = parseFloat(inp.value.replace(',','.')); if(isNaN(v)) return; let r = Math.round(v*2)/2; if(r<0.5 && v>0) r=0.5; if(inp.id==='modal-hours-normal') { const rem = currentDayLimit - currentDayUsed; if(r>Math.max(0, rem)) { r=Math.max(0, rem); alert("Limitado."); } } inp.value = r.toFixed(1).replace('.', ','); checkLocks(); }
+        async function openLogModal(ft) { if(!activeTicketId) return alert("Selecione."); openModal('time-modal'); if(!document.getElementById('modal-date').value) document.getElementById('modal-date').value = new Date().toISOString().split('T')[0]; await fetchLimits(); document.getElementById('modal-hours-normal').value = ''; document.getElementById('modal-hours-extra').value = ''; const s = document.getElementById('modal-activity-select'); const r = await fetch(`/api/ops/tickets/${activeTicketId}/activities`); const a = await r.json(); s.innerHTML = ''; a.forEach(x => s.innerHTML += `<option value="${x.Id}">${x.Name}</option>`); s.innerHTML += `<option value="new">+ Nova</option>`; toggleNewActivityInput(); if(ft) { document.getElementById('modal-hours-normal').value = (Math.ceil((globalSeconds/3600)*2)/2).toFixed(1); formatHours(document.getElementById('modal-hours-normal')); } }
+        async function saveLog() { const hn = document.getElementById('modal-hours-normal').value, he = document.getElementById('modal-hours-extra').value, dt = document.getElementById('modal-date').value, ai = document.getElementById('modal-activity-select').value, d = document.getElementById('modal-desc').value, na = document.getElementById('modal-new-activity-name').value; if(!dt) return alert("Data obrigatória"); const r = await fetch('/api/ops/log', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ caseId: activeTicketId, activityId: ai, newActivityName: na, hoursNormal: hn, hoursExtra: he, desc: d, date: dt }) }); const j = await r.json(); if(j.success) { closeModal('time-modal'); loadTicketDetails(activeTicketId); alert("Salvo!"); } else alert("Erro: " + j.error); }
+
+        // Utils
+        function switchDetailTab(t) { 
+            ['info','logs','edit','attach'].forEach(x => { 
+                const elV=document.getElementById(`view-${x}`), elB=document.getElementById(`dt-${x}`);
+                if(elV) elV.classList.add('hidden'); if(elB) elB.className = 'pb-3 text-sm tab-inactive whitespace-nowrap';
+                if(x==='edit' && currentFilter!=='my') if(elB) elB.classList.add('hidden'); // Hide edit if not my ticket
+            });
+            const v = document.getElementById(`view-${t}`), b = document.getElementById(`dt-${t}`);
+            if(v) v.classList.remove('hidden'); if(b) b.className = 'pb-3 text-sm tab-active whitespace-nowrap';
         }
+        function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
+        function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+        function closeTicketMobile() { document.getElementById('ticket-list-panel').classList.remove('hidden'); document.getElementById('ticket-workspace').classList.add('hidden'); }
+        function toggleNewActivityInput() { const v = document.getElementById('modal-activity-select').value, i = document.getElementById('modal-new-activity-name'); if(v === 'new') i.classList.remove('hidden'); else i.classList.add('hidden'); }
+        async function assignTicket() { if(!confirm("Puxar?")) return; const r = await fetch('/api/ops/tickets/assign', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ id: activeTicketId }) }); if(r.ok) { alert("Atribuído!"); changeFilter('my'); } }
+        async function postComment() { const t = document.getElementById('quick-comment').value; if(!t) return; const r = await fetch('/api/ops/comment', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ caseId: activeTicketId, text: t }) }); if(r.ok) { document.getElementById('quick-comment').value = ''; loadTicketDetails(activeTicketId); } }
+        let globalSeconds = 0, globalInterval = null;
+        function startGlobalTimer() { if(!activeTicketId) return alert("Selecione chamado"); if(globalInterval) return; document.getElementById('global-play').classList.add('hidden'); document.getElementById('global-stop').classList.remove('hidden'); globalInterval = setInterval(() => { globalSeconds++; const h = Math.floor(globalSeconds / 3600).toString().padStart(2,'0'), m = Math.floor((globalSeconds % 3600) / 60).toString().padStart(2,'0'), s = (globalSeconds % 60).toString().padStart(2,'0'); document.getElementById('global-timer').innerText = `${h}:${m}:${s}`; }, 1000); }
+        function stopGlobalTimer() { clearInterval(globalInterval); globalInterval = null; openLogModal(true); document.getElementById('global-stop').classList.add('hidden'); document.getElementById('global-play').classList.remove('hidden'); }
+
+        document.addEventListener('DOMContentLoaded', () => { changeFilter('my'); });
     </script>
 </body>
 </html>

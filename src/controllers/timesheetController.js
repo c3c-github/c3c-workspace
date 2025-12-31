@@ -54,7 +54,9 @@ exports.getCalendarData = async (req, res) => {
 
         if (!periodId) return res.status(400).json({ error: "PeriodId obrigatório." });
 
+        // Queries em paralelo
         const soqlDias = `SELECT Id, Name, Data__c, Tipo__c FROM DiaPeriodo__c WHERE Periodo__c = '${periodId}' ORDER BY Data__c ASC`;
+        const soqlPeriodo = `SELECT ContratoPessoa__r.Hora__c FROM Periodo__c WHERE Id = '${periodId}'`;
         
         const soqlLancamentos = `
             SELECT DiaPeriodo__r.Data__c, Status__c, Horas__c, HorasExtras__c, 
@@ -73,11 +75,19 @@ exports.getCalendarData = async (req, res) => {
 
         const soqlSaldo = `SELECT SUM(HorasBanco__c) total FROM LancamentoHora__c WHERE Pessoa__c = '${userId}' AND HorasBanco__c != null AND HorasBanco__c != 0`;
 
-        const [resDias, resLancamentos, resSaldo] = await Promise.all([
+        const [resDias, resLancamentos, resSaldo, resPeriodo] = await Promise.all([
             conn.query(soqlDias),
             conn.query(soqlLancamentos),
-            conn.query(soqlSaldo)
+            conn.query(soqlSaldo),
+            conn.query(soqlPeriodo)
         ]);
+
+        // === LÓGICA DE CONTRATO (CORRIGIDA) ===
+        // 1. Obtém Carga Horária Diária
+        let horasDiarias = 8; 
+        if (resPeriodo.totalSize > 0 && resPeriodo.records[0].ContratoPessoa__r && resPeriodo.records[0].ContratoPessoa__r.Hora__c) {
+            horasDiarias = resPeriodo.records[0].ContratoPessoa__r.Hora__c;
+        }
 
         const lancamentosMap = {};
         let totalLancadoNoPeriodo = 0;
@@ -97,10 +107,8 @@ exports.getCalendarData = async (req, res) => {
             const hBanco = l.HorasBanco__c || 0;
             const hAusencias = (l.HorasAusenciaRemunerada__c || 0) + (l.HorasAusenciaNaoRemunerada__c || 0);
 
-            // Total visual do dia (Absoluto para banco negativo contar como "horas de atividade")
             const totalItem = hNormais + hExtras + hAusencias + Math.abs(hBanco);
             
-            // Total KPI
             totalLancadoNoPeriodo += (hNormais + hExtras + hAusencias);
             totalBancoPeriodo += hBanco;
 
@@ -108,16 +116,18 @@ exports.getCalendarData = async (req, res) => {
         });
 
         const calendarGrid = {};
-        let totalContratado = 0;
         let diasUteisCount = 0;
 
+        // 2. Conta Dias Úteis no Período
         resDias.records.forEach(dia => {
             const date = dia.Data__c;
             const entries = lancamentosMap[date] || [];
             const totalDia = entries.reduce((acc, curr) => acc + curr.hours, 0);
 
-            let isDiaUtil = (dia.Tipo__c !== 'Feriado' && dia.Tipo__c !== 'Férias' && dia.Tipo__c !== 'Não Útil' && !dia.Name.includes('Sábado') && !dia.Name.includes('Domingo'));
-            if (isDiaUtil) { totalContratado += 8; diasUteisCount++; }
+            let isDiaUtil = (dia.Tipo__c !== 'Feriado' && dia.Tipo__c !== 'Férias' && dia.Tipo__c !== 'Não Útil' && !dia.Name.toLowerCase().includes('sábado') && !dia.Name.toLowerCase().includes('domingo'));
+            if (isDiaUtil) { 
+                diasUteisCount++; 
+            }
 
             let statusApproval = 'draft';
             const statuses = entries.map(e => e.status);
@@ -142,6 +152,9 @@ exports.getCalendarData = async (req, res) => {
                 status_day: statusDay, label: label, status_approval: statusApproval, entries: entries
             };
         });
+
+        // 3. Calcula Total Contratado (Diária * Dias Úteis)
+        const totalContratado = horasDiarias * diasUteisCount;
 
         let statusGeral = 'Em Aberto';
         if (!hasEntries) statusGeral = 'Novo';
@@ -176,7 +189,7 @@ exports.getCalendarData = async (req, res) => {
     }
 };
 
-// 4. API: DETALHES DO DIA (CORRIGIDO PARA SEPARAR BANCO E EXTRA)
+// 4. API: DETALHES DO DIA
 exports.getDayDetails = async (req, res) => {
     const { date } = req.query;
     const userId = req.session.user.id;
@@ -219,14 +232,9 @@ exports.getDayDetails = async (req, res) => {
             activityId: l.Atividade__c,
             activity: l.Atividade__r ? l.Atividade__r.Name : 'N/A',
             hours: (l.Horas__c||0),
-            
-            // --- CORREÇÃO: Envia valores separados para o front saber quem é quem
-            hoursExtra: (l.HorasExtras__c||0), // Dinheiro
-            hoursBank: (l.HorasBanco__c||0),   // Banco (+ ou -)
-            
-            // Visualização de Ausência (inclui banco negativo para o card)
+            hoursExtra: (l.HorasExtras__c||0),
+            hoursBank: (l.HorasBanco__c||0),
             hoursAbsence: (l.HorasAusenciaRemunerada__c||0) + (l.HorasAusenciaNaoRemunerada__c||0) + (l.HorasBanco__c < 0 ? Math.abs(l.HorasBanco__c) : 0),
-            
             status: l.Status__c,
             reason: l.MotivoReprovacao__c,
             justification: l.Justificativa__c
@@ -240,7 +248,7 @@ exports.getDayDetails = async (req, res) => {
     }
 };
 
-// 5. API: SALVAR LANÇAMENTO (SEPARAÇÃO INSERT/UPDATE + LOGICA DE BANCO)
+// 5. API: SALVAR LANÇAMENTO (COM VALIDAÇÃO DE CONTRATO DINÂMICA)
 exports.saveEntry = async (req, res) => {
     const { 
         entryId, diaPeriodoId, projectId, alocacaoId, 
@@ -256,6 +264,54 @@ exports.saveEntry = async (req, res) => {
     try {
         const conn = await getSfConnection();
 
+        // 1. Obter Período e Carga Horária Diária
+        const diaQuery = `
+            SELECT Id, Periodo__c, Periodo__r.ContratoPessoa__r.Hora__c 
+            FROM DiaPeriodo__c 
+            WHERE Id = '${diaPeriodoId}' 
+            LIMIT 1
+        `;
+        const diaRes = await conn.query(diaQuery);
+        if (diaRes.totalSize === 0) return res.status(404).json({ success: false, message: 'Dia inválido.' });
+        
+        const periodoId = diaRes.records[0].Periodo__c;
+        const horasDiarias = (diaRes.records[0].Periodo__r && 
+                              diaRes.records[0].Periodo__r.ContratoPessoa__r && 
+                              diaRes.records[0].Periodo__r.ContratoPessoa__r.Hora__c) 
+                              ? diaRes.records[0].Periodo__r.ContratoPessoa__r.Hora__c 
+                              : 8;
+
+        // 2. Calcular Dias Úteis do Período para Limite Mensal
+        const diasQuery = `SELECT Name, Tipo__c FROM DiaPeriodo__c WHERE Periodo__c = '${periodoId}'`;
+        const diasRes = await conn.query(diasQuery);
+
+        let diasUteis = 0;
+        diasRes.records.forEach(dia => {
+            const isWeekend = dia.Name.toLowerCase().includes('sábado') || dia.Name.toLowerCase().includes('domingo');
+            const isOff = ['Feriado', 'Férias', 'Não Útil'].includes(dia.Tipo__c);
+            
+            if (!isWeekend && !isOff) {
+                diasUteis++;
+            }
+        });
+
+        const limiteHorasContrato = horasDiarias * diasUteis;
+
+        // 3. Calcular Horas Normais já lançadas (exceto atual se update)
+        let sumQuery = `
+            SELECT SUM(Horas__c) totalNormal 
+            FROM LancamentoHora__c 
+            WHERE Periodo__c = '${periodoId}' 
+            AND Pessoa__c = '${userId}'
+        `;
+        if (entryId) {
+            sumQuery += ` AND Id != '${entryId}'`;
+        }
+        
+        const sumRes = await conn.query(sumQuery);
+        const totalJaLancado = sumRes.records[0].totalNormal || 0;
+
+        // 4. Preparar Input
         let valNormais = parseFloat(hoursNormal) || 0;
         let valExtras = 0;
         let valBanco = 0;
@@ -265,7 +321,28 @@ exports.saveEntry = async (req, res) => {
         const hAusenciaInput = parseFloat(hoursAbsence) || 0;
         let finalJustificativa = reason || '';
 
-        // Lógica de Extras (Pagamento vs Banco)
+        // 5. Validar Regras de Negócio
+        if (hExtraInput > 0) {
+            if (totalJaLancado < limiteHorasContrato) {
+                const faltam = limiteHorasContrato - totalJaLancado;
+                return res.status(400).json({ 
+                    success: false, 
+                    message: `Não permitido lançar Extra/Banco. Saldo de horas normais pendente: ${faltam}h.` 
+                });
+            }
+        }
+
+        if (valNormais > 0) {
+            if ((totalJaLancado + valNormais) > limiteHorasContrato) {
+                const saldo = limiteHorasContrato - totalJaLancado;
+                return res.status(400).json({ 
+                    success: false, 
+                    message: `Excede o contrato (${limiteHorasContrato}h). Saldo restante: ${saldo}h. O excedente deve ser lançado como Extra/Banco.` 
+                });
+            }
+        }
+
+        // 6. Lógica de Tipos
         if (hExtraInput > 0) {
             if (extraType && extraType.trim() === 'Banco') {
                 valBanco += hExtraInput;
@@ -276,10 +353,9 @@ exports.saveEntry = async (req, res) => {
             }
         }
 
-        // Lógica de Ausências (Banco vs Abonada vs Desconto)
         if (hAusenciaInput > 0) {
             if (absenceType === 'Banco') {
-                valBanco -= hAusenciaInput; // Negativo no banco
+                valBanco -= hAusenciaInput; 
                 if (!finalJustificativa.includes('[AUSÊNCIA: Banco]')) finalJustificativa = `[AUSÊNCIA: Banco] ` + finalJustificativa;
             } else if (absenceType === 'Abonada') {
                 valAusenciaRem = hAusenciaInput;
@@ -303,7 +379,7 @@ exports.saveEntry = async (req, res) => {
             HorasExtras__c: valExtras,
             HorasAusenciaRemunerada__c: valAusenciaRem,
             HorasAusenciaNaoRemunerada__c: valAusenciaNaoRem,
-            HorasBanco__c: valBanco, // Salva explicitamente no banco
+            HorasBanco__c: valBanco, 
             Justificativa__c: finalJustificativa,
             Status__c: 'Rascunho',
             Servico__c: projectId,
@@ -311,18 +387,13 @@ exports.saveEntry = async (req, res) => {
         };
 
         if (entryId) {
-            // UPDATE: Não envia campos Master-Detail
             payload.Id = entryId;
             payload.MotivoReprovacao__c = null; 
             await conn.sobject('LancamentoHora__c').update(payload);
         } else {
-            // INSERT: Envia tudo
-            const checkRes = await conn.query(`SELECT Id, Periodo__c FROM DiaPeriodo__c WHERE Id = '${diaPeriodoId}' LIMIT 1`);
-            if (checkRes.totalSize === 0) return res.status(404).json({ success: false, message: 'Dia inválido.' });
-            
             payload.Pessoa__c = userId;
             payload.DiaPeriodo__c = diaPeriodoId;
-            payload.Periodo__c = checkRes.records[0].Periodo__c;
+            payload.Periodo__c = periodoId;
 
             let responsavelId = null;
             if (alocacaoId) responsavelId = await getOrCreateResponsavel(conn, finalActivityId, alocacaoId);
