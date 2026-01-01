@@ -53,7 +53,8 @@
     "dotenv": "^17.2.3",
     "ejs": "^3.1.10",
     "express": "^5.2.1",
-    "jsforce": "^3.10.10"
+    "jsforce": "^3.10.10",
+    "multer": "^2.0.2"
   },
   "engines": {
     "node": "18.x"

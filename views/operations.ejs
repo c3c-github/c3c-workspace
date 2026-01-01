@@ -32,9 +32,27 @@
             50% { text-shadow: 0 0 10px rgba(239, 68, 68, 0.5); }
             100% { text-shadow: 0 0 0 rgba(239, 68, 68, 0); }
         }
+        
+        #loading-overlay {
+            position: fixed; inset: 0; background: rgba(255,255,255,0.8); z-index: 100;
+            flex-direction: column; align-items: center; justify-content: center;
+            display: none; 
+        }
+        #loading-overlay:not(.hidden) { display: flex; }
+        
+        .spinner {
+            width: 40px; height: 40px; border: 4px solid #e2e8f0; border-top: 4px solid #2978FF;
+            border-radius: 50%; animation: spin 1s linear infinite;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
 <body class="h-screen flex overflow-hidden bg-c3c-bg">
+
+    <div id="loading-overlay" class="hidden">
+        <div class="spinner mb-4"></div>
+        <p class="text-gray-600 font-bold animate-pulse">Processando...</p>
+    </div>
 
     <%- include('partials/sidebar') %>
 
@@ -43,11 +61,11 @@
         <header class="h-16 md:h-20 bg-white border-b border-gray-200 flex items-center justify-between px-6 shrink-0 shadow-sm z-10">
             <div class="flex items-center gap-4">
                 <button onclick="document.getElementById('sidebar').classList.toggle('-translate-x-full')" class="md:hidden text-gray-500 hover:text-gray-700">
-                    <i data-lucide="menu" class="w-6 h-6"></i>
+                   <i data-lucide="menu" class="w-6 h-6"></i>
                 </button>
                 <h1 class="text-lg font-bold text-gray-800 flex items-center gap-2">
                     <i data-lucide="layers" class="w-5 h-5 text-indigo-600"></i>
-                    Operação N2
+                    Operação 
                 </h1>
                 
                 <div class="hidden md:flex items-center bg-gray-100 rounded-full px-4 py-1.5 border border-gray-200 ml-4">
@@ -102,7 +120,7 @@
                                 <h1 class="text-xl font-bold text-gray-900 mt-1" id="detail-title">Titulo</h1>
                             </div>
                             <div class="flex gap-2 shrink-0" id="header-actions">
-                                </div>
+                            </div>
                         </div>
                         
                         <div class="grid grid-cols-2 md:grid-cols-5 gap-2 text-[10px] text-gray-500 bg-gray-50 p-2 rounded border border-gray-100">
@@ -163,15 +181,16 @@
                                     <div><label class="block text-xs text-gray-500 font-bold mb-1">Tipo</label><select id="edit-type" class="w-full border border-gray-300 rounded p-2 text-sm bg-white"><option value="Melhoria">Melhoria</option><option value="Bug">Bug</option><option value="Dúvida">Dúvida</option></select></div>
                                     <div><label class="block text-xs text-gray-500 font-bold mb-1">Prioridade</label><select id="edit-priority" class="w-full border border-gray-300 rounded p-2 text-sm bg-white"><option value="Medium">Média</option><option value="High">Alta</option><option value="Low">Baixa</option><option value="Critical">Crítica</option></select></div>
                                 </div>
-                                <div class="mb-4"><label class="block text-xs text-gray-500 font-bold mb-1">Novo Assunto</label><input type="text" id="edit-subject" class="w-full border border-gray-300 rounded p-2 text-sm"></div>
-                                <div class="mb-4"><label class="block text-xs text-gray-500 font-bold mb-1">Nova Descrição</label><textarea id="edit-desc" class="w-full border border-gray-300 rounded p-3 text-sm h-32 focus:ring-2 focus:ring-indigo-500 outline-none font-mono text-gray-700"></textarea></div>
                                 <div class="flex justify-end pt-4 border-t border-gray-100"><button onclick="saveTicketUpdates()" class="px-6 py-2 bg-indigo-600 text-white font-bold text-xs rounded hover:bg-indigo-700 shadow">Salvar Alterações</button></div>
                             </div>
                         </div>
 
                         <div id="view-attach" class="hidden h-full">
+                            <div class="bg-white p-4 rounded border border-gray-200 mb-4 flex items-center gap-2">
+                                <input type="file" id="attach-new-file" multiple class="block w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"/>
+                                <button onclick="uploadFiles(activeTicketId)" class="bg-indigo-600 text-white px-4 py-2 rounded text-xs font-bold hover:bg-indigo-700">Enviar</button>
+                            </div>
                             <div id="attach-list" class="grid grid-cols-2 gap-4"></div>
-                            <p class="text-center text-xs text-gray-400 mt-4">Anexos são somente leitura nesta versão.</p>
                         </div>
 
                     </div>
@@ -225,7 +244,7 @@
                         <div class="flex items-end pb-2"><label class="flex items-center cursor-pointer"><input type="checkbox" id="new-assign" class="form-checkbox h-4 w-4 text-indigo-600 rounded"><span class="ml-2 text-xs font-bold text-gray-700">Assumir?</span></label></div>
                     </div>
                     <div class="mb-4"><label class="block text-xs text-gray-500 font-bold mb-1">Descrição *</label><textarea id="new-desc" class="w-full border border-gray-300 rounded p-3 text-sm h-40 focus:ring-2 focus:ring-indigo-500 outline-none font-mono text-gray-700 leading-relaxed"></textarea></div>
-                    <div class="mb-4"><label class="block text-xs text-gray-500 font-bold mb-1">Anexos (Adicionar após criar)</label><input type="file" disabled class="block w-full text-xs text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-gray-100 file:text-gray-500 cursor-not-allowed"/></div>
+                    <div class="mb-4"><label class="block text-xs text-gray-500 font-bold mb-1">Anexos (Opcional)</label><input type="file" id="new-files" multiple class="block w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-gray-100 file:text-gray-500 cursor-pointer"/></div>
                 </form>
             </div>
             <div class="p-5 border-t border-gray-100 bg-gray-50 rounded-b-xl flex justify-end gap-2 shrink-0">
@@ -238,29 +257,92 @@
     <div id="time-modal" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center p-4">
         <div class="bg-white rounded-xl shadow-2xl w-full max-w-sm p-6 transform transition-all">
             <h3 class="font-bold text-gray-800 mb-4 flex items-center gap-2"><i data-lucide="clock" class="w-4 h-4 text-indigo-600"></i> Lançar Horas</h3>
-            <div class="mb-3"><label class="block text-xs font-bold text-gray-500 mb-1">Data</label><input type="date" id="modal-date" onchange="fetchLimits()" class="w-full border border-gray-300 rounded p-2 text-sm bg-gray-50 focus:ring-2 focus:ring-indigo-500 outline-none"></div>
-            <div class="mb-3"><label class="block text-xs font-bold text-gray-500 mb-1">Atividade</label><select id="modal-activity-select" onchange="toggleNewActivityInput()" class="w-full border border-gray-300 rounded p-2 text-sm bg-white outline-none focus:ring-2 focus:ring-indigo-500"></select><input type="text" id="modal-new-activity-name" class="w-full border border-indigo-300 rounded p-2 text-sm mt-2 hidden bg-indigo-50 focus:ring-2 focus:ring-indigo-500" placeholder="Nome da nova atividade"></div>
-            <div class="grid grid-cols-2 gap-3 mb-3"><div><label class="block text-xs font-bold text-blue-600 mb-1">Normal (h)</label><input type="text" inputmode="decimal" id="modal-hours-normal" onblur="formatHours(this)" onkeyup="checkLocks()" onchange="checkLocks()" class="w-full border border-gray-300 rounded p-2 text-lg font-mono text-center font-bold text-blue-600 outline-none focus:ring-2 focus:ring-blue-500" placeholder="0.0"></div><div><label class="block text-xs font-bold text-red-600 mb-1 flex justify-between">Extra (h) <i data-lucide="lock" id="icon-lock-extra" class="w-3 h-3 text-gray-400"></i></label><input type="text" inputmode="decimal" id="modal-hours-extra" onblur="formatHours(this)" onkeyup="checkLocks()" class="w-full border border-gray-200 bg-gray-100 rounded p-2 text-lg font-mono text-center font-bold text-gray-400 outline-none transition-colors" placeholder="Bloq" disabled></div></div>
-            <div class="mb-4"><label class="block text-xs font-bold text-gray-500 mb-1">Justificativa</label><input type="text" id="modal-desc" class="w-full border border-gray-300 rounded p-2 text-sm outline-none focus:ring-2 focus:ring-indigo-500"></div>
-            <div id="limit-summary" class="bg-gray-50 p-2.5 rounded border border-gray-200 mb-3 text-[11px] text-gray-600 flex justify-between items-center"><div class="text-center"><div class="font-bold text-gray-400 uppercase tracking-wide">Contrato</div><div id="val-limit" class="font-bold text-gray-800 text-sm">...</div></div><div class="h-6 w-px bg-gray-300"></div><div class="text-center"><div class="font-bold text-gray-400 uppercase tracking-wide">Lançado</div><div id="val-used" class="font-bold text-blue-600 text-sm">...</div></div><div class="h-6 w-px bg-gray-300"></div><div class="text-center"><div class="font-bold text-gray-400 uppercase tracking-wide">Saldo</div><div id="val-saldo" class="font-bold text-green-600 text-sm">...</div></div></div>
-            <div class="flex justify-end gap-2"><button onclick="closeModal('time-modal')" class="px-4 py-2 text-gray-500 font-bold text-xs hover:bg-gray-100 rounded">Cancelar</button><button onclick="saveLog()" class="px-4 py-2 bg-indigo-600 text-white font-bold text-xs rounded hover:bg-indigo-700 shadow-md">Salvar</button></div>
+            
+            <div class="mb-3">
+                <label class="block text-xs font-bold text-gray-500 mb-1">Data</label>
+                <input type="date" id="modal-date" onchange="fetchLimits()" class="w-full border border-gray-300 rounded p-2 text-sm bg-gray-50 focus:ring-2 focus:ring-indigo-500 outline-none">
+            </div>
+            
+            <div class="mb-3">
+                <label class="block text-xs font-bold text-gray-500 mb-1">Atividade</label>
+                <select id="modal-activity-select" onchange="toggleNewActivityInput()" class="w-full border border-gray-300 rounded p-2 text-sm bg-white outline-none focus:ring-2 focus:ring-indigo-500"></select>
+                <input type="text" id="modal-new-activity-name" class="w-full border border-indigo-300 rounded p-2 text-sm mt-2 hidden bg-indigo-50 focus:ring-2 focus:ring-indigo-500" placeholder="Nome da nova atividade">
+            </div>
+
+            <div class="grid grid-cols-2 gap-3 mb-3">
+                <div>
+                    <label class="block text-xs font-bold text-blue-600 mb-1">Normal (h)</label>
+                    <input type="number" id="modal-hours-normal" step="0.5" min="0" max="24"
+                           onfocus="if(this.value==0)this.value=''" 
+                           onblur="formatHours(this)" 
+                           oninput="checkLocks()" 
+                           class="w-full border border-gray-300 rounded p-2 text-lg font-mono text-center font-bold text-blue-600 outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 disabled:text-gray-400">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-red-600 mb-1 flex justify-between">Extra (h) <i data-lucide="lock" id="icon-lock-extra" class="w-3 h-3 text-gray-400"></i></label>
+                    <input type="number" id="modal-hours-extra" step="0.5" min="0" max="24"
+                           onfocus="if(this.value==0)this.value=''"
+                           onblur="formatHours(this)" 
+                           oninput="checkLocks()" 
+                           class="w-full border border-gray-200 bg-gray-100 rounded p-2 text-lg font-mono text-center font-bold text-gray-400 outline-none transition-colors focus:ring-2 focus:ring-red-500" disabled>
+                </div>
+            </div>
+
+            <div class="mb-4">
+                <label class="block text-xs font-bold text-gray-500 mb-1">Justificativa</label>
+                <input type="text" id="modal-desc" class="w-full border border-gray-300 rounded p-2 text-sm outline-none focus:ring-2 focus:ring-indigo-500">
+            </div>
+            
+            <div id="limit-summary" class="bg-gray-50 p-2.5 rounded border border-gray-200 mb-3 text-[11px] text-gray-600 flex justify-between items-center">
+                <div class="text-center">
+                    <div class="font-bold text-gray-400 uppercase tracking-wide">Contrato</div>
+                    <div id="val-limit" class="font-bold text-gray-800 text-sm">...</div>
+                </div>
+                <div class="h-6 w-px bg-gray-300"></div>
+                <div class="text-center">
+                    <div class="font-bold text-gray-400 uppercase tracking-wide">Lançado</div>
+                    <div id="val-used" class="font-bold text-blue-600 text-sm">...</div>
+                </div>
+                <div class="h-6 w-px bg-gray-300"></div>
+                <div class="text-center">
+                    <div class="font-bold text-gray-400 uppercase tracking-wide">Saldo</div>
+                    <div id="val-saldo" class="font-bold text-green-600 text-sm">...</div>
+                </div>
+            </div>
+            
+            <div class="flex justify-end gap-2">
+                <button onclick="closeModal('time-modal')" class="px-4 py-2 text-gray-500 font-bold text-xs hover:bg-gray-100 rounded">Cancelar</button>
+                <button onclick="saveLog()" class="px-4 py-2 bg-indigo-600 text-white font-bold text-xs rounded hover:bg-indigo-700 shadow-md">Salvar</button>
+            </div>
         </div>
     </div>
 
     <script>
         lucide.createIcons();
         let activeTicketId = null, ticketsCache = [], currentFilter = 'my', createOptionsCache = [], currentDayLimit = 0, currentDayUsed = 0, currentDayUsedExtra = 0, currentTicketData = null;
+        
+        function toggleLoading(show) {
+            const el = document.getElementById('loading-overlay');
+            if(show) el.classList.remove('hidden'); else el.classList.add('hidden');
+        }
 
-        // JS CORRIGIDO (Funções definidas antes do uso)
         async function changeFilter(type) {
             currentFilter = type;
             ['my','queue','team'].forEach(t => { const b = document.getElementById(`tab-${t}`); if(t===type) { b.classList.add('text-indigo-600','border-indigo-600','bg-indigo-50/50'); b.classList.remove('text-gray-500','border-transparent'); } else { b.classList.remove('text-indigo-600','border-indigo-600','bg-indigo-50/50'); b.classList.add('text-gray-500','border-transparent'); } });
             const list = document.getElementById('tickets-list-container'); list.innerHTML = '<p class="text-center text-xs text-gray-400 mt-4">Carregando...</p>';
-            try { const res = await fetch(`/api/ops/tickets?filter=${type}`); const data = await res.json(); ticketsCache = data; renderList(data); } catch(e) { list.innerHTML = '<p class="text-center text-xs text-red-400">Erro ao carregar lista.</p>'; }
+            try { 
+                const res = await fetch(`/api/ops/tickets?filter=${type}`);
+                const data = await res.json(); 
+                ticketsCache = data; 
+                renderList(data); 
+            } catch(e) { 
+                list.innerHTML = '<p class="text-center text-xs text-red-400">Erro ao carregar lista.</p>';
+            }
         }
 
         function renderList(data) {
-            const list = document.getElementById('tickets-list-container'); list.innerHTML = '';
+            const list = document.getElementById('tickets-list-container');
+            list.innerHTML = '';
             if(data.length === 0) return list.innerHTML = '<p class="text-center text-xs text-gray-400 mt-4">Nenhum chamado encontrado.</p>';
             data.forEach(t => {
                 let borderClass = t.priority === 'High' || t.priority === 'Critical' ? 'border-l-4 border-l-red-500' : 'border-l-4 border-l-gray-300';
@@ -272,12 +354,6 @@
         function setupActions() {
             const acts = document.getElementById('header-actions');
             let btns = '';
-            // Botão EDITAR (Escondido se fila)
-            let editBtn = '';
-            if (currentFilter !== 'queue') {
-                // Aba Edit já controla isso, mas podemos ter botão aqui também
-            }
-            
             if(currentFilter === 'queue') {
                 btns = `<button onclick="assignTicket()" class="bg-indigo-600 text-white px-3 py-1.5 rounded text-xs font-bold mr-2">Puxar</button>`;
             } else if(currentFilter === 'my') {
@@ -286,103 +362,279 @@
                  btns = `<button class="bg-white border text-gray-700 px-3 py-1.5 rounded text-xs font-bold">Colaborar</button>`;
             }
             acts.innerHTML = btns; lucide.createIcons();
-            
-            // Controle da Aba Editar
             const editTab = document.getElementById('dt-edit');
             if(editTab) { if(currentFilter === 'my') editTab.classList.remove('hidden'); else editTab.classList.add('hidden'); }
         }
 
         async function loadTicketDetails(id) {
-            activeTicketId = id; document.getElementById('ticket-panel').classList.remove('hidden'); document.getElementById('empty-state').classList.add('hidden');
+            activeTicketId = id;
+            document.getElementById('ticket-panel').classList.remove('hidden'); document.getElementById('empty-state').classList.add('hidden');
             const t = ticketsCache.find(x => x.id === id) || {};
             if(document.getElementById('detail-number')) document.getElementById('detail-number').innerText = t.caseNumber || '#';
             if(document.getElementById('detail-client')) document.getElementById('detail-client').innerText = t.client || '...';
             if(document.getElementById('detail-title')) document.getElementById('detail-title').innerText = t.title || '...';
             setupActions(); switchDetailTab('info');
             
-            const res = await fetch(`/api/ops/tickets/${id}/details`);
-            const det = await res.json();
-            currentTicketData = det.ticket; 
-            
-            // Leitura
-            document.getElementById('info-status').innerText = currentTicketData.Status || '-';
-            document.getElementById('info-prio').innerText = currentTicketData.Priority || '-';
-            document.getElementById('info-type').innerText = currentTicketData.Type || '-';
-            document.getElementById('info-origin').innerText = currentTicketData.Origin || '-';
-            document.getElementById('detail-desc').innerText = currentTicketData.Description || '-';
-            // Tempos
-            document.getElementById('ts-open').innerText = formatDate(currentTicketData.CreatedDate);
-            document.getElementById('ts-expect').innerText = formatDate(currentTicketData.DataExpectativaCliente__c);
-            document.getElementById('ts-estim').innerText = formatDate(currentTicketData.DataEstimativaEntrega__c);
-            document.getElementById('ts-last-ops').innerText = formatDate(currentTicketData.LastModifiedDate);
+            toggleLoading(true);
+            try {
+                const res = await fetch(`/api/ops/tickets/${id}/details`);
+                const det = await res.json();
+                currentTicketData = det.ticket; 
+                
+                document.getElementById('info-status').innerText = currentTicketData.Status || '-';
+                document.getElementById('info-prio').innerText = currentTicketData.Priority || '-';
+                document.getElementById('info-type').innerText = currentTicketData.Type || '-';
+                document.getElementById('info-origin').innerText = currentTicketData.Origin || '-';
+                document.getElementById('detail-desc').innerText = currentTicketData.Description || '-';
+                
+                document.getElementById('ts-open').innerText = formatDate(currentTicketData.CreatedDate);
+                document.getElementById('ts-expect').innerText = formatDate(currentTicketData.DataExpectativaCliente__c);
+                document.getElementById('ts-estim').innerText = formatDate(currentTicketData.DataEstimativaEntrega__c);
+                
+                // DATA LOGS: Mapeando as novas propriedades retornadas
+                document.getElementById('ts-last-cli').innerText = formatDate(det.lastUpdateClient);
+                document.getElementById('ts-last-ops').innerText = formatDate(det.lastUpdateOperation);
 
-            // Edição
-            document.getElementById('edit-status').value = currentTicketData.Status;
-            document.getElementById('edit-type').value = currentTicketData.Type;
-            document.getElementById('edit-priority').value = currentTicketData.Priority;
-            document.getElementById('edit-subject').value = currentTicketData.Subject;
-            document.getElementById('edit-desc').value = currentTicketData.Description;
-            document.getElementById('edit-estimation').value = currentTicketData.DataEstimativaEntrega__c || '';
+                document.getElementById('edit-status').value = currentTicketData.Status;
+                document.getElementById('edit-type').value = currentTicketData.Type;
+                document.getElementById('edit-priority').value = currentTicketData.Priority;
+                document.getElementById('edit-estimation').value = currentTicketData.DataEstimativaEntrega__c || '';
 
-            renderLogs(det.logs); renderComments(det.comments); renderAttach(det.attachments);
+                renderLogs(det.logs); renderComments(det.comments); renderAttach(det.attachments);
+            } catch(e) {
+                alert('Erro ao carregar detalhes: ' + e.message);
+            } finally {
+                toggleLoading(false);
+            }
         }
 
-        function formatDate(dt) { return dt ? new Date(dt).toLocaleDateString('pt-BR') : '-'; }
-        function renderLogs(logs) { const tb = document.getElementById('logs-table-body'); tb.innerHTML = ''; logs.forEach(l => tb.innerHTML += `<tr class="border-b"><td class="px-4 py-2 text-xs">${l.date}</td><td class="px-4 py-2 text-xs">${l.activity}</td><td class="px-4 py-2 text-center text-blue-600 font-bold">${l.hoursNormal}h</td><td class="px-4 py-2 text-center text-red-600 font-bold">${l.hoursExtra}h</td></tr>`); }
-        function renderComments(comments) { const l = document.getElementById('comments-list'); l.innerHTML = ''; comments.forEach(c => l.innerHTML += `<div class="bg-gray-50 p-2 rounded text-xs border border-gray-100"><span class="font-bold">${c.user}</span> <span class="text-gray-400">${c.time}</span><p>${c.text}</p></div>`); }
-        function renderAttach(atts) { const l = document.getElementById('attach-list'); l.innerHTML = ''; if(!atts||atts.length===0) return l.innerHTML='<p class="text-gray-400 text-xs">Sem anexos</p>'; atts.forEach(a => l.innerHTML += `<div class="flex items-center gap-2 p-2 bg-white border rounded"><i data-lucide="file" class="w-4 h-4 text-gray-400"></i><div class="truncate text-xs font-bold">${a.name}</div></div>`); lucide.createIcons(); }
+        function formatDate(dt) { 
+            if(!dt) return '-';
+            const d = new Date(dt.split('T')[0] + 'T12:00:00');
+            return d.toLocaleDateString('pt-BR'); 
+        }
 
-        // Contact / Ticket Logic
+        function renderLogs(logs) { const tb = document.getElementById('logs-table-body'); tb.innerHTML = ''; logs.forEach(l => tb.innerHTML += `<tr class="border-b"><td class="px-4 py-2 text-xs">${l.date}</td><td class="px-4 py-2 text-xs">${l.activity}</td><td class="px-4 py-2 text-center text-blue-600 font-bold">${l.hoursNormal}h</td><td class="px-4 py-2 text-center text-red-600 font-bold">${l.hoursExtra}h</td></tr>`); }
+        
+        function renderComments(comments) { const l = document.getElementById('comments-list'); l.innerHTML = ''; comments.forEach(c => l.innerHTML += `<div class="bg-gray-50 p-2 rounded text-xs border border-gray-100"><span class="font-bold text-gray-500">${c.time}</span><p class="mt-1">${c.text}</p></div>`); }
+        
+        function renderAttach(atts) { 
+            const l = document.getElementById('attach-list'); l.innerHTML = '';
+            if(!atts||atts.length===0) return l.innerHTML='<p class="text-gray-400 text-xs">Sem anexos</p>'; 
+            atts.forEach(a => l.innerHTML += `
+                <div class="flex items-center justify-between p-2 bg-white border rounded">
+                    <div class="flex items-center gap-2 overflow-hidden">
+                        <i data-lucide="file" class="w-4 h-4 text-gray-400 shrink-0"></i>
+                        <div class="truncate text-xs font-bold" title="${a.name}">${a.name} (${(a.size/1024).toFixed(1)} KB)</div>
+                    </div>
+                    <a href="/api/ops/attachments/${a.id}/download" target="_blank" class="text-blue-600 hover:text-blue-800 p-1">
+                        <i data-lucide="download" class="w-4 h-4"></i>
+                    </a>
+                </div>`);
+            lucide.createIcons(); 
+        }
+
         function toggleContactMode() { const s = document.getElementById('contact-select-mode'), c = document.getElementById('contact-create-mode'); if(s.classList.contains('hidden')) { s.classList.remove('hidden'); c.classList.add('hidden'); } else { s.classList.add('hidden'); c.classList.remove('hidden'); } }
         async function saveNewContact() {
             const acc = document.getElementById('new-account-id').value, name = document.getElementById('new-contact-name').value, email = document.getElementById('new-contact-email').value, mob = document.getElementById('new-contact-mobile').value;
             if(!acc || !name) return alert("Preencha Nome e Conta");
-            const res = await fetch('/api/ops/contact/create', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ accountId: acc, name, email, mobile: mob }) });
-            const j = await res.json(); if(j.success) { toggleContactMode(); const s = document.getElementById('new-contact'); const o = document.createElement('option'); o.value = j.id; o.text = `${j.name} (Novo)`; o.selected = true; s.appendChild(o); alert("Salvo!"); } else alert("Erro: "+JSON.stringify(j.errors));
+            try {
+                toggleLoading(true);
+                const res = await fetch('/api/ops/contact/create', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ accountId: acc, name, email, mobile: mob }) });
+                const j = await res.json(); 
+                if(j.success) { 
+                    toggleContactMode(); 
+                    const s = document.getElementById('new-contact'); const o = document.createElement('option'); o.value = j.id; o.text = `${j.name} (Novo)`; o.selected = true; s.appendChild(o); 
+                    alert("Salvo!"); 
+                } else alert("Erro: "+JSON.stringify(j.errors));
+            } catch(e) { alert(e.message); } finally { toggleLoading(false); }
         }
         
         async function openNewTicketModal() { 
-            openModal('new-ticket-modal'); document.getElementById('form-create-ticket').reset();
+            openModal('new-ticket-modal');
+            document.getElementById('form-create-ticket').reset();
             document.getElementById('new-contact').innerHTML='<option value="">Selecione...</option>'; document.getElementById('new-contact').disabled=true;
-            if(createOptionsCache.length===0) { const s = document.getElementById('new-service'); const res = await fetch('/api/ops/create-options'); createOptionsCache = await res.json(); s.innerHTML='<option value="">Selecione...</option>'; createOptionsCache.forEach(o => { const op=document.createElement('option'); op.value=o.serviceId; op.dataset.account=o.accountId; op.text=`${o.serviceName} (${o.accountName})`; s.appendChild(op); }); }
-            updateDescriptionTemplate(); 
+            if(createOptionsCache.length===0) { 
+                const s = document.getElementById('new-service'); 
+                const res = await fetch('/api/ops/create-options'); 
+                createOptionsCache = await res.json();
+                s.innerHTML='<option value="">Selecione...</option>'; 
+                createOptionsCache.forEach(o => { const op=document.createElement('option'); op.value=o.serviceId; op.dataset.account=o.accountId; op.text=`${o.serviceName} (${o.accountName})`; s.appendChild(op); });
+            }
+            updateDescriptionTemplate();
         }
         async function onServiceChange() { const s = document.getElementById('new-service'), acc = s.options[s.selectedIndex].dataset.account; document.getElementById('new-account-id').value = acc||''; const c=document.getElementById('new-contact'); c.innerHTML='<option>Carregando...</option>'; c.disabled=true; if(acc) { const r=await fetch(`/api/ops/account/${acc}/contacts`); const d=await r.json(); c.innerHTML='<option value="">Sem contato</option>'; d.forEach(ct=>c.innerHTML+=`<option value="${ct.Id}">${ct.Name}</option>`); c.disabled=false; } }
         const TEMPLATES = { 'Bug': `Ambiente:\nO que houve?\nPassos:\n`, 'Melhoria': `Objetivo:\nBenefício:\n`, 'Dúvida': `Dúvida:\n` };
         function updateDescriptionTemplate() { document.getElementById('new-desc').placeholder = TEMPLATES[document.getElementById('new-type').value] || ''; }
         
+        async function performUpload(ticketId, fileList) {
+            const formData = new FormData();
+            for (let i = 0; i < fileList.length; i++) { formData.append('files', fileList[i]); }
+            const res = await fetch(`/api/ops/tickets/${ticketId}/upload`, { method: 'POST', body: formData });
+            const j = await res.json();
+            if (!j.success) throw new Error("Erro ao enviar anexos: " + j.error);
+        }
+
         async function submitNewTicket() {
             const p = { serviceId: document.getElementById('new-service').value, accountId: document.getElementById('new-account-id').value, contactId: document.getElementById('new-contact').value, subject: document.getElementById('new-subject').value, type: document.getElementById('new-type').value, priority: document.getElementById('new-priority').value, origin: document.getElementById('new-origin').value, expectationDate: document.getElementById('new-expectation').value, assignToMe: document.getElementById('new-assign').checked, desc: document.getElementById('new-desc').value };
             if(!p.serviceId || !p.subject) return alert("Preencha campos");
-            // Anexo ignorado aqui propositalmente para evitar erro 500 em JSON
-            const res = await fetch('/api/ops/tickets/create', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(p) }); const j = await res.json(); if(j.success) { closeModal('new-ticket-modal'); alert("Criado! Adicione anexos na aba Anexos se necessário."); changeFilter('my'); } else alert("Erro: "+JSON.stringify(j.errors));
+            try {
+                toggleLoading(true);
+                const res = await fetch('/api/ops/tickets/create', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(p) });
+                const j = await res.json(); 
+                if(j.success) { 
+                    const filesInput = document.getElementById('new-files');
+                    if (filesInput.files.length > 0) { await performUpload(j.id, filesInput.files); }
+                    closeModal('new-ticket-modal'); 
+                    alert("Criado!"); 
+                    changeFilter('my');
+                } else alert("Erro: "+JSON.stringify(j.errors));
+            } catch(e) { alert("Erro: " + e.message); } finally { toggleLoading(false); }
+        }
+
+        async function uploadFiles(ticketId) {
+            const input = document.getElementById('attach-new-file');
+            if (input.files.length === 0) return alert("Selecione um arquivo.");
+            try {
+                toggleLoading(true);
+                await performUpload(ticketId, input.files);
+                input.value = '';
+                loadTicketDetails(ticketId);
+                alert("Enviado!");
+            } catch(e) { alert(e.message); } finally { toggleLoading(false); }
         }
 
         async function saveTicketUpdates() {
-            const p = { id: activeTicketId, subject: document.getElementById('edit-subject').value, description: document.getElementById('edit-desc').value, status: document.getElementById('edit-status').value, type: document.getElementById('edit-type').value, priority: document.getElementById('edit-priority').value, estimationDate: document.getElementById('edit-estimation').value };
-            const r = await fetch('/api/ops/tickets/update', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(p) }); if(r.ok) { loadTicketDetails(activeTicketId); alert("Atualizado!"); } else alert("Erro");
+            const p = { id: activeTicketId, status: document.getElementById('edit-status').value, type: document.getElementById('edit-type').value, priority: document.getElementById('edit-priority').value, estimationDate: document.getElementById('edit-estimation').value };
+            try {
+                toggleLoading(true);
+                const r = await fetch('/api/ops/tickets/update', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(p) }); 
+                const j = await r.json();
+                if(j.success) { loadTicketDetails(activeTicketId); alert("Atualizado!"); } else throw new Error(JSON.stringify(j.errors));
+            } catch(e) { alert("Erro: " + e.message); } finally { toggleLoading(false); }
         }
         
-        async function transferTicket(target) { if(!confirm("Confirmar?")) return; const r = await fetch('/api/ops/tickets/transfer', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ id: activeTicketId, target: target }) }); if(r.ok) { alert("Transferido!"); changeFilter(currentFilter); document.getElementById('ticket-panel').classList.add('hidden'); } else alert("Erro"); }
-
-        // Hours Logic
-        async function fetchLimits() { const d = document.getElementById('modal-date').value; if(!d) return; try { const r = await fetch(`/api/ops/limits?date=${d}`); const j = await r.json(); if(!j.success) { currentDayLimit=0; currentDayUsed=0; currentDayUsedExtra=0; return; } currentDayLimit = j.limit; currentDayUsed = j.usedNormal; currentDayUsedExtra = j.usedExtra; document.getElementById('val-limit').innerText = currentDayLimit + 'h'; document.getElementById('val-used').innerText = (currentDayUsed+currentDayUsedExtra).toFixed(1) + 'h'; checkLocks(); } catch(e) { console.error(e); } }
-        function checkLocks() { 
-            let val = parseFloat(document.getElementById('modal-hours-normal').value.replace(',','.')) || 0; const tot = currentDayUsed + val; const sal = currentDayLimit - tot; 
-            document.getElementById('val-saldo').innerText = sal.toFixed(1) + 'h';
-            const ext = document.getElementById('modal-hours-extra'), lock = document.getElementById('icon-lock-extra');
-            if(tot >= (currentDayLimit-0.01)) { ext.disabled = false; ext.classList.remove('bg-gray-100', 'text-gray-400'); ext.classList.add('bg-white', 'text-red-600'); lock.classList.add('hidden'); } else { ext.disabled = true; ext.value = ''; ext.classList.add('bg-gray-100', 'text-gray-400'); lock.classList.remove('hidden'); }
+        async function transferTicket(target) { if(!confirm("Confirmar?")) return;
+            try {
+                toggleLoading(true);
+                const r = await fetch('/api/ops/tickets/transfer', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ id: activeTicketId, target: target }) });
+                if(r.ok) { alert("Transferido!"); changeFilter(currentFilter); document.getElementById('ticket-panel').classList.add('hidden'); } else alert("Erro"); 
+            } catch(e) { alert(e.message); } finally { toggleLoading(false); }
         }
-        function formatHours(inp) { let v = parseFloat(inp.value.replace(',','.')); if(isNaN(v)) return; let r = Math.round(v*2)/2; if(r<0.5 && v>0) r=0.5; if(inp.id==='modal-hours-normal') { const rem = currentDayLimit - currentDayUsed; if(r>Math.max(0, rem)) { r=Math.max(0, rem); alert("Limitado."); } } inp.value = r.toFixed(1).replace('.', ','); checkLocks(); }
-        async function openLogModal(ft) { if(!activeTicketId) return alert("Selecione."); openModal('time-modal'); if(!document.getElementById('modal-date').value) document.getElementById('modal-date').value = new Date().toISOString().split('T')[0]; await fetchLimits(); document.getElementById('modal-hours-normal').value = ''; document.getElementById('modal-hours-extra').value = ''; const s = document.getElementById('modal-activity-select'); const r = await fetch(`/api/ops/tickets/${activeTicketId}/activities`); const a = await r.json(); s.innerHTML = ''; a.forEach(x => s.innerHTML += `<option value="${x.Id}">${x.Name}</option>`); s.innerHTML += `<option value="new">+ Nova</option>`; toggleNewActivityInput(); if(ft) { document.getElementById('modal-hours-normal').value = (Math.ceil((globalSeconds/3600)*2)/2).toFixed(1); formatHours(document.getElementById('modal-hours-normal')); } }
-        async function saveLog() { const hn = document.getElementById('modal-hours-normal').value, he = document.getElementById('modal-hours-extra').value, dt = document.getElementById('modal-date').value, ai = document.getElementById('modal-activity-select').value, d = document.getElementById('modal-desc').value, na = document.getElementById('modal-new-activity-name').value; if(!dt) return alert("Data obrigatória"); const r = await fetch('/api/ops/log', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ caseId: activeTicketId, activityId: ai, newActivityName: na, hoursNormal: hn, hoursExtra: he, desc: d, date: dt }) }); const j = await r.json(); if(j.success) { closeModal('time-modal'); loadTicketDetails(activeTicketId); alert("Salvo!"); } else alert("Erro: " + j.error); }
 
-        // Utils
+        // --- LÓGICA DE HORAS REVISADA (ITEM 3 e 4) ---
+        async function fetchLimits() { 
+            const d = document.getElementById('modal-date').value;
+            if(!d) return; 
+            try { 
+                const r = await fetch(`/api/ops/limits?date=${d}`); 
+                const j = await r.json(); 
+                if(!j.success) { 
+                    currentDayLimit=0; currentDayUsed=0; currentDayUsedExtra=0; return; 
+                } 
+                currentDayLimit = j.limit; 
+                currentDayUsed = j.usedNormal; 
+                currentDayUsedExtra = j.usedExtra; 
+                checkLocks(); 
+            } catch(e) { console.error(e); } 
+        }
+
+        function checkLocks() { 
+            const hNormal = parseFloat(document.getElementById('modal-hours-normal').value) || 0;
+            const hExtra = parseFloat(document.getElementById('modal-hours-extra').value) || 0;
+            
+            // Total já registrado + O que está digitando
+            const totalRecorded = currentDayUsed + currentDayUsedExtra;
+            const totalWithInput = totalRecorded + hNormal + hExtra;
+            
+            // Atualiza Lançado com a soma real (BD + Input)
+            document.getElementById('val-used').innerText = (totalRecorded + hNormal + hExtra).toFixed(1) + 'h';
+            document.getElementById('val-limit').innerText = currentDayLimit + 'h';
+
+            // Saldo para completar contrato NORMAL
+            const saldoNormal = Math.max(0, currentDayLimit - currentDayUsed - hNormal);
+            document.getElementById('val-saldo').innerText = saldoNormal.toFixed(1) + 'h';
+
+            const inputNormal = document.getElementById('modal-hours-normal');
+            const inputExtra = document.getElementById('modal-hours-extra');
+            const lockIcon = document.getElementById('icon-lock-extra');
+
+            // 1. Bloqueio de Normal se já cumpriu contrato (ITEM 3)
+            if (currentDayUsed >= (currentDayLimit - 0.01)) {
+                inputNormal.disabled = true;
+                inputNormal.placeholder = "Cheio";
+                if(document.activeElement !== inputNormal) inputNormal.value = '';
+                inputNormal.classList.add('bg-gray-100', 'text-gray-400');
+            } else {
+                inputNormal.disabled = false;
+                inputNormal.placeholder = "0.0";
+                inputNormal.classList.remove('bg-gray-100', 'text-gray-400');
+            }
+
+            // 2. Liberação de Extra apenas se Normal preenchido
+            const projectedNormal = currentDayUsed + hNormal;
+            if (projectedNormal >= (currentDayLimit - 0.01)) {
+                inputExtra.disabled = false;
+                inputExtra.classList.remove('bg-gray-100', 'text-gray-400');
+                inputExtra.classList.add('bg-white', 'text-red-600');
+                lockIcon.classList.add('hidden');
+            } else {
+                inputExtra.disabled = true;
+                inputExtra.value = '';
+                inputExtra.classList.add('bg-gray-100', 'text-gray-400');
+                inputExtra.classList.remove('bg-white', 'text-red-600');
+                lockIcon.classList.remove('hidden');
+            }
+        }
+
+        function formatHours(inp) { 
+            let v = parseFloat(inp.value); 
+            if(isNaN(v) || v < 0) { inp.value = ''; checkLocks(); return; }
+            let r = Math.round(v*2)/2; 
+            if(r > 24) r = 24;
+            inp.value = r; 
+            checkLocks(); 
+        }
+
+        async function openLogModal(ft) { 
+            if(!activeTicketId) return alert("Selecione."); 
+            openModal('time-modal');
+            if(!document.getElementById('modal-date').value) document.getElementById('modal-date').value = new Date().toISOString().split('T')[0]; 
+            
+            document.getElementById('modal-hours-normal').value = ''; 
+            document.getElementById('modal-hours-extra').value = ''; 
+            
+            await fetchLimits(); 
+            
+            const s = document.getElementById('modal-activity-select');
+            const r = await fetch(`/api/ops/tickets/${activeTicketId}/activities`); 
+            const a = await r.json(); s.innerHTML = ''; 
+            a.forEach(x => s.innerHTML += `<option value="${x.Id}">${x.Name}</option>`); 
+            s.innerHTML += `<option value="new">+ Nova</option>`; toggleNewActivityInput(); 
+            
+            if(ft) { 
+                const h = Math.ceil((globalSeconds/3600)*2)/2;
+                document.getElementById('modal-hours-normal').value = h.toFixed(1); 
+                checkLocks(); 
+            } 
+        }
+        
+        async function saveLog() { 
+            const hn = document.getElementById('modal-hours-normal').value, he = document.getElementById('modal-hours-extra').value, dt = document.getElementById('modal-date').value, ai = document.getElementById('modal-activity-select').value, d = document.getElementById('modal-desc').value, na = document.getElementById('modal-new-activity-name').value;
+            if(!dt) return alert("Data obrigatória"); 
+            try {
+                toggleLoading(true);
+                const r = await fetch('/api/ops/log', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ caseId: activeTicketId, activityId: ai, newActivityName: na, hoursNormal: hn, hoursExtra: he, desc: d, date: dt }) });
+                const j = await r.json(); 
+                if(j.success) { closeModal('time-modal'); loadTicketDetails(activeTicketId); alert("Salvo!"); } else alert("Erro: " + j.error);
+            } catch(e) { alert(e.message); } finally { toggleLoading(false); }
+        }
+
         function switchDetailTab(t) { 
             ['info','logs','edit','attach'].forEach(x => { 
                 const elV=document.getElementById(`view-${x}`), elB=document.getElementById(`dt-${x}`);
                 if(elV) elV.classList.add('hidden'); if(elB) elB.className = 'pb-3 text-sm tab-inactive whitespace-nowrap';
-                if(x==='edit' && currentFilter!=='my') if(elB) elB.classList.add('hidden'); // Hide edit if not my ticket
+                if(x==='edit' && currentFilter!=='my') if(elB) elB.classList.add('hidden'); 
             });
             const v = document.getElementById(`view-${t}`), b = document.getElementById(`dt-${t}`);
             if(v) v.classList.remove('hidden'); if(b) b.className = 'pb-3 text-sm tab-active whitespace-nowrap';
@@ -391,8 +643,9 @@
         function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
         function closeTicketMobile() { document.getElementById('ticket-list-panel').classList.remove('hidden'); document.getElementById('ticket-workspace').classList.add('hidden'); }
         function toggleNewActivityInput() { const v = document.getElementById('modal-activity-select').value, i = document.getElementById('modal-new-activity-name'); if(v === 'new') i.classList.remove('hidden'); else i.classList.add('hidden'); }
-        async function assignTicket() { if(!confirm("Puxar?")) return; const r = await fetch('/api/ops/tickets/assign', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ id: activeTicketId }) }); if(r.ok) { alert("Atribuído!"); changeFilter('my'); } }
+        async function assignTicket() { if(!confirm("Puxar?")) return; try { toggleLoading(true); const r = await fetch('/api/ops/tickets/assign', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ id: activeTicketId }) }); if(r.ok) { alert("Atribuído!"); changeFilter('my'); } } catch(e) { alert(e.message); } finally { toggleLoading(false); } }
         async function postComment() { const t = document.getElementById('quick-comment').value; if(!t) return; const r = await fetch('/api/ops/comment', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ caseId: activeTicketId, text: t }) }); if(r.ok) { document.getElementById('quick-comment').value = ''; loadTicketDetails(activeTicketId); } }
+        
         let globalSeconds = 0, globalInterval = null;
         function startGlobalTimer() { if(!activeTicketId) return alert("Selecione chamado"); if(globalInterval) return; document.getElementById('global-play').classList.add('hidden'); document.getElementById('global-stop').classList.remove('hidden'); globalInterval = setInterval(() => { globalSeconds++; const h = Math.floor(globalSeconds / 3600).toString().padStart(2,'0'), m = Math.floor((globalSeconds % 3600) / 60).toString().padStart(2,'0'), s = (globalSeconds % 60).toString().padStart(2,'0'); document.getElementById('global-timer').innerText = `${h}:${m}:${s}`; }, 1000); }
         function stopGlobalTimer() { clearInterval(globalInterval); globalInterval = null; openLogModal(true); document.getElementById('global-stop').classList.add('hidden'); document.getElementById('global-play').classList.remove('hidden'); }

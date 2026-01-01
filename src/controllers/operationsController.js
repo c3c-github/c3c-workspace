@@ -1,4 +1,5 @@
 const { getSfConnection } = require('../config/salesforce');
+const fs = require('fs');
 
 // ==============================================================================
 // HELPER FUNCTIONS
@@ -15,12 +16,44 @@ async function getOrCreateResponsavel(conn, atividadeId, alocacaoId) {
     } catch (e) { throw e; }
 }
 
+async function createCaseLog(conn, caseId, action, userId, userType, desc = null) {
+    try {
+        const logData = {
+            Caso__c: caseId,
+            Acao__c: action,
+            TipoUsuario__c: userType, // 'Operacao' ou 'Cliente'
+            Descricao__c: desc
+        };
+
+        if (userType === 'Operacao') {
+            logData.Pessoa__c = userId;
+        } 
+        
+        // Tenta criar log. Se objeto não existir na org, cai no catch sem quebrar o fluxo.
+        await conn.sobject('LogCaso__c').create(logData);
+    } catch (e) {
+        console.warn("LogCaso__c não criado (verifique se objeto existe):", e.message);
+    }
+}
+
 async function calculateDailyStats(conn, userId, targetDate) {
     const dateStr = targetDate.includes('T') ? targetDate.split('T')[0] : targetDate;
-    const diaRes = await conn.sobject('DiaPeriodo__c')
-        .find({ Data__c: dateStr, 'Periodo__r.ContratoPessoa__r.Pessoa__c': userId }, 'Id, Periodo__c, Periodo__r.ContratoPessoa__r.Hora__c')
-        .limit(1)
-        .execute();
+    
+    const diaQuery = `
+        SELECT Id, Periodo__c, Periodo__r.ContratoPessoa__r.Hora__c 
+        FROM DiaPeriodo__c 
+        WHERE Data__c = ${dateStr} 
+        AND Periodo__r.ContratoPessoa__r.Pessoa__c = '${userId}'
+        LIMIT 1
+    `;
+
+    let diaRes = [];
+    try {
+        const result = await conn.query(diaQuery);
+        diaRes = result.records;
+    } catch (e) {
+        return { exists: false, diaPeriodoId: null, limiteDia: 8, usedNormal: 0, usedExtra: 0, saldoNormalDia: 8 };
+    }
     
     if (diaRes.length === 0) return { exists: false, diaPeriodoId: null, limiteDia: 8, usedNormal: 0, usedExtra: 0, saldoNormalDia: 8 };
     
@@ -93,7 +126,6 @@ exports.getTickets = async (req, res) => {
         const result = await conn.query(soql);
         let records = result.records;
 
-        // Ordenação JS
         const typeScore = { 'Bug': 0, 'Erro': 0, 'Melhoria': 1, 'Dúvida': 2 };
         const priorityScore = { 'Critical': 0, 'High': 1, 'Medium': 2, 'Low': 3 };
         
@@ -127,9 +159,59 @@ exports.getTicketDetails = async (req, res) => {
     const { id } = req.params;
     try {
         const conn = await getSfConnection();
-        // Busca campos customizados de data e LastModifiedDate
-        const t = await conn.sobject('Case').retrieve(id);
+        const tQuery = `
+            SELECT Id, Subject, Description, Status, Type, Priority, Origin, CreatedDate, LastModifiedDate,
+                   DataExpectativaCliente__c, DataEstimativaEntrega__c
+            FROM Case WHERE Id = '${id}'
+        `;
+        const tResult = await conn.query(tQuery);
+        if (tResult.totalSize === 0) throw new Error('Chamado não encontrado.');
+        const t = tResult.records[0];
+
+        // BUSCA DATAS DE ÚLTIMA ATUALIZAÇÃO NOS LOGS (ITEM 6 e "Última coisa")
+        let lastUpdateClient = null;
+        let lastUpdateOperation = null;
+
+        try {
+            // Tenta buscar no objeto LogCaso__c se ele existir
+            const logsQuery = `SELECT CreatedDate, TipoUsuario__c FROM LogCaso__c WHERE Caso__c = '${id}' ORDER BY CreatedDate DESC LIMIT 50`;
+            const logsResult = await conn.query(logsQuery);
+            
+            for (const log of logsResult.records) {
+                if (!lastUpdateClient && log.TipoUsuario__c === 'Cliente') {
+                    lastUpdateClient = log.CreatedDate;
+                }
+                if (!lastUpdateOperation && log.TipoUsuario__c === 'Operacao') {
+                    lastUpdateOperation = log.CreatedDate;
+                }
+                if (lastUpdateClient && lastUpdateOperation) break;
+            }
+        } catch (e) {
+            console.warn("LogCaso__c inacessível:", e.message);
+        }
+
+        // Fallbacks se não achar no log (opcional, aqui mantemos null se não achar)
+        if (!lastUpdateOperation) lastUpdateOperation = t.LastModifiedDate; // Fallback para LastModified do Case
+
         const comments = await conn.sobject('CaseComment').find({ ParentId: id }, 'CommentBody, CreatedDate, CreatedBy.Name, IsPublished').sort({ CreatedDate: -1 }).execute();
+        
+        let attachments = [];
+        try {
+            const linksQuery = `SELECT ContentDocumentId FROM ContentDocumentLink WHERE LinkedEntityId = '${id}'`;
+            const links = await conn.query(linksQuery);
+            if (links.totalSize > 0) {
+                const docIds = links.records.map(r => `'${r.ContentDocumentId}'`).join(',');
+                // CORREÇÃO: Query corrigida para não pedir campo inexistente
+                const docsQuery = `SELECT Id, Title, FileExtension, ContentSize FROM ContentVersion WHERE ContentDocumentId IN (${docIds}) AND IsLatest = true`;
+                const docs = await conn.query(docsQuery);
+                attachments = docs.records.map(d => ({ 
+                    id: d.Id, 
+                    name: `${d.Title}.${d.FileExtension}`, 
+                    size: d.ContentSize 
+                }));
+            }
+        } catch (e) { console.error("Erro anexos:", e); }
+
         const logsQuery = `SELECT Id, DiaPeriodo__r.Data__c, Horas__c, HorasExtras__c, Justificativa__c, Atividade__r.Name FROM LancamentoHora__c WHERE Atividade__r.Caso__c = '${id}' AND (Horas__c > 0 OR HorasExtras__c > 0) ORDER BY DiaPeriodo__r.Data__c DESC`;
         const logsRes = await conn.query(logsQuery);
 
@@ -143,11 +225,17 @@ exports.getTicketDetails = async (req, res) => {
                 Origin: t.Origin,
                 CreatedDate: t.CreatedDate,
                 LastModifiedDate: t.LastModifiedDate,
-                // MAPEAR API NAMES CORRETOS DA SUA ORG:
                 DataExpectativaCliente__c: t.DataExpectativaCliente__c || null,
                 DataEstimativaEntrega__c: t.DataEstimativaEntrega__c || null
             },
-            comments: comments.map(c => ({ text: c.CommentBody, user: c.CreatedBy ? c.CreatedBy.Name : 'Sistema', time: new Date(c.CreatedDate).toLocaleString('pt-BR'), public: c.IsPublished })),
+            lastUpdateClient: lastUpdateClient,     // NOVA PROPRIEDADE
+            lastUpdateOperation: lastUpdateOperation, // NOVA PROPRIEDADE
+            comments: comments.map(c => ({ 
+                text: c.CommentBody, 
+                user: 'Sistema', 
+                time: new Date(c.CreatedDate).toLocaleString('pt-BR'), 
+                public: c.IsPublished 
+            })),
             logs: logsRes.records.map(l => {
                 let dateStr = '-';
                 if (l.DiaPeriodo__r && l.DiaPeriodo__r.Data__c) {
@@ -155,9 +243,10 @@ exports.getTicketDetails = async (req, res) => {
                     dateStr = `${parts[2]}/${parts[1]}/${parts[0]}`;
                 }
                 return { date: dateStr, activity: l.Atividade__r ? l.Atividade__r.Name : 'Geral', desc: l.Justificativa__c || '-', hoursNormal: l.Horas__c || 0, hoursExtra: l.HorasExtras__c || 0 };
-            })
+            }),
+            attachments: attachments
         });
-    } catch (err) { res.status(500).json({ error: 'Erro ao buscar detalhes.' }); }
+    } catch (err) { res.status(500).json({ error: 'Erro ao buscar detalhes: ' + err.message }); }
 };
 
 exports.getTicketActivities = async (req, res) => { try { const { id } = req.params; const conn = await getSfConnection(); const activities = await conn.sobject('Atividade__c').find({ Caso__c: id }, 'Id, Name, Servico__c').sort({ CreatedDate: -1 }).execute(); res.json(activities); } catch (err) { res.status(500).json({ error: 'Erro ao buscar atividades.' }); } };
@@ -172,28 +261,15 @@ exports.createContact = async (req, res) => {
     try {
         const { accountId, name, email, mobile } = req.body;
         if (!accountId || !name) return res.status(400).json({ error: 'Conta e Nome obrigatórios.' });
-
         const parts = name.trim().split(' ');
-        let firstName = '';
-        let lastName = name;
-        if (parts.length > 1) {
-            lastName = parts.pop();
-            firstName = parts.join(' ');
-        }
+        let firstName = '', lastName = name;
+        if (parts.length > 1) { lastName = parts.pop(); firstName = parts.join(' '); }
 
         const conn = await getSfConnection();
-        const payload = {
-            AccountId: accountId,
-            LastName: lastName,
-            FirstName: firstName,
-            Email: email,
-            MobilePhone: mobile || null // Envia null se vazio para evitar erro
-        };
-
+        const payload = { AccountId: accountId, LastName: lastName, FirstName: firstName, Email: email, MobilePhone: mobile || null };
         const ret = await conn.sobject('Contact').create(payload);
         if (ret.success) res.json({ success: true, id: ret.id, name: name });
         else res.status(400).json({ success: false, errors: ret.errors });
-
     } catch (err) { res.status(500).json({ error: 'Erro ao criar contato: ' + err.message }); }
 };
 
@@ -201,26 +277,20 @@ exports.createTicket = async (req, res) => {
     try {
         const { serviceId, accountId, contactId, type, priority, origin, expectationDate, assignToMe, subject, desc } = req.body;
         const conn = await getSfConnection();
+        const caseData = { Subject: subject, Description: desc, AccountId: accountId, ContactId: contactId || null, Type: type, Priority: priority, Origin: origin, Status: 'New', DataExpectativaCliente__c: expectationDate || null };
         
-        const caseData = {
-            Subject: subject,
-            Description: desc,
-            AccountId: accountId,
-            ContactId: contactId || null,
-            Type: type,
-            Priority: priority,
-            Origin: origin,
-            Status: 'New',
-            DataExpectativaCliente__c: expectationDate || null
-        };
-
-        if (assignToMe === true || assignToMe === 'true') {
-            caseData.Pessoa__c = req.session.user.id;
+        let logAction = 'Criado';
+        if (assignToMe === true || assignToMe === 'true') { 
+            caseData.Pessoa__c = req.session.user.id; 
             caseData.Status = 'In Progress';
+            logAction = 'Criado e Assumido';
         }
 
         const ret = await conn.sobject('Case').create(caseData);
-        if (ret.success) res.json({ success: true, id: ret.id });
+        if (ret.success) {
+            await createCaseLog(conn, ret.id, logAction, req.session.user.id, 'Operacao');
+            res.json({ success: true, id: ret.id });
+        }
         else res.status(400).json({ success: false, errors: ret.errors });
     } catch (err) { res.status(500).json({ error: 'Erro ao criar chamado.' }); }
 };
@@ -229,7 +299,6 @@ exports.updateTicket = async (req, res) => {
     try {
         const { id, status, estimationDate, type, priority } = req.body;
         const conn = await getSfConnection();
-        // Mapeia DataEstimativaEntrega__c
         const updateData = {
             Id: id,
             Status: status,
@@ -238,9 +307,50 @@ exports.updateTicket = async (req, res) => {
             DataEstimativaEntrega__c: estimationDate || null
         };
         const ret = await conn.sobject('Case').update(updateData);
-        if (ret.success) res.json({ success: true });
+        if (ret.success) {
+            await createCaseLog(conn, id, 'Atualizado', req.session.user.id, 'Operacao', `Status: ${status}, DataEst: ${estimationDate}`);
+            res.json({ success: true });
+        }
         else res.status(400).json({ success: false, errors: ret.errors });
     } catch (err) { res.status(500).json({ error: 'Erro ao atualizar.' }); }
+};
+
+exports.uploadAttachments = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const files = req.files;
+        if (!files || files.length === 0) return res.status(400).json({ error: 'Nenhum arquivo.' });
+        const conn = await getSfConnection();
+        for (const file of files) {
+            const base64Data = fs.readFileSync(file.path, { encoding: 'base64' });
+            const contentVersion = await conn.sobject('ContentVersion').create({ Title: file.originalname, PathOnClient: file.originalname, VersionData: base64Data, FirstPublishLocationId: id });
+            fs.unlinkSync(file.path);
+            if (!contentVersion.success) throw new Error(`Falha ao salvar ${file.originalname}`);
+        }
+        await createCaseLog(conn, id, 'Anexo Adicionado', req.session.user.id, 'Operacao');
+        res.json({ success: true });
+    } catch (err) {
+        console.error("Erro upload:", err);
+        res.status(500).json({ error: 'Erro no upload: ' + err.message });
+    }
+};
+
+exports.downloadAttachment = async (req, res) => {
+    try {
+        const { id } = req.params; 
+        const conn = await getSfConnection();
+        
+        const cv = await conn.sobject('ContentVersion').retrieve(id);
+        res.setHeader('Content-Type', 'application/octet-stream');
+        res.setHeader('Content-Disposition', `attachment; filename="${cv.Title}.${cv.FileExtension}"`);
+
+        const blobStream = conn.sobject('ContentVersion').record(id).blob('VersionData');
+        blobStream.pipe(res);
+
+    } catch (err) {
+        console.error("Erro download:", err);
+        res.status(404).send("Arquivo não encontrado ou erro no download.");
+    }
 };
 
 exports.assignTicket = async (req, res) => { 
@@ -248,47 +358,45 @@ exports.assignTicket = async (req, res) => {
         const { id } = req.body; 
         const conn = await getSfConnection(); 
         const ret = await conn.sobject('Case').update({ Id: id, Pessoa__c: req.session.user.id, Status: 'In Progress' }); 
-        if (ret.success) res.json({ success: true }); else res.status(400).json({ success: false }); 
+        if (ret.success) {
+            await createCaseLog(conn, id, 'Assumido', req.session.user.id, 'Operacao');
+            res.json({ success: true }); 
+        } else res.status(400).json({ success: false }); 
     } catch (err) { res.status(500).json({ error: 'Erro ao atribuir.' }); } 
 };
 
-// NOVA FUNÇÃO: DEVOLVER PARA FILA
-exports.returnToQueue = async (req, res) => {
-    try {
-        const { id } = req.body;
-        const conn = await getSfConnection();
-        // Limpar Pessoa__c coloca o caso de volta na fila (visível para quem não tem filtro 'my')
-        const ret = await conn.sobject('Case').update({ Id: id, Pessoa__c: null, Status: 'New' });
-        if (ret.success) res.json({ success: true }); 
-        else res.status(400).json({ success: false });
-    } catch (err) { res.status(500).json({ error: 'Erro ao devolver.' }); }
+exports.returnToQueue = async (req, res) => { 
+    try { 
+        const { id } = req.body; 
+        const conn = await getSfConnection(); 
+        const ret = await conn.sobject('Case').update({ Id: id, Pessoa__c: null, Status: 'New' }); 
+        if (ret.success) {
+            await createCaseLog(conn, id, 'Devolvido à Fila', req.session.user.id, 'Operacao');
+            res.json({ success: true }); 
+        } else res.status(400).json({ success: false }); 
+    } catch (err) { res.status(500).json({ error: 'Erro ao devolver.' }); } 
 };
 
 exports.transferTicket = async (req, res) => {
     try {
-        const { id, target } = req.body; // target: 'queue' ou 'userId' (futuro)
+        const { id, target } = req.body; 
         const conn = await getSfConnection();
-        
         let updateData = { Id: id };
-        
-        if (target === 'queue') {
-            // Devolver para fila = Remover Pessoa__c
-            // Salesforce exige enviar como nulo ou campos vazios
-            updateData.Pessoa__c = null;
-            updateData.Status = 'New'; // Volta para novo ou status de triagem
-        } else {
-            // Transferir para outro usuário (se implementado select de usuários)
-            updateData.Pessoa__c = target;
+        let actionMsg = 'Transferido';
+        if (target === 'queue') { 
+            updateData.Pessoa__c = null; 
+            updateData.Status = 'New'; 
+            actionMsg = 'Transferido para Fila';
+        } else { 
+            updateData.Pessoa__c = target; 
+            actionMsg = 'Transferido para Outro';
         }
-
         const ret = await conn.sobject('Case').update(updateData);
-        if (ret.success) res.json({ success: true });
-        else res.status(400).json({ success: false, errors: ret.errors });
-
-    } catch (err) {
-        console.error("Erro transferTicket:", err);
-        res.status(500).json({ error: 'Erro ao transferir.' });
-    }
+        if (ret.success) {
+            await createCaseLog(conn, id, actionMsg, req.session.user.id, 'Operacao');
+            res.json({ success: true });
+        } else res.status(400).json({ success: false, errors: ret.errors });
+    } catch (err) { res.status(500).json({ error: 'Erro ao transferir.' }); }
 };
 
 exports.saveLog = async (req, res) => {
@@ -305,19 +413,22 @@ exports.saveLog = async (req, res) => {
         if (hNorm === 0 && hExtra === 0) return res.status(400).json({ error: 'Informe ao menos 0.5h.' });
 
         const stats = await calculateDailyStats(conn, userId, targetDate);
-        if (!stats.exists) return res.status(400).json({ error: `Sem dia de ponto gerado.` });
+        if (!stats.exists) return res.status(400).json({ error: `Sem dia de ponto gerado para ${targetDate}.` });
 
         const { diaPeriodoId, periodoId, limiteDia, usedNormal, usedExtra } = stats;
 
-        if ((usedNormal + usedExtra + hNorm + hExtra) > 24) return res.status(400).json({ error: `Total diário excede 24h.` });
+        const saldoDisponivel = Math.max(0, limiteDia - usedNormal);
+        
         if ((usedNormal + hNorm) > (limiteDia + 0.01)) {
-             const saldo = Math.max(0, limiteDia - usedNormal);
-             return res.status(400).json({ error: `Limite contratual excedido. Saldo: ${saldo.toFixed(1)}h.` });
+             return res.status(400).json({ error: `Limite de horas normais (${limiteDia}h) excedido. Você já lançou ${usedNormal}h. Restam: ${saldoDisponivel}h normais.` });
         }
+        
+        if ((usedNormal + usedExtra + hNorm + hExtra) > 24) return res.status(400).json({ error: `Total diário excede 24h.` });
+        
         if (hExtra > 0) {
-            const totalNormalPrevisto = usedNormal + hNorm;
-            if (totalNormalPrevisto < (limiteDia - 0.01)) {
-                return res.status(400).json({ error: `Complete as horas normais antes de lançar extras.` });
+            const totalNormalProjected = usedNormal + hNorm;
+            if (totalNormalProjected < (limiteDia - 0.01)) {
+                return res.status(400).json({ error: `Complete as horas normais (${limiteDia}h) antes de lançar extras.` });
             }
         }
 
@@ -328,25 +439,44 @@ exports.saveLog = async (req, res) => {
         if (activityId === 'new') {
             if (!newActivityName) return res.status(400).json({ error: 'Nome obrigatório.' });
             const caseRes = await conn.sobject('Case').retrieve(caseId);
-            const alocRes = await conn.sobject('Alocacao__c').find({ Pessoa__c: userId, 'Servico__r.Conta__c': caseRes.AccountId, DataInicio__c: { $lte: targetDate }, $or: [{ DataFim__c: { $gte: targetDate } }, { DataFim__c: null }] }).limit(1).execute();
-            if (alocRes.length === 0) return res.status(400).json({ error: `Sem alocação ativa.` });
-            serviceId = alocRes[0].Servico__c; alocacaoId = alocRes[0].Id;
+            const alocQuery = `SELECT Id, Servico__c FROM Alocacao__c WHERE Pessoa__c = '${userId}' AND Servico__r.Conta__c = '${caseRes.AccountId}' AND DataInicio__c <= ${targetDate} AND (DataFim__c >= ${targetDate} OR DataFim__c = NULL) LIMIT 1`;
+            const alocRes = await conn.query(alocQuery);
+            if (alocRes.totalSize === 0) return res.status(400).json({ error: `Sem alocação ativa para esta conta.` });
+            serviceId = alocRes.records[0].Servico__c; alocacaoId = alocRes.records[0].Id;
             const newAct = await conn.sobject('Atividade__c').create({ Name: `${caseRes.CaseNumber} - ${newActivityName}`.substring(0, 80), Caso__c: caseId, Servico__c: serviceId });
             finalActivityId = newAct.id;
         } else {
             const actRes = await conn.sobject('Atividade__c').retrieve(finalActivityId);
             serviceId = actRes.Servico__c;
-            const alocRes = await conn.sobject('Alocacao__c').find({ Pessoa__c: userId, Servico__c: serviceId, DataInicio__c: { $lte: targetDate }, $or: [{ DataFim__c: { $gte: targetDate } }, { DataFim__c: null }] }).limit(1).execute();
-            if (alocRes.length === 0) return res.status(400).json({ error: `Alocação inválida.` });
-            alocacaoId = alocRes[0].Id;
+            const alocQuery = `SELECT Id FROM Alocacao__c WHERE Pessoa__c = '${userId}' AND Servico__c = '${serviceId}' AND DataInicio__c <= ${targetDate} AND (DataFim__c >= ${targetDate} OR DataFim__c = NULL) LIMIT 1`;
+            const alocRes = await conn.query(alocQuery);
+            if (alocRes.totalSize === 0) return res.status(400).json({ error: `Alocação inválida.` });
+            alocacaoId = alocRes.records[0].Id;
         }
 
         const responsavelId = await getOrCreateResponsavel(conn, finalActivityId, alocacaoId);
         const logEntry = { Pessoa__c: userId, DiaPeriodo__c: diaPeriodoId, Periodo__c: periodoId, Servico__c: serviceId, Atividade__c: finalActivityId, Responsavel__c: responsavelId, Justificativa__c: desc || 'N2', Status__c: 'Rascunho', Horas__c: hNorm, HorasExtras__c: hExtra };
         const ret = await conn.sobject('LancamentoHora__c').create(logEntry);
-        if (ret.success) res.json({ success: true }); else res.status(400).json({ success: false, errors: ret.errors });
+        
+        if (ret.success) {
+            await createCaseLog(conn, caseId, 'Apontamento de Horas', userId, 'Operacao', `${hNorm}h N / ${hExtra}h E`);
+            res.json({ success: true }); 
+        } else res.status(400).json({ success: false, errors: ret.errors });
 
     } catch (err) { res.status(500).json({ error: err.message }); }
 };
 
-exports.addComment = async (req, res) => { try { const { caseId, text } = req.body; const conn = await getSfConnection(); const ret = await conn.sobject('CaseComment').create({ ParentId: caseId, CommentBody: text, IsPublished: false }); if (ret.success) res.json({ success: true }); else res.status(400).json({ success: false }); } catch (err) { res.status(500).json({ error: 'Erro ao comentar.' }); } };
+exports.addComment = async (req, res) => { 
+    try { 
+        const { caseId, text } = req.body; 
+        const userName = req.session.user.nome || 'Usuário';
+        const formattedText = `[${userName}]: ${text}`;
+        
+        const conn = await getSfConnection(); 
+        const ret = await conn.sobject('CaseComment').create({ ParentId: caseId, CommentBody: formattedText, IsPublished: false }); 
+        if (ret.success) {
+            await createCaseLog(conn, caseId, 'Comentário', req.session.user.id, 'Operacao');
+            res.json({ success: true }); 
+        } else res.status(400).json({ success: false }); 
+    } catch (err) { res.status(500).json({ error: 'Erro ao comentar.' }); } 
+};
