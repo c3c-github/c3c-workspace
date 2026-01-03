@@ -9,7 +9,14 @@
     <script src="https://unpkg.com/lucide@latest"></script>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <script>
-        tailwind.config = { theme: { extend: { fontFamily: { sans: ['Montserrat', 'sans-serif'] }, colors: { c3c: { blue: '#2978FF', teal: '#1DDDBD' } } } } }
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Montserrat', 'sans-serif'] },
+                    colors: { c3c: { blue: '#2978FF', teal: '#1DDDBD' } }
+                }
+            }
+        }
     </script>
     <style>
         body { font-family: 'Montserrat', sans-serif; background-color: #F8FAFC; }
@@ -35,9 +42,13 @@
                     <h1 class="text-xl font-bold text-gray-800">Folha de Ponto</h1>
                     
                     <div class="flex items-center bg-gray-50 border border-gray-200 rounded-lg p-1 hidden sm:flex">
-                        <button onclick="changePeriod(1)" class="p-1 hover:bg-white rounded shadow-sm text-gray-500 transition-colors"><i data-lucide="chevron-left" class="w-4 h-4"></i></button>
+                        <button onclick="changePeriod(1)" class="p-1 hover:bg-white rounded shadow-sm text-gray-500 transition-colors" title="Anterior">
+                            <i data-lucide="chevron-left" class="w-4 h-4"></i>
+                        </button>
                         <span id="period-display" class="px-4 text-sm font-bold text-gray-700 min-w-[180px] text-center">Carregando...</span>
-                        <button onclick="changePeriod(-1)" class="p-1 hover:bg-white rounded shadow-sm text-gray-500 transition-colors"><i data-lucide="chevron-right" class="w-4 h-4"></i></button>
+                        <button onclick="changePeriod(-1)" class="p-1 hover:bg-white rounded shadow-sm text-gray-500 transition-colors" title="Próximo">
+                            <i data-lucide="chevron-right" class="w-4 h-4"></i>
+                        </button>
                     </div>
                 </div>
 
@@ -232,8 +243,8 @@
                 <div class="flex justify-between items-center">
                     <p class="text-sm text-gray-500 font-medium" id="footer-status">Rascunho</p>
                     <div class="flex gap-2">
-                         <button class="px-4 py-2 border border-gray-300 text-gray-600 rounded-lg font-bold text-sm hover:bg-gray-50 transition-colors" onclick="closeDayPanel()">Fechar</button>
-                        <button id="btn-submit-day" onclick="submitDay()" class="px-6 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-bold text-sm shadow-md transition-transform active:scale-95 flex items-center gap-2">
+                        <button class="px-4 py-2 border border-gray-300 text-gray-600 rounded-lg font-bold text-sm hover:bg-gray-50 transition-colors" onclick="closeDayPanel()">Fechar</button>
+                        <button id="btn-submit-day" onclick="submitDay()" class="hidden px-6 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-bold text-sm shadow-md transition-transform active:scale-95 flex items-center gap-2">
                            <span>🚀</span> Lançar Dia
                         </button>
                     </div>
@@ -246,6 +257,7 @@
         lucide.createIcons();
         
         let currentPeriods=[], currentPeriodIndex=0, currentGridData={}, currentOpenDayId=null;
+        let currentOpenDate = null; // Data do dia aberto no painel
         let dayProjects=[], dayActivities=[], dayEntries=[];
         let projectAllocationMap = {}; 
         
@@ -257,9 +269,17 @@
 
         async function loadPeriods() {
             try {
-                const res = await fetch('/api/timesheet/periods');
+                // Traz apenas períodos do usuário
+                const res = await fetch('/api/periods?type=user');
                 const data = await res.json();
-                if(data.length>0) { currentPeriods=data; currentPeriodIndex=0; updateHeader(); loadCalendar(currentPeriods[0].Id); }
+                if(data.length>0) { 
+                    currentPeriods=data; 
+                    const today = new Date().toISOString().split('T')[0];
+                    const idx = data.findIndex(p => today >= p.DataInicio__c && today <= p.DataFim__c);
+                    currentPeriodIndex = idx >= 0 ? idx : 0; 
+                    updateHeader(); 
+                    loadCalendar(currentPeriods[currentPeriodIndex].Id); 
+                }
                 else document.getElementById('period-display').innerText="Sem períodos";
             } catch(e){ console.error(e); }
         }
@@ -353,6 +373,8 @@
             const g = currentGridData[key];
             if(!g) return;
             currentOpenDayId = g.id;
+            currentOpenDate = key; // Salva a data!
+
             isNonBusinessDay = (g.status_day==='weekend'||g.status_day==='holiday'||g.status_day==='vacation');
             
             document.getElementById('panel-weekday').innerText=new Date(key+'T12:00:00').toLocaleDateString('pt-BR',{weekday:'long'});
@@ -396,23 +418,32 @@
                 renderEntriesList();
                 validateRules('init'); 
 
-            } catch(e) { console.error(e); allocL.innerHTML='Erro carregar'; }
+                // Lógica de Bloqueio e Botão Submeter
+                const isLocked = d.isLocked;
+                const hasDrafts = dayEntries.some(e => e.status === 'Rascunho');
+                const btnSubmit = document.getElementById('btn-submit-day');
+                const frm = document.getElementById('add-activity-container');
+                const alert = document.getElementById('readonly-alert');
 
-            const isEd=['empty','draft','rejected'].includes(g.status_approval);
-            const frm=document.getElementById('add-activity-container');
-            const alert=document.getElementById('readonly-alert');
-            const rej=document.getElementById('rejection-alert');
-            const btnSubmit = document.getElementById('btn-submit-day');
-            
-            alert.classList.add('hidden'); rej.classList.add('hidden'); frm.classList.remove('opacity-50','pointer-events-none');
-            
-            if(!isEd) { 
-                frm.classList.add('opacity-50','pointer-events-none'); 
-                alert.classList.remove('hidden'); 
-                document.getElementById('readonly-reason').innerText=`Bloqueado: ${g.status_approval}`;
-                btnSubmit.style.display = 'none'; 
-            } else { btnSubmit.style.display = 'flex'; }
-            if(g.status_approval==='rejected') rej.classList.remove('hidden');
+                if(isLocked) { 
+                    frm.classList.add('opacity-50','pointer-events-none'); 
+                    alert.classList.remove('hidden'); 
+                    document.getElementById('readonly-reason').innerText=`Bloqueado (Enviado/Aprovado)`;
+                    btnSubmit.style.display = 'none'; 
+                } else { 
+                    frm.classList.remove('opacity-50','pointer-events-none');
+                    alert.classList.add('hidden');
+                    btnSubmit.style.display = hasDrafts ? 'flex' : 'none'; 
+                }
+
+                const rej = document.getElementById('rejection-alert');
+                if(dayEntries.some(e => e.status === 'Reprovado')) {
+                     rej.classList.remove('hidden');
+                     const rItem = dayEntries.find(e => e.status === 'Reprovado' && e.reason);
+                     document.getElementById('rejection-reason').innerText = rItem ? rItem.reason : '';
+                } else rej.classList.add('hidden');
+
+            } catch(e) { console.error(e); allocL.innerHTML='Erro carregar'; }
             lucide.createIcons();
         }
 
@@ -426,12 +457,16 @@
                     if(e.status==='Reprovado') { brd='border-red-200 bg-red-50'; msg=`<div class="text-xs text-red-600 mt-1"><i data-lucide="alert-circle" class="w-3 h-3 inline"></i> ${e.reason||'Sem motivo'}</div>`; }
                     const canEdit=['Rascunho','Reprovado'].includes(e.status);
                     
-                    // --- CORREÇÃO: BADGES SEPARADOS ---
                     let badges = '';
                     if(e.hours > 0) badges += `<span class="bg-gray-100 text-gray-700 px-2 py-0.5 rounded text-[10px] font-bold">Normal: ${e.hours}h</span> `;
                     if(e.hoursExtra > 0) badges += `<span class="bg-green-50 text-green-700 px-2 py-0.5 rounded text-[10px] font-bold">Extra($): ${e.hoursExtra}h</span> `;
                     if(e.hoursBank > 0) badges += `<span class="bg-teal-50 text-teal-700 px-2 py-0.5 rounded text-[10px] font-bold">Banco(+): ${e.hoursBank}h</span> `;
                     if(e.hoursAbsence > 0) badges += `<span class="bg-orange-50 text-orange-700 px-2 py-0.5 rounded text-[10px] font-bold">Ausência: ${e.hoursAbsence}h</span> `;
+
+                    // Visual do Status no card
+                    let stColor = 'text-gray-400';
+                    if(e.status === 'Lançado') stColor = 'text-blue-500 font-bold';
+                    if(e.status === 'Aprovado') stColor = 'text-green-500 font-bold';
 
                     entL.innerHTML+=`
                         <div onclick="editEntry(${canEdit ? entryJson : '{}'})" class="bg-white border ${brd} rounded-lg p-3 shadow-sm relative group hover:shadow-md transition-shadow ${canEdit ? 'cursor-pointer' : ''} pr-8">
@@ -440,6 +475,7 @@
                                     <p class="text-xs font-bold text-blue-600 truncate">${e.project}</p>
                                     <p class="text-sm text-gray-800 truncate">${e.activity}</p>
                                 </div>
+                                <span class="text-[10px] uppercase tracking-wide ${stColor}">${e.status}</span>
                             </div>
                             <div class="flex flex-wrap gap-2 mt-2">
                                 ${badges}
@@ -452,7 +488,7 @@
             } else entL.innerHTML='<p class="text-center text-gray-400 text-sm py-4">Sem lançamentos.</p>';
         }
 
-        // --- CORREÇÃO DE EDIÇÃO (POPULAR FORMULÁRIO) ---
+        // --- MANIPULAÇÃO DO FORMULÁRIO (Mantido) ---
         function editEntry(entry) {
             if (!entry || !entry.id) return;
             document.getElementById('input-entry-id').value = entry.id;
@@ -462,14 +498,12 @@
             document.getElementById('input-activity-id').value = entry.activityId;
             document.getElementById('input-normal').value = entry.hours;
             
-            // Popula Campo Extra (seja Banco ou Pagamento)
             const extraField = document.getElementById('input-extra');
             const radios = document.getElementsByName('radio-extra');
-            
-            if (entry.hoursExtra > 0) { // É Pagamento
+            if (entry.hoursExtra > 0) { 
                 extraField.value = entry.hoursExtra;
                 radios.forEach(r => { if(r.value === 'Pagamento') r.checked = true; });
-            } else if (entry.hoursBank > 0) { // É Banco
+            } else if (entry.hoursBank > 0) { 
                 extraField.value = entry.hoursBank;
                 radios.forEach(r => { if(r.value === 'Banco') r.checked = true; });
             } else {
@@ -478,27 +512,22 @@
             }
 
             document.getElementById('input-leave').value = entry.hoursAbsence;
-            
-            // Tenta inferir tipo de ausência
             const selAbs = document.getElementById('select-absence-type');
             if (entry.hoursBank < 0) selAbs.value = 'Banco';
-            else selAbs.value = 'Abonada'; // Default
+            else selAbs.value = 'Abonada'; 
 
             document.getElementById('input-reason').value = entry.justification || '';
             document.getElementById('btn-add-entry').innerText = 'Salvar Alteração';
             document.getElementById('btn-cancel-edit').classList.remove('hidden');
             document.getElementById('activity-dropdown').classList.add('hidden');
-            
             validateRules('init');
         }
 
-        // --- Cálculos e Validações (Mantidos) ---
         function calculateDayTotals(excludeId = null) {
             let totalNormal = 0, totalExtra = 0, totalAbsence = 0, totalAll = 0;
             dayEntries.forEach(e => {
                 if (e.id !== excludeId) {
                     totalNormal += e.hours;
-                    // Soma Banco e ExtraPgto como "Extras" para validação
                     totalExtra += (e.hoursExtra + (e.hoursBank > 0 ? e.hoursBank : 0));
                     totalAbsence += e.hoursAbsence;
                     totalAll += (e.hours + e.hoursExtra + Math.abs(e.hoursBank) + e.hoursAbsence);
@@ -517,21 +546,13 @@
         function validateRules(source) {
             const inputId = document.getElementById('input-entry-id').value; 
             const existing = calculateDayTotals(inputId); 
-            
-            const hN = document.getElementById('input-normal');
-            const hE = document.getElementById('input-extra');
-            const hL = document.getElementById('input-leave');
-            
-            const msgN = document.getElementById('msg-normal');
-            const msgE = document.getElementById('msg-extra');
-            const msgL = document.getElementById('msg-leave');
+            const hN = document.getElementById('input-normal'), hE = document.getElementById('input-extra'), hL = document.getElementById('input-leave');
+            const msgN = document.getElementById('msg-normal'), msgE = document.getElementById('msg-extra'), msgL = document.getElementById('msg-leave');
             
             msgN.classList.add('hidden'); msgE.classList.add('hidden'); msgL.classList.add('hidden');
             hN.disabled = false; hE.disabled = false; hL.disabled = false;
 
-            let inN = parseFloat(hN.value) || 0;
-            let inE = parseFloat(hE.value) || 0;
-            let inL = parseFloat(hL.value) || 0;
+            let inN = parseFloat(hN.value) || 0, inE = parseFloat(hE.value) || 0, inL = parseFloat(hL.value) || 0;
 
             const totalSoFar = existing.totalAll + inN + inE + inL;
             if (totalSoFar > MAX_DAY_HOURS) {
@@ -550,43 +571,27 @@
                 const currentAbsence = existing.totalAbsence + inL;
                 if (currentAbsence >= DAILY_CONTRACT) {
                     hN.disabled = true; hN.value = 0; inN = 0;
-                    msgN.innerText = "Contrato preenchido (Ausência)";
-                    msgN.classList.remove('hidden');
+                    msgN.innerText = "Contrato preenchido"; msgN.classList.remove('hidden');
                 } else {
                     const maxN = Math.max(0, DAILY_CONTRACT - currentAbsence - existing.totalNormal);
-                    if (inN > maxN) { 
-                        inN = maxN; hN.value = inN; 
-                        msgN.innerText = `Máximo permitido: ${maxN}h`;
-                        msgN.classList.remove('hidden');
-                    }
+                    if (inN > maxN) { inN = maxN; hN.value = inN; msgN.innerText = `Máx: ${maxN}h`; msgN.classList.remove('hidden'); }
                 }
-
                 const currentNormal = existing.totalNormal + inN;
                 if (currentNormal >= DAILY_CONTRACT) {
                     hL.disabled = true; hL.value = 0; inL = 0;
-                    msgL.innerText = "Contrato preenchido (Normal)";
-                    msgL.classList.remove('hidden');
+                    msgL.innerText = "Contrato preenchido"; msgL.classList.remove('hidden');
                 } else {
                     const maxL = Math.max(0, DAILY_CONTRACT - currentNormal - existing.totalAbsence);
-                    if (inL > maxL) { 
-                        inL = maxL; hL.value = inL; 
-                        msgL.innerText = `Máximo permitido: ${maxL}h`;
-                        msgL.classList.remove('hidden');
-                    }
+                    if (inL > maxL) { inL = maxL; hL.value = inL; msgL.innerText = `Máx: ${maxL}h`; msgL.classList.remove('hidden'); }
                 }
-
                 const effective = (existing.totalNormal + inN) + (existing.totalAbsence + inL);
                 if (effective < DAILY_CONTRACT) {
                     hE.disabled = true; hE.value = 0; inE = 0;
-                    msgE.innerText = "Complete as 8h primeiro";
-                    msgE.classList.remove('hidden');
+                    msgE.innerText = "Complete as 8h"; msgE.classList.remove('hidden');
                 }
             }
 
-            const boxEx=document.getElementById('options-extra'); 
-            const boxLe=document.getElementById('options-absence'); 
-            const reqJ=document.getElementById('req-justification');
-
+            const boxEx=document.getElementById('options-extra'), boxLe=document.getElementById('options-absence'), reqJ=document.getElementById('req-justification');
             if(inE > 0) { boxEx.classList.remove('hidden'); reqJ.classList.remove('hidden'); } else boxEx.classList.add('hidden');
             if(inL > 0) { boxLe.classList.remove('hidden'); reqJ.classList.remove('hidden'); } else boxLe.classList.add('hidden');
             if(inE===0 && inL===0) reqJ.classList.add('hidden');
@@ -604,16 +609,14 @@
             document.getElementById('footer-normal').innerText = finalNormal.toFixed(1) + 'h';
             document.getElementById('footer-absence').innerText = finalAbsence.toFixed(1) + 'h';
             document.getElementById('footer-extra').innerText = finalExtra.toFixed(1) + 'h';
-            
             const balEl = document.getElementById('footer-balance');
             const sign = balance > 0 ? '+' : '';
             balEl.innerText = `${sign}${balance.toFixed(1)}h`;
-            
             if(balance > 0) balEl.className = "text-2xl font-extrabold text-purple-600";
             else if(balance < 0) balEl.className = "text-2xl font-extrabold text-red-400";
             else balEl.className = "text-2xl font-extrabold text-gray-400";
         }
-
+        
         function resetForm() {
             document.getElementById('input-entry-id').value = '';
             document.getElementById('form-title').innerText = 'Nova Atividade';
@@ -644,7 +647,45 @@
         function closeDayPanel() { document.getElementById('day-panel').classList.remove('open'); document.getElementById('day-panel').classList.add('closed'); const ov=document.getElementById('slide-overlay'); ov.classList.add('opacity-0'); setTimeout(()=>ov.classList.add('hidden'),300); }
         function selectProjectFromCard(id) { document.getElementById('input-project').value=id; resetActivitySearch(); }
 
+        // --- SUBMIT DAY ---
+        async function submitDay() {
+            if(!confirm("Enviar lançamentos deste dia para aprovação?")) return;
+            const btn = document.getElementById('btn-submit-day'); 
+            btn.disabled = true; btn.innerHTML = "<span>⏳</span> Enviando...";
+            
+            try {
+                // ENVIA DATA (string)
+                const res = await fetch('/api/timesheet/submit-day', { 
+                    method: 'POST', 
+                    headers: { 'Content-Type': 'application/json' }, 
+                    body: JSON.stringify({ date: currentOpenDate }) 
+                });
+                const d = await res.json();
+                if (d.success) { 
+                    alert(d.message); 
+                    closeDayPanel(); 
+                    loadCalendar(currentPeriods[currentPeriodIndex].Id); 
+                } else { 
+                    alert('Erro: ' + d.message); 
+                }
+            } catch (e) { alert('Erro de conexão.'); } 
+            finally { btn.disabled = false; btn.innerHTML = "<span>🚀</span> Lançar Dia"; }
+        }
+
+        async function submitPeriod() {
+            if(!currentPeriods[currentPeriodIndex]) return;
+            const pId = currentPeriods[currentPeriodIndex].Id;
+            if(!confirm("Enviar FOLHA DO MÊS inteira para aprovação?")) return;
+            try {
+                const res = await fetch('/api/timesheet/submit-period', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ periodId: pId }) });
+                const d = await res.json();
+                if (d.success) { alert(d.message); loadCalendar(pId); } else { alert('Erro: ' + d.message); }
+            } catch (e) { alert('Erro de conexão.'); }
+        }
+
         async function addEntry() {
+            // ... (Mesma lógica de addEntry) ...
+            // Importante passar 'date: currentOpenDate' no body
             const entryId = document.getElementById('input-entry-id').value; 
             const pId = document.getElementById('input-project').value;
             const alocacaoId = projectAllocationMap[pId]; 
@@ -670,11 +711,17 @@
             try {
                 const res = await fetch('/api/timesheet/entry', { 
                     method:'POST', headers:{'Content-Type':'application/json'}, 
-                    body:JSON.stringify({ entryId: entryId || null, diaPeriodoId: currentOpenDayId, projectId: pId, alocacaoId: alocacaoId, activityId: actId, activityName: actName, hoursNormal: hN, hoursExtra: hE, hoursAbsence: hA, reason: reason, extraType: exType, absenceType: abType }) 
+                    body:JSON.stringify({ entryId: entryId || null, diaPeriodoId: currentOpenDayId, projectId: pId, alocacaoId: alocacaoId, activityId: actId, activityName: actName, hoursNormal: hN, hoursExtra: hE, hoursAbsence: hA, reason: reason, extraType: exType, absenceType: abType, date: currentOpenDate }) 
                 });
                 const d = await res.json();
                 if(d.success) {
-                    loadCalendar(currentPeriods[currentPeriodIndex].Id).then(() => { return fetch(`/api/timesheet/day?date=${currentGridData[Object.keys(currentGridData).find(k=>currentGridData[k].id===currentOpenDayId)]?.date}&diaPeriodoId=${currentOpenDayId}`); }).then(r=>r.json()).then(newData => { dayEntries=newData.entries; renderEntriesList(); validateRules('init'); resetForm(); });
+                    loadCalendar(currentPeriods[currentPeriodIndex].Id).then(() => { 
+                        return fetch(`/api/timesheet/day?date=${currentOpenDate}&diaPeriodoId=${currentOpenDayId}`); 
+                    }).then(r=>r.json()).then(newData => { 
+                        dayEntries=newData.entries; renderEntriesList(); validateRules('init'); resetForm(); 
+                        const hasDrafts = dayEntries.some(e => e.status === 'Rascunho');
+                        document.getElementById('btn-submit-day').style.display = hasDrafts ? 'flex' : 'none';
+                    });
                 } else alert('Erro: '+d.message);
             } catch(e){ console.error(e); } finally { btn.innerText=originalText; btn.disabled=false; }
         }
@@ -685,30 +732,15 @@
                 const res = await fetch(`/api/timesheet/entry/${id}`, {method:'DELETE'});
                 const d = await res.json();
                 if(d.success) {
-                     loadCalendar(currentPeriods[currentPeriodIndex].Id).then(() => { return fetch(`/api/timesheet/day?date=${currentGridData[Object.keys(currentGridData).find(k=>currentGridData[k].id===currentOpenDayId)]?.date}&diaPeriodoId=${currentOpenDayId}`); }).then(r=>r.json()).then(newData => { dayEntries=newData.entries; renderEntriesList(); validateRules('init'); resetForm(); });
+                     loadCalendar(currentPeriods[currentPeriodIndex].Id).then(() => { 
+                         return fetch(`/api/timesheet/day?date=${currentOpenDate}&diaPeriodoId=${currentOpenDayId}`); 
+                     }).then(r=>r.json()).then(newData => { 
+                         dayEntries=newData.entries; renderEntriesList(); validateRules('init'); resetForm(); 
+                         const hasDrafts = dayEntries.some(e => e.status === 'Rascunho');
+                         document.getElementById('btn-submit-day').style.display = hasDrafts ? 'flex' : 'none';
+                     });
                 } else alert('Erro: '+d.message);
             } catch(e) { alert('Erro técnico'); }
-        }
-
-        async function submitDay() {
-            if(!confirm("Enviar dia para aprovação?")) return;
-            const btn = document.getElementById('btn-submit-day'); btn.disabled = true; btn.innerHTML = "<span>⏳</span> Enviando...";
-            try {
-                const res = await fetch('/api/timesheet/submit-day', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ diaPeriodoId: currentOpenDayId }) });
-                const d = await res.json();
-                if (d.success) { alert(d.message); closeDayPanel(); loadCalendar(currentPeriods[currentPeriodIndex].Id); } else { alert('Erro: ' + d.message); }
-            } catch (e) { alert('Erro de conexão.'); } finally { btn.disabled = false; btn.innerHTML = "<span>🚀</span> Lançar Dia"; }
-        }
-
-        async function submitPeriod() {
-            if(!currentPeriods[currentPeriodIndex]) return;
-            const pId = currentPeriods[currentPeriodIndex].Id;
-            if(!confirm("Enviar FOLHA DO MÊS inteira para aprovação?")) return;
-            try {
-                const res = await fetch('/api/timesheet/submit-period', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ periodId: pId }) });
-                const d = await res.json();
-                if (d.success) { alert(d.message); loadCalendar(pId); } else { alert('Erro: ' + d.message); }
-            } catch (e) { alert('Erro de conexão.'); }
         }
     </script>
 </body>

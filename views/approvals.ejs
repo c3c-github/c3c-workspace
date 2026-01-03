@@ -4,9 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Aprovação de Horas - C3C Workplace</title>
+    
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
+    
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
     <script>
         tailwind.config = {
             theme: {
@@ -17,10 +20,17 @@
             }
         }
     </script>
+    
     <style>
         body { font-family: 'Montserrat', sans-serif; background-color: #F8FAFC; }
         .fade-in { animation: fadeIn 0.4s ease-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94A3B8; }
     </style>
 </head>
 <body class="h-screen flex overflow-hidden bg-[#F8FAFC]">
@@ -31,56 +41,77 @@
         
         <header class="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-4 md:px-8 sticky top-0 z-20">
             <div class="flex items-center gap-4">
-                <button onclick="document.getElementById('sidebar').classList.toggle('-translate-x-full')" class="md:hidden p-2 text-gray-600 hover:bg-gray-100 rounded-lg"><i data-lucide="menu"></i></button>
+                <button onclick="document.getElementById('sidebar').classList.toggle('-translate-x-full')" class="md:hidden p-2 text-gray-600 hover:bg-gray-100 rounded-lg">
+                    <i data-lucide="menu"></i>
+                </button>
                 <h1 class="text-lg md:text-xl font-bold text-gray-800 flex items-center gap-2">
-                    Aprovação de Horas <span class="bg-blue-100 text-blue-700 text-xs px-2 py-1 rounded-full">Gestor</span>
+                    Aprovação de Horas <span class="bg-blue-100 text-blue-700 text-xs px-2 py-1 rounded-full border border-blue-200">Gestor</span>
                 </h1>
             </div>
-            <div class="flex items-center bg-white rounded-lg shadow-sm border border-gray-200 p-1">
-                <span class="px-3 text-xs font-bold text-gray-400 uppercase hidden sm:block">Período:</span>
-                <select id="period-selector" onchange="triggerDataLoad(this.value)" class="text-sm font-semibold text-gray-800 bg-transparent outline-none cursor-pointer py-1 pr-2">
-                    <option>Carregando...</option>
-                </select>
+            
+            <div class="flex items-center bg-white rounded-lg shadow-sm border border-gray-200 p-1 gap-2">
+                <button onclick="changePeriod(1)" class="p-1.5 hover:bg-gray-100 rounded-md text-gray-600 transition-colors" title="Período Anterior">
+                    <i data-lucide="chevron-left" class="w-5 h-5"></i>
+                </button>
+                <div class="flex flex-col items-center min-w-[160px] px-2">
+                    <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Período de Referência</span>
+                    <span id="period-display" class="text-sm font-bold text-gray-800 leading-none">Carregando...</span>
+                </div>
+                <button onclick="changePeriod(-1)" class="p-1.5 hover:bg-gray-100 rounded-md text-gray-600 transition-colors" title="Próximo Período">
+                    <i data-lucide="chevron-right" class="w-5 h-5"></i>
+                </button>
             </div>
         </header>
 
         <div class="flex-1 overflow-y-auto p-4 md:p-8 fade-in">
-            <p class="text-gray-500 text-sm mb-6">Analise os lançamentos por Serviço.</p>
+            <div class="flex justify-between items-center mb-6">
+                <p class="text-gray-500 text-sm">Analise os apontamentos por projeto.</p>
+                <button onclick="loadProjects(availablePeriods[currentPeriodIndex].DataInicio__c, availablePeriods[currentPeriodIndex].DataFim__c)" class="text-xs font-bold text-blue-600 hover:underline flex items-center gap-1">
+                    <i data-lucide="refresh-cw" class="w-3 h-3"></i> Atualizar
+                </button>
+            </div>
+            
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6" id="approval-cards-container">
                 </div>
         </div>
     </main>
 
     <div id="modal-approval" class="fixed inset-0 z-50 hidden">
-        <div class="absolute inset-0 bg-gray-900 bg-opacity-50 transition-opacity" onclick="closeModal()"></div>
+        <div class="absolute inset-0 bg-gray-900 bg-opacity-50 transition-opacity backdrop-blur-sm" onclick="closeModal()"></div>
         <div class="absolute inset-0 flex items-center justify-center p-4">
-            <div class="bg-white rounded-xl shadow-2xl w-full max-w-7xl overflow-hidden flex flex-col max-h-[90vh]">
+            <div class="bg-white rounded-xl shadow-2xl w-full max-w-7xl overflow-hidden flex flex-col max-h-[90vh] animate-[fadeIn_0.2s_ease-out]">
+                
                 <div class="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-white shrink-0">
-                    <h3 class="text-lg font-bold text-gray-900" id="modal-title">Projeto</h3>
-                    <button onclick="closeModal()"><i data-lucide="x" class="w-6 h-6 text-gray-400"></i></button>
+                    <div>
+                        <span class="text-xs font-bold text-gray-400 uppercase">Projeto</span>
+                        <h3 class="text-xl font-bold text-gray-900" id="modal-title">...</h3>
+                    </div>
+                    <button onclick="closeModal()" class="p-2 hover:bg-gray-100 rounded-full transition-colors"><i data-lucide="x" class="w-6 h-6 text-gray-400"></i></button>
                 </div>
                 
-                <div class="overflow-x-auto p-0 flex-1 overflow-y-auto">
-                    <table class="w-full text-left text-sm">
+                <div class="overflow-x-auto p-0 flex-1 overflow-y-auto bg-white">
+                    <table class="w-full text-left text-sm border-collapse">
                         <thead class="bg-gray-50 border-b border-gray-200 sticky top-0 z-10 shadow-sm">
                             <tr class="text-xs font-bold text-gray-500 uppercase tracking-wider">
                                 <th class="py-3 pl-6">Recurso</th>
-                                <th class="py-3 text-right">Alocado</th>
-                                <th class="py-3 text-center bg-blue-50 text-blue-700 border-l border-white">Normais</th>
-                                <th class="py-3 text-center bg-green-50 text-green-700 border-l border-white">Ex. Pgto</th>
-                                <th class="py-3 text-center bg-teal-50 text-teal-700 border-l border-white">Ex. Banco</th>
-                                <th class="py-3 text-center bg-orange-50 text-orange-700 border-l border-white">Aus. Banco</th>
-                                <th class="py-3 text-center bg-red-50 text-red-700 border-l border-white">Aus. Outras</th>
-                                <th class="py-3 text-right text-gray-900 font-extrabold border-l border-gray-100">Total</th>
-                                <th class="py-3 text-center">Status</th>
+                                <th class="py-3 text-right" title="Previsto conforme contrato e alocação">Alocado (Prev)</th>
+                                <th class="py-3 text-center bg-blue-50 text-blue-700 border-l border-white">Norm</th>
+                                <th class="py-3 text-center bg-green-50 text-green-700 border-l border-white">Ex.Pg</th>
+                                <th class="py-3 text-center bg-teal-50 text-teal-700 border-l border-white">Ex.Bc</th>
+                                <th class="py-3 text-center bg-orange-50 text-orange-700 border-l border-white">Au.Bc</th>
+                                <th class="py-3 text-center bg-red-50 text-red-700 border-l border-white">Au.Ou</th>
+                                <th class="py-3 text-right text-gray-900 font-extrabold border-l border-gray-100 bg-gray-50">Total Real.</th>
+                                <th class="py-3 text-center">Conform.</th>
                                 <th class="py-3 text-center px-4">Ação</th>
                             </tr>
                         </thead>
                         <tbody id="modal-table-body" class="divide-y divide-gray-100 text-gray-700"></tbody>
                     </table>
                 </div>
-                <div class="px-6 py-4 border-t border-gray-100 flex justify-end shrink-0 bg-white">
-                    <button onclick="closeModal()" class="px-4 py-2 bg-white border border-gray-200 text-gray-700 font-bold rounded-lg hover:bg-gray-50">Fechar</button>
+                
+                <div class="px-6 py-4 border-t border-gray-100 flex justify-between items-center shrink-0 bg-gray-50">
+                    <p class="text-xs text-gray-400">Dados baseados nos lançamentos e contratos vigentes.</p>
+                    <button onclick="closeModal()" class="px-6 py-2 bg-white border border-gray-300 text-gray-700 font-bold rounded-lg hover:bg-gray-100 transition-colors shadow-sm">Fechar</button>
                 </div>
             </div>
         </div>
@@ -89,10 +120,10 @@
     <div id="modal-activities" class="fixed inset-0 z-[60] hidden">
         <div class="absolute inset-0 bg-black bg-opacity-30 backdrop-blur-sm transition-opacity" onclick="closeActivityModal()"></div>
         <div class="absolute inset-0 flex items-center justify-center p-4">
-            <div class="bg-white rounded-lg shadow-xl w-full max-w-4xl overflow-hidden flex flex-col max-h-[80vh]">
+            <div class="bg-white rounded-lg shadow-xl w-full max-w-4xl overflow-hidden flex flex-col max-h-[80vh] animate-[fadeIn_0.2s_ease-out]">
                 <div class="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
                     <h3 class="font-bold text-gray-900 flex items-center gap-2"><i data-lucide="list" class="w-5 h-5 text-indigo-600"></i> Extrato Detalhado</h3>
-                    <button onclick="closeActivityModal()"><i data-lucide="x" class="w-5 h-5 text-gray-400"></i></button>
+                    <button onclick="closeActivityModal()"><i data-lucide="x" class="w-5 h-5 text-gray-400 hover:text-gray-600"></i></button>
                 </div>
                 <div class="overflow-auto p-0 flex-1">
                     <table class="w-full text-left text-xs">
@@ -101,9 +132,9 @@
                                 <th class="p-3">Data</th>
                                 <th class="p-3">Atividade / Justificativa</th>
                                 <th class="p-3 text-right text-blue-600">Normal</th>
-                                <th class="p-3 text-right text-green-600">Ex. Pgto</th>
-                                <th class="p-3 text-right text-teal-600">Banco</th>
-                                <th class="p-3 text-right text-orange-600">Ausência</th>
+                                <th class="p-3 text-right text-green-600">Ex.Pgto</th>
+                                <th class="p-3 text-right text-teal-600">Ex.Bc</th>
+                                <th class="p-3 text-right text-orange-600">Au.Bc</th>
                                 <th class="p-3 text-center">Status</th>
                             </tr>
                         </thead>
@@ -116,14 +147,18 @@
 
     <div id="modal-reject" class="fixed inset-0 z-[70] hidden">
         <div class="absolute inset-0 bg-black bg-opacity-40 backdrop-blur-sm flex items-center justify-center p-4">
-            <div class="bg-white rounded-lg shadow-xl w-full max-w-md p-6">
-                <h3 class="text-lg font-bold text-red-600 mb-2">Reprovar Lançamentos</h3>
-                <p class="text-sm text-gray-600 mb-4">Motivo da reprovação para <strong id="reject-person-name"></strong>:</p>
-                <input type="hidden" id="reject-service-id"><input type="hidden" id="reject-person-id">
-                <textarea id="reject-reason" rows="3" class="w-full border border-gray-300 rounded-lg p-3 text-sm focus:ring-2 focus:ring-red-500 outline-none mb-4" placeholder="Ex: Justificativa insuficiente..."></textarea>
+            <div class="bg-white rounded-lg shadow-xl w-full max-w-md p-6 animate-[fadeIn_0.1s_ease-out]">
+                <h3 class="text-lg font-bold text-red-600 mb-2 flex items-center gap-2"><i data-lucide="alert-triangle" class="w-5 h-5"></i> Reprovar Lançamentos</h3>
+                <p class="text-sm text-gray-600 mb-4">Informe o motivo da reprovação para <strong id="reject-person-name" class="text-gray-900"></strong>:</p>
+                
+                <input type="hidden" id="reject-service-id">
+                <input type="hidden" id="reject-person-id">
+                
+                <textarea id="reject-reason" rows="3" class="w-full border border-gray-300 rounded-lg p-3 text-sm focus:ring-2 focus:ring-red-500 outline-none mb-4 resize-none" placeholder="Ex: Justificativa insuficiente, lançar no projeto correto..."></textarea>
+                
                 <div class="flex justify-end gap-3">
-                    <button onclick="document.getElementById('modal-reject').classList.add('hidden')" class="px-4 py-2 text-gray-500 font-bold hover:bg-gray-100 rounded">Cancelar</button>
-                    <button onclick="confirmReject()" class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-bold rounded shadow-sm">Confirmar</button>
+                    <button onclick="document.getElementById('modal-reject').classList.add('hidden')" class="px-4 py-2 text-gray-500 font-bold hover:bg-gray-100 rounded-lg transition-colors">Cancelar</button>
+                    <button onclick="confirmReject()" class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-bold rounded-lg shadow-sm transition-colors">Confirmar Reprovação</button>
                 </div>
             </div>
         </div>
@@ -132,70 +167,101 @@
     <script>
         lucide.createIcons();
         const API_URL = '/api';
+        
+        let availablePeriods = [];
+        let currentPeriodIndex = 0;
 
         document.addEventListener('DOMContentLoaded', loadPeriods);
-
+        
+        // --- 1. GESTÃO DE PERÍODOS ---
         async function loadPeriods() {
             try {
-                const res = await fetch(`${API_URL}/periods`);
+                // Solicita períodos consolidados (Type Manager)
+                const res = await fetch(`${API_URL}/periods?type=manager`);
                 if(res.status === 401) window.location.href = '/';
                 const periods = await res.json();
-                const sel = document.getElementById('period-selector');
-                sel.innerHTML = '';
-                if(periods.length === 0) { sel.innerHTML = '<option>Sem contratos</option>'; return; }
                 
-                periods.forEach((p, idx) => {
-                    const opt = document.createElement('option');
-                    opt.value = JSON.stringify({ start: p.DataInicio__c, end: p.DataFim__c });
-                    opt.text = p.Name;
-                    if(idx === 0) opt.selected = true;
-                    sel.appendChild(opt);
-                });
-                triggerDataLoad(sel.value);
+                if(periods.length === 0) { 
+                    document.getElementById('period-display').innerText = "Sem períodos"; 
+                    return; 
+                }
+                
+                availablePeriods = periods; 
+                
+                // Tenta achar o período que engloba a data de hoje
+                const today = new Date().toISOString().split('T')[0];
+                const currentIndex = periods.findIndex(p => today >= p.DataInicio__c && today <= p.DataFim__c);
+                
+                // Se hoje não estiver em nenhum (ex: futuro ou passado distante), pega o mais recente (index 0)
+                currentPeriodIndex = currentIndex >= 0 ? currentIndex : 0;
+                
+                updatePeriodDisplay();
             } catch (err) { console.error(err); }
         }
 
-        function triggerDataLoad(jsonDates) {
-            if(!jsonDates) return;
-            const dates = JSON.parse(jsonDates);
-            loadProjects(dates.start, dates.end);
+        function updatePeriodDisplay() {
+            if(!availablePeriods[currentPeriodIndex]) return;
+            const p = availablePeriods[currentPeriodIndex];
+            document.getElementById('period-display').innerText = p.Name;
+            // Dispara carregamento dos cards
+            loadProjects(p.DataInicio__c, p.DataFim__c);
         }
 
-        // --- 1. LISTAGEM DE PROJETOS (LAYOUT ORIGINAL - RESTAURADO) ---
+        function changePeriod(direction) {
+            // direction 1 = Passado (Aumenta Index)
+            // direction -1 = Futuro (Diminui Index)
+            const newIndex = currentPeriodIndex + direction;
+            if(newIndex >= 0 && newIndex < availablePeriods.length) {
+                currentPeriodIndex = newIndex;
+                updatePeriodDisplay();
+            }
+        }
+
+        // --- 2. LISTAGEM DE PROJETOS (CARDS) ---
         async function loadProjects(start, end) {
             const container = document.getElementById('approval-cards-container');
-            container.innerHTML = '<p class="text-gray-400 col-span-2 text-center py-10">Carregando projetos...</p>';
+            container.innerHTML = '<p class="text-gray-400 col-span-2 text-center py-10 flex flex-col items-center"><i data-lucide="loader-2" class="w-8 h-8 animate-spin mb-2"></i> Carregando projetos...</p>';
+            lucide.createIcons();
+
             try {
                 const res = await fetch(`${API_URL}/approvals/projects?inicio=${start}&fim=${end}`);
                 const projects = await res.json();
                 container.innerHTML = '';
                 
-                if(projects.length === 0) { container.innerHTML = '<p class="text-gray-400 col-span-2 text-center py-10">Nenhum projeto encontrado.</p>'; return; }
+                if(projects.length === 0) { 
+                    container.innerHTML = '<p class="text-gray-400 col-span-2 text-center py-10 bg-white rounded-lg border border-dashed border-gray-300">Nenhum projeto encontrado neste período.</p>'; 
+                    return; 
+                }
 
                 projects.forEach(item => {
                     const isOpen = item.statusUI === 'Aberto';
+                    
+                    // Cores da barra de progresso
                     let percentClass = 'text-green-600', barColor = 'bg-green-500';
                     if(item.percentual > 105) { percentClass = 'text-red-600'; barColor = 'bg-red-500'; }
                     else if(item.percentual < 95) { percentClass = 'text-yellow-600'; barColor = 'bg-yellow-500'; }
 
-                    const badge = isOpen ? '<span class="bg-[#FFF9C4] text-[#FBC02D] text-[10px] font-bold px-2 py-0.5 rounded">Aberto</span>' : '<span class="bg-green-100 text-green-700 text-[10px] font-bold px-2 py-0.5 rounded">Ok</span>';
+                    const badge = isOpen 
+                        ? '<span class="bg-amber-100 text-amber-700 text-[10px] font-bold px-2 py-0.5 rounded border border-amber-200 flex items-center gap-1"><i data-lucide="clock" class="w-3 h-3"></i> Pendente</span>' 
+                        : '<span class="bg-green-100 text-green-700 text-[10px] font-bold px-2 py-0.5 rounded border border-green-200 flex items-center gap-1"><i data-lucide="check-circle" class="w-3 h-3"></i> Ok</span>';
 
                     const card = `
-                    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-5 flex flex-col h-full hover:shadow-md transition-shadow">
+                    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-5 flex flex-col h-full hover:shadow-md transition-all duration-200 group">
                         <div class="flex justify-between items-start mb-4">
                             <div>
                                 <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-0.5 truncate w-40" title="${item.client}">${item.client}</span>
-                                <h3 class="text-lg font-bold text-gray-900 leading-tight truncate w-64" title="${item.serviceName}">${item.serviceName}</h3>
+                                <h3 class="text-lg font-bold text-gray-900 leading-tight truncate w-64 group-hover:text-blue-600 transition-colors" title="${item.serviceName}">${item.serviceName}</h3>
                             </div>
                             ${badge}
                         </div>
+                        
                         <div class="grid grid-cols-4 gap-2 mb-5 bg-gray-50 rounded-lg p-3 border border-gray-100">
                             <div class="text-center border-r border-gray-200 last:border-0">
-                                <p class="text-[10px] text-gray-400 font-bold uppercase">Alocação</p>
+                                <p class="text-[10px] text-gray-400 font-bold uppercase">Previsto</p>
                                 <p class="text-sm font-bold text-gray-800">${item.metrics.alocado.toFixed(0)}h</p>
                             </div>
                             <div class="text-center border-r border-gray-200 last:border-0">
-                                <p class="text-[10px] text-gray-400 font-bold uppercase">Total</p>
+                                <p class="text-[10px] text-gray-400 font-bold uppercase">Realizado</p>
                                 <p class="text-sm font-bold text-blue-600">${item.metrics.ponderado.toFixed(0)}h</p>
                             </div>
                             <div class="text-center border-r border-gray-200 last:border-0">
@@ -210,121 +276,184 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="mt-auto flex items-center justify-between pt-2">
+                        
+                        <div class="mt-auto flex items-center justify-between pt-2 border-t border-gray-50">
                             <span class="text-xs text-gray-400 font-medium flex items-center gap-1"><i data-lucide="users" class="w-3 h-3"></i> ${item.teamSize} Recurso(s)</span>
-                            <button onclick="openModal('${item.serviceId}', '${item.serviceName}')" class="px-4 py-1.5 bg-white border border-blue-200 text-blue-600 font-bold rounded-lg text-xs hover:bg-blue-50 transition-colors">Analisar</button>
+                            <button onclick="openModal('${item.serviceId}', '${item.serviceName}')" class="px-4 py-1.5 bg-white border border-blue-200 text-blue-600 font-bold rounded-lg text-xs hover:bg-blue-50 transition-colors shadow-sm">Analisar</button>
                         </div>
                     </div>`;
                     container.innerHTML += card;
                 });
                 lucide.createIcons();
-            } catch (err) { container.innerHTML = '<p class="text-red-500">Erro ao carregar dados.</p>'; }
+            } catch (err) { container.innerHTML = '<p class="text-red-500 col-span-2 text-center">Erro ao carregar dados. Tente recarregar.</p>'; }
         }
 
-        // --- 2. MODAL DETALHADO (NOVO) ---
+        // --- 3. MODAL DE DETALHES (TABELA) ---
         async function openModal(serviceId, serviceName) {
             const modal = document.getElementById('modal-approval');
             const tbody = document.getElementById('modal-table-body');
             document.getElementById('modal-title').innerText = serviceName;
-            tbody.innerHTML = '<tr><td colspan="10" class="text-center py-8">Carregando...</td></tr>';
+            
+            // Estado de Loading
+            tbody.innerHTML = '<tr><td colspan="10" class="text-center py-10 text-gray-400"><i data-lucide="loader-2" class="w-6 h-6 animate-spin inline mr-2"></i> Carregando recursos...</td></tr>';
+            lucide.createIcons();
             modal.classList.remove('hidden');
 
-            const dates = JSON.parse(document.getElementById('period-selector').value);
-            
+            const p = availablePeriods[currentPeriodIndex];
             try {
-                const url = `${API_URL}/approvals/${serviceId}/resources?inicio=${dates.start}&fim=${dates.end}`;
+                const url = `${API_URL}/approvals/${serviceId}/resources?inicio=${p.DataInicio__c}&fim=${p.DataFim__c}`;
                 const res = await fetch(url);
                 const resources = await res.json();
                 
                 tbody.innerHTML = '';
-                if (resources.length === 0) { tbody.innerHTML = '<tr><td colspan="10" class="text-center py-8">Nenhum dado.</td></tr>'; return; }
+                if (resources.length === 0) { 
+                    tbody.innerHTML = '<tr><td colspan="10" class="text-center py-8 text-gray-400">Nenhum dado encontrado para este projeto no período.</td></tr>'; 
+                    return; 
+                }
 
-                resources.sort((a, b) => b.totalRealizado - a.totalRealizado);
-                
+                // Ordenação: Pendentes primeiro, depois quem fez mais horas
+                resources.sort((a, b) => {
+                    if (b.countPending !== a.countPending) return b.countPending - a.countPending;
+                    return b.totalRealizado - a.totalRealizado;
+                });
+
                 resources.forEach(r => {
-                    const colNorm = r.horasNormais > 0 ? `<span class="font-bold text-gray-700">${r.horasNormais.toFixed(1)}</span>` : '-';
-                    const colExPg = r.horasExtrasPgto > 0 ? `<span class="font-bold text-green-600">${r.horasExtrasPgto.toFixed(1)}</span>` : '-';
-                    const colExBc = r.horasExtrasBanco > 0 ? `<span class="font-bold text-teal-600">${r.horasExtrasBanco.toFixed(1)}</span>` : '-';
-                    let ausText = '-', ausOutra = '-';
-                    if (r.horasAusenciaBanco > 0) ausText = `<span class="font-bold text-orange-500">${r.horasAusenciaBanco.toFixed(1)}</span>`;
-                    if (r.horasAusenciaOutras > 0) ausOutra = `<span class="font-bold text-red-500">${r.horasAusenciaOutras.toFixed(1)}</span>`;
+                    // Formatação das células (Hífens para zeros)
+                    const fmt = (val, colorClass) => val > 0 ? `<span class="font-bold ${colorClass}">${val.toFixed(1)}</span>` : '<span class="text-gray-300">-</span>';
+                    
+                    const colNorm = fmt(r.horasNormais, 'text-gray-700');
+                    const colExPg = fmt(r.horasExtrasPgto, 'text-green-600');
+                    const colExBc = fmt(r.horasExtrasBanco, 'text-teal-600');
+                    const colAuBc = fmt(r.horasAusenciaBanco, 'text-orange-500');
+                    const colAuOu = fmt(r.horasAusenciaOutras, 'text-red-500');
 
+                    // Lógica de Ações
                     let actions = '';
                     if(r.countPending > 0) {
                         actions = `
-                            <div class="flex justify-center gap-2 items-center">
-                                <button onclick="openActivityModal('${serviceId}', '${r.id}')" class="text-gray-400 hover:text-blue-600 mr-2" title="Extrato"><i data-lucide="eye" class="w-5 h-5"></i></button>
-                                <button onclick="openRejectModal('${serviceId}', '${r.id}', '${r.name}')" class="p-1.5 text-red-500 hover:bg-red-50 rounded border border-red-200"><i data-lucide="x" class="w-4 h-4"></i></button>
-                                <button onclick="approveAction('${serviceId}', '${r.id}', 'approve')" class="p-1.5 text-white bg-green-500 hover:bg-green-600 rounded shadow-sm"><i data-lucide="check" class="w-4 h-4"></i></button>
+                            <div class="flex justify-center gap-1 items-center">
+                                <button onclick="openActivityModal('${serviceId}', '${r.id}')" class="p-1.5 text-gray-400 hover:text-blue-600 rounded hover:bg-gray-100 mr-1" title="Ver Extrato"><i data-lucide="list-collapse" class="w-4 h-4"></i></button>
+                                <button onclick="openRejectModal('${serviceId}', '${r.id}', '${r.name}')" class="p-1.5 text-red-500 hover:bg-red-50 rounded border border-red-200 transition-colors" title="Reprovar Tudo"><i data-lucide="x" class="w-4 h-4"></i></button>
+                                <button onclick="approveAction('${serviceId}', '${r.id}', 'approve')" class="p-1.5 text-white bg-green-500 hover:bg-green-600 rounded shadow-sm transition-colors ml-1" title="Aprovar Tudo"><i data-lucide="check" class="w-4 h-4"></i></button>
                             </div>`;
                     } else {
-                        actions = `<div class="flex justify-center items-center gap-2"><button onclick="openActivityModal('${serviceId}', '${r.id}')" class="text-gray-400 hover:text-blue-600"><i data-lucide="eye" class="w-5 h-5"></i></button><span class="text-xs font-bold text-gray-400">${r.countRejected > 0 ? 'Reprovado' : 'Aprovado'}</span></div>`;
+                        // Label estático se não tem pendência
+                        let label = '-';
+                        let badgeClass = 'text-gray-300';
+                        
+                        if (r.countRejected > 0) { label = 'Reprovado'; badgeClass = 'text-red-500 font-bold bg-red-50 px-2 py-0.5 rounded'; }
+                        else if (r.countApproved > 0) { label = 'Aprovado'; badgeClass = 'text-green-600 font-bold bg-green-50 px-2 py-0.5 rounded'; }
+                        else if (r.totalRealizado > 0) { label = 'Sem Ação'; badgeClass = 'text-gray-500 text-[10px]'; } // Caso raro: horas lançadas mas já fechadas/faturadas fora do fluxo
+
+                        actions = `<div class="flex justify-center items-center gap-2"><button onclick="openActivityModal('${serviceId}', '${r.id}')" class="text-gray-400 hover:text-blue-600"><i data-lucide="eye" class="w-4 h-4"></i></button><span class="text-xs ${badgeClass}">${label}</span></div>`;
                     }
 
+                    // Indicador Visual para Sem Contrato (r.noContract setado no controller)
+                    let nameDisplay = `<span class="font-medium text-gray-900">${r.name}</span>`;
+                    let rowBg = 'hover:bg-gray-50';
+                    
+                    if (r.noContract) {
+                        nameDisplay += `<br><span class="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold bg-red-100 text-red-700 mt-0.5"><i data-lucide="alert-circle" class="w-3 h-3 mr-1"></i> SEM ALOCAÇÃO</span>`;
+                        rowBg = 'bg-red-50/30 hover:bg-red-50';
+                    }
+
+                    // Conformidade (Cor)
+                    let confClass = 'text-green-600';
+                    if (r.percentual > 105) confClass = 'text-red-600 font-bold';
+                    else if (r.percentual < 95 && r.alocado > 0) confClass = 'text-yellow-600 font-bold';
+
                     tbody.innerHTML += `
-                        <tr class="hover:bg-gray-50 border-b border-gray-50 last:border-0">
-                            <td class="py-4 pl-6 font-medium text-gray-900">${r.name}</td>
-                            <td class="py-4 text-right text-gray-400 text-xs">${r.alocado.toFixed(0)}h</td>
-                            <td class="py-4 text-center bg-blue-50/30 border-l border-white">${colNorm}</td>
-                            <td class="py-4 text-center bg-green-50/30 border-l border-white">${colExPg}</td>
-                            <td class="py-4 text-center bg-teal-50/30 border-l border-white">${colExBc}</td>
-                            <td class="py-4 text-center bg-orange-50/30 border-l border-white">${ausText}</td>
-                            <td class="py-4 text-center bg-red-50/30 border-l border-white">${ausOutra}</td>
-                            <td class="py-4 text-right font-extrabold text-gray-800 pr-4 border-l border-gray-100">${r.totalRealizado.toFixed(1)}h</td>
-                            <td class="py-4 text-center text-xs">${r.percentual}%</td>
-                            <td class="py-4 text-center px-4">${actions}</td>
+                        <tr class="${rowBg} border-b border-gray-50 last:border-0 transition-colors">
+                            <td class="py-3 pl-6">${nameDisplay}</td>
+                            <td class="py-3 text-right text-gray-500 text-xs font-mono bg-gray-50/50">${r.alocado.toFixed(0)}h</td>
+                            <td class="py-3 text-center bg-blue-50/20 border-l border-white">${colNorm}</td>
+                            <td class="py-3 text-center bg-green-50/20 border-l border-white">${colExPg}</td>
+                            <td class="py-3 text-center bg-teal-50/20 border-l border-white">${colExBc}</td>
+                            <td class="py-3 text-center bg-orange-50/20 border-l border-white">${colAuBc}</td>
+                            <td class="py-3 text-center bg-red-50/20 border-l border-white">${colAuOu}</td>
+                            <td class="py-3 text-right font-extrabold text-gray-800 pr-4 border-l border-gray-100 bg-gray-50">${r.totalRealizado.toFixed(1)}h</td>
+                            <td class="py-3 text-center text-xs ${confClass}">${r.percentual}%</td>
+                            <td class="py-3 text-center px-4">${actions}</td>
                         </tr>`;
                 });
                 lucide.createIcons();
-            } catch(e) { console.error(e); tbody.innerHTML = '<tr><td colspan="10" class="text-center text-red-500">Erro.</td></tr>'; }
+            } catch(e) { console.error(e); tbody.innerHTML = '<tr><td colspan="10" class="text-center text-red-500 py-4">Erro ao carregar dados.</td></tr>'; }
         }
 
-        // --- 3. EXTRATO DETALHADO (ATIVIDADES) ---
+        // --- 4. EXTRATO (MODAL) ---
         async function openActivityModal(serviceId, personId) {
             const modal = document.getElementById('modal-activities');
             const tbody = document.getElementById('activity-table-body');
-            tbody.innerHTML = '<tr><td colspan="7" class="text-center p-4">Carregando...</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="7" class="text-center p-4 text-gray-400"><i data-lucide="loader-2" class="animate-spin inline"></i> Carregando...</td></tr>';
+            lucide.createIcons();
             modal.classList.remove('hidden');
-            const dates = JSON.parse(document.getElementById('period-selector').value);
+            
+            const p = availablePeriods[currentPeriodIndex];
             try {
-                const res = await fetch(`${API_URL}/approvals/${serviceId}/resources/${personId}/activities?inicio=${dates.start}&fim=${dates.end}`);
+                const res = await fetch(`${API_URL}/approvals/${serviceId}/resources/${personId}/activities?inicio=${p.DataInicio__c}&fim=${p.DataFim__c}`);
                 const activities = await res.json();
                 tbody.innerHTML = '';
-                if(activities.length === 0) { tbody.innerHTML = '<tr><td colspan="7" class="text-center p-4 text-gray-400">Nenhum registro.</td></tr>'; return; }
+                
+                if(activities.length === 0) { tbody.innerHTML = '<tr><td colspan="7" class="text-center p-4 text-gray-400">Nenhum registro detalhado encontrado.</td></tr>'; return; }
+                
                 activities.forEach(a => {
                     const justificativa = a.justificativa ? `<br><span class="text-[10px] text-gray-400 italic">"${a.justificativa}"</span>` : '';
-                    const dateFmt = new Date(a.data).toLocaleDateString('pt-BR');
+                    
+                    // CORREÇÃO DE DATA (Safe Format)
+                    const dateFmt = formatSafeDate(a.data);
+                    
+                    // Status Badge
+                    let stBadge = `<span class="text-xs text-gray-400">${a.status}</span>`;
+                    if (['Lançado', 'Submetido', 'Pendente'].includes(a.status)) stBadge = `<span class="text-[10px] bg-blue-100 text-blue-700 px-2 py-0.5 rounded font-bold">Pendente</span>`;
+                    if (a.status === 'Rascunho') stBadge = `<span class="text-[10px] border border-gray-300 text-gray-500 px-2 py-0.5 rounded">Rascunho</span>`;
+                    if (a.status === 'Aprovado') stBadge = `<span class="text-[10px] bg-green-100 text-green-700 px-2 py-0.5 rounded font-bold">Aprovado</span>`;
+                    if (a.status === 'Reprovado') stBadge = `<span class="text-[10px] bg-red-100 text-red-700 px-2 py-0.5 rounded font-bold">Reprovado</span>`;
+
+                    const val = (v, cls) => v > 0 ? `<span class="font-bold ${cls}">${v.toFixed(1)}h</span>` : '<span class="text-gray-200">-</span>';
+
                     tbody.innerHTML += `
-                        <tr class="hover:bg-gray-50">
-                            <td class="p-3 text-xs text-gray-500">${dateFmt}</td>
-                            <td class="p-3 font-medium text-gray-800">${a.atividade}${justificativa}</td>
-                            <td class="p-3 text-right text-blue-600 font-bold">${a.normal > 0 ? a.normal.toFixed(1)+'h' : '-'}</td>
-                            <td class="p-3 text-right text-green-600 font-bold">${a.extraPgto > 0 ? a.extraPgto.toFixed(1)+'h' : '-'}</td>
-                            <td class="p-3 text-right text-teal-600 font-bold">${a.extraBanco + a.ausenciaBanco > 0 ? (a.extraBanco > 0 ? '+' : '-') + (a.extraBanco + a.ausenciaBanco).toFixed(1)+'h' : '-'}</td>
-                            <td class="p-3 text-right text-orange-600 font-bold">${a.ausenciaOutras > 0 ? a.ausenciaOutras.toFixed(1)+'h' : '-'}</td>
-                            <td class="p-3 text-center text-xs text-gray-400">${a.status}</td>
+                        <tr class="hover:bg-gray-50 border-b border-gray-50 last:border-0">
+                            <td class="p-3 text-xs text-gray-500 font-mono">${dateFmt}</td>
+                            <td class="p-3 font-medium text-gray-800 leading-tight">${a.atividade}${justificativa}</td>
+                            <td class="p-3 text-right">${val(a.normal, 'text-blue-600')}</td>
+                            <td class="p-3 text-right">${val(a.extraPgto, 'text-green-600')}</td>
+                            <td class="p-3 text-right">${val(a.extraBanco + a.ausenciaBanco, 'text-teal-600')}</td>
+                            <td class="p-3 text-right">${val(a.ausenciaOutras, 'text-red-500')}</td>
+                            <td class="p-3 text-center">${stBadge}</td>
                         </tr>`;
                 });
-            } catch (err) { console.error(err); tbody.innerHTML = '<tr><td colspan="7" class="text-center p-4 text-red-500">Erro.</td></tr>'; }
+            } catch (err) { console.error(err); tbody.innerHTML = '<tr><td colspan="7" class="text-center p-4 text-red-500">Erro ao carregar extrato.</td></tr>'; }
         }
 
         // --- HELPERS ---
+        function formatSafeDate(dateString) {
+            if (!dateString) return '-';
+            // Converte YYYY-MM-DD para DD/MM/YYYY sem sofrer com timezone
+            const parts = dateString.split('-');
+            if (parts.length === 3) return `${parts[2]}/${parts[1]}/${parts[0]}`;
+            return dateString;
+        }
+
         function closeModal() { document.getElementById('modal-approval').classList.add('hidden'); }
         function closeActivityModal() { document.getElementById('modal-activities').classList.add('hidden'); }
+        
         async function approveAction(serviceId, personId, action, motivo = null) {
-            const msg = action === 'approve' ? 'APROVAR' : 'REPROVAR';
-            if(!motivo && !confirm(`Confirma ${msg}?`)) return;
-            const dates = JSON.parse(document.getElementById('period-selector').value);
+            const msg = action === 'approve' ? 'Confirma APROVAÇÃO de todos os itens pendentes?' : 'Confirma REPROVAÇÃO?';
+            if(!motivo && !confirm(msg)) return;
+            
+            const p = availablePeriods[currentPeriodIndex];
             try {
                 const res = await fetch(`${API_URL}/approvals/action`, {
                     method: 'POST', headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ serviceId, personId, action, inicio: dates.start, fim: dates.end, motivo })
+                    body: JSON.stringify({ serviceId, personId, action, inicio: p.DataInicio__c, fim: p.DataFim__c, motivo })
                 });
                 const result = await res.json();
-                if (result.success) { openModal(serviceId, document.getElementById('modal-title').innerText); } 
-                else { alert('Erro: ' + result.message); }
+                if (result.success) { 
+                    openModal(serviceId, document.getElementById('modal-title').innerText); // Recarrega tabela
+                } else { alert('Erro: ' + result.message); }
             } catch (err) { alert('Erro de comunicação.'); }
         }
+
         function openRejectModal(serviceId, personId, name) {
             document.getElementById('reject-service-id').value = serviceId;
             document.getElementById('reject-person-id').value = personId;
@@ -332,6 +461,7 @@
             document.getElementById('reject-reason').value = '';
             document.getElementById('modal-reject').classList.remove('hidden');
         }
+
         function confirmReject() {
             const sId = document.getElementById('reject-service-id').value;
             const pId = document.getElementById('reject-person-id').value;
