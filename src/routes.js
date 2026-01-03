@@ -11,20 +11,15 @@ const timesheetController = require('./controllers/timesheetController');
 const operationsController = require('./controllers/operationsController'); 
 
 const requireAuth = (req, res, next) => {
-    if (!req.session || !req.session.user) {
-        return res.redirect('/');
-    }
+    if (!req.session || !req.session.user) { return res.redirect('/'); }
     next();
 };
 
 const requireGroup = (groupCode) => {
     return (req, res, next) => {
         const user = req.session.user;
-        if (user && user.grupos && user.grupos.includes(groupCode)) {
-            next();
-        } else {
-            res.status(403).render('negado', { mensagem: `Acesso negado. Requer perfil: ${groupCode}` });
-        }
+        if (user && user.grupos && user.grupos.includes(groupCode)) { next(); } 
+        else { res.status(403).render('negado', { mensagem: `Requer: ${groupCode}` }); }
     };
 };
 
@@ -38,7 +33,7 @@ router.get('/approvals', requireAuth, requireGroup('GESTOR'), dashboardControlle
 router.get('/hr', requireAuth, requireGroup('ADMIN_RH'), hrController.renderHrDashboard);
 router.get('/timesheet', requireAuth, timesheetController.renderTimesheetPage);
 
-// --- ROTAS DE OPERAÇÕES ---
+// --- OPERAÇÕES ---
 router.get('/operations', requireAuth, requireGroup('OPERACAO'), operationsController.renderOperations);
 router.get('/api/ops/tickets', requireAuth, operationsController.getTickets); 
 router.get('/api/ops/tickets/:id/details', requireAuth, operationsController.getTicketDetails);
@@ -51,16 +46,16 @@ router.post('/api/ops/tickets/create', requireAuth, operationsController.createT
 router.post('/api/ops/tickets/update', requireAuth, operationsController.updateTicket);
 router.post('/api/ops/tickets/assign', requireAuth, operationsController.assignTicket);
 router.post('/api/ops/tickets/return-queue', requireAuth, operationsController.returnToQueue);
+router.post('/api/ops/tickets/reopen', requireAuth, operationsController.reopenTicket); // NOVA
 router.post('/api/ops/log', requireAuth, operationsController.saveLog);
+router.post('/api/ops/log/delete', requireAuth, operationsController.deleteLog);
 router.post('/api/ops/comment', requireAuth, operationsController.addComment);
 router.post('/api/ops/contact/create', requireAuth, operationsController.createContact);
 router.post('/api/ops/tickets/transfer', requireAuth, operationsController.transferTicket);
-
 router.post('/api/ops/tickets/:id/upload', requireAuth, upload.array('files'), operationsController.uploadAttachments);
-// ROTA DE DOWNLOAD
 router.get('/api/ops/attachments/:id/download', requireAuth, operationsController.downloadAttachment);
 
-// --- ROTAS GERAIS ---
+// --- GERAIS ---
 router.get('/api/periods', requireAuth, apiController.getPeriods);
 router.get('/api/dashboard/metrics', requireAuth, apiController.getDashboardMetrics);
 router.get('/api/approvals/projects', requireAuth, requireGroup('GESTOR'), apiController.getProjects);
