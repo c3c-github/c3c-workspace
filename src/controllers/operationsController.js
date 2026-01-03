@@ -30,17 +30,23 @@ async function createCaseLog(conn, caseId, action, userId, userType, desc = null
 
 async function calculateDailyStats(conn, userId, targetDate) {
     const dateStr = targetDate.includes('T') ? targetDate.split('T')[0] : targetDate;
+    
+    // Busca informações do dia
     const diaQuery = `SELECT Id, Periodo__c, Periodo__r.ContratoPessoa__r.Hora__c FROM DiaPeriodo__c WHERE Data__c = ${dateStr} AND Periodo__r.ContratoPessoa__r.Pessoa__c = '${userId}' LIMIT 1`;
+    
     let diaRes = [];
     try {
         const result = await conn.query(diaQuery);
         diaRes = result.records;
-    } catch (e) { return { exists: false, diaPeriodoId: null, limiteDia: 8, usedNormal: 0, usedExtra: 0, saldoNormalDia: 8 }; }
+    } catch (e) { 
+        return { exists: false, diaPeriodoId: null, limiteDia: 8, usedNormal: 0, usedExtra: 0, saldoNormalDia: 8 }; 
+    }
     
     if (diaRes.length === 0) return { exists: false, diaPeriodoId: null, limiteDia: 8, usedNormal: 0, usedExtra: 0, saldoNormalDia: 8 };
     
     const diaRecord = diaRes[0];
     const limiteDia = (diaRecord.Periodo__r && diaRecord.Periodo__r.ContratoPessoa__r && diaRecord.Periodo__r.ContratoPessoa__r.Hora__c) ? diaRecord.Periodo__r.ContratoPessoa__r.Hora__c : 8;
+    
     const somaQuery = `SELECT SUM(Horas__c) totalNormal, SUM(HorasExtras__c) totalExtra FROM LancamentoHora__c WHERE DiaPeriodo__c = '${diaRecord.Id}' AND Pessoa__c = '${userId}' AND (Horas__c > 0 OR HorasExtras__c > 0)`;
     
     let usedNormal = 0, usedExtra = 0;
@@ -51,6 +57,7 @@ async function calculateDailyStats(conn, userId, targetDate) {
             usedExtra = somaRes.records[0].totalExtra || 0;
         }
     } catch (e) {}
+    
     return { exists: true, diaPeriodoId: diaRecord.Id, periodoId: diaRecord.Periodo__c, limiteDia, usedNormal, usedExtra, saldoNormalDia: limiteDia - usedNormal };
 }
 
@@ -61,14 +68,16 @@ async function isDayLockedByDiaId(conn, diaPeriodoId, userId) {
     return res.totalSize > 0;
 }
 
+// ==============================================================================
+// CONTROLLERS EXPORTADOS
+// ==============================================================================
+
 exports.renderOperations = (req, res) => {
     const user = req.session.user || { nome: 'Usuário', grupos: [] };
     res.render('operations', { user: user, page: 'operations' });
 };
 
-// ==============================================================================
-// LEITURA
-// ==============================================================================
+// --- LEITURA ---
 
 exports.getLimits = async (req, res) => {
     try {
@@ -97,15 +106,19 @@ exports.getTickets = async (req, res) => {
             const soqlAloc = `SELECT Servico__r.Conta__c FROM Alocacao__c WHERE Pessoa__c = '${userId}' AND DataInicio__c <= ${today} AND (DataFim__c >= ${today} OR DataFim__c = NULL)`;
             const alocacoes = await conn.query(soqlAloc);
             const accountIds = [...new Set(alocacoes.records.map(a => a.Servico__r ? a.Servico__r.Conta__c : null).filter(id => id !== null))];
+            
             if (accountIds.length === 0) return res.json([]); 
+            
             const idsFormatados = accountIds.map(id => `'${id}'`).join(',');
             soql += ` AND AccountId IN (${idsFormatados})`;
+            
             if (filter === 'queue') soql += ` AND Pessoa__c = null AND IsClosed = false`;
             else if (filter === 'team') soql += ` AND Pessoa__c != null AND Pessoa__c != '${userId}' AND IsClosed = false`;
             else if (filter === 'all') soql += ` LIMIT 200`;
         }
 
         if (!soql.includes('LIMIT')) soql += ` ORDER BY CreatedDate DESC LIMIT 100`; 
+        
         const result = await conn.query(soql);
         let records = result.records;
 
@@ -198,6 +211,18 @@ exports.getTicketActivities = async (req, res) => { try { const { id } = req.par
 exports.getCreateOptions = async (req, res) => { try { const userId = req.session.user.id; const conn = await getSfConnection(); const today = new Date().toISOString().split('T')[0]; const soql = `SELECT Servico__c, Servico__r.Name, Servico__r.Conta__c, Servico__r.Conta__r.Name FROM Alocacao__c WHERE Pessoa__c = '${userId}' AND DataInicio__c <= ${today} AND (DataFim__c >= ${today} OR DataFim__c = NULL) ORDER BY Servico__r.Name ASC`; const result = await conn.query(soql); const options = result.records.map(r => ({ serviceId: r.Servico__c, serviceName: r.Servico__r ? r.Servico__r.Name : 'Serviço', accountId: r.Servico__r ? r.Servico__r.Conta__c : null, accountName: (r.Servico__r && r.Servico__r.Conta__r) ? r.Servico__r.Conta__r.Name : 'Conta' })); res.json(options); } catch (err) { res.status(500).json({ error: 'Erro ao buscar serviços.' }); } };
 exports.getAccountContacts = async (req, res) => { try { const { id } = req.params; const conn = await getSfConnection(); const soql = `SELECT Id, Name, Email FROM Contact WHERE AccountId = '${id}' ORDER BY Name ASC`; const result = await conn.query(soql); res.json(result.records); } catch (err) { res.status(500).json({ error: 'Erro ao buscar contatos.' }); } };
 
+exports.downloadAttachment = async (req, res) => {
+    try {
+        const { id } = req.params; const conn = await getSfConnection();
+        const cv = await conn.sobject('ContentVersion').retrieve(id);
+        res.setHeader('Content-Type', 'application/octet-stream');
+        res.setHeader('Content-Disposition', `attachment; filename="${cv.Title}.${cv.FileExtension}"`);
+        conn.sobject('ContentVersion').record(id).blob('VersionData').pipe(res);
+    } catch (err) { res.status(404).send("Erro ao baixar."); }
+};
+
+// --- ESCRITA ---
+
 exports.createContact = async (req, res) => { try { const { accountId, name, email, mobile } = req.body; if (!accountId || !name) return res.status(400).json({ error: 'Dados inválidos' }); const parts = name.trim().split(' '); let f = '', l = name; if (parts.length>1) { l=parts.pop(); f=parts.join(' '); } const conn = await getSfConnection(); const ret = await conn.sobject('Contact').create({ AccountId: accountId, LastName: l, FirstName: f, Email: email, MobilePhone: mobile }); if (ret.success) res.json({ success: true, id: ret.id, name }); else res.status(400).json({ success: false, errors: ret.errors }); } catch (e) { res.status(500).json({ error: e.message }); } };
 
 exports.createTicket = async (req, res) => {
@@ -223,7 +248,6 @@ exports.updateTicket = async (req, res) => {
     } catch (err) { res.status(500).json({ error: 'Erro ao atualizar.' }); }
 };
 
-// NOVA FUNÇÃO REABRIR
 exports.reopenTicket = async (req, res) => {
     try {
         const { id } = req.body;
@@ -248,16 +272,6 @@ exports.uploadAttachments = async (req, res) => {
         await createCaseLog(conn, id, 'Anexo', req.session.user.id, 'Operacao');
         res.json({ success: true });
     } catch (err) { res.status(500).json({ error: err.message }); }
-};
-
-exports.downloadAttachment = async (req, res) => {
-    try {
-        const { id } = req.params; const conn = await getSfConnection();
-        const cv = await conn.sobject('ContentVersion').retrieve(id);
-        res.setHeader('Content-Type', 'application/octet-stream');
-        res.setHeader('Content-Disposition', `attachment; filename="${cv.Title}.${cv.FileExtension}"`);
-        conn.sobject('ContentVersion').record(id).blob('VersionData').pipe(res);
-    } catch (err) { res.status(404).send("Erro ao baixar."); }
 };
 
 exports.assignTicket = async (req, res) => { try { const { id } = req.body; const conn = await getSfConnection(); const ret = await conn.sobject('Case').update({ Id: id, Pessoa__c: req.session.user.id, Status: 'In Progress' }); if (ret.success) { await createCaseLog(conn, id, 'Assumido', req.session.user.id, 'Operacao'); res.json({ success: true }); } else res.status(400).json({ success: false }); } catch (err) { res.status(500).json({ error: err.message }); } };
