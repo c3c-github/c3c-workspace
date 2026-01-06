@@ -1,6 +1,9 @@
 const { getSfConnection } = require('../config/salesforce');
 const fs = require('fs');
 
+// FILTRO CORRIGIDO
+const FILTRO_OPS = `(Horas__c > 0 OR HorasExtras__c > 0 OR (HorasBanco__c != 0 AND HorasBanco__c != null) OR HorasAusenciaRemunerada__c > 0 OR HorasAusenciaNaoRemunerada__c > 0)`;
+
 // ==============================================================================
 // HELPER FUNCTIONS
 // ==============================================================================
@@ -31,34 +34,29 @@ async function createCaseLog(conn, caseId, action, userId, userType, desc = null
 async function calculateDailyStats(conn, userId, targetDate) {
     const dateStr = targetDate.includes('T') ? targetDate.split('T')[0] : targetDate;
     
-    // Busca informações do dia
-    const diaQuery = `SELECT Id, Periodo__c, Periodo__r.ContratoPessoa__r.Hora__c FROM DiaPeriodo__c WHERE Data__c = ${dateStr} AND Periodo__r.ContratoPessoa__r.Pessoa__c = '${userId}' LIMIT 1`;
-    
-    let diaRes = [];
     try {
-        const result = await conn.query(diaQuery);
-        diaRes = result.records;
-    } catch (e) { 
-        return { exists: false, diaPeriodoId: null, limiteDia: 8, usedNormal: 0, usedExtra: 0, saldoNormalDia: 8 }; 
-    }
-    
-    if (diaRes.length === 0) return { exists: false, diaPeriodoId: null, limiteDia: 8, usedNormal: 0, usedExtra: 0, saldoNormalDia: 8 };
-    
-    const diaRecord = diaRes[0];
-    const limiteDia = (diaRecord.Periodo__r && diaRecord.Periodo__r.ContratoPessoa__r && diaRecord.Periodo__r.ContratoPessoa__r.Hora__c) ? diaRecord.Periodo__r.ContratoPessoa__r.Hora__c : 8;
-    
-    const somaQuery = `SELECT SUM(Horas__c) totalNormal, SUM(HorasExtras__c) totalExtra FROM LancamentoHora__c WHERE DiaPeriodo__c = '${diaRecord.Id}' AND Pessoa__c = '${userId}' AND (Horas__c > 0 OR HorasExtras__c > 0)`;
-    
-    let usedNormal = 0, usedExtra = 0;
-    try {
+        const diaQuery = `SELECT Id, Periodo__c, Periodo__r.ContratoPessoa__r.Hora__c FROM DiaPeriodo__c WHERE Data__c = ${dateStr} AND Periodo__r.ContratoPessoa__r.Pessoa__c = '${userId}' LIMIT 1`;
+        const diaRes = await conn.query(diaQuery);
+        
+        if (diaRes.totalSize === 0) return { exists: false, diaPeriodoId: null, limiteDia: 8, usedNormal: 0, usedExtra: 0, saldoNormalDia: 8 };
+        
+        const diaRecord = diaRes.records[0];
+        const limiteDia = (diaRecord.Periodo__r && diaRecord.Periodo__r.ContratoPessoa__r && diaRecord.Periodo__r.ContratoPessoa__r.Hora__c) ? diaRecord.Periodo__r.ContratoPessoa__r.Hora__c : 8;
+        
+        // Aplica o filtro para não somar lixo
+        const somaQuery = `SELECT SUM(Horas__c) totalNormal, SUM(HorasExtras__c) totalExtra FROM LancamentoHora__c WHERE DiaPeriodo__c = '${diaRecord.Id}' AND Pessoa__c = '${userId}' AND ${FILTRO_OPS}`;
+        
+        let usedNormal = 0, usedExtra = 0;
         const somaRes = await conn.query(somaQuery);
         if (somaRes.totalSize > 0) {
             usedNormal = somaRes.records[0].totalNormal || 0;
             usedExtra = somaRes.records[0].totalExtra || 0;
         }
-    } catch (e) {}
-    
-    return { exists: true, diaPeriodoId: diaRecord.Id, periodoId: diaRecord.Periodo__c, limiteDia, usedNormal, usedExtra, saldoNormalDia: limiteDia - usedNormal };
+        
+        return { exists: true, diaPeriodoId: diaRecord.Id, periodoId: diaRecord.Periodo__c, limiteDia, usedNormal, usedExtra, saldoNormalDia: limiteDia - usedNormal };
+    } catch (e) { 
+        return { exists: false, diaPeriodoId: null, limiteDia: 8, usedNormal: 0, usedExtra: 0, saldoNormalDia: 8 }; 
+    }
 }
 
 async function isDayLockedByDiaId(conn, diaPeriodoId, userId) {
@@ -69,7 +67,7 @@ async function isDayLockedByDiaId(conn, diaPeriodoId, userId) {
 }
 
 // ==============================================================================
-// CONTROLLERS EXPORTADOS
+// CONTROLLERS
 // ==============================================================================
 
 exports.renderOperations = (req, res) => {
@@ -177,7 +175,7 @@ exports.getTicketDetails = async (req, res) => {
             }
         } catch (e) {}
 
-        const logsQuery = `SELECT Id, DiaPeriodo__r.Data__c, Horas__c, HorasExtras__c, Justificativa__c, Atividade__r.Name, Pessoa__c, Pessoa__r.Name, Status__c FROM LancamentoHora__c WHERE Atividade__r.Caso__c = '${id}' AND (Horas__c > 0 OR HorasExtras__c > 0) ORDER BY DiaPeriodo__r.Data__c DESC`;
+        const logsQuery = `SELECT Id, DiaPeriodo__r.Data__c, Horas__c, HorasExtras__c, Justificativa__c, Atividade__r.Name, Pessoa__c, Pessoa__r.Name, Status__c FROM LancamentoHora__c WHERE Atividade__r.Caso__c = '${id}' AND ${FILTRO_OPS} ORDER BY DiaPeriodo__r.Data__c DESC`;
         const logsRes = await conn.query(logsQuery);
 
         res.json({
@@ -221,7 +219,9 @@ exports.downloadAttachment = async (req, res) => {
     } catch (err) { res.status(404).send("Erro ao baixar."); }
 };
 
-// --- ESCRITA ---
+// ==============================================================================
+// ESCRITA (LÓGICA COMPLETA RESTAURADA)
+// ==============================================================================
 
 exports.createContact = async (req, res) => { try { const { accountId, name, email, mobile } = req.body; if (!accountId || !name) return res.status(400).json({ error: 'Dados inválidos' }); const parts = name.trim().split(' '); let f = '', l = name; if (parts.length>1) { l=parts.pop(); f=parts.join(' '); } const conn = await getSfConnection(); const ret = await conn.sobject('Contact').create({ AccountId: accountId, LastName: l, FirstName: f, Email: email, MobilePhone: mobile }); if (ret.success) res.json({ success: true, id: ret.id, name }); else res.status(400).json({ success: false, errors: ret.errors }); } catch (e) { res.status(500).json({ error: e.message }); } };
 
@@ -276,7 +276,19 @@ exports.uploadAttachments = async (req, res) => {
 
 exports.assignTicket = async (req, res) => { try { const { id } = req.body; const conn = await getSfConnection(); const ret = await conn.sobject('Case').update({ Id: id, Pessoa__c: req.session.user.id, Status: 'In Progress' }); if (ret.success) { await createCaseLog(conn, id, 'Assumido', req.session.user.id, 'Operacao'); res.json({ success: true }); } else res.status(400).json({ success: false }); } catch (err) { res.status(500).json({ error: err.message }); } };
 exports.returnToQueue = async (req, res) => { try { const { id } = req.body; const conn = await getSfConnection(); const ret = await conn.sobject('Case').update({ Id: id, Pessoa__c: null, Status: 'New' }); if (ret.success) { await createCaseLog(conn, id, 'Devolvido', req.session.user.id, 'Operacao'); res.json({ success: true }); } else res.status(400).json({ success: false }); } catch (err) { res.status(500).json({ error: err.message }); } };
-exports.transferTicket = async (req, res) => { try { const { id, target } = req.body; const conn = await getSfConnection(); let u = { Id: id, Pessoa__c: target==='queue'?null:target, Status: target==='queue'?'New':'In Progress' }; const ret = await conn.sobject('Case').update(u); if (ret.success) { await createCaseLog(conn, id, 'Transferido', req.session.user.id, 'Operacao'); res.json({ success: true }); } else res.status(400).json({ success: false }); } catch (err) { res.status(500).json({ error: err.message }); } };
+
+exports.transferTicket = async (req, res) => { 
+    try { 
+        const { id, target } = req.body; 
+        const conn = await getSfConnection(); 
+        let u = { Id: id, Pessoa__c: target==='queue'?null:target, Status: target==='queue'?'New':'In Progress' }; 
+        const ret = await conn.sobject('Case').update(u); 
+        if (ret.success) { 
+            await createCaseLog(conn, id, 'Transferido', req.session.user.id, 'Operacao'); 
+            res.json({ success: true }); 
+        } else res.status(400).json({ success: false }); 
+    } catch (err) { res.status(500).json({ error: err.message }); } 
+};
 
 exports.saveLog = async (req, res) => {
     try {
@@ -325,7 +337,8 @@ exports.saveLog = async (req, res) => {
             logEntry.Id = logId;
             const ret = await conn.sobject('LancamentoHora__c').update(logEntry);
             if (ret.success) {
-                await createCaseLog(conn, caseId, 'Hora Editada', userId, 'Operacao');
+                // CORREÇÃO: Passando 'desc' como último parâmetro
+                await createCaseLog(conn, caseId, 'Hora Editada', userId, 'Operacao', desc);
                 return res.json({ success: true });
             } else return res.status(400).json({ success: false, errors: ret.errors });
 
@@ -362,7 +375,8 @@ exports.saveLog = async (req, res) => {
 
             const ret = await conn.sobject('LancamentoHora__c').create(logEntry);
             if (ret.success) {
-                await createCaseLog(conn, caseId, 'Hora Lançada', userId, 'Operacao');
+                // CORREÇÃO: Passando 'desc' como último parâmetro
+                await createCaseLog(conn, caseId, 'Hora Lançada', userId, 'Operacao', desc);
                 return res.json({ success: true });
             } else return res.status(400).json({ success: false, errors: ret.errors });
         }
