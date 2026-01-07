@@ -2,6 +2,9 @@ const { getSfConnection } = require('../config/salesforce');
 
 exports.renderHome = async (req, res) => {
     try {
+        console.log("📊 Renderizando Dashboard para:", req.session.user.email);
+        console.log("🔑 Grupos na sessão:", req.session.user.grupos);
+        
         // Lógica do dashboard (mantida simples para evitar erros)
         res.render('dashboard', { user: req.session.user, page: 'dashboard' });
     } catch (e) {

@@ -35,9 +35,8 @@ exports.azureCallback = async (req, res) => {
         // C. Busca dados no Salesforce
         const conn = await getSfConnection();
         
-        // [CORREÇÃO AQUI]: O nome do relacionamento é 'GruposDePermissao__r' (conforme seu JSON)
         const soqlPessoa = `
-            SELECT Id, Name, Email__c, 
+            SELECT Id, Name, Email__c,
                    (SELECT Name FROM ContratosPessoa__r WHERE Status__c = 'Ativo' LIMIT 1),
                    (SELECT Grupo__r.Codigo__c FROM GruposDePermissao__r)
             FROM Pessoa__c 
@@ -56,10 +55,21 @@ exports.azureCallback = async (req, res) => {
                          ? pessoa.ContratosPessoa__r.records[0].Name 
                          : null;
 
-        // [CORREÇÃO AQUI]: Mapeando corretamente GruposDePermissao__r
-        const grupos = (pessoa.GruposDePermissao__r && pessoa.GruposDePermissao__r.records)
+        // 1. Grupos explícitos
+        let grupos = (pessoa.GruposDePermissao__r && pessoa.GruposDePermissao__r.records)
             ? pessoa.GruposDePermissao__r.records.map(m => m.Grupo__r.Codigo__c)
             : [];
+
+        // 2. [CORREÇÃO] Verifica se é Líder de algum serviço para dar acesso de GESTOR
+        const liderQuery = `SELECT Id FROM Servico__c WHERE Lider__c = '${pessoa.Id}' LIMIT 1`;
+        const liderResult = await conn.query(liderQuery);
+        
+        if (liderResult.totalSize > 0 && !grupos.includes('GESTOR')) {
+            grupos.push('GESTOR');
+        }
+
+        // Garante grupo mínimo
+        if (grupos.length === 0) grupos.push('USER');
             
         console.log(`✅ Login: ${pessoa.Name} | Grupos: ${grupos.join(', ')}`);
 
@@ -68,8 +78,9 @@ exports.azureCallback = async (req, res) => {
             id: pessoa.Id,
             nome: pessoa.Name,
             email: userEmail,
+            funcao: grupos, // Mapeia os grupos para o campo funcao conforme solicitado
             contrato: contrato, 
-            grupos: grupos      // Agora deve vir ['GESTOR', 'ADMIN_RH']
+            grupos: grupos      
         };
 
         res.redirect('/dashboard');
