@@ -9,6 +9,7 @@ const apiController = require('./controllers/apiController');
 const hrController = require('./controllers/hrController');
 const timesheetController = require('./controllers/timesheetController');
 const operationsController = require('./controllers/operationsController'); 
+const supportController = require('./controllers/supportController');
 
 const requireAuth = (req, res, next) => {
     if (!req.session || !req.session.user) { return res.redirect('/'); }
@@ -69,6 +70,18 @@ router.post('/api/ops/comment', requireAuth, operationsController.addComment);
 router.post('/api/ops/contact/create', requireAuth, operationsController.createContact);
 router.post('/api/ops/tickets/transfer', requireAuth, operationsController.transferTicket);
 router.post('/api/ops/tickets/:id/upload', requireAuth, upload.array('files'), operationsController.uploadAttachments);
+
+// --- GESTÃO DE SUPORTE (NOVO MÓDULO) ---
+router.get('/support-management', requireAuth, requireGroup('GESTAO_SUPORTE'), supportController.renderPage);
+router.get('/api/support/metrics', requireAuth, requireGroup('GESTAO_SUPORTE'), supportController.getGlobalMetrics);
+router.get('/api/support/contracts', requireAuth, requireGroup('GESTAO_SUPORTE'), supportController.getContractsPerformance);
+router.get('/api/support/team', supportController.getTeamPerformance);
+router.get('/api/support/allocations', supportController.getAllocations);
+router.get('/api/support/extract', supportController.getContractExtract);
+router.get('/api/support/search-people', supportController.searchPeople);
+router.get('/api/support/my-services', supportController.getMyServices); 
+router.post('/api/support/allocation', supportController.saveAllocation);
+router.delete('/api/support/allocation/:id', supportController.deleteAllocation);
 
 // --- RH ---
 router.get('/hr', requireAuth, requireGroup('ADMIN_RH'), hrController.renderHrDashboard);
