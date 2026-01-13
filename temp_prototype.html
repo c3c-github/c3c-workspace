@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gestão de Operações - C3C Workplace</title>
+    <title>Gestão de Serviços - C3C Workplace</title>
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -11,6 +11,8 @@
     <script src="https://unpkg.com/lucide@latest"></script>
     <!-- Fonte Montserrat -->
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <script>
         tailwind.config = {
@@ -37,48 +39,38 @@
         .fade-in { animation: fadeIn 0.4s ease-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         
-        .modal-backdrop { background-color: rgba(0, 0, 0, 0.5); backdrop-filter: blur(2px); }
+        .modal-backdrop { background-color: rgba(0, 0, 0, 0.5); backdrop-filter: blur(2px); z-index: 50; }
         html { scroll-behavior: smooth; }
 
-        /* Estilos Específicos */
-        .progress-bar-bg { background-color: #E2E8F0; border-radius: 4px; height: 6px; overflow: hidden; }
-        .progress-bar-fill { height: 100%; transition: width 1s ease-in-out; }
-        
-        /* Barra Segmentada de Alocação */
-        .alloc-bar-container { display: flex; height: 8px; width: 100%; background-color: #F1F5F9; border-radius: 4px; overflow: hidden; }
-        .alloc-segment { height: 100%; transition: width 0.3s ease; position: relative; }
-        .alloc-segment:hover { opacity: 0.8; }
-        
-        /* Links Laterais */
-        .nav-link.active { background-color: #111827; color: white; border-right: 4px solid #1DDDBD; font-weight: 600; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
-        .nav-link.inactive { color: #9CA3AF; }
-        .nav-link.inactive:hover { background-color: #F9FAFB; color: #4B5563; }
+        /* Abas do Modal */
+        .modal-tab-active { border-bottom: 2px solid #2978FF; color: #2978FF; font-weight: 700; background-color: #F8FAFC; }
+        .modal-tab-inactive { border-bottom: 2px solid transparent; color: #6B7280; }
+        .modal-tab-inactive:hover { color: #1a1a1a; background-color: #F9FAFB; }
+
+        /* Estilo de Tabela Densa */
+        .table-dense th, .table-dense td { padding: 8px 12px; font-size: 11px; }
+        .input-inline { background: transparent; border: 1px solid transparent; width: 100%; border-radius: 4px; padding: 2px; }
+        .input-inline:hover { border-color: #E5E7EB; background: white; }
+        .input-inline:focus { border-color: #2978FF; background: white; outline: none; }
     </style>
 </head>
 <body class="h-screen flex overflow-hidden bg-c3c-bg">
 
-    <!-- 1. SIDEBAR -->
+    <!-- SIDEBAR -->
     <aside class="w-20 lg:w-64 bg-white border-r border-gray-100 flex flex-col z-20 transition-all duration-300">
         <div class="h-20 flex items-center justify-center lg:justify-start lg:px-8 border-b border-gray-50">
             <div class="w-8 h-8 bg-gradient-to-br from-[#2978FF] to-[#1DDDBD] rounded-lg flex items-center justify-center text-white font-bold text-xs">C3C</div>
             <span class="hidden lg:block ml-3 font-bold text-gray-800 tracking-wide text-lg">Workplace</span>
         </div>
         <nav class="flex-1 py-6 space-y-2">
-            <a href="#dashboard-top" class="nav-link active w-full flex items-center justify-center lg:justify-start gap-3 px-4 lg:px-6 py-3 transition-colors" onclick="setActiveLink(this)">
-                <i data-lucide="layout-grid" class="w-5 h-5"></i>
-                <span class="hidden lg:block text-sm">Visão Geral</span>
-            </a>
-            <a href="#contracts-section" class="nav-link inactive w-full flex items-center justify-center lg:justify-start gap-3 px-4 lg:px-6 py-3 transition-colors" onclick="setActiveLink(this)">
+            <a href="#" class="w-full flex items-center justify-center lg:justify-start gap-3 px-4 lg:px-6 py-3 bg-gray-900 text-white border-r-4 border-[#1DDDBD] font-semibold transition-colors shadow-md">
                 <i data-lucide="briefcase" class="w-5 h-5"></i>
-                <span class="hidden lg:block text-sm">Contratos & Ops</span>
+                <span class="hidden lg:block text-sm">Gestão de Serviços</span>
             </a>
-            <a href="#team-section" class="nav-link inactive w-full flex items-center justify-center lg:justify-start gap-3 px-4 lg:px-6 py-3 transition-colors" onclick="setActiveLink(this)">
+            <!-- Placeholder para outros módulos -->
+            <a href="#" class="w-full flex items-center justify-center lg:justify-start gap-3 px-4 lg:px-6 py-3 text-gray-400 hover:bg-gray-50 transition-colors">
                 <i data-lucide="users" class="w-5 h-5"></i>
-                <span class="hidden lg:block font-medium text-sm">Equipe</span>
-            </a>
-            <a href="#allocation-section" class="nav-link inactive w-full flex items-center justify-center lg:justify-start gap-3 px-4 lg:px-6 py-3 transition-colors" onclick="setActiveLink(this)">
-                <i data-lucide="sliders" class="w-5 h-5"></i>
-                <span class="hidden lg:block font-medium text-sm">Alocação</span>
+                <span class="hidden lg:block text-sm">Gestão de Pessoas</span>
             </a>
         </nav>
         
@@ -87,565 +79,502 @@
                 <div class="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-bold border-2 border-white shadow-sm">GT</div>
                 <div class="hidden lg:block overflow-hidden">
                     <p class="text-sm font-bold text-gray-800 truncate">Gustavo Torres</p>
-                    <p class="text-xs text-gray-500 truncate">Head de Operações</p>
+                    <p class="text-xs text-gray-500 truncate">Gerente de Contas</p>
                 </div>
             </div>
         </div>
     </aside>
 
-    <!-- 2. MAIN CONTENT -->
+    <!-- MAIN CONTENT -->
     <main class="flex-1 flex flex-col relative w-full overflow-hidden">
         
         <!-- Header -->
         <header class="h-20 bg-white border-b border-gray-200 flex items-center justify-between px-8 shrink-0 z-10">
             <div class="flex items-center gap-6">
-                <h1 class="text-xl font-bold text-gray-800">Command Center</h1>
+                <h1 class="text-xl font-bold text-gray-800 flex items-center gap-2">
+                    <i data-lucide="layers" class="w-6 h-6 text-indigo-600"></i>
+                    Portfólio
+                </h1>
             </div>
 
             <div class="flex items-center gap-4">
+                
+                <!-- Barra de Pesquisa -->
+                <div class="relative w-64 group transition-all focus-within:w-80">
+                    <i data-lucide="search" class="w-4 h-4 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2 group-focus-within:text-indigo-500 transition-colors"></i>
+                    <input type="text" 
+                           placeholder="Buscar serviço ou cliente..." 
+                           class="w-full bg-gray-50 border border-gray-200 rounded-lg pl-10 pr-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-all shadow-sm"
+                           onkeyup="filterServices(this.value)">
+                </div>
+
+                <div class="h-8 w-px bg-gray-200"></div>
+
+                <!-- Status da Integração ERP -->
+                <div class="hidden xl:flex items-center gap-2 px-3 py-1 bg-green-50 text-green-700 rounded-full border border-green-200 text-xs font-bold" title="Integração Conta Azul Ativa">
+                    <div class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
+                    ERP ON
+                </div>
+
                 <div class="flex items-center bg-white border border-gray-300 rounded-lg px-3 py-2 gap-2 shadow-sm">
                     <i data-lucide="calendar" class="w-4 h-4 text-gray-500"></i>
                     <select class="text-sm font-bold text-gray-700 bg-transparent outline-none cursor-pointer">
-                        <option>Dezembro 2024</option>
                         <option>Janeiro 2025</option>
+                        <option>Dezembro 2024</option>
                     </select>
                 </div>
-                <button class="p-2 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-full transition-colors relative">
-                    <i data-lucide="bell" class="w-5 h-5"></i>
-                    <span class="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border border-white"></span>
+                <button onclick="openServiceModal()" class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-4 py-2.5 rounded-lg shadow-md flex items-center gap-2 transition-transform active:scale-95 whitespace-nowrap">
+                    <i data-lucide="plus" class="w-4 h-4"></i> Novo
                 </button>
             </div>
         </header>
 
-        <!-- Content Scrollable -->
-        <div class="flex-1 overflow-y-auto p-8 fade-in relative" id="dashboard-top">
+        <!-- Lista de Serviços -->
+        <div class="flex-1 overflow-y-auto p-8 fade-in bg-c3c-bg">
             
-            <!-- KPIS GLOBAIS -->
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-12">
-                <!-- Financeiro -->
-                <div class="bg-white p-5 rounded-xl border border-gray-200 shadow-sm relative overflow-hidden">
-                    <div class="flex justify-between items-start z-10 relative">
-                        <p class="text-xs font-bold text-gray-400 uppercase">Saúde Contratos</p>
-                        <i data-lucide="pie-chart" class="w-5 h-5 text-blue-500"></i>
-                    </div>
-                    <div class="mt-2 z-10 relative">
-                        <span class="text-2xl font-extrabold text-gray-900">75%</span>
-                        <span class="text-xs text-gray-500">consumido</span>
-                    </div>
-                    <div class="absolute bottom-0 left-0 w-full h-1 bg-blue-100"><div class="bg-blue-500 h-1" style="width: 75%"></div></div>
-                </div>
-
-                <!-- SLA Operacional -->
-                <div class="bg-white p-5 rounded-xl border border-gray-200 shadow-sm">
-                    <div class="flex justify-between items-start">
-                        <p class="text-xs font-bold text-gray-400 uppercase">SLA Estourado</p>
-                        <i data-lucide="alert-octagon" class="w-5 h-5 text-red-500"></i>
-                    </div>
-                    <div class="mt-2">
-                        <span class="text-2xl font-extrabold text-red-600">8</span>
-                        <span class="text-xs text-gray-500">Chamados críticos</span>
-                    </div>
-                </div>
-
-                <!-- Estagnação -->
-                <div class="bg-white p-5 rounded-xl border border-gray-200 shadow-sm">
-                    <div class="flex justify-between items-start">
-                        <p class="text-xs font-bold text-gray-400 uppercase">Estagnados > 3 dias</p>
-                        <i data-lucide="clock" class="w-5 h-5 text-orange-500"></i>
-                    </div>
-                    <div class="mt-2">
-                        <span class="text-2xl font-extrabold text-orange-600">5</span>
-                        <span class="text-xs text-gray-500">Sem interação recente</span>
-                    </div>
-                </div>
-
-                <!-- CSAT -->
-                <div class="bg-white p-5 rounded-xl border border-teal-50 shadow-sm">
-                    <div class="flex justify-between items-start">
-                        <p class="text-xs font-bold text-teal-600 uppercase">CSAT Médio</p>
-                        <i data-lucide="smile" class="w-5 h-5 text-teal-500"></i>
-                    </div>
-                    <div class="mt-2">
-                        <span class="text-2xl font-extrabold text-teal-700">4.8</span>
-                        <span class="text-xs text-teal-600">/ 5.0</span>
-                    </div>
-                </div>
+            <div class="grid grid-cols-1 gap-6" id="services-grid">
+                <!-- Cards de Serviço (Injetados via JS) -->
             </div>
-
-            <!-- SEÇÃO 1: CONTRATOS & OPERAÇÃO -->
-            <div id="contracts-section" class="mb-12 scroll-mt-24">
-                <div class="flex justify-between items-center mb-4">
-                    <h2 class="text-lg font-bold text-gray-800 flex items-center gap-2">
-                        <i data-lucide="briefcase" class="w-5 h-5 text-blue-600"></i> Performance de Contratos & Operação
-                    </h2>
+            
+            <!-- Estado Vazio de Busca -->
+            <div id="no-results" class="hidden flex-col items-center justify-center py-20 text-center">
+                <div class="bg-gray-100 p-4 rounded-full mb-4">
+                    <i data-lucide="search-x" class="w-8 h-8 text-gray-400"></i>
                 </div>
-                
-                <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-x-auto">
-                    <table class="w-full text-sm text-left">
-                        <thead class="bg-gray-50 text-gray-500 uppercase text-[10px] font-bold border-b border-gray-200">
-                            <tr>
-                                <th class="px-6 py-4 min-w-[200px]">Cliente / Serviço</th>
-                                <th class="px-4 py-4 min-w-[120px]">Horas (Uso)</th>
-                                <!-- Fila Detalhada -->
-                                <th class="px-2 py-4 text-center w-12 bg-blue-50/50 text-blue-600 border-l border-white" title="Abertos">Ab.</th>
-                                <th class="px-2 py-4 text-center w-12 bg-blue-50/50 text-blue-600 border-l border-white" title="Execução">Exe.</th>
-                                <th class="px-2 py-4 text-center w-12 bg-yellow-50/50 text-yellow-600 border-l border-white" title="Pausa">Pau.</th>
-                                <th class="px-2 py-4 text-center w-12 bg-yellow-50/50 text-yellow-600 border-l border-white" title="Aguardando">Ag.</th>
-                                <th class="px-2 py-4 text-center w-12 bg-gray-50 text-gray-400 border-l border-white" title="Fechados">Fec.</th>
-                                
-                                <!-- Métricas de Qualidade -->
-                                <th class="px-4 py-4 text-center border-l border-gray-100 text-red-600" title="SLA Estourado">SLA KO</th>
-                                <th class="px-4 py-4 text-center text-orange-500" title="Tempo sem interação">Estag.</th>
-                                <th class="px-4 py-4 text-center text-teal-600">CSAT</th>
-
-                                <th class="px-4 py-4 text-center border-l border-gray-100">Time</th>
-                                <th class="px-4 py-4 text-right">Ação</th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-gray-100" id="contracts-table">
-                            <!-- JS Populates -->
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-            <!-- SEÇÃO 2: EQUIPE -->
-            <div id="team-section" class="mb-12 scroll-mt-24">
-                <div class="flex justify-between items-center mb-4">
-                    <h2 class="text-lg font-bold text-gray-800 flex items-center gap-2">
-                        <i data-lucide="users" class="w-5 h-5 text-indigo-600"></i> Monitoramento da Equipe
-                    </h2>
-                    
-                    <div class="flex gap-3 bg-white px-3 py-1.5 rounded-lg border border-gray-200 text-[10px] font-medium shadow-sm">
-                        <span class="flex items-center gap-1"><div class="w-2 h-2 rounded-full bg-red-500"></div> Atrasado (>1 dia)</span>
-                        <span class="flex items-center gap-1"><div class="w-2 h-2 rounded-full bg-yellow-400"></div> Pendente Hoje</span>
-                        <span class="flex items-center gap-1"><div class="w-2 h-2 rounded-full bg-green-500"></div> Em Dia</span>
-                    </div>
-                </div>
-
-                <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-                    <table class="w-full text-sm text-left">
-                        <thead class="bg-gray-50 text-gray-500 uppercase text-xs font-bold border-b border-gray-200">
-                            <tr>
-                                <th class="px-6 py-4 w-64">Colaborador</th>
-                                <th class="px-6 py-4 text-center">Projetos</th>
-                                <th class="px-6 py-4 text-center">Apontado Hoje</th>
-                                <th class="px-6 py-4">Carga Mensal (Realizado vs Previsto)</th>
-                                <th class="px-6 py-4 text-center">Status</th>
-                                <th class="px-6 py-4 text-right">Detalhes</th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-gray-100" id="team-table-body">
-                            <!-- JS Populates -->
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-            <!-- SEÇÃO 3: GERENCIAMENTO DE ALOCAÇÃO -->
-            <div id="allocation-section" class="mb-8 scroll-mt-24">
-                <div class="flex justify-between items-center mb-4">
-                    <h2 class="text-lg font-bold text-gray-800 flex items-center gap-2">
-                        <i data-lucide="sliders" class="w-5 h-5 text-gray-600"></i> Distribuição de Capacidade
-                    </h2>
-                    <p class="text-xs text-gray-500 bg-white px-3 py-1 rounded border border-gray-200">Visão percentual por recurso</p>
-                </div>
-
-                <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-                    <table class="w-full text-sm text-left">
-                        <thead class="bg-gray-50 text-gray-500 uppercase text-xs font-bold border-b border-gray-200">
-                            <tr>
-                                <th class="px-6 py-4 w-64">Colaborador</th>
-                                <th class="px-6 py-4">Distribuição (%)</th>
-                                <th class="px-6 py-4 text-center w-32">Total Alocado</th>
-                                <th class="px-6 py-4 text-right">Ações</th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-gray-100" id="allocation-table-body">
-                            <!-- JS Populates -->
-                        </tbody>
-                    </table>
-                </div>
+                <h3 class="text-lg font-bold text-gray-600">Nenhum serviço encontrado</h3>
+                <p class="text-sm text-gray-400">Tente buscar por outro termo ou nome de cliente.</p>
             </div>
 
         </div>
     </main>
 
-    <!-- MODAIS -->
-
-    <!-- 1. Modal Extrato do Contrato -->
-    <div id="extract-modal" class="fixed inset-0 modal-backdrop z-50 hidden flex items-center justify-center opacity-0 transition-opacity duration-300 p-4">
-        <div class="bg-white rounded-xl shadow-2xl w-full max-w-5xl h-[80vh] flex flex-col transform scale-95 transition-transform duration-300">
-            <div class="p-6 border-b border-gray-100 flex justify-between items-start bg-gray-50 rounded-t-xl">
+    <!-- MEGA MODAL DE SERVIÇO -->
+    <div id="service-modal" class="fixed inset-0 modal-backdrop hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-6xl h-[90vh] flex flex-col transform scale-95 transition-transform duration-300">
+            
+            <!-- Header Modal -->
+            <div class="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50 rounded-t-xl shrink-0">
                 <div>
-                    <h3 class="text-xl font-bold text-gray-900" id="modal-title">Detalhe do Lançamento</h3>
-                    <p class="text-sm text-gray-500" id="modal-subtitle">Histórico de Atividades</p>
+                    <div class="flex items-center gap-3">
+                        <h3 class="font-bold text-gray-900 text-xl" id="modal-svc-title">Novo Serviço</h3>
+                        <span class="bg-green-100 text-green-700 text-xs px-2 py-1 rounded border border-green-200 font-bold">Ativo</span>
+                        <!-- Badge de Integração -->
+                        <span id="erp-sync-badge" class="hidden bg-blue-100 text-blue-700 text-xs px-2 py-1 rounded border border-blue-200 font-bold flex items-center gap-1">
+                            <i data-lucide="refresh-cw" class="w-3 h-3"></i> Sync Conta Azul
+                        </span>
+                    </div>
+                    <p class="text-xs text-gray-500 mt-1">Gestão Financeira e Operacional do Contrato</p>
                 </div>
-                <button onclick="closeModal('extract-modal')" class="bg-white hover:bg-gray-100 p-2 rounded-lg text-gray-500 border border-gray-200 transition-colors"><i data-lucide="x" class="w-5 h-5"></i></button>
-            </div>
-            <div class="flex-1 overflow-y-auto p-6 bg-gray-50">
-                <div class="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
-                    <table class="w-full text-xs text-left">
-                        <thead class="bg-gray-50 text-gray-500 font-bold border-b border-gray-200 uppercase">
-                            <tr>
-                                <th class="px-4 py-3 w-32">Data</th>
-                                <th class="px-4 py-3 w-48">Cliente</th>
-                                <th class="px-4 py-3 w-48">Serviço</th>
-                                <th class="px-4 py-3">Atividade / Descrição</th>
-                                <th class="px-4 py-3 text-right w-24">Horas</th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-gray-100" id="modal-rows"></tbody>
-                    </table>
+                <div class="flex gap-2">
+                    <button onclick="closeModal('service-modal')" class="text-gray-400 hover:text-gray-600 p-2"><i data-lucide="x" class="w-6 h-6"></i></button>
                 </div>
             </div>
-        </div>
-    </div>
 
-    <!-- 2. Modal de Edição de Alocação -->
-    <div id="allocation-modal" class="fixed inset-0 modal-backdrop z-50 hidden flex items-center justify-center opacity-0 transition-opacity duration-300 p-4">
-        <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg transform scale-95 transition-transform duration-300">
-            <div class="p-5 border-b border-gray-100 flex justify-between items-center bg-gray-50 rounded-t-xl">
-                <div>
-                    <h3 class="font-bold text-gray-900 text-lg">Editar Alocações</h3>
-                    <p class="text-xs text-gray-500" id="alloc-modal-name">Nome do Recurso</p>
-                </div>
-                <button onclick="closeModal('allocation-modal')" class="text-gray-400 hover:text-gray-600"><i data-lucide="x" class="w-5 h-5"></i></button>
+            <!-- Abas de Navegação -->
+            <div class="flex border-b border-gray-200 bg-white shrink-0 px-6 overflow-x-auto">
+                <button onclick="switchTab('general')" id="tab-general" class="modal-tab-active px-6 py-4 text-sm transition-colors whitespace-nowrap">Visão Geral & Anexos</button>
+                <button onclick="switchTab('commercial')" id="tab-commercial" class="modal-tab-inactive px-6 py-4 text-sm transition-colors whitespace-nowrap">Planejamento Comercial</button>
+                <button onclick="switchTab('execution')" id="tab-execution" class="modal-tab-inactive px-6 py-4 text-sm transition-colors whitespace-nowrap">Execução (Real)</button>
+                <button onclick="switchTab('financial')" id="tab-financial" class="modal-tab-inactive px-6 py-4 text-sm transition-colors whitespace-nowrap">Financeiro Consolidado</button>
+                <button onclick="switchTab('billing')" id="tab-billing" class="modal-tab-inactive px-6 py-4 text-sm transition-colors whitespace-nowrap">Faturamento & Pagamentos</button>
             </div>
-            <div class="p-6 overflow-y-auto max-h-[60vh]">
-                <div class="mb-4 flex justify-between items-center bg-blue-50 p-3 rounded-lg border border-blue-100">
-                    <span class="text-xs font-bold text-blue-700 uppercase">Total Alocado:</span>
-                    <span class="text-lg font-bold text-blue-700" id="alloc-total-display">100%</span>
-                </div>
-                <div id="alloc-inputs-container" class="space-y-4"></div>
+            
+            <!-- Conteúdo Scrollable -->
+            <div class="flex-1 overflow-y-auto p-8 bg-white">
                 
-                <!-- Botão Adicionar Projeto -->
-                <button onclick="addAllocationRow()" class="mt-4 w-full py-2 border-2 border-dashed border-gray-300 text-gray-500 rounded-lg text-xs font-bold hover:border-blue-400 hover:text-blue-600 hover:bg-blue-50 transition-colors flex items-center justify-center gap-2">
-                    <i data-lucide="plus" class="w-4 h-4"></i> Adicionar novo projeto
+                <!-- ABA 1: GERAL -->
+                <div id="view-general" class="space-y-6">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div class="space-y-4">
+                            <label class="block text-xs font-bold text-gray-700 uppercase">Dados Básicos</label>
+                            <input type="text" id="input-svc-name" placeholder="Nome do Serviço" class="w-full border border-gray-300 rounded p-2 text-sm" value="Sustentação Salesforce N2">
+                            
+                            <!-- Cliente com ID do Conta Azul (Simulado) -->
+                            <div class="relative">
+                                <label class="block text-[10px] text-gray-500 mb-1">Cliente (Conta Azul)</label>
+                                <div class="flex gap-2">
+                                    <input type="text" id="input-svc-client" placeholder="Buscar Cliente..." class="w-full border border-gray-300 rounded p-2 text-sm bg-blue-50" value="Tech Solutions">
+                                    <input type="hidden" id="input-svc-client-id" value="ca-uuid-123456"> <!-- ID Oculto para Integração -->
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-2 gap-2">
+                                <div><span class="text-[10px] text-gray-500">Início</span><input type="date" class="w-full border border-gray-300 rounded p-2 text-sm" value="2024-01-01"></div>
+                                <div><span class="text-[10px] text-gray-500">Fim Original</span><input type="date" class="w-full border border-gray-300 rounded p-2 text-sm" value="2024-12-31"></div>
+                            </div>
+                            <div>
+                                <span class="text-[10px] text-gray-500">Fim Atual (Aditivos)</span>
+                                <input type="date" class="w-full border border-gray-300 rounded p-2 text-sm" value="2025-06-30">
+                            </div>
+                        </div>
+
+                        <div class="space-y-4">
+                            <label class="block text-xs font-bold text-gray-700 uppercase">Descrição & Escopo</label>
+                            <textarea id="input-svc-scope" class="w-full border border-gray-300 rounded p-2 text-sm h-40 resize-none focus:ring-2 focus:ring-purple-500 outline-none" placeholder="Descreva o escopo do serviço..."></textarea>
+                        </div>
+
+                        <div class="space-y-4">
+                            <label class="block text-xs font-bold text-gray-700 uppercase">Documentação & Anexos</label>
+                            <div class="flex items-center justify-between p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer group">
+                                <div class="flex items-center gap-3"><div class="bg-red-100 p-2 rounded text-red-600"><i data-lucide="file-text" class="w-4 h-4"></i></div><div><p class="text-sm font-bold text-gray-800">Proposta Comercial.pdf</p><p class="text-[10px] text-gray-500">Enviado em 10/12/2023</p></div></div><i data-lucide="download" class="w-4 h-4 text-gray-400 group-hover:text-indigo-600"></i>
+                            </div>
+                            <div class="flex items-center justify-between p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer group">
+                                <div class="flex items-center gap-3"><div class="bg-blue-100 p-2 rounded text-blue-600"><i data-lucide="file-check" class="w-4 h-4"></i></div><div><p class="text-sm font-bold text-gray-800">Contrato Assinado.pdf</p><p class="text-[10px] text-gray-500">Vigência até 2025</p></div></div><i data-lucide="download" class="w-4 h-4 text-gray-400 group-hover:text-indigo-600"></i>
+                            </div>
+                            <button class="w-full text-xs text-indigo-600 font-bold border border-dashed border-indigo-300 p-2 rounded hover:bg-indigo-50">+ Adicionar Documento</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ABA 2: COMERCIAL (O Vendido) -->
+                <div id="view-commercial" class="hidden space-y-6">
+                    <div class="bg-blue-50 border border-blue-200 p-4 rounded-lg mb-6">
+                        <h4 class="text-sm font-bold text-blue-800 mb-1 flex items-center gap-2"><i data-lucide="info" class="w-4 h-4"></i> Definição do Orçamento (Baseline)</h4>
+                        <p class="text-xs text-blue-600">Defina os perfis genéricos vendidos para calcular a Receita e Custo Previsto do contrato.</p>
+                    </div>
+
+                    <div class="overflow-x-auto border border-gray-200 rounded-lg">
+                        <table class="w-full text-left table-dense">
+                            <thead class="bg-gray-100 font-bold text-gray-600 border-b border-gray-200">
+                                <tr>
+                                    <th class="w-48">Perfil (Role)</th>
+                                    <th class="text-right w-24">Taxa Venda</th>
+                                    <th class="text-right w-24">Custo Est.</th>
+                                    <th class="text-center w-24">Início</th>
+                                    <th class="text-center w-24">Fim</th>
+                                    <th class="text-center w-20">% Alloc</th>
+                                    <th class="text-right w-24">Hrs Mês</th>
+                                    <th class="text-right w-32">Receita/Mês</th>
+                                    <th class="w-10"></th>
+                                </tr>
+                            </thead>
+                            <tbody id="commercial-rows" class="divide-y divide-gray-100">
+                                <!-- JS Populates -->
+                            </tbody>
+                            <tfoot class="bg-gray-50 font-bold text-gray-700">
+                                <tr>
+                                    <td colspan="6" class="text-right uppercase text-xs">Total Mensal Estimado:</td>
+                                    <td class="text-right" id="comm-total-hours">0h</td>
+                                    <td class="text-right text-green-600" id="comm-total-rev">R$ 0,00</td>
+                                    <td></td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                    <button onclick="addCommercialRow()" class="text-xs bg-indigo-600 text-white px-3 py-2 rounded font-bold hover:bg-indigo-700 flex items-center gap-2">
+                        <i data-lucide="plus" class="w-3 h-3"></i> Adicionar Perfil
+                    </button>
+                </div>
+
+                <!-- ABA 3: EXECUÇÃO (Alocação Real) -->
+                <div id="view-execution" class="hidden space-y-6">
+                    <div class="bg-indigo-50 border border-indigo-200 p-4 rounded-lg mb-6">
+                        <h4 class="text-sm font-bold text-indigo-800 mb-1 flex items-center gap-2"><i data-lucide="users" class="w-4 h-4"></i> Alocação da Equipe (Real)</h4>
+                        <p class="text-xs text-indigo-600">Vincule os profissionais reais. O sistema calculará o Custo Real e a Receita Real.</p>
+                    </div>
+
+                    <div class="overflow-x-auto border border-gray-200 rounded-lg">
+                        <table class="w-full text-left table-dense">
+                            <thead class="bg-gray-100 font-bold text-gray-600 border-b border-gray-200">
+                                <tr>
+                                    <th class="w-48">Profissional</th>
+                                    <th class="text-right w-24">Custo Real</th>
+                                    <th class="text-right w-24">Venda Aplic.</th>
+                                    <th class="text-center w-24">Início</th>
+                                    <th class="text-center w-24">Fim</th>
+                                    <th class="text-center w-20">% Alloc</th>
+                                    <th class="text-right w-24">Hrs Mês</th>
+                                    <th class="text-right w-32">Custo Mês</th>
+                                    <th class="w-10"></th>
+                                </tr>
+                            </thead>
+                            <tbody id="execution-rows" class="divide-y divide-gray-100">
+                                <!-- JS Populates -->
+                            </tbody>
+                            <tfoot class="bg-gray-50 font-bold text-gray-700">
+                                <tr>
+                                    <td colspan="6" class="text-right uppercase text-xs">Total Mensal Real:</td>
+                                    <td class="text-right" id="exec-total-hours">0h</td>
+                                    <td class="text-right text-red-500" id="exec-total-cost">R$ 0,00</td>
+                                    <td></td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                    <button onclick="addExecutionRow()" class="text-xs bg-indigo-600 text-white px-3 py-2 rounded font-bold hover:bg-indigo-700 flex items-center gap-2">
+                        <i data-lucide="user-plus" class="w-3 h-3"></i> Alocar Profissional
+                    </button>
+                </div>
+
+                <!-- ABA 4: FINANCEIRO CONSOLIDADO -->
+                <div id="view-financial" class="hidden space-y-6">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                        <div class="bg-white border border-gray-200 p-4 rounded-lg shadow-sm">
+                            <p class="text-xs font-bold text-gray-400 uppercase">Margem Proposta</p>
+                            <p class="text-2xl font-bold text-blue-600" id="fin-margin-prop">0%</p>
+                        </div>
+                        <div class="bg-white border border-gray-200 p-4 rounded-lg shadow-sm">
+                            <p class="text-xs font-bold text-gray-400 uppercase">Margem Atual (YTD)</p>
+                            <p class="text-2xl font-bold text-green-600" id="fin-margin-act">0%</p>
+                        </div>
+                        <div class="bg-white border border-gray-200 p-4 rounded-lg shadow-sm">
+                            <p class="text-xs font-bold text-gray-400 uppercase">Margem Prevista (EOL)</p>
+                            <p class="text-2xl font-bold text-indigo-600" id="fin-margin-fcst">0%</p>
+                        </div>
+                    </div>
+
+                    <h4 class="text-sm font-bold text-gray-800 mb-4">Demonstrativo por Competência (DRE do Projeto)</h4>
+                    <div class="overflow-x-auto border border-gray-200 rounded-lg">
+                        <table class="w-full text-left table-dense">
+                            <thead class="bg-gray-800 text-white font-bold text-xs uppercase">
+                                <tr>
+                                    <th class="w-24">Mês</th>
+                                    <th class="text-right bg-gray-700">Rec. Proposta</th>
+                                    <th class="text-right bg-gray-700">Custo Proposta</th>
+                                    <th class="text-right border-r border-gray-600">Margem Prop.</th>
+                                    
+                                    <th class="text-right bg-blue-900">Rec. Real</th>
+                                    <th class="text-right bg-blue-900">Custo Real</th>
+                                    <th class="text-right border-r border-gray-600">Margem Real</th>
+
+                                    <th class="text-right bg-indigo-900">Rec. Prevista</th>
+                                    <th class="text-right bg-indigo-900">Custo Prev.</th>
+                                </tr>
+                            </thead>
+                            <tbody id="financial-grid" class="divide-y divide-gray-200">
+                                <!-- JS Populates -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- ABA 5: FATURAMENTO & PAGAMENTOS (Integração Conta Azul) -->
+                <div id="view-billing" class="hidden space-y-6">
+                    <div class="bg-green-50 border border-green-200 p-4 rounded-lg mb-4 flex justify-between items-center">
+                        <div>
+                            <h4 class="text-sm font-bold text-green-800 flex items-center gap-2"><i data-lucide="refresh-cw" class="w-4 h-4"></i> Integração ERP (Conta Azul)</h4>
+                            <p class="text-xs text-green-700">As parcelas abaixo serão sincronizadas como "Venda" e replicadas no Salesforce.</p>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-[10px] text-green-600 font-bold uppercase">ID Cliente</p>
+                            <p class="text-xs font-mono text-gray-600">ca-uuid-123456</p>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4 bg-gray-50 p-4 rounded-lg border border-gray-200">
+                        <div>
+                            <label class="block text-xs font-bold text-gray-700 mb-1">Modelo de Faturamento</label>
+                            <select class="w-full border border-gray-300 rounded p-2 text-sm bg-white focus:outline-none focus:border-blue-500">
+                                <option>Recorrente Mensal (Assinatura)</option>
+                                <option>Horas Trabalhadas (T&M)</option>
+                                <option>Preço Fixo (Parcelado)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-700 mb-1">Condição de Pagamento</label>
+                            <select class="w-full border border-gray-300 rounded p-2 text-sm bg-white focus:outline-none focus:border-blue-500">
+                                <option>30 Dias Líquidos</option>
+                                <option>15 Dias após Emissão</option>
+                                <option>Dia 10 do Mês Seguinte</option>
+                                <option>À Vista</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div>
+                        <h4 class="text-xs font-bold text-gray-400 uppercase mb-2 flex justify-between items-center">
+                            Cronograma de Parcelas (Installments)
+                            <button class="text-blue-600 hover:underline font-bold text-xs" onclick="addBillingRow()">+ Adicionar Parcela</button>
+                        </h4>
+                        <div class="overflow-x-auto border border-gray-200 rounded-lg">
+                            <table class="w-full text-xs text-left">
+                                <thead class="bg-gray-100 font-bold text-gray-600">
+                                    <tr>
+                                        <th class="px-3 py-2 w-10">#</th>
+                                        <th class="px-3 py-2">Descrição / Evento</th>
+                                        <th class="px-3 py-2">Comp. Referência</th>
+                                        <th class="px-3 py-2">Vencimento</th>
+                                        <th class="px-3 py-2 text-right">Valor</th>
+                                        <th class="px-3 py-2 w-10"></th>
+                                    </tr>
+                                </thead>
+                                <tbody id="svc-billing-list" class="divide-y divide-gray-200">
+                                    <tr>
+                                        <td class="px-3 py-2 text-center text-gray-400">1</td>
+                                        <td class="px-3 py-2"><input class="input-inline" value="Mensalidade Jan/25"></td>
+                                        <td class="px-3 py-2"><input class="input-inline" type="month" value="2025-01"></td>
+                                        <td class="px-3 py-2"><input class="input-inline" type="date" value="2025-02-10"></td>
+                                        <td class="px-3 py-2 text-right"><input class="input-inline text-right font-bold text-gray-700" value="25.200,00"></td>
+                                        <td class="px-3 py-2 text-center"><button class="text-gray-400 hover:text-red-600"><i data-lucide="trash-2" class="w-3 h-3"></i></button></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Footer Modal -->
+            <div class="p-5 border-t border-gray-100 bg-gray-50 rounded-b-xl flex justify-end gap-2 shrink-0">
+                <button onclick="closeModal('service-modal')" class="px-5 py-2 bg-white border border-gray-300 text-gray-700 text-sm font-bold rounded-lg hover:bg-gray-100">Cancelar</button>
+                <button onclick="saveService()" class="px-5 py-2 bg-indigo-600 text-white text-sm font-bold rounded-lg hover:bg-indigo-700 shadow-md flex items-center gap-2">
+                    <i data-lucide="save" class="w-4 h-4"></i> Salvar & Integrar
                 </button>
             </div>
-            <div class="p-5 border-t border-gray-100 bg-gray-50 rounded-b-xl flex justify-end gap-2">
-                <button onclick="closeModal('allocation-modal')" class="px-4 py-2 bg-white border border-gray-300 text-gray-700 text-sm font-bold rounded-lg hover:bg-gray-100">Cancelar</button>
-                <button onclick="saveAllocations()" class="px-4 py-2 bg-blue-600 text-white text-sm font-bold rounded-lg hover:bg-blue-700 shadow-md">Salvar Alterações</button>
-            </div>
         </div>
     </div>
 
-    <!-- 3. Modal Lista de Projetos -->
-    <div id="projects-list-modal" class="fixed inset-0 modal-backdrop z-50 hidden flex items-center justify-center opacity-0 transition-opacity duration-300 p-4">
-        <div class="bg-white rounded-xl shadow-xl w-full max-w-sm p-6 transform scale-95 transition-transform duration-300">
-            <h3 class="font-bold text-gray-800 mb-4">Projetos Ativos</h3>
-            <ul class="space-y-2 text-sm text-gray-600" id="projects-list-content"></ul>
-            <div class="mt-6 text-right"><button onclick="closeModal('projects-list-modal')" class="text-sm font-bold text-gray-500 hover:text-gray-800">Fechar</button></div>
-        </div>
-    </div>
-
-    <!-- 4. Modal Equipe do Contrato -->
-    <div id="contract-team-modal" class="fixed inset-0 modal-backdrop z-50 hidden flex items-center justify-center opacity-0 transition-opacity duration-300 p-4">
-        <div class="bg-white rounded-xl shadow-xl w-full max-w-md p-6 transform scale-95 transition-transform duration-300">
-            <div class="flex justify-between items-center mb-4">
-                <h3 class="font-bold text-gray-800">Equipe Alocada</h3>
-                <button onclick="closeModal('contract-team-modal')" class="text-gray-400 hover:text-gray-600"><i data-lucide="x" class="w-5 h-5"></i></button>
-            </div>
-            <p class="text-xs text-gray-500 mb-4" id="contract-team-title">Contrato X</p>
-            <div id="contract-team-list" class="space-y-3">
-                <!-- JS Populates -->
-            </div>
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed bottom-5 right-5 bg-gray-900 text-white px-4 py-3 rounded-lg shadow-xl translate-y-20 opacity-0 transition-all duration-300 flex items-center gap-3 z-[60]">
+        <i data-lucide="check-circle" class="w-5 h-5 text-green-400"></i>
+        <div>
+            <p class="text-sm font-bold" id="toast-title">Sucesso!</p>
+            <p class="text-xs text-gray-400" id="toast-message">Dados atualizados.</p>
         </div>
     </div>
 
     <script>
         lucide.createIcons();
 
-        // --- DADOS MOCK ---
-        const contracts = [
-            { id: 1, name: "Sustentação Salesforce N2", client: "Tech Solutions", total: 200, used: 185, open: 12, inProg: 5, pause: 2, waiting: 5, closed: 45, teamCount: 3, slaBreach: 2, idleTime: "14h", csat: 4.8 },
-            { id: 2, name: "Infraestrutura Cloud", client: "Banco Alpha", total: 160, used: 80, open: 3, inProg: 2, pause: 0, waiting: 8, closed: 22, teamCount: 2, slaBreach: 0, idleTime: "2h", csat: 5.0 },
-            { id: 3, name: "Consultoria Power BI", client: "Varejo Express", total: 80, used: 78, open: 5, inProg: 3, pause: 1, waiting: 1, closed: 10, teamCount: 1, slaBreach: 1, idleTime: "3 dias", csat: 3.5 }
-        ];
-
-        const resources = [
+        // --- DADOS MOCK (SERVIÇOS) ---
+        const services = [
             { 
-                id: 1, name: "Maria Costa", role: "Salesforce Sr.", 
-                allocations: [ { name: "Salesforce N2", pct: 70 }, { name: "Squad Alpha", pct: 30 } ],
-                hoursToday: 8.0, hoursMonth: 140, contractMonth: 168, expectedToDate: 144
+                id: 1, name: "Sustentação Salesforce N2", client: "Tech Solutions", status: "Em Execução",
+                prop: { rev: 150000, cost: 80000, margin: 46 },
+                act: { rev: 152000, cost: 85000, margin: 44 },
+                fcst: { rev: 1800000, cost: 960000, margin: 45 }
             },
             { 
-                id: 2, name: "João Silva", role: "Dev Pleno", 
-                allocations: [ { name: "Salesforce N2", pct: 50 }, { name: "Projeto Beta", pct: 20 }, { name: "Projeto Gama", pct: 20 }, { name: "Interno", pct: 10 } ], 
-                hoursToday: 4.0, hoursMonth: 144, contractMonth: 168, expectedToDate: 144 
-            },
-            { 
-                id: 3, name: "Pedro Lima", role: "Suporte N1", 
-                allocations: [ { name: "Salesforce N2", pct: 100 } ],
-                hoursToday: 0, hoursMonth: 100, contractMonth: 168, expectedToDate: 144 
+                id: 2, name: "Fábrica Java", client: "Banco Alpha", status: "Em Execução",
+                prop: { rev: 80000, cost: 45000, margin: 43 },
+                act: { rev: 78000, cost: 42000, margin: 46 },
+                fcst: { rev: 960000, cost: 500000, margin: 47 }
             }
         ];
 
-        // --- RENDERIZAR CONTRATOS ---
-        function renderContracts() {
-            const tbody = document.getElementById('contracts-table');
-            tbody.innerHTML = '';
-            contracts.forEach(c => {
-                const percent = (c.used / c.total) * 100;
-                let barColor = percent > 90 ? 'bg-red-500' : (percent > 75 ? 'bg-yellow-500' : 'bg-blue-500');
-                
-                // Formatação Operacional
-                let slaColor = c.slaBreach > 0 ? 'text-red-600 font-bold' : 'text-gray-400';
-                let idleColor = c.idleTime.includes('dias') ? 'text-orange-600 font-bold' : 'text-gray-500';
-                let csatColor = c.csat >= 4.5 ? 'text-teal-600 font-bold' : (c.csat < 4.0 ? 'text-red-600 font-bold' : 'text-yellow-600');
-
-                tbody.innerHTML += `
-                <tr class="hover:bg-gray-50 transition-colors group border-b border-gray-100">
-                    <td class="px-6 py-4">
-                        <p class="font-bold text-gray-800 text-sm">${c.name}</p>
-                        <p class="text-xs text-gray-500">${c.client}</p>
-                    </td>
-                    <td class="px-4 py-4 align-middle">
-                        <div class="flex justify-between text-xs mb-1 font-medium"><span>${c.used}h</span><span class="text-gray-400">de ${c.total}h</span></div>
-                        <div class="progress-bar-bg"><div class="progress-bar-fill ${barColor}" style="width: ${percent}%"></div></div>
-                    </td>
-                    <td class="px-2 py-4 text-center text-xs font-bold text-blue-600 bg-blue-50/30 border-r border-white">${c.open}</td>
-                    <td class="px-2 py-4 text-center text-xs font-medium text-blue-600 bg-blue-50/30 border-r border-white">${c.inProg}</td>
-                    <td class="px-2 py-4 text-center text-xs font-medium text-yellow-600 bg-yellow-50/30 border-r border-white">${c.pause}</td>
-                    <td class="px-2 py-4 text-center text-xs font-bold text-yellow-600 bg-yellow-50/30 border-r border-white">${c.waiting}</td>
-                    <td class="px-2 py-4 text-center text-xs text-gray-400 bg-gray-50/30">${c.closed}</td>
-                    
-                    <td class="px-4 py-4 text-center ${slaColor}">${c.slaBreach}</td>
-                    <td class="px-4 py-4 text-center text-xs ${idleColor}">${c.idleTime}</td>
-                    <td class="px-4 py-4 text-center text-sm ${csatColor}">${c.csat}</td>
-
-                    <td class="px-4 py-4 text-center">
-                        <button onclick="openContractTeam(${c.id})" class="text-xs font-bold text-blue-600 hover:underline bg-blue-50 px-2 py-1 rounded border border-blue-100">
-                            ${c.teamCount} Pessoas
-                        </button>
-                    </td>
-                    <td class="px-4 py-4 text-right"><button onclick="openExtract('${c.name}')" class="text-xs font-bold text-indigo-600 hover:underline">Extrato</button></td>
-                </tr>`;
-            });
-        }
-
-        // --- RENDERIZAR EQUIPE ---
-        function renderTeam() {
-            const tbody = document.getElementById('team-table-body');
-            tbody.innerHTML = '';
+        // --- RENDERIZAR CARDS DE SERVIÇO ---
+        function renderServices(filteredServices = null) {
+            const grid = document.getElementById('services-grid');
+            const dataToRender = filteredServices || services;
             
-            resources.forEach(r => {
-                const projectsLink = `<button onclick="openProjectsList('${r.name}', ${r.id})" class="text-blue-600 font-bold hover:underline text-xs bg-blue-50 px-2 py-1 rounded border border-blue-100 shadow-sm">${r.allocations.length} Projetos</button>`;
+            grid.innerHTML = '';
+            
+            if (dataToRender.length === 0) {
+                document.getElementById('no-results').classList.remove('hidden');
+                document.getElementById('no-results').classList.add('flex');
+            } else {
+                document.getElementById('no-results').classList.add('hidden');
+                document.getElementById('no-results').classList.remove('flex');
                 
-                let today = r.hoursToday === 0 ? `<span class="flex items-center justify-center gap-1 text-xs text-red-500 font-bold bg-red-50 px-2 py-1 rounded">Pendente</span>` : 
-                            (r.hoursToday < 8 ? `<span class="flex items-center justify-center gap-1 text-xs text-yellow-600 font-bold">${r.hoursToday}h</span>` : `<span class="flex items-center justify-center gap-1 text-xs text-green-600 font-bold">${r.hoursToday}h</span>`);
-
-                const monthPercent = Math.min((r.hoursMonth / r.contractMonth) * 100, 100);
-                let statusColor = 'bg-green-500'; 
-                let statusText = 'Em Dia';
-                
-                if (r.hoursMonth < r.expectedToDate - 8) {
-                    statusColor = 'bg-red-500'; statusText = 'Atrasado';
-                } else if (r.hoursMonth < r.expectedToDate) {
-                    statusColor = 'bg-yellow-400'; statusText = 'Pendente Hoje';
-                }
-
-                tbody.innerHTML += `
-                <tr class="hover:bg-gray-50 transition-colors border-b border-gray-100">
-                    <td class="px-6 py-4">
-                        <div class="flex items-center gap-3">
-                            <div class="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center text-xs font-bold text-gray-600 border border-gray-300">${r.name.charAt(0)}</div>
-                            <div><p class="font-bold text-gray-900 text-sm">${r.name}</p><p class="text-xs text-gray-500">${r.role}</p></div>
+                dataToRender.forEach(s => {
+                    grid.innerHTML += `
+                    <div class="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow cursor-pointer" onclick="openServiceModal(${s.id})">
+                        <div class="p-5 border-b border-gray-100 flex justify-between items-start">
+                            <div>
+                                <div class="flex items-center gap-2 mb-1">
+                                    <span class="bg-blue-100 text-blue-700 text-[10px] font-bold px-2 py-0.5 rounded uppercase">${s.client}</span>
+                                    <span class="text-xs text-green-600 font-bold border border-green-200 px-2 py-0.5 rounded-full flex items-center gap-1"><div class="w-1.5 h-1.5 bg-green-500 rounded-full"></div> ${s.status}</span>
+                                </div>
+                                <h3 class="text-lg font-bold text-gray-800">${s.name}</h3>
+                            </div>
+                            <button class="text-gray-400 hover:text-indigo-600"><i data-lucide="edit-3" class="w-5 h-5"></i></button>
                         </div>
-                    </td>
-                    <td class="px-6 py-4 text-center">${projectsLink}</td>
-                    <td class="px-6 py-4 text-center">${today}</td>
-                    <td class="px-6 py-4 align-middle">
-                        <div class="flex justify-between text-xs mb-1 font-medium">
-                            <span class="${statusColor.replace('bg-','text-')} font-bold">${r.hoursMonth}h</span>
-                            <span class="text-gray-400">Meta Hoje: ${r.expectedToDate}h</span>
+                        <div class="p-5 grid grid-cols-3 gap-4 text-center divide-x divide-gray-100">
+                            <div><p class="text-[10px] font-bold text-gray-400 uppercase mb-1">Vendido</p><p class="text-sm font-bold text-gray-700">R$ ${s.prop.rev.toLocaleString()}</p><p class="text-xs text-blue-600 font-bold">${s.prop.margin}%</p></div>
+                            <div><p class="text-[10px] font-bold text-gray-400 uppercase mb-1">Atual</p><p class="text-sm font-bold text-gray-900">R$ ${s.act.rev.toLocaleString()}</p><p class="text-xs text-green-600 font-bold">${s.act.margin}%</p></div>
+                            <div><p class="text-[10px] font-bold text-gray-400 uppercase mb-1">Previsto</p><p class="text-sm font-bold text-gray-700">R$ ${(s.fcst.rev/1000).toFixed(0)}k</p><p class="text-xs text-indigo-600 font-bold">${s.fcst.margin}%</p></div>
                         </div>
-                        <div class="progress-bar-bg relative">
-                            <div class="absolute top-0 bottom-0 w-0.5 bg-gray-400 z-10" style="left: ${(r.expectedToDate/r.contractMonth)*100}%" title="Meta Hoje"></div>
-                            <div class="progress-bar-fill ${statusColor}" style="width: ${monthPercent}%"></div>
-                        </div>
-                    </td>
-                    <td class="px-6 py-4 text-center">
-                        <span class="inline-flex items-center gap-1 text-[10px] uppercase font-bold text-gray-600 bg-gray-100 px-2 py-1 rounded">
-                            <div class="w-2 h-2 rounded-full ${statusColor}"></div> ${statusText}
-                        </span>
-                    </td>
-                    <td class="px-6 py-4 text-right"><button onclick="openExtract('${r.name} - Detalhes')" class="text-xs font-bold text-indigo-600 hover:underline">Ver Detalhes</button></td>
-                </tr>`;
-            });
-        }
-
-        // --- RENDERIZAR ESCALA (Barra Visual) ---
-        function renderScale() {
-            const tbody = document.getElementById('allocation-table-body');
-            tbody.innerHTML = '';
-            resources.forEach(r => {
-                let totalAlloc = 0;
-                let segmentsHtml = '';
-                const colors = ['bg-blue-500', 'bg-teal-500', 'bg-purple-500', 'bg-orange-500', 'bg-pink-500'];
-                
-                r.allocations.forEach((a, index) => {
-                    totalAlloc += a.pct;
-                    segmentsHtml += `<div class="alloc-segment ${colors[index % colors.length]}" style="width: ${a.pct}%" title="${a.name} (${a.pct}%)"></div>`;
+                    </div>`;
                 });
-
-                let totalColor = totalAlloc > 100 ? 'text-red-600' : (totalAlloc < 80 ? 'text-yellow-600' : 'text-green-600');
-
-                tbody.innerHTML += `
-                <tr class="hover:bg-gray-50 border-b border-gray-100">
-                    <td class="px-6 py-4 align-middle">
-                        <div class="flex items-center gap-3">
-                            <div class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-xs font-bold text-gray-600">${r.name.charAt(0)}</div>
-                            <div><p class="font-bold text-gray-900 text-sm">${r.name}</p><p class="text-xs text-gray-500">${r.role}</p></div>
-                        </div>
-                    </td>
-                    <td class="px-6 py-4 align-middle">
-                        <div class="alloc-bar-container mb-1">${segmentsHtml}</div>
-                        <div class="flex gap-2 text-[9px] text-gray-400 overflow-hidden h-4">
-                            ${r.allocations.map(a => `<span class="truncate">${a.name}</span>`).join('<span class="mx-1">•</span>')}
-                        </div>
-                    </td>
-                    <td class="px-6 py-4 align-middle text-center"><span class="text-sm font-bold ${totalColor}">${totalAlloc}%</span></td>
-                    <td class="px-6 py-4 align-middle text-right">
-                        <button onclick="openAllocationModal(${r.id})" class="text-xs bg-white border border-gray-300 text-gray-700 px-3 py-1.5 rounded hover:bg-gray-50 shadow-sm font-bold">Gerenciar</button>
-                    </td>
-                </tr>`;
-            });
-        }
-
-        // --- MODAIS ---
-        
-        function openExtract(title) {
-            document.getElementById('modal-title').innerText = title;
-            document.getElementById('modal-subtitle').innerText = "Histórico Detalhado";
-            
-            const tbody = document.getElementById('modal-rows');
-            tbody.innerHTML = `
-                <tr class="border-b border-gray-50"><td class="px-4 py-3 text-gray-500">22/12/2024</td><td class="px-4 py-3 font-bold text-gray-700">Tech Solutions</td><td class="px-4 py-3 text-gray-600">Salesforce N2</td><td class="px-4 py-3 text-gray-800">Atendimento Ticket #405</td><td class="px-4 py-3 text-right font-mono font-bold text-blue-600">4.0h</td></tr>
-                <tr class="border-b border-gray-50"><td class="px-4 py-3 text-gray-500">21/12/2024</td><td class="px-4 py-3 font-bold text-gray-700">Tech Solutions</td><td class="px-4 py-3 text-gray-600">Salesforce N2</td><td class="px-4 py-3 text-gray-800">Reunião Daily</td><td class="px-4 py-3 text-right font-mono font-bold text-blue-600">1.0h</td></tr>
-            `;
-            openModal('extract-modal');
-        }
-
-        // 2. Modal Equipe do Contrato (Novo)
-        function openContractTeam(id) {
-            const contract = contracts.find(c => c.id === id);
-            document.getElementById('contract-team-title').innerText = contract.name;
-            const list = document.getElementById('contract-team-list');
-            list.innerHTML = '';
-            
-            // Simular busca de pessoas neste contrato
-            // Na vida real faria um filter no array resources
-            const members = resources.filter(r => r.allocations.some(a => a.name.includes(contract.name.split(' ')[1]))); // Match "Salesforce" etc.
-            
-            if(members.length === 0) list.innerHTML = '<p class="text-sm text-gray-400">Ninguém alocado.</p>';
-            
-            members.forEach(m => {
-                const alloc = m.allocations.find(a => a.name.includes(contract.name.split(' ')[1]));
-                list.innerHTML += `
-                <div class="flex items-center justify-between p-3 bg-gray-50 rounded border border-gray-100">
-                    <div class="flex items-center gap-3">
-                        <div class="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center text-xs font-bold text-indigo-700">${m.name.charAt(0)}</div>
-                        <div><p class="text-sm font-bold text-gray-800">${m.name}</p><p class="text-[10px] text-gray-500">${m.role}</p></div>
-                    </div>
-                    <span class="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded">${alloc ? alloc.pct : '?'}%</span>
-                </div>`;
-            });
-            openModal('contract-team-modal');
-        }
-
-        function openProjectsList(name, id) {
-            const res = resources.find(r => r.id === id);
-            const list = document.getElementById('projects-list-content');
-            list.innerHTML = '';
-            res.allocations.forEach(a => {
-                list.innerHTML += `<li class="flex justify-between items-center bg-gray-50 p-2 rounded border border-gray-100"><span>${a.name}</span><span class="font-bold text-blue-600">${a.pct}%</span></li>`;
-            });
-            openModal('projects-list-modal');
-        }
-
-        function openAllocationModal(id) {
-            const res = resources.find(r => r.id === id);
-            document.getElementById('alloc-modal-name').innerText = res.name;
-            const container = document.getElementById('alloc-inputs-container');
-            container.innerHTML = '';
-            
-            res.allocations.forEach(a => {
-                container.innerHTML += `
-                <div class="flex items-center gap-3 bg-white p-3 rounded border border-gray-200 shadow-sm alloc-row">
-                    <div class="flex-1">
-                        <p class="text-xs font-bold text-gray-700 mb-1">Projeto</p>
-                        <input type="text" value="${a.name}" class="w-full text-sm border-none bg-transparent font-medium p-0 focus:ring-0">
-                    </div>
-                    <div class="w-24">
-                        <p class="text-[10px] font-bold text-gray-400 mb-1">Percentual</p>
-                        <div class="flex items-center border border-gray-300 rounded overflow-hidden">
-                            <input type="number" value="${a.pct}" class="w-full text-center text-sm p-1 border-none focus:ring-0 font-bold text-blue-600">
-                            <span class="bg-gray-100 text-xs px-2 py-1 text-gray-500 font-bold border-l border-gray-300">%</span>
-                        </div>
-                    </div>
-                    <button class="text-gray-400 hover:text-red-500 p-2" onclick="this.parentElement.remove()"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
-                </div>`;
-            });
-            lucide.createIcons();
-            openModal('allocation-modal');
-        }
-
-        function addAllocationRow() {
-            const container = document.getElementById('alloc-inputs-container');
-            container.innerHTML += `
-            <div class="flex items-center gap-3 bg-white p-3 rounded border border-gray-200 shadow-sm alloc-row fade-in">
-                <div class="flex-1">
-                    <p class="text-xs font-bold text-gray-700 mb-1">Novo Projeto</p>
-                    <select class="w-full text-sm border border-gray-300 rounded p-1 bg-white focus:ring-2 focus:ring-blue-500">
-                        <option value="" disabled selected>Selecione...</option>
-                        <option>Sustentação Salesforce N2</option>
-                        <option>Infraestrutura Cloud</option>
-                        <option>Power BI Varejo</option>
-                    </select>
-                </div>
-                <div class="w-24">
-                    <p class="text-[10px] font-bold text-gray-400 mb-1">Percentual</p>
-                    <div class="flex items-center border border-gray-300 rounded overflow-hidden">
-                        <input type="number" value="0" class="w-full text-center text-sm p-1 border-none focus:ring-0 font-bold text-blue-600">
-                        <span class="bg-gray-100 text-xs px-2 py-1 text-gray-500 font-bold border-l border-gray-300">%</span>
-                    </div>
-                </div>
-                <button class="text-gray-400 hover:text-red-500 p-2" onclick="this.parentElement.remove()"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
-            </div>`;
+            }
             lucide.createIcons();
         }
 
-        function saveAllocations() {
-            closeModal('allocation-modal');
-            alert("Alocações atualizadas com sucesso!");
+        // --- FILTRO DE PESQUISA ---
+        function filterServices(query) {
+            const lowerQuery = query.toLowerCase();
+            const filtered = services.filter(s => 
+                s.name.toLowerCase().includes(lowerQuery) || 
+                s.client.toLowerCase().includes(lowerQuery)
+            );
+            renderServices(filtered);
         }
 
-        function openModal(id) {
-            const m = document.getElementById(id);
-            m.classList.remove('hidden');
-            setTimeout(() => { m.classList.remove('opacity-0'); m.querySelector('div').classList.remove('scale-95'); }, 10);
+        // --- LÓGICA DO MODAL ---
+        function openServiceModal(id) {
+            const modal = document.getElementById('service-modal');
+            const title = id ? "Editar Serviço" : "Novo Serviço";
+            document.getElementById('modal-svc-title').innerText = title;
+            document.getElementById('erp-sync-badge').classList.toggle('hidden', !id); // Mostra badge se editando
+            
+            switchTab('general');
+            
+            if(id) {
+                // Populate Mock
+                document.getElementById('commercial-rows').innerHTML = `<tr><td><input class="input-inline" value="Dev Sr"></td><td><input class="input-inline text-right" value="150,00"></td><td><input class="input-inline text-right" value="80,00"></td><td><input type="date" class="input-inline text-center" value="2024-01-01"></td><td><input type="date" class="input-inline text-center" value="2024-12-31"></td><td><input type="number" class="input-inline text-center" value="100"></td><td class="text-right font-bold text-xs pt-2">168h</td><td class="text-right font-bold text-xs pt-2 text-green-600">R$ 25.200</td><td class="text-center"><button class="text-red-400 hover:text-red-600"><i data-lucide="trash-2" class="w-3 h-3"></i></button></td></tr>`;
+                document.getElementById('execution-rows').innerHTML = `<tr><td><select class="input-inline"><option>Maria Costa</option><option>João Silva</option></select></td><td><input class="input-inline text-right" value="85,00"></td><td><input class="input-inline text-right" value="150,00"></td><td><input type="date" class="input-inline text-center" value="2024-01-01"></td><td><input type="date" class="input-inline text-center" value="2024-12-31"></td><td><input type="number" class="input-inline text-center" value="100"></td><td class="text-right font-bold text-xs pt-2">168h</td><td class="text-right font-bold text-xs pt-2 text-red-600">R$ 14.280</td><td class="text-center"><button class="text-red-400 hover:text-red-600"><i data-lucide="trash-2" class="w-3 h-3"></i></button></td></tr>`;
+                let finHtml = '';
+                ['Jan', 'Fev', 'Mar', 'Abr', 'Mai'].forEach(m => {
+                    finHtml += `<tr><td class="px-2 py-2 font-bold text-xs text-gray-700">${m}/24</td><td class="px-2 py-2 text-right text-xs">25.200</td><td class="px-2 py-2 text-right text-xs">13.440</td><td class="px-2 py-2 text-right text-xs border-r border-gray-200 font-bold">46%</td><td class="px-2 py-2 text-right text-xs text-blue-800">25.200</td><td class="px-2 py-2 text-right text-xs text-blue-800">14.280</td><td class="px-2 py-2 text-right text-xs border-r border-gray-200 font-bold text-blue-600">43%</td><td class="px-2 py-2 text-right text-xs text-indigo-800">25.200</td><td class="px-2 py-2 text-right text-xs text-indigo-800">14.280</td></tr>`;
+                });
+                document.getElementById('financial-grid').innerHTML = finHtml;
+            } else {
+                document.getElementById('commercial-rows').innerHTML = '';
+                document.getElementById('execution-rows').innerHTML = '';
+                document.getElementById('financial-grid').innerHTML = '<tr class="bg-yellow-50"><td colspan="9" class="p-4 text-center text-xs text-yellow-700">Preencha as abas Comercial e Execução para gerar o financeiro.</td></tr>';
+            }
+            modal.classList.remove('hidden');
+            lucide.createIcons();
         }
-        function closeModal(id) {
-            const m = document.getElementById(id);
-            m.classList.add('opacity-0');
-            setTimeout(() => m.classList.add('hidden'), 300);
+
+        function closeModal(id = 'service-modal') {
+            document.getElementById(id).classList.add('hidden');
         }
-        
-        function setActiveLink(clicked) {
-            document.querySelectorAll('.nav-link').forEach(l => {
-                l.classList.remove('active');
-                l.classList.add('inactive');
+
+        function switchTab(tabName) {
+            ['general', 'commercial', 'execution', 'financial', 'billing'].forEach(t => {
+                document.getElementById(`view-${t}`).classList.add('hidden');
+                document.getElementById(`tab-${t}`).className = "modal-tab-inactive px-6 py-4 text-sm transition-colors whitespace-nowrap";
             });
-            clicked.classList.add('active');
-            clicked.classList.remove('inactive');
+            document.getElementById(`view-${tabName}`).classList.remove('hidden');
+            document.getElementById(`tab-${tabName}`).className = "modal-tab-active px-6 py-4 text-sm transition-colors whitespace-nowrap";
+        }
+
+        function addCommercialRow() { document.getElementById('commercial-rows').innerHTML += `<tr><td><input class="input-inline" placeholder="Novo Perfil"></td><td><input class="input-inline text-right" placeholder="0,00"></td><td><input class="input-inline text-right" placeholder="0,00"></td><td><input type="date" class="input-inline text-center"></td><td><input type="date" class="input-inline text-center"></td><td><input type="number" class="input-inline text-center" value="100"></td><td class="text-right font-bold text-xs pt-2">-</td><td class="text-right font-bold text-xs pt-2 text-green-600">-</td><td class="text-center"><button class="text-red-400 hover:text-red-600" onclick="this.closest('tr').remove()"><i data-lucide="trash-2" class="w-3 h-3"></i></button></td></tr>`; lucide.createIcons(); }
+        function addExecutionRow() { document.getElementById('execution-rows').innerHTML += `<tr><td><select class="input-inline"><option>Selecione...</option></select></td><td><input class="input-inline text-right" placeholder="0,00"></td><td><input class="input-inline text-right" placeholder="0,00"></td><td><input type="date" class="input-inline text-center"></td><td><input type="date" class="input-inline text-center"></td><td><input type="number" class="input-inline text-center" value="100"></td><td class="text-right font-bold text-xs pt-2">-</td><td class="text-right font-bold text-xs pt-2 text-red-600">-</td><td class="text-center"><button class="text-red-400 hover:text-red-600" onclick="this.closest('tr').remove()"><i data-lucide="trash-2" class="w-3 h-3"></i></button></td></tr>`; lucide.createIcons(); }
+        
+        function addBillingRow() { 
+            const tbody = document.getElementById('svc-billing-list');
+            const rowCount = tbody.children.length + 1;
+            tbody.innerHTML += `<tr><td class="px-3 py-2 text-center text-gray-400">${rowCount}</td><td class="px-3 py-2"><input class="input-inline" placeholder="Descrição"></td><td class="px-3 py-2"><input class="input-inline" type="month"></td><td class="px-3 py-2"><input class="input-inline" type="date"></td><td class="px-3 py-2 text-right"><input class="input-inline text-right font-bold text-gray-700" placeholder="0,00"></td><td class="px-3 py-2 text-center"><button onclick="this.closest('tr').remove()"><i data-lucide="trash-2" class="w-3 h-3 text-red-400"></i></button></td></tr>`; 
+            lucide.createIcons(); 
+        }
+
+        // --- INTEGRAÇÃO CONTA AZUL (MOCK) ---
+        function saveService() {
+            // Coletar dados (Simulado)
+            const serviceData = {
+                name: "Novo Serviço",
+                client_id: "ca-uuid-123456",
+                installments: [ /* coletar da tabela billing */ ]
+            };
+
+            console.log("Enviando para Conta Azul API...", serviceData);
+
+            closeModal(); 
+            showToast("Sucesso", "Serviço salvo e sincronizado com Conta Azul!");
+        }
+
+        function showToast(title, msg) {
+            document.getElementById('toast-title').innerText = title;
+            document.getElementById('toast-message').innerText = msg;
+            const toast = document.getElementById('toast');
+            toast.classList.remove('translate-y-20', 'opacity-0');
+            setTimeout(() => toast.classList.add('translate-y-20', 'opacity-0'), 3000);
         }
 
         // Init
-        renderContracts();
-        renderTeam();
-        renderScale();
+        renderServices();
         lucide.createIcons();
     </script>
 </body>
