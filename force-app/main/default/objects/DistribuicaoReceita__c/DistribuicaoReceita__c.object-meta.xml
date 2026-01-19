@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomObject xmlns="http://soap.sforce.com/2006/04/metadata">
+    <actionOverrides>
+        <actionName>Accept</actionName>
+        <type>Default</type>
+    </actionOverrides>
+    <deploymentStatus>Deployed</deploymentStatus>
+    <description>Tabela de ligação para distribuir o valor de uma parcela entre múltiplas competências.</description>
+    <label>Distribuição de Receita</label>
+    <nameField>
+        <displayFormat>DR-{000000}</displayFormat>
+        <label>ID Distribuição</label>
+        <type>AutoNumber</type>
+    </nameField>
+    <pluralLabel>Distribuições de Receita</pluralLabel>
+    <sharingModel>ControlledByParent</sharingModel>
+    <visibility>Public</visibility>
+</CustomObject>

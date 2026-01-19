@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>AlocacaoPrevista__c</fullName>
+    <deleteConstraint>SetNull</deleteConstraint>
+    <description>Vínculo com o item do planejamento comercial (Previsão).</description>
+    <externalId>false</externalId>
+    <label>Alocação Prevista</label>
+    <referenceTo>AlocacaoPrevista__c</referenceTo>
+    <relationshipLabel>Alocações Realizadas</relationshipLabel>
+    <relationshipName>AlocacoesRealizadas</relationshipName>
+    <required>false</required>
+    <trackTrending>false</trackTrending>
+    <type>Lookup</type>
+</CustomField>

@@ -374,7 +374,7 @@
 
                 <!-- Botão Microsoft SSO -->
 
-                <button onclick="window.location.href='/auth/login'" class="w-full group relative flex items-center justify-center gap-3 bg-[#2f2f2f] hover:bg-[#000000] text-white px-6 py-4 rounded-xl border border-transparent transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#2978FF]">
+                <button onclick="handleLogin()" class="w-full group relative flex items-center justify-center gap-3 bg-[#2f2f2f] hover:bg-[#000000] text-white px-6 py-4 rounded-xl border border-transparent transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#2978FF]">
 
                     <!-- Logo Microsoft Colorido -->
 
@@ -533,121 +533,19 @@
     <!-- JavaScript para Simulação de Lógica -->
 
     <script>
-
         function handleLogin() {
-
             const loginState = document.getElementById('login-state');
-
             const loadingState = document.getElementById('loading-state');
 
-            const successState = document.getElementById('success-state');
-
-
-
             // 1. Esconder Login, Mostrar Loader
-
             loginState.style.display = 'none';
-
             loadingState.style.display = 'flex';
 
-
-
-            // Função auxiliar para atualizar steps
-
-            const updateStep = (id, isActive) => {
-
-                const el = document.getElementById(id);
-
-                const icon = el.querySelector('.step-icon');
-
-               
-
-                el.classList.remove('text-gray-400');
-
-               
-
-                if (isActive) {
-
-                    // Estado Ativo (Loading)
-
-                    el.classList.add('text-[#2978FF]');
-
-                    icon.innerHTML = '<div class="loader" style="width:12px; height:12px; border-width:2px;"></div>';
-
-                    icon.className = 'w-5 h-5 flex items-center justify-center bg-white rounded-full shadow-sm';
-
-                } else {
-
-                    // Estado Concluído (Check)
-
-                    el.classList.remove('text-[#2978FF]');
-
-                    el.classList.add('text-green-600');
-
-                   
-
-                    icon.innerHTML = '<svg class="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>';
-
-                    icon.className = 'w-5 h-5 rounded-full bg-[#1DDDBD] border-none flex items-center justify-center shadow-sm';
-
-                }
-
-            };
-
-
-
-            // Simulação da Sequência de Autenticação
-
-           
-
-            // Passo 1: Microsoft (Imediato)
-
-            updateStep('step-1', true);
-
-
-
+            // 2. Redirecionar após breve delay (para a UI renderizar)
             setTimeout(() => {
-
-                updateStep('step-1', false); // MS Completo
-
-                updateStep('step-2', true);  // Salesforce Começa
-
-            }, 1500);
-
-
-
-            setTimeout(() => {
-
-                updateStep('step-2', false); // Salesforce Completo
-
-                updateStep('step-3', true);  // Discord Começa
-
-            }, 3000);
-
-
-
-            setTimeout(() => {
-
-                updateStep('step-3', false); // Discord Completo
-
-               
-
-                // Mostrar Sucesso
-
-                loadingState.style.display = 'none';
-
-                successState.style.display = 'flex';
-
-               
-
-                // Mock redirect
-
-                console.log("Redirecionando para /dashboard...");
-
-            }, 4500);
-
+                window.location.href = '/auth/login';
+            }, 500);
         }
-
     </script>
 
 </body>

@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomObject xmlns="http://soap.sforce.com/2006/04/metadata">
+    <actionOverrides>
+        <actionName>Accept</actionName>
+        <type>Default</type>
+    </actionOverrides>
+    <deploymentStatus>Deployed</deploymentStatus>
+    <description>Planejamento comercial (Baseline) do serviço.</description>
+    <label>Alocação Prevista</label>
+    <nameField>
+        <displayFormat>AP-{00000}</displayFormat>
+        <label>ID Alocação Prevista</label>
+        <type>AutoNumber</type>
+    </nameField>
+    <pluralLabel>Alocações Previstas</pluralLabel>
+    <sharingModel>ControlledByParent</sharingModel>
+    <visibility>Public</visibility>
+</CustomObject>

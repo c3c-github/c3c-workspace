@@ -1,0 +1,878 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestão de Serviços - C3C Workplace</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = { theme: { extend: { fontFamily: { sans: ['Montserrat', 'sans-serif'] }, colors: { c3c: { blue: '#2978FF', bg: '#F8FAFC' } } } } }
+    </script>
+    <style>
+        body { font-family: 'Montserrat', sans-serif; background-color: #F8FAFC; }
+        .modal-backdrop { background-color: rgba(0, 0, 0, 0.5); backdrop-filter: blur(2px); z-index: 50; }
+        .modal-tab-active { border-bottom: 2px solid #2978FF; color: #2978FF; font-weight: 700; background-color: #F8FAFC; }
+        .modal-tab-inactive { border-bottom: 2px solid transparent; color: #6B7280; }
+        .modal-tab-inactive:hover { color: #1a1a1a; background-color: #F9FAFB; }
+        .table-dense th, .table-dense td { padding: 6px 8px; font-size: 11px; vertical-align: middle; }
+        .input-inline { background: transparent; border: 1px solid transparent; width: 100%; border-radius: 4px; padding: 2px; }
+        .input-inline:hover { border-color: #E5E7EB; background: white; }
+        .input-inline:focus { border-color: #2978FF; background: white; outline: none; box-shadow: 0 0 0 2px rgba(41, 120, 255, 0.1); }
+        .readonly-field { background-color: #F3F4F6; color: #6B7280; cursor: not-allowed; }
+    </style>
+</head>
+<body class="h-screen flex overflow-hidden bg-c3c-bg">
+    <%- include('partials/sidebar', { user: user, page: page }) %>
+    <main class="flex-1 flex flex-col md:ml-64 relative w-full overflow-hidden">
+        <header class="h-20 bg-white border-b border-gray-200 flex items-center justify-between px-8 shrink-0 z-10">
+            <h1 class="text-xl font-bold text-gray-800 flex items-center gap-2"><i data-lucide="layers" class="w-6 h-6 text-indigo-600"></i> Portfólio de Serviços</h1>
+            <div class="flex items-center gap-4">
+                <input type="text" id="search-input" placeholder="Buscar serviço ou cliente..." class="w-64 bg-gray-50 border border-gray-200 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" onkeyup="filterServices()">
+                <div class="h-8 w-px bg-gray-200"></div>
+                <select id="status-filter" onchange="filterServices()" class="text-sm font-bold text-gray-700 bg-transparent outline-none cursor-pointer">
+                    <option value="all">Todos</option>
+                    <option value="active" selected>Ativos</option>
+                    <option value="inactive">Inativos</option>
+                </select>
+                <button onclick="openServiceModal()" class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-4 py-2.5 rounded-lg shadow-md flex items-center gap-2 transition-transform active:scale-95"><i data-lucide="plus" class="w-4 h-4"></i> Novo</button>
+            </div>
+        </header>
+        <div class="flex-1 overflow-y-auto p-8 fade-in bg-c3c-bg">
+            <div class="grid grid-cols-1 gap-6" id="services-grid"></div>
+            <div id="no-results" class="hidden flex-col items-center justify-center py-20 text-center"><i data-lucide="search-x" class="w-8 h-8 text-gray-400 mb-2"></i><h3 class="font-bold text-gray-600">Nada encontrado</h3></div>
+        </div>
+    </main>
+
+    <!-- MEGA MODAL -->
+    <div id="service-modal" class="fixed inset-0 modal-backdrop hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-[95rem] h-[95vh] flex flex-col transform scale-95 transition-transform duration-300 relative">
+            
+            <!-- LOADER OVERLAY -->
+            <div id="modal-loader" class="absolute inset-0 bg-white/80 z-[100] flex items-center justify-center hidden rounded-xl">
+                <div class="flex flex-col items-center gap-3">
+                    <div class="w-10 h-10 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin"></div>
+                    <p class="text-sm font-bold text-indigo-600 animate-pulse">Processando...</p>
+                </div>
+            </div>
+
+            <div class="p-4 border-b border-gray-100 bg-gray-50 rounded-t-xl shrink-0">
+                <div class="flex justify-between items-center mb-4">
+                    <div class="flex items-center gap-3"><h3 class="font-bold text-gray-900 text-lg" id="modal-svc-title">Novo Serviço</h3><span id="badge-status" class="bg-green-100 text-green-700 text-[10px] px-2 py-0.5 rounded border border-green-200 font-bold uppercase">Novo</span></div>
+                    <button onclick="closeModal('service-modal')" class="text-gray-400 hover:text-gray-600"><i data-lucide="x" class="w-6 h-6"></i></button>
+                </div>
+                <div class="grid grid-cols-3 gap-4">
+                    <div class="bg-white border border-gray-200 p-3 rounded-lg shadow-sm flex justify-between items-center"><div><p class="text-[10px] font-bold text-gray-400 uppercase">Vendido (Baseline)</p><p class="text-lg font-bold text-gray-800" id="card-prop-rev">R$ 0,00</p></div><div class="text-right"><p class="text-[10px] font-bold text-gray-400">Margem</p><p class="text-sm font-bold text-blue-600" id="card-prop-margin">0%</p></div></div>
+                    <div class="bg-white border border-gray-200 p-3 rounded-lg shadow-sm flex justify-between items-center"><div><p class="text-[10px] font-bold text-gray-400 uppercase">Previsto (Alocação)</p><p class="text-lg font-bold text-gray-800" id="card-fcst-rev">R$ 0,00</p></div><div class="text-right"><p class="text-[10px] font-bold text-gray-400">Margem</p><p class="text-sm font-bold text-indigo-600" id="card-fcst-margin">0%</p></div></div>
+                    <div class="bg-white border border-gray-200 p-3 rounded-lg shadow-sm flex justify-between items-center"><div><p class="text-[10px] font-bold text-gray-400 uppercase">Realizado (YTD)</p><p class="text-lg font-bold text-gray-800" id="card-act-rev">R$ 0,00</p></div><div class="text-right"><p class="text-[10px] font-bold text-gray-400">Margem</p><p class="text-sm font-bold text-green-600" id="card-act-margin">0%</p></div></div>
+                </div>
+            </div>
+            <div class="flex border-b border-gray-200 bg-white shrink-0 px-6 overflow-x-auto">
+                <button onclick="switchTab('general')" id="tab-general" class="modal-tab-active px-6 py-3 text-xs uppercase font-bold tracking-wide transition-colors whitespace-nowrap">Visão Geral</button>
+                <button onclick="switchTab('commercial')" id="tab-commercial" class="modal-tab-inactive px-6 py-3 text-xs uppercase font-bold tracking-wide transition-colors whitespace-nowrap">Planejamento Comercial</button>
+                <button onclick="switchTab('execution')" id="tab-execution" class="modal-tab-inactive px-6 py-3 text-xs uppercase font-bold tracking-wide transition-colors whitespace-nowrap">Previsão (Alocação)</button>
+                <button onclick="switchTab('realized')" id="tab-realized" class="modal-tab-inactive px-6 py-3 text-xs uppercase font-bold tracking-wide transition-colors whitespace-nowrap">Execução (Real)</button>
+                <button onclick="switchTab('financial')" id="tab-financial" class="modal-tab-inactive px-6 py-3 text-xs uppercase font-bold tracking-wide transition-colors whitespace-nowrap">Financeiro Detalhado</button>
+                <button onclick="switchTab('billing')" id="tab-billing" class="modal-tab-inactive px-6 py-3 text-xs uppercase font-bold tracking-wide transition-colors whitespace-nowrap">Faturamento</button>
+            </div>
+            <div class="flex-1 overflow-y-auto p-6 bg-white text-sm">
+                <!-- 1. GERAL -->
+                <div id="view-general" class="space-y-6">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <div class="space-y-4">
+                            <h4 class="font-bold text-gray-800 border-b border-gray-100 pb-2">Dados do Contrato</h4>
+                            <div><label class="block text-xs font-bold text-gray-500 mb-1">Nome do Serviço</label><input type="text" id="input-svc-name" class="w-full border border-gray-300 rounded p-2 focus:border-blue-500 outline-none"></div>
+                            <div class="grid grid-cols-2 gap-4">
+                                <div><label class="block text-xs font-bold text-gray-500 mb-1">Cliente (SF)</label><div class="relative"><input list="sf-accounts-list" id="input-sf-account" class="w-full border border-gray-300 rounded p-2 pr-8"><button onclick="document.getElementById('input-sf-account').value=''" class="absolute right-2 top-2 text-gray-400 hover:text-red-500"><i data-lucide="x" class="w-4 h-4"></i></button></div><datalist id="sf-accounts-list"></datalist></div>
+                                <div>
+                                    <div class="flex items-center gap-1 mb-1">
+                                        <label class="block text-xs font-bold text-gray-500">Cliente (Conta Azul)</label>
+                                        <div class="group relative">
+                                            <i data-lucide="help-circle" class="w-3.5 h-3.5 text-indigo-400 cursor-help"></i>
+                                            <div class="absolute bottom-full left-0 mb-2 hidden group-hover:block w-64 bg-gray-800 text-white text-[10px] p-2 rounded-lg shadow-2xl z-[110] leading-relaxed">
+                                                <p class="font-bold border-b border-gray-600 mb-1 pb-1 text-indigo-300">Atenção!</p>
+                                                Se o cliente não aparecer na lista, ele deve ser cadastrado no <b>ERP Conta Azul</b> pela equipe Comercial/Financeira antes de prosseguir.
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="relative"><input list="ca-clients-list" id="input-ca-client" class="w-full border border-gray-300 rounded p-2 focus:border-blue-500 outline-none pr-8" placeholder="Vincular CNPJ..."><button onclick="document.getElementById('input-ca-client').value=''" class="absolute right-2 top-2 text-gray-400 hover:text-red-500"><i data-lucide="x" class="w-4 h-4"></i></button></div>
+                                    <datalist id="ca-clients-list"></datalist>
+                                </div>
+                            </div>
+                            <div><label class="block text-xs font-bold text-gray-500 mb-1">Tipo</label><select id="input-svc-type" class="w-full border border-gray-300 rounded p-2"><option>Suporte</option><option>Projeto</option><option>Alocação</option></select></div>
+                            <div class="grid grid-cols-3 gap-4">
+                                <div><label class="block text-xs font-bold text-gray-500 mb-1">Data Início</label><input type="date" id="input-svc-start" class="w-full border border-gray-300 rounded p-2"></div>
+                                <div><label class="block text-xs font-bold text-gray-500 mb-1">Data Fim Original</label><input type="date" id="input-svc-end-orig" class="w-full border border-gray-300 rounded p-2"></div>
+                                <div><label class="block text-xs font-bold text-gray-500 mb-1">Data Fim (Real)</label><input type="date" id="input-svc-end-real" class="w-full border border-gray-300 rounded p-2"></div>
+                            </div>
+                        </div>
+                        <div class="space-y-4">
+                            <h4 class="font-bold text-gray-800 border-b border-gray-100 pb-2">Liderança</h4>
+                            <div><label class="block text-xs font-bold text-gray-500 mb-1">Líder de Projeto</label><div class="relative"><input list="people-list" id="input-lead-project" class="w-full border border-gray-300 rounded p-2 pr-8"><button onclick="document.getElementById('input-lead-project').value=''" class="absolute right-2 top-2 text-gray-400 hover:text-red-500"><i data-lucide="x" class="w-4 h-4"></i></button></div></div>
+                            <div><label class="block text-xs font-bold text-gray-500 mb-1">Coordenador</label><div class="relative"><input list="people-list" id="input-coordinator" class="w-full border border-gray-300 rounded p-2 pr-8"><button onclick="document.getElementById('input-coordinator').value=''" class="absolute right-2 top-2 text-gray-400 hover:text-red-500"><i data-lucide="x" class="w-4 h-4"></i></button></div></div>
+                            <div><label class="block text-xs font-bold text-gray-500 mb-1">Líder Técnico</label><div class="relative"><input list="people-list" id="input-tech-lead" class="w-full border border-gray-300 rounded p-2 pr-8"><button onclick="document.getElementById('input-tech-lead').value=''" class="absolute right-2 top-2 text-gray-400 hover:text-red-500"><i data-lucide="x" class="w-4 h-4"></i></button></div></div>
+                            <datalist id="people-list"></datalist>
+                        </div>
+                    </div>
+                    <div class="mt-8 border-t border-gray-100 pt-6">
+                        <h4 class="font-bold text-gray-800 mb-4">Documentação</h4>
+                        <div class="space-y-2">
+                            <div id="docs-list-container" class="space-y-2 bg-gray-50 border border-gray-200 rounded-lg p-4 text-center text-xs text-gray-400 italic">Nenhum documento anexado.</div>
+                            <div class="p-1 bg-gray-50 border border-dashed border-gray-300 rounded-lg">
+                                <button onclick="openUploadModal()" class="w-full bg-white border border-gray-200 text-gray-600 text-xs px-3 py-2 rounded font-bold hover:bg-gray-50 flex items-center justify-center gap-2 transition-colors">
+                                    <i data-lucide="upload-cloud" class="w-3.5 h-3.5"></i> Anexar Documento
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- OUTRAS ABAS (Mantidas) -->
+                <div id="view-commercial" class="hidden space-y-6">
+                    <div class="flex justify-between items-center bg-blue-50 p-4 rounded-lg">
+                        <div><h4 class="text-sm font-bold text-blue-800">Orçamento (Baseline)</h4><p class="text-[10px] text-blue-600 flex items-center gap-1"><i data-lucide="info" class="w-3 h-3"></i> Cálculo considera dias úteis e feriados.</p></div>
+                        <div class="flex items-center gap-2"><label class="text-[10px] font-bold text-blue-700 uppercase">Tabela:</label><select id="select-pricebook" onchange="onPricebookChange()" class="text-xs border border-blue-200 rounded p-1 bg-white"><option>Carregando...</option></select></div>
+                    </div>
+                    <div class="overflow-x-auto border border-gray-200 rounded-lg mt-4"><table class="w-full text-left table-dense"><thead class="bg-gray-100 font-bold text-gray-600 border-b border-gray-200 text-[10px] uppercase"><tr><th class="w-48">Produto / Perfil</th><th class="text-right w-24">Taxa Venda</th><th class="text-right w-24">Custo Base</th><th class="text-center w-24">Início</th><th class="text-center w-24">Fim</th><th class="text-center w-12">Dias</th><th class="text-center w-12">%</th><th class="text-right w-20">Hrs Totais</th><th class="text-right w-28 bg-green-50">Receita Total</th><th class="text-right w-28">Custo Total</th><th class="text-right w-16">Margem</th><th class="w-8"></th></tr></thead><tbody id="commercial-rows" class="divide-y divide-gray-100 bg-white"></tbody><tfoot class="bg-gray-50 font-bold text-gray-700 border-t border-gray-200"><tr><td colspan="7" class="text-right uppercase text-[10px] pr-2">Totais:</td><td class="text-right text-xs" id="comm-total-hours">0h</td><td class="text-right text-xs text-green-700 bg-green-50" id="comm-total-rev">R$ 0,00</td><td class="text-right text-xs text-red-600" id="comm-total-cost">R$ 0,00</td><td class="text-right text-xs text-blue-600" id="comm-total-margin">0%</td><td></td></tr></tfoot></table><div class="p-2 bg-gray-50 border-t border-gray-200"><button onclick="addCommercialRow()" class="w-full bg-white border border-gray-300 text-gray-700 text-xs px-3 py-2 rounded font-bold hover:bg-gray-100 flex items-center justify-center gap-2"><i data-lucide="plus" class="w-3 h-3"></i> Adicionar Item Comercial</button></div></div>
+                    <div class="mt-6"><div class="flex justify-between items-center mb-2"><h5 class="font-bold text-gray-700 text-xs uppercase">Forecast Comercial (Mensal)</h5><div class="flex gap-2"><label class="text-xs font-bold text-gray-500 pt-1">Ano:</label><input type="number" id="forecast-year-comm" class="w-16 border rounded text-center text-xs" value="2026" onchange="refreshAllForecasts()"></div></div><div class="overflow-x-auto border border-gray-200 rounded-lg"><table class="w-full text-left table-dense"><thead class="bg-gray-50 font-bold text-gray-600 border-b border-gray-200 text-[10px] uppercase"><tr id="monthly-forecast-header"></tr></thead><tbody id="monthly-forecast-body" class="bg-white"></tbody></table></div></div>
+                </div>
+                <div id="view-execution" class="hidden space-y-6">
+                     <div class="bg-indigo-50 border border-indigo-200 p-4 rounded-lg flex justify-between items-center"><div><h4 class="text-sm font-bold text-indigo-800">Alocação de Recursos</h4><p class="text-[10px] text-indigo-600">Receita ponderada pelo custo incorrido.</p></div></div>
+                    <div class="overflow-x-auto border border-gray-200 rounded-lg mt-4"><table class="w-full text-left table-dense"><thead class="bg-gray-100 font-bold text-gray-600 border-b border-gray-200 text-[10px] uppercase"><tr><th class="w-40">Item Vendido</th><th class="w-48">Profissional</th><th class="text-right w-24">Taxa Venda</th><th class="text-right w-24">Custo Hr</th><th class="text-center w-24">Início</th><th class="text-center w-24">Fim</th><th class="text-center w-12">%</th><th class="text-center w-12">Dias</th><th class="text-right w-20">Hrs</th><th class="text-right w-28 bg-green-50">Rec. Ponderada</th><th class="text-right w-28">Custo Prev.</th><th class="text-right w-16">Margem</th><th class="w-8"></th></tr></thead><tbody id="execution-rows" class="divide-y divide-gray-100 bg-white"></tbody><tfoot class="bg-gray-50 font-bold text-gray-700 border-t border-gray-200"><tr><td colspan="7" class="text-right uppercase text-[10px] pr-2">Totais:</td><td class="text-center text-xs" id="exec-total-days">0</td><td class="text-right text-xs" id="exec-total-hours">0h</td><td class="text-right text-xs text-green-700 bg-green-50" id="exec-total-rev">R$ 0,00</td><td class="text-right text-xs text-red-600" id="exec-total-cost">R$ 0,00</td><td class="text-right text-xs text-blue-600" id="exec-total-margin">0%</td><td></td></tr></tfoot></table><div class="p-2 bg-gray-50 border-t border-gray-200"><button onclick="addExecutionRow()" class="w-full bg-white border border-gray-300 text-gray-700 text-xs px-3 py-2 rounded font-bold hover:bg-gray-100 flex items-center justify-center gap-2"><i data-lucide="user-plus" class="w-3 h-3"></i> Adicionar Profissional</button></div></div>
+                    <div class="mt-6"><div class="flex justify-between items-center mb-2"><h5 class="font-bold text-gray-700 text-xs uppercase">Forecast Alocação (Mensal)</h5><div class="flex gap-2"><label class="text-xs font-bold text-gray-500 pt-1">Ano:</label><input type="number" id="forecast-year-alloc" class="w-16 border rounded text-center text-xs" value="2026" onchange="refreshAllForecasts()"></div></div><div class="overflow-x-auto border border-gray-200 rounded-lg"><table class="w-full text-left table-dense"><thead class="bg-gray-50 font-bold text-gray-600 border-b border-gray-200 text-[10px] uppercase"><tr id="alloc-forecast-header"></tr></thead><tbody id="alloc-forecast-body" class="bg-white"></tbody></table></div></div>
+                </div>
+                <div id="view-realized" class="hidden space-y-6">
+                    <div class="bg-teal-50 border border-teal-200 p-4 rounded-lg"><h4 class="text-sm font-bold text-teal-800">Execução Real (Timesheet)</h4><p class="text-[10px] text-teal-600">Dados baseados em apontamentos reais.</p></div>
+                    <div class="overflow-x-auto border border-gray-200 rounded-lg mt-4"><table class="w-full text-left table-dense"><thead class="bg-gray-100 font-bold text-gray-600 border-b border-gray-200 text-[10px] uppercase"><tr><th class="w-48">Profissional</th><th class="text-right">Hrs Lançadas</th><th class="text-right">Custo Incorrido</th><th class="text-right">Preço Venda</th><th class="text-right">Receita Medida</th><th class="text-right">Margem Real</th></tr></thead><tbody id="realized-rows" class="divide-y divide-gray-100 bg-white"></tbody></table></div>
+                    <div class="mt-6"><div class="flex justify-between items-center mb-2"><h5 class="font-bold text-gray-700 text-xs uppercase">Forecast Realizado (Mensal)</h5><div class="flex gap-2"><label class="text-xs font-bold text-gray-500 pt-1">Ano:</label><input type="number" id="forecast-year-real" class="w-16 border rounded text-center text-xs" value="2026" onchange="refreshAllForecasts()"></div></div><div class="overflow-x-auto border border-gray-200 rounded-lg"><table class="w-full text-left table-dense"><thead class="bg-gray-50 font-bold text-gray-600 border-b border-gray-200 text-[10px] uppercase"><tr id="realized-forecast-header"></tr></thead><tbody id="realized-forecast-body" class="bg-white"></tbody></table></div></div>
+                </div>
+                <div id="view-financial" class="hidden space-y-6">
+                    <div class="flex justify-between items-center mb-4"><h4 class="text-sm font-bold text-gray-800">DRE do Projeto Detalhada (Todo o Período)</h4></div>
+                    <div class="overflow-x-auto border border-gray-200 rounded-lg shadow-sm"><table class="w-full text-left table-dense"><thead class="bg-gray-800 text-white font-bold text-[10px] uppercase"><tr><th class="w-24 py-3">Mês/Ano</th><th class="text-right bg-gray-700 px-2">Rec. Vendida</th><th class="text-right bg-gray-700 px-2">Custo Vendido</th><th class="text-right border-r border-gray-600 px-2">Margem</th><th class="text-right bg-indigo-900 px-2">Rec. Prevista</th><th class="text-right bg-indigo-900 px-2">Custo Prev.</th><th class="text-right border-r border-gray-600 px-2">Margem</th><th class="text-right bg-teal-900 px-2">Rec. Real</th><th class="text-right bg-teal-900 px-2">Custo Real</th><th class="text-right px-2">Margem</th></tr></thead><tbody id="financial-grid" class="divide-y divide-gray-200 bg-white"></tbody><tfoot id="financial-foot" class="bg-gray-100 font-bold text-gray-800 border-t-2 border-gray-300"></tfoot></table></div>
+                </div>
+                <div id="view-billing" class="hidden space-y-6">
+                    <div class="bg-green-50 border border-green-200 p-4 rounded-lg mb-4"><div class="flex gap-4 w-full"><div class="w-1/2"><label class="text-[10px] font-bold text-green-800 uppercase">Modelo</label><select class="w-full text-xs border border-green-300 rounded p-1"><option>Recorrente</option><option>Horas</option><option>Fixo</option></select></div><div class="w-1/2"><label class="text-[10px] font-bold text-green-800 uppercase">Pagamento</label><select class="w-full text-xs border border-green-300 rounded p-1"><option>30 Dias</option><option>15 Dias</option><option>À Vista</option></select></div></div></div>
+                     <div class="overflow-x-auto border border-gray-200 rounded-lg"><table class="w-full text-xs text-left"><thead class="bg-gray-100 font-bold text-gray-600"><tr><th class="px-3 py-2 w-10">#</th><th class="px-3 py-2">Descrição</th><th class="px-3 py-2">Competência</th><th class="px-3 py-2">Vencimento</th><th class="px-3 py-2 text-right">Valor</th><th class="px-3 py-2 w-10"></th></tr></thead><tbody id="svc-billing-list" class="divide-y divide-gray-200"></tbody></table><div class="p-2 bg-gray-50 border-t border-gray-200"><button onclick="addBillingRow()" class="w-full bg-white border border-green-200 text-green-700 text-xs px-3 py-2 rounded font-bold hover:bg-green-100 whitespace-nowrap flex items-center justify-center gap-2"><i data-lucide="plus" class="w-3 h-3"></i> Adicionar Parcela</button></div></div>
+                </div>
+            </div>
+            <div class="p-4 border-t border-gray-100 bg-gray-50 rounded-b-xl flex justify-end items-center shrink-0">
+                <button onclick="saveService()" class="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold rounded-lg shadow-md flex items-center gap-2 transition-transform active:scale-95">
+                    <i data-lucide="check" class="w-4 h-4"></i> Salvar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL UPLOAD -->
+    <div id="upload-modal" class="fixed inset-0 modal-backdrop hidden flex items-center justify-center p-4 z-[120]">
+        <div class="bg-white rounded-xl shadow-2xl p-6 w-full max-w-sm transform transition-all">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="font-bold text-gray-800 flex items-center gap-2"><i data-lucide="upload" class="w-5 h-5 text-indigo-600"></i> Anexar Arquivo</h3>
+                <button onclick="document.getElementById('upload-modal').classList.add('hidden')" class="text-gray-400 hover:text-gray-600"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-[10px] font-bold text-gray-400 uppercase mb-1">Tipo de Documento</label>
+                    <select id="doc-type-select" class="w-full text-xs border border-gray-300 rounded-lg p-2.5 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none"><option>Proposta Comercial</option><option>Contrato</option><option>Pricing</option><option>Outros</option></select>
+                </div>
+                <div>
+                    <label class="block text-[10px] font-bold text-gray-400 uppercase mb-1">Arquivo</label>
+                    <input type="file" id="file-input" class="w-full text-xs text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-bold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100">
+                </div>
+                <div class="flex justify-end gap-3 pt-2">
+                    <button onclick="document.getElementById('upload-modal').classList.add('hidden')" class="px-4 py-2 text-xs font-bold text-gray-500 hover:text-gray-700">Cancelar</button>
+                    <button onclick="uploadFile()" class="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-lg shadow-lg transition-transform active:scale-95">Enviar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div id="toast" class="fixed bottom-5 right-5 bg-gray-900 text-white px-4 py-3 rounded-lg shadow-xl translate-y-20 opacity-0 transition-all duration-300 flex items-center gap-3 z-[60]"><i data-lucide="check-circle" class="w-5 h-5 text-green-400"></i><div><p class="text-sm font-bold" id="toast-title"></p><p class="text-xs text-gray-400" id="toast-message"></p></div></div>
+
+    <script>
+        lucide.createIcons();
+        let services = <%- JSON.stringify(services) %>;
+        let currentServiceData = null; let metadata = {}; 
+        let attachedDocIds = []; 
+
+        const money = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
+        const moneyValue = (val) => money.format(val || 0);
+        const holidays = ["01/01", "21/04", "01/05", "07/09", "12/10", "02/11", "15/11", "25/12"];
+
+        // --- GLOBAL HELPERS & CALCS ---
+        function countBusinessDays(startDate, endDate) {
+            if(!startDate || !endDate) return 0;
+            const s = startDate.split('-'); const e = endDate.split('-');
+            const start = new Date(s[0], s[1]-1, s[2]); const end = new Date(e[0], e[1]-1, e[2]);
+            if(start > end) return 0;
+            let days = 0; let cur = new Date(start);
+            while(cur <= end) {
+                const d = cur.getDay();
+                const dStr = String(cur.getDate()).padStart(2,'0') + '/' + String(cur.getMonth()+1).padStart(2,'0');
+                if(d !== 0 && d !== 6 && !holidays.includes(dStr)) days++;
+                cur.setDate(cur.getDate() + 1);
+            }
+            return days;
+        }
+
+        function updateSummaryCards(cRev, cMargin, fRev, fMargin, aRev, aMargin) {
+            document.getElementById('card-prop-rev').innerText = moneyValue(cRev); document.getElementById('card-prop-margin').innerText = cMargin + '%';
+            document.getElementById('card-fcst-rev').innerText = moneyValue(fRev); document.getElementById('card-fcst-margin').innerText = fMargin + '%';
+            document.getElementById('card-act-rev').innerText = moneyValue(aRev); document.getElementById('card-act-margin').innerText = aMargin + '%';
+        }
+
+        function calculateAllTotals() {
+            let cRev=0, cCost=0, cHours=0;
+            document.querySelectorAll('.comm-row').forEach(tr => {
+                cRev += parseFloat(tr.querySelector('.cell-rev').innerText.replace(/[^0-9,-]+/g,"").replace(",",".")||0);
+                cCost += parseFloat(tr.querySelector('.cell-cost').innerText.replace(/[^0-9,-]+/g,"").replace(",",".")||0);
+                cHours += parseFloat(tr.querySelector('.cell-hours').innerText.replace('h','')||0);
+            });
+            document.getElementById('comm-total-hours').innerText = cHours.toFixed(1) + 'h';
+            document.getElementById('comm-total-rev').innerText = moneyValue(cRev);
+            document.getElementById('comm-total-cost').innerText = moneyValue(cCost);
+            document.getElementById('comm-total-margin').innerText = cRev > 0 ? Math.round(((cRev-cCost)/cRev)*100) + '%' : '0%';
+
+            let aRev=0, aCost=0, aHours=0, aDays=0;
+            document.querySelectorAll('.exec-row').forEach(tr => {
+                 aRev += parseFloat(tr.querySelector('.cell-rev').innerText.replace(/[^0-9,-]+/g,"").replace(",",".")||0);
+                 aCost += parseFloat(tr.querySelector('.cell-cost').innerText.replace(/[^0-9,-]+/g,"").replace(",",".")||0);
+                 aHours += parseFloat(tr.querySelector('.cell-hours').innerText.replace('h','')||0);
+                 aDays += parseInt(tr.querySelector('.cell-days').innerText||0);
+            });
+            document.getElementById('exec-total-days').innerText = aDays; document.getElementById('exec-total-hours').innerText = aHours.toFixed(1) + 'h';
+            document.getElementById('exec-total-rev').innerText = moneyValue(aRev); document.getElementById('exec-total-cost').innerText = moneyValue(aCost);
+            document.getElementById('exec-total-margin').innerText = aRev > 0 ? Math.round(((aRev-aCost)/aRev)*100) + '%' : '0%';
+
+            let rRev = aRev * 0.9; let rCost = aCost * 0.95;
+            updateSummaryCards(cRev, cRev>0?Math.round(((cRev-cCost)/cRev)*100):0, aRev, aRev>0?Math.round(((aRev-aCost)/aRev)*100):0, rRev, rRev>0?Math.round(((rRev-rCost)/rRev)*100):0);
+        function recalcDistribution() {
+            const distributionMap = {};
+            document.querySelectorAll('.exec-row').forEach(tr => {
+                const commId = tr.cells[0].querySelector('select').value;
+                const costRate = parseFloat(tr.cells[3].querySelector('input').value) || 0;
+                const start = tr.cells[4].querySelector('input').value;
+                const end = tr.cells[5].querySelector('input').value;
+                const alloc = parseFloat(tr.cells[6].querySelector('input').value) || 0;
+                const days = countBusinessDays(start, end);
+                const totalHours = days * 8 * (alloc / 100); 
+                const totalCost = totalHours * costRate;
+                tr.dataset.tempCost = totalCost; tr.dataset.tempHours = totalHours; tr.dataset.tempDays = days; 
+                
+                // Atualiza métricas base (sempre)
+                tr.querySelector('.cell-days').innerText = days; 
+                tr.querySelector('.cell-hours').innerText = totalHours.toFixed(1) + 'h';
+                tr.querySelector('.cell-cost').innerText = moneyValue(totalCost);
+
+                if(commId) {
+                    if(!distributionMap[commId]) distributionMap[commId] = { totalCostIncurred: 0, rows: [] };
+                    distributionMap[commId].totalCostIncurred += totalCost; distributionMap[commId].rows.push(tr);
+                } else {
+                    // Sem venda: No Billable
+                    tr.cells[2].querySelector('input').value = '0.00';
+                    tr.querySelector('.cell-rev').innerText = moneyValue(0);
+                    tr.querySelector('.cell-margin').innerText = '-100%';
+                }
+            });
+            Object.keys(distributionMap).forEach(commId => {
+                const group = distributionMap[commId];
+                const commRow = document.querySelector(`.comm-row[data-id="${commId}"]`);
+                const commRev = commRow ? parseFloat(commRow.querySelector('.cell-rev').innerText.replace(/[^0-9,-]+/g,"").replace(",",".") || 0) : 0;
+                group.rows.forEach(tr => {
+                    const myCost = parseFloat(tr.dataset.tempCost); const myHours = parseFloat(tr.dataset.tempHours);
+                    let myShareRev = (group.totalCostIncurred > 0) ? (commRev * myCost) / group.totalCostIncurred : 0;
+                    tr.cells[2].querySelector('input').value = myHours > 0 ? (myShareRev / myHours).toFixed(2) : '0.00';
+                    tr.querySelector('.cell-rev').innerText = moneyValue(myShareRev);
+                    tr.querySelector('.cell-margin').innerText = myShareRev > 0 ? Math.round(((myShareRev - myCost) / myShareRev) * 100) + '%' : '0%';
+                });
+            });
+            calculateAllTotals(); updateRealizedView(); 
+        }
+
+        function updateRealizedView() {
+            const rows = document.getElementById('realized-rows'); rows.innerHTML = '';
+            document.querySelectorAll('.exec-row').forEach(tr => {
+                const person = tr.cells[1].querySelector('select').selectedOptions[0]?.text || 'Indefinido';
+                const salePrice = parseFloat(tr.cells[2].querySelector('input').value) || 0;
+                rows.innerHTML += `<tr><td class="px-2 py-2 text-xs text-gray-700">${person}</td><td class="px-2 py-2 text-right text-xs font-bold text-gray-400">0.0h</td><td class="px-2 py-2 text-right text-xs text-gray-400">R$ 0,00</td><td class="px-2 py-2 text-right text-xs text-blue-600">${salePrice.toFixed(2)}</td><td class="px-2 py-2 text-right text-xs text-gray-400 font-bold">R$ 0,00</td><td class="px-2 py-2 text-right text-xs font-bold text-gray-400">0%</td></tr>`;
+            });
+        }
+
+        function showToast(title, message, color = 'green') {
+            const el = document.getElementById('toast');
+            if(!el) return;
+            const icon = el.querySelector('i');
+            const titleEl = document.getElementById('toast-title');
+            
+            titleEl.innerText = title;
+            document.getElementById('toast-message').innerText = message;
+            
+            if(icon) {
+                if (color === 'red') {
+                    icon.classList.remove('text-green-400');
+                    icon.classList.add('text-red-400');
+                    icon.setAttribute('data-lucide', 'alert-circle');
+                } else {
+                    icon.classList.remove('text-red-400');
+                    icon.classList.add('text-green-400');
+                    icon.setAttribute('data-lucide', 'check-circle');
+                }
+                lucide.createIcons();
+            }
+
+            el.classList.remove('translate-y-20','opacity-0'); 
+            setTimeout(() => el.classList.add('translate-y-20','opacity-0'), 3000); 
+        }
+
+        function refreshAllForecasts() {
+            const yrComm = parseInt(document.getElementById('forecast-year-comm').value);
+            const yrAlloc = parseInt(document.getElementById('forecast-year-alloc').value);
+            const yrReal = parseInt(document.getElementById('forecast-year-real').value);
+            const cMonths = generatePreciseForecast('comm-row', yrComm); renderMonthlyTable(cMonths, 'monthly-forecast-header', 'monthly-forecast-body', yrComm);
+            const aMonths = generatePreciseForecast('exec-row', yrAlloc); renderMonthlyTable(aMonths, 'alloc-forecast-header', 'alloc-forecast-body', yrAlloc);
+            const rMonthsRaw = generatePreciseForecast('exec-row', yrReal); const rMonths = rMonthsRaw.map(d => ({ rev: d.rev * 0.9, cost: d.cost * 0.95 }));
+            renderMonthlyTable(rMonths, 'realized-forecast-header', 'realized-forecast-body', yrReal);
+            generateDREDetailed();
+        }
+
+        function generatePreciseForecast(rowClass, year) {
+            const forecast = Array.from({length: 12}, () => ({ rev: 0, cost: 0 }));
+            const isComm = rowClass === 'comm-row';
+            const idxStart = isComm ? 3 : 4; const idxEnd = isComm ? 4 : 5; const idxSale = isComm ? 1 : 2; const idxCost = isComm ? 2 : 3; const idxAlloc = 6; 
+            document.querySelectorAll('.' + rowClass).forEach(tr => {
+                const sVal = tr.cells[idxStart].querySelector('input').value; const eVal = tr.cells[idxEnd].querySelector('input').value;
+                if(!sVal || !eVal) return;
+                const sParts = sVal.split('-'); const start = new Date(sParts[0], sParts[1]-1, sParts[2]);
+                const eParts = eVal.split('-'); const end = new Date(eParts[0], eParts[1]-1, eParts[2]);
+                const saleRate = parseFloat(tr.cells[idxSale].querySelector('input').value) || 0;
+                const costRate = parseFloat(tr.cells[idxCost].querySelector('input').value) || 0;
+                const alloc = parseFloat(tr.cells[idxAlloc].querySelector('input').value) || 0;
+                const hoursPerDay = 8 * (alloc/100);
+                let cur = new Date(start);
+                while(cur <= end) {
+                    if(cur.getFullYear() === year) {
+                        const dayStr = String(cur.getDate()).padStart(2,'0') + '/' + String(cur.getMonth()+1).padStart(2,'0');
+                        if(cur.getDay() !== 0 && cur.getDay() !== 6 && !holidays.includes(dayStr)) {
+                            const m = cur.getMonth(); forecast[m].rev += (hoursPerDay * saleRate); forecast[m].cost += (hoursPerDay * costRate);
+                        }
+                    }
+                    cur.setDate(cur.getDate() + 1);
+                }
+            });
+            return forecast;
+        }
+
+        function renderMonthlyTable(data, headId, bodyId, year) {
+            const months = ["Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"];
+            let h = '<th class="w-24">Métrica</th>', bRev = '<tr><td>Receita</td>', bCost = '<tr><td>Custo</td>', bMarg = '<tr><td>Margem</td>';
+            let tRev=0, tCost=0;
+            data.forEach((d, i) => {
+                h += `<th class="text-right px-2 font-bold text-gray-500">${months[i]}/${year.toString().substr(2)}</th>`;
+                bRev += `<td class="text-right text-xs text-gray-600">${moneyValue(d.rev)}</td>`;
+                bCost += `<td class="text-right text-xs text-red-500">${moneyValue(d.cost)}</td>`;
+                const marg = d.rev > 0 ? Math.round(((d.rev-d.cost)/d.rev)*100) : 0;
+                bMarg += `<td class="text-right text-xs text-blue-600 font-bold">${marg}%</td>`;
+                tRev += d.rev; tCost += d.cost;
+            });
+            h += '<th class="text-right px-2 bg-gray-50">Total</th>';
+            bRev += `<td class="text-right font-bold text-xs bg-gray-50 text-green-700">${moneyValue(tRev)}</td></tr>`;
+            bCost += `<td class="text-right font-bold text-xs bg-gray-50 text-red-600">${moneyValue(tCost)}</td></tr>`;
+            bMarg += `<td></td></tr>`;
+            document.getElementById(headId).innerHTML = h; document.getElementById(bodyId).innerHTML = bRev + bCost + bMarg;
+        }
+
+        function generateDREDetailed() {
+            let minDate, maxDate;
+            const processRows = (selector, iStart, iEnd) => {
+                document.querySelectorAll(selector).forEach(tr => {
+                    const s = tr.cells[iStart].querySelector('input').value; const e = tr.cells[iEnd].querySelector('input').value;
+                    if(s && (!minDate || s < minDate)) minDate = s;
+                    if(e && (!maxDate || e > maxDate)) maxDate = e;
+                });
+            };
+            processRows('.comm-row', 3, 4); processRows('.exec-row', 4, 5);
+            if(!minDate || !maxDate) return;
+            const months = []; let cur = new Date(minDate.split('-')[0], minDate.split('-')[1]-1, 1);
+            const end = new Date(maxDate.split('-')[0], maxDate.split('-')[1]-1, 1); 
+            while(cur <= end) { months.push(new Date(cur)); cur.setMonth(cur.getMonth() + 1); }
+            const cData = months.map(m => calcMonthData('.comm-row', m, 3, 4, 1, 2, 6));
+            const aData = months.map(m => calcMonthData('.exec-row', m, 4, 5, 2, 3, 6));
+            const rData = aData.map(d => ({ rev: d.rev * 0.9, cost: d.cost * 0.95 }));
+            let html = '';
+            months.forEach((m, i) => {
+                const c = cData[i], a = aData[i], r = rData[i];
+                const cMarg = c.rev > 0 ? Math.round(((c.rev-c.cost)/c.rev)*100) : 0;
+                const aMarg = a.rev > 0 ? Math.round(((a.rev-a.cost)/a.rev)*100) : 0;
+                const rMarg = r.rev > 0 ? Math.round(((r.rev-r.cost)/r.rev)*100) : 0;
+                html += `<tr><td class="font-bold text-xs capitalize">${m.toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' })}</td><td class="text-right text-xs text-gray-600">${moneyValue(c.rev)}</td><td class="text-right text-xs text-red-400">${moneyValue(c.cost)}</td><td class="text-right text-xs font-bold border-r border-gray-200">${cMarg}%</td><td class="text-right text-xs text-indigo-600">${moneyValue(a.rev)}</td><td class="text-right text-xs text-red-400">${moneyValue(a.cost)}</td><td class="text-right text-xs font-bold border-r border-gray-200">${aMarg}%</td><td class="text-right text-xs text-green-600">${moneyValue(r.rev)}</td><td class="text-right text-xs text-red-400">${moneyValue(r.cost)}</td><td class="text-right text-xs font-bold">${rMarg}%</td></tr>`;
+            });
+            const sum = (arr, k) => arr.reduce((a,b) => a + b[k], 0);
+            const ctRev = sum(cData,'rev'), ctCost = sum(cData,'cost');
+            const atRev = sum(aData,'rev'), atCost = sum(aData,'cost');
+            const rtRev = sum(rData,'rev'), rtCost = sum(rData,'cost');
+            const footHtml = `<tr class="bg-gray-100 font-bold border-t border-gray-300"><td class="py-2">TOTAL</td><td class="text-right text-xs">${moneyValue(ctRev)}</td><td class="text-right text-xs">${moneyValue(ctCost)}</td><td class="text-right text-xs border-r border-gray-300">${ctRev>0?Math.round(((ctRev-ctCost)/ctRev)*100):0}%</td><td class="text-right text-xs text-indigo-800">${moneyValue(atRev)}</td><td class="text-right text-xs text-indigo-800">${moneyValue(atCost)}</td><td class="text-right text-xs border-r border-gray-200">${atRev>0?Math.round(((atRev-atCost)/atRev)*100):0}%</td><td class="text-right text-xs text-green-800">${moneyValue(rtRev)}</td><td class="text-right text-xs text-green-800">${moneyValue(rtCost)}</td><td class="text-right text-xs">${rtRev>0?Math.round(((rtRev-rtCost)/rtRev)*100):0}%</td></tr>`;
+            document.getElementById('financial-grid').innerHTML = html; document.getElementById('financial-foot').innerHTML = footHtml;
+        }
+
+        function calcMonthData(selector, targetMonth, iStart, iEnd, iSale, iCost, iAlloc) {
+            let rev = 0, cost = 0;
+            document.querySelectorAll(selector).forEach(tr => {
+                const sVal = tr.cells[iStart].querySelector('input').value; const eVal = tr.cells[iEnd].querySelector('input').value;
+                if(!sVal || !eVal) return;
+                const s = sVal.split('-'); const e = eVal.split('-');
+                const start = new Date(s[0], s[1]-1, s[2]); const end = new Date(e[0], e[1]-1, e[2]);
+                const mStart = new Date(targetMonth.getFullYear(), targetMonth.getMonth(), 1); const mEnd = new Date(targetMonth.getFullYear(), targetMonth.getMonth() + 1, 0);
+                if (start <= mEnd && end >= mStart) {
+                    const overlapStart = start > mStart ? start : mStart; const overlapEnd = end < mEnd ? end : mEnd;
+                    const days = countBusinessDays(overlapStart.toISOString().split('T')[0], overlapEnd.toISOString().split('T')[0]);
+                    if(days > 0) {
+                        const saleRate = parseFloat(tr.cells[iSale].querySelector('input').value) || 0;
+                        const costRate = parseFloat(tr.cells[iCost].querySelector('input').value) || 0;
+                        const hours = days * 8 * ((parseFloat(tr.cells[iAlloc].querySelector('input').value) || 0)/100);
+                        rev += hours * saleRate; cost += hours * costRate;
+                    }
+                }
+            });
+            return { rev, cost };
+        }
+
+        // --- DOM HELPERS ---
+        function getProductOptions(selectedName) { 
+            const pbId = document.getElementById('select-pricebook').value;
+            const pb = (metadata.pricebooks || []).find(p => p.id === pbId);
+            if (!pb) return '<option value="">Selecione a Tabela...</option>';
+            return '<option value="">Selecione...</option>' + (pb.products || []).map(p => 
+                `<option value="${p.name}" data-price="${p.price}" data-cost="${p.cost}" ${p.name === selectedName ? 'selected' : ''}>${p.name}</option>`
+            ).join(''); 
+        }
+        function getCommLinkOptions(selectedId) {
+            let opts = '<option value="">Selecione...</option>';
+            document.querySelectorAll('.comm-row').forEach((tr, index) => {
+                const prodName = tr.cells[0].querySelector('select').value;
+                const price = tr.cells[1].querySelector('input').value;
+                const start = tr.cells[3].querySelector('input').value;
+                const end = tr.cells[4].querySelector('input').value;
+                const sFmt = start ? start.split('-').reverse().join('/') : '?';
+                const eFmt = end ? end.split('-').reverse().join('/') : '?';
+                const label = `#${index + 1} - ${prodName} (R$ ${price}) [${sFmt} a ${eFmt}]`;
+                opts += `<option value="${tr.dataset.id}" ${tr.dataset.id === selectedId ? 'selected' : ''}>${label}</option>`;
+            });
+            return opts;
+        }
+        function getPeopleOptions(selectedName) { return '<option value="">Selecione...</option>' + (metadata.people || []).map(p => `<option value="${p.name}" data-id="${p.id}" data-cost="${p.costRate}" ${p.name === selectedName ? 'selected' : ''}>${p.name}</option>`).join(''); }
+        function populateDatalist(id, list) { document.getElementById(id).innerHTML = (list||[]).map(item => `<option value="${item.name}" data-id="${item.id}">`).join(''); }
+        function getMetadataName(list, id) { return (list || []).find(i => i.id === id)?.name || null; }
+
+        function deleteDocument(docId) {
+            if(!confirm("Deseja realmente remover este anexo?")) return;
+            document.getElementById('modal-loader').classList.remove('hidden');
+            fetch(`/api/services/doc/${docId}`, { method: 'DELETE' })
+            .then(res => res.json())
+            .then(data => {
+                document.getElementById('modal-loader').classList.add('hidden');
+                if(data.success) {
+                    const el = document.getElementById(`doc-${docId}`);
+                    if(el) el.remove();
+                    attachedDocIds = attachedDocIds.filter(id => id !== docId);
+                    if(attachedDocIds.length === 0) {
+                        const container = document.getElementById('docs-list-container');
+                        if(container) container.innerHTML = '<p class="text-xs text-gray-400 text-center italic">Nenhum documento anexado.</p>';
+                    }
+                    showToast('Removido', 'Anexo excluído.');
+                } else {
+                    showToast('Erro', 'Erro ao excluir: ' + (data.message || data.error), 'red');
+                }
+            }).catch(err => {
+                document.getElementById('modal-loader').classList.add('hidden');
+                showToast('Erro', 'Erro ao excluir documento.', 'red');
+            });
+        }
+
+        // --- CORE FUNCTIONS ---
+        function getItemMonthlyData(tr) {
+            const sVal = tr.cells[3].querySelector('input').value; 
+            const eVal = tr.cells[4].querySelector('input').value;
+            if(!sVal || !eVal) return [];
+
+            const sParts = sVal.split('-'); const start = new Date(sParts[0], sParts[1]-1, sParts[2]);
+            const eParts = eVal.split('-'); const end = new Date(eParts[0], eParts[1]-1, eParts[2]);
+            
+            const saleRate = parseFloat(tr.cells[1].querySelector('input').value) || 0;
+            const costRate = parseFloat(tr.cells[2].querySelector('input').value) || 0;
+            const alloc = parseFloat(tr.cells[6].querySelector('input').value) || 0;
+            const hoursPerDay = 8 * (alloc/100);
+
+            const monthlyData = [];
+            let cur = new Date(start.getFullYear(), start.getMonth(), 1);
+            const endDateOnly = new Date(end.getFullYear(), end.getMonth(), 1);
+
+            while(cur <= endDateOnly) {
+                const mStart = new Date(cur.getFullYear(), cur.getMonth(), 1); 
+                const mEnd = new Date(cur.getFullYear(), cur.getMonth() + 1, 0);
+                
+                const overlapStart = start > mStart ? start : mStart; 
+                const overlapEnd = end < mEnd ? end : mEnd;
+                
+                // Formatar para YYYY-MM-DD para garantir compatibilidade com helper
+                const d1 = overlapStart.toISOString().split('T')[0];
+                const d2 = overlapEnd.toISOString().split('T')[0];
+
+                const days = countBusinessDays(d1, d2);
+                
+                if (days > 0) {
+                    const hours = days * hoursPerDay;
+                    monthlyData.push({
+                        date: mStart.toISOString().split('T')[0], // Data base do mês (dia 1)
+                        rev: hours * saleRate,
+                        cost: hours * costRate
+                    });
+                }
+                cur.setMonth(cur.getMonth() + 1);
+            }
+            return monthlyData;
+        }
+
+        function renderServices(list = services) {
+            const grid = document.getElementById('services-grid'); grid.innerHTML = '';
+            if (list.length === 0) { document.getElementById('no-results').classList.remove('hidden'); document.getElementById('no-results').classList.add('flex'); }
+            else {
+                document.getElementById('no-results').classList.add('hidden'); document.getElementById('no-results').classList.remove('flex');
+                list.forEach(s => {
+                    const statusClass = s.status === 'Ativo' ? 'bg-green-50 text-green-700 border-green-100' : 'bg-red-50 text-red-700 border-red-100';
+                    const formatDateBR = (dateStr) => { if(!dateStr) return '-'; const [y, m, d] = dateStr.split('-'); return `${d}/${m}/${y.substr(2)}`; };
+                    grid.innerHTML += `<div class="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-all cursor-pointer group" onclick="openServiceModal('${s.id}')"><div class="p-5 border-b border-gray-100 flex justify-between items-start"><div class="flex-1"><div class="flex items-center gap-2 mb-1"><span class="bg-blue-50 text-blue-700 text-[10px] font-bold px-2 py-0.5 rounded border border-blue-100 uppercase">${s.type || 'Projeto'}</span><span class="bg-gray-100 text-gray-600 text-[10px] font-bold px-2 py-0.5 rounded uppercase">${s.client || 'Novo'}</span><span class="${statusClass} text-[10px] font-bold px-2 py-0.5 rounded border uppercase">${s.status}</span></div><h3 class="text-lg font-bold text-gray-800 group-hover:text-indigo-600 transition-colors">${s.name || 'Sem Nome'}</h3><div class="flex gap-4 mt-2 text-[10px] text-gray-500"><span><b class="text-gray-400">INÍCIO:</b> ${formatDateBR(s.dataInicio)}</span><span><b class="text-gray-400">FIM ORIG.:</b> ${formatDateBR(s.dataFimOriginal)}</span><span><b class="text-gray-400">FIM REAL:</b> ${formatDateBR(s.dataFim)}</span></div></div><div class="w-8 h-8 rounded-full bg-gray-50 flex items-center justify-center text-gray-400 group-hover:bg-indigo-50 group-hover:text-indigo-600"><i data-lucide="chevron-right" class="w-5 h-5"></i></div></div><div class="p-4 grid grid-cols-3 gap-2 text-center text-xs divide-x divide-gray-100 bg-gray-50/50 rounded-b-xl"><div><p class="text-gray-400 font-bold uppercase text-[10px]">Vendido</p><p class="font-bold text-gray-700 mt-1">${moneyValue(s.prop?.rev)}</p><p class="text-[10px] text-blue-600 font-bold">${s.prop?.margin||0}%</p></div><div><p class="text-gray-400 font-bold uppercase text-[10px]">Previsto</p><p class="font-bold text-gray-700 mt-1">${moneyValue(s.fcst?.rev)}</p><p class="text-[10px] text-indigo-600 font-bold">${s.fcst?.margin||0}%</p></div><div><p class="text-gray-400 font-bold uppercase text-[10px]">Atual</p><p class="font-bold text-gray-700 mt-1">${moneyValue(s.act?.rev)}</p><p class="text-[10px] text-green-600 font-bold">${s.act?.margin||0}%</p></div></div></div>`;
+                });
+            }
+            lucide.createIcons();
+        }
+
+        function filterServices() {
+            const query = document.getElementById('search-input').value.toLowerCase();
+            const status = document.getElementById('status-filter').value;
+            fetch(`/api/services?status=${status}`).then(res => res.json()).then(data => {
+                services = data;
+                const filtered = services.filter(s => (s.name||'').toLowerCase().includes(query) || (s.client||'').toLowerCase().includes(query));
+                renderServices(filtered);
+            });
+        }
+
+        function openServiceModal(id = null) {
+            // FEEDBACK VISUAL IMEDIATO
+            document.getElementById('service-modal').classList.remove('hidden');
+            document.getElementById('modal-loader').classList.remove('hidden');
+            
+            const title = id ? "Editar Serviço" : "Novo Serviço";
+            document.getElementById('modal-svc-title').innerText = title;
+            document.getElementById('badge-status').innerText = id ? "Em Edição" : "Novo";
+            switchTab('general');
+
+            if(!id) {
+                ['input-svc-name', 'input-sf-account', 'input-ca-client', 'input-lead-project', 'input-coordinator', 'input-tech-lead', 'input-svc-start', 'input-svc-end-orig', 'input-svc-end-real'].forEach(i => {
+                    const el = document.getElementById(i); if(el) el.value = '';
+                });
+                document.getElementById('commercial-rows').innerHTML = '';
+                document.getElementById('execution-rows').innerHTML = '';
+                document.getElementById('svc-billing-list').innerHTML = '';
+                document.getElementById('docs-list-container').innerHTML = '<p class="text-xs text-gray-400 text-center italic">Nenhum documento anexado.</p>';
+                attachedDocIds = [];
+                updateSummaryCards(0,0,0,0,0,0);
+            }
+
+            const endpoint = id ? `/api/services/${id}` : `/api/services/new`;
+            
+            // Pequeno delay para permitir o render do loader antes do fetch (UX)
+            setTimeout(() => {
+                fetch(endpoint).then(res => res.json()).then(data => {
+                    currentServiceData = data;
+                    metadata = data.metadata || {};
+                    populateDatalist('sf-accounts-list', metadata.salesforceAccounts);
+                    populateDatalist('ca-clients-list', metadata.contaAzulClients);
+                    populateDatalist('people-list', metadata.people);
+                    
+                    const pbSelect = document.getElementById('select-pricebook');
+                    if(pbSelect) pbSelect.innerHTML = (metadata.pricebooks||[]).map(pb => `<option value="${pb.id}">${pb.name}</option>`).join('');
+                    
+                    if(id) {
+                        document.getElementById('input-svc-name').value = data.name;
+                        document.getElementById('input-sf-account').value = getMetadataName(metadata.salesforceAccounts, data.sf_account_id) || data.client;
+                        document.getElementById('input-ca-client').value = getMetadataName(metadata.contaAzulClients, data.ca_client_id) || '';
+                        document.getElementById('input-svc-type').value = data.type || 'Projeto';
+                        document.getElementById('input-svc-start').value = data.dataInicio || '';
+                        document.getElementById('input-svc-end-orig').value = data.dataFimOriginal || '';
+                        document.getElementById('input-svc-end-real').value = data.dataFim || '';
+
+                        document.getElementById('input-lead-project').value = getMetadataName(metadata.people, data.lead_project) || '';
+                        document.getElementById('input-coordinator').value = getMetadataName(metadata.people, data.coordinator) || '';
+                        document.getElementById('input-tech-lead').value = getMetadataName(metadata.people, data.tech_lead) || '';
+
+                        updateSummaryCards(data.prop?.rev, data.prop?.margin, data.fcst?.rev, data.fcst?.margin, data.act?.rev, data.act?.margin);
+                        
+                        const docContainer = document.getElementById('docs-list-container');
+                        docContainer.innerHTML = '';
+                        attachedDocIds = []; 
+                        
+                        if (data.documents && data.documents.length > 0) {
+                            data.documents.forEach(doc => {
+                                attachedDocIds.push(doc.docId);
+                                docContainer.insertAdjacentHTML('beforeend', `
+                                    <div class="flex items-center justify-between p-2 border border-gray-100 rounded mb-1 bg-white" id="doc-${doc.docId}">
+                                        <div class="flex items-center gap-2">
+                                            <i data-lucide="file-text" class="w-4 h-4 text-indigo-500"></i>
+                                            <span class="text-xs font-bold truncate max-w-[200px]" title="${doc.name}">${doc.name}</span>
+                                            <a href="/api/services/doc/${doc.docId}" target="_blank" class="text-gray-400 hover:text-blue-600" title="Baixar"><i data-lucide="download" class="w-3 h-3"></i></a>
+                                        </div>
+                                        <button onclick="deleteDocument('${doc.docId}')" class="text-red-400 hover:text-red-600"><i data-lucide="trash-2" class="w-3 h-3"></i></button>
+                                    </div>
+                                `);
+                            });
+                        } else {
+                            docContainer.innerHTML = '<p class="text-xs text-gray-400 text-center italic">Nenhum documento anexado.</p>';
+                        }
+                    }
+                    
+                    const commRows = document.getElementById('commercial-rows'); 
+                    if(commRows) {
+                        commRows.innerHTML = '';
+                        (data.commercial && data.commercial.length > 0 ? data.commercial : [{}]).forEach(row => addCommercialRow(row));
+                    }
+                    
+                    const execRows = document.getElementById('execution-rows'); 
+                    if(execRows) {
+                        execRows.innerHTML = '';
+                        (data.execution && data.execution.length > 0 ? data.execution : [{}]).forEach(row => addExecutionRow(row));
+                    }
+                    
+                    calculateAllTotals();
+                    document.getElementById('modal-loader').classList.add('hidden');
+                    lucide.createIcons();
+                }).catch(err => {
+                    console.error(err);
+                    document.getElementById('modal-loader').classList.add('hidden');
+                    alert("Erro ao carregar dados do serviço.");
+                });
+            }, 50);
+        }
+
+        function onPricebookChange() {
+            const hasRows = document.querySelectorAll('.comm-row').length > 0;
+            if(hasRows && !confirm("Aplicar preços da tabela a todos os itens? Isso substituirá valores manuais.")) {
+                return;
+            }
+            
+            const opts = getProductOptions(null);
+            document.querySelectorAll('.comm-row select').forEach(sel => {
+                const currentVal = sel.value;
+                sel.innerHTML = opts;
+                sel.value = currentVal;
+                // Se confirmou, atualiza preços
+                if(hasRows) onProductChange(sel);
+            });
+        }
+
+        function addCommercialRow(data = {}) {
+            const tbody = document.getElementById('commercial-rows'); const tr = document.createElement('tr');
+            tr.className = "comm-row group hover:bg-gray-50"; tr.dataset.id = data.id || `new-${Date.now()}`;
+            // Ajuste: value do select é o NOME do produto
+            tr.innerHTML = `<td><select class="input-inline font-semibold text-gray-700" onchange="onProductChange(this)">${getProductOptions(data.productName)}</select></td><td><input type="number" step="1" class="input-inline text-right" placeholder="0.00" value="${data.saleRate || ''}" oninput="calcRow(this)"></td><td><input type="number" step="1" class="input-inline text-right" placeholder="0.00" value="${data.costEst || ''}" oninput="calcRow(this)"></td><td><input type="date" class="input-inline text-center" value="${data.start || ''}" onchange="calcRow(this)"></td><td><input type="date" class="input-inline text-center" value="${data.end || ''}" onchange="calcRow(this)"></td><td class="text-center text-xs text-gray-500 cell-days">0</td><td><input type="number" step="1" class="input-inline text-center" value="${data.alloc || 100}" oninput="calcRow(this)"></td><td class="text-right font-bold text-xs pt-2 cell-hours">0h</td><td class="text-right font-bold text-xs pt-2 text-green-700 bg-green-50 cell-rev">R$ 0,00</td><td class="text-right font-bold text-xs pt-2 text-red-600 cell-cost">R$ 0,00</td><td class="text-right font-bold text-xs pt-2 cell-margin">0%</td><td class="text-center"><button class="text-gray-300 hover:text-red-500 group-hover:opacity-100" onclick="removeRow(this)"><i data-lucide="trash-2" class="w-3 h-3"></i></button></td>`;
+            tbody.appendChild(tr); if(data.productName) calcRow(tr.querySelector('select')); lucide.createIcons();
+        }
+
+        function onProductChange(select) {
+            // Buscar dados do option selecionado (dataset)
+            const opt = select.options[select.selectedIndex];
+            if(opt && opt.value) {
+                select.closest('tr').cells[1].querySelector('input').value = parseFloat(opt.dataset.price || 0).toFixed(2);
+                select.closest('tr').cells[2].querySelector('input').value = parseFloat(opt.dataset.cost || 0).toFixed(2);
+                calcRow(select);
+            }
+        }
+
+        function calcRow(el) {
+            const tr = el.closest('tr'); const saleRate = parseFloat(tr.cells[1].querySelector('input').value) || 0; const costRate = parseFloat(tr.cells[2].querySelector('input').value) || 0;
+            const start = tr.cells[3].querySelector('input').value; const end = tr.cells[4].querySelector('input').value; const alloc = parseFloat(tr.cells[6].querySelector('input').value) || 0;
+            const pid = tr.cells[0].querySelector('select').value;
+            // const hoursPerDay = sel.options[sel.selectedIndex] ? (parseFloat(sel.options[sel.selectedIndex].dataset.hours) || 8) : 8; 
+            const hoursPerDay = 8; // Simplificando por enquanto
+
+            const days = countBusinessDays(start, end); const totalHours = days * hoursPerDay * (alloc / 100);
+            const rev = totalHours * saleRate; const cost = totalHours * costRate;
+            tr.querySelector('.cell-days').innerText = days; tr.querySelector('.cell-hours').innerText = totalHours.toFixed(1) + 'h';
+            tr.querySelector('.cell-rev').innerText = moneyValue(rev); tr.querySelector('.cell-cost').innerText = moneyValue(cost);
+            tr.querySelector('.cell-margin').innerText = rev > 0 ? Math.round(((rev-cost)/rev)*100) + '%' : '0%';
+            calculateAllTotals(); recalcDistribution(); 
+        }
+
+        function addExecutionRow(data = {}) {
+            const tbody = document.getElementById('execution-rows'); const tr = document.createElement('tr');
+            tr.className = "exec-row group hover:bg-gray-50";
+            tr.innerHTML = `<td><select class="input-inline text-xs font-bold text-indigo-700" onfocus="this.innerHTML = getCommLinkOptions(this.value)" onchange="onAllocLinkChange(this)">${getCommLinkOptions(data.commercialLinkId)}</select></td><td><select class="input-inline" onchange="onPersonChange(this)">${getPeopleOptions(data.person)}</select></td><td><input class="input-inline text-right readonly-field" readonly value="${data.saleApplied || '0.00'}"></td><td><input class="input-inline text-right readonly-field" readonly value="${data.costReal || '0.00'}"></td><td><input type="date" class="input-inline text-center" value="${data.start || ''}" onchange="recalcDistribution()"></td><td><input type="date" class="input-inline text-center" value="${data.end || ''}" onchange="recalcDistribution()"></td><td><input type="number" class="input-inline text-center" value="${data.alloc || 100}" oninput="recalcDistribution()"></td><td class="text-center text-xs text-gray-500 cell-days">0</td><td class="text-right font-bold text-xs pt-2 cell-hours">0h</td><td class="text-right font-bold text-xs pt-2 text-green-700 bg-green-50 cell-rev">R$ 0,00</td><td class="text-right font-bold text-xs pt-2 text-red-600 cell-cost">R$ 0,00</td><td class="text-right font-bold text-xs pt-2 cell-margin">0%</td><td class="text-center"><button class="text-gray-300 hover:text-red-500 group-hover:opacity-100" onclick="removeRow(this)"><i data-lucide="trash-2" class="w-3 h-3"></i></button></td>`;
+            tbody.appendChild(tr); if(data.person) onPersonChange(tr.cells[1].querySelector('select')); lucide.createIcons();
+        }
+
+        function onPersonChange(select) { select.closest('tr').cells[3].querySelector('input').value = select.selectedOptions[0].dataset.cost || 0; recalcDistribution(); }
+        function onAllocLinkChange(select) { recalcDistribution(); }
+
+        function openUploadModal() { 
+            document.getElementById('file-input').value = '';
+            document.getElementById('upload-modal').classList.remove('hidden'); 
+        }
+
+        function uploadFile() { 
+            const fileInput = document.getElementById('file-input');
+            const file = fileInput.files[0];
+            const type = document.getElementById('doc-type-select').value;
+            const container = document.getElementById('docs-list-container');
+            
+            if(file) {
+                const formData = new FormData();
+                formData.append('files', file); 
+                formData.append('type', type);
+
+                document.getElementById('modal-loader').classList.remove('hidden');
+                document.getElementById('upload-modal').classList.add('hidden');
+
+                fetch('/api/services/doc', { method: 'POST', body: formData })
+                .then(res => res.json())
+                .then(data => {
+                    if(data.success) {
+                        if(container.innerText.includes('Nenhum')) container.innerHTML='';
+                        const docId = data.docId;
+                        attachedDocIds.push(docId);
+                        container.insertAdjacentHTML('beforeend', `
+                            <div class="flex items-center justify-between p-2 border border-gray-100 rounded mb-1 bg-white" id="doc-${docId}">
+                                <div class="flex items-center gap-2">
+                                    <i data-lucide="file-text" class="w-4 h-4 text-indigo-500"></i>
+                                    <span class="text-xs font-bold truncate max-w-[200px]" title="${file.name}">${file.name}</span>
+                                    <a href="/api/services/doc/${docId}" target="_blank" class="text-gray-400 hover:text-blue-600" title="Baixar"><i data-lucide="download" class="w-3 h-3"></i></a>
+                                </div>
+                                <button onclick="deleteDocument('${docId}')" class="text-red-400 hover:text-red-600"><i data-lucide="trash-2" class="w-3 h-3"></i></button>
+                            </div>
+                        `);
+                        fileInput.value = ''; lucide.createIcons();
+                        showToast('Sucesso', 'Arquivo anexado.');
+                    } else { showToast('Erro', data.message, 'red'); }
+                })
+                .catch(err => { console.error(err); showToast('Erro', 'Erro no upload.', 'red'); })
+                .finally(() => { document.getElementById('modal-loader').classList.add('hidden'); });
+            }
+        }
+
+        function addBillingRow(d={}) { const t=document.getElementById('svc-billing-list'); const r=t.children.length+1; t.insertAdjacentHTML('beforeend', `<tr><td class="px-3 py-2 text-center text-gray-400">${r}</td><td class="px-3 py-2"><input class="input-inline" value="${d.desc||''}" placeholder="Desc"></td><td class="px-3 py-2"><input class="input-inline" type="month" value="${d.month||''}"></td><td class="px-3 py-2"><input class="input-inline" type="date" value="${d.date||''}"></td><td class="px-3 py-2 text-right"><input class="input-inline text-right font-bold text-gray-700" value="${d.value||''}" placeholder="0,00"></td><td class="px-3 py-2 text-center"><button onclick="removeRow(this)"><i data-lucide="trash-2" class="w-3 h-3 text-red-400"></i></button></td></tr>`); lucide.createIcons(); }
+        function removeRow(btn) { btn.closest('tr').remove(); recalcDistribution(); }
+        function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+        function switchTab(t) { ['general','commercial','execution','financial','billing','realized'].forEach(x => { document.getElementById(`view-${x}`).classList.add('hidden'); document.getElementById(`tab-${x}`).className = 'modal-tab-inactive px-6 py-3 text-xs uppercase font-bold tracking-wide transition-colors whitespace-nowrap'; }); document.getElementById(`view-${t}`).classList.remove('hidden'); document.getElementById(`tab-${t}`).className = 'modal-tab-active px-6 py-3 text-xs uppercase font-bold tracking-wide transition-colors whitespace-nowrap'; }
+        
+        function saveService(integrate) {
+            if (!currentServiceData) return;
+
+            const getDatalistId = (inputId, listId) => {
+                const val = document.getElementById(inputId).value;
+                const opt = document.querySelector(`#${listId} option[value="${val}"]`);
+                return opt ? opt.dataset.id : val; 
+            };
+
+            const startDate = document.getElementById('input-svc-start').value;
+            const endDateOrig = document.getElementById('input-svc-end-orig').value;
+            const endDateReal = document.getElementById('input-svc-end-real').value;
+
+            // Coletar itens comerciais
+            const commercial = [];
+            document.querySelectorAll('.comm-row').forEach(tr => {
+                const sel = tr.cells[0].querySelector('select');
+                if (sel.value) {
+                    // Recalcula totais para garantir precisão
+                    const saleRate = parseFloat(tr.cells[1].querySelector('input').value) || 0;
+                    const costRate = parseFloat(tr.cells[2].querySelector('input').value) || 0;
+                    const hoursStr = tr.querySelector('.cell-hours').innerText.replace('h','');
+                    const totalHours = parseFloat(hoursStr) || 0;
+                    const totalRev = totalHours * saleRate;
+                    const totalCost = totalHours * costRate;
+
+                    commercial.push({
+                        id: tr.dataset.id, 
+                        productId: null, 
+                        productName: sel.value,
+                        saleRate: saleRate,
+                        costEst: costRate,
+                        start: tr.cells[3].querySelector('input').value || startDate, 
+                        end: tr.cells[4].querySelector('input').value || endDateOrig, 
+                        alloc: parseFloat(tr.cells[6].querySelector('input').value) || 0,
+                        totalRev: totalRev,
+                        totalCost: totalCost,
+                        totalHours: totalHours,
+                        monthlyData: getItemMonthlyData(tr) // Nova função
+                    });
+                }
+            });
+
+            const execution = [];
+            document.querySelectorAll('.exec-row').forEach(tr => {
+                const selComm = tr.cells[0].querySelector('select');
+                const selPerson = tr.cells[1].querySelector('select');
+                if (selPerson.value) {
+                     const opt = selPerson.selectedOptions[0];
+                     const personId = opt ? opt.dataset.id : null;
+                     execution.push({
+                        id: tr.dataset.id, 
+                        personId: personId,
+                        commercialLinkId: selComm.value || null,
+                        start: tr.cells[4].querySelector('input').value || startDate,
+                        end: tr.cells[5].querySelector('input').value || endDateOrig,
+                        alloc: parseFloat(tr.cells[6].querySelector('input').value) || 0
+                     });
+                }
+            });
+
+            const payload = {
+                id: currentServiceData.id,
+                name: document.getElementById('input-svc-name').value,
+                sf_account_id: getDatalistId('input-sf-account', 'sf-accounts-list'),
+                ca_client_id: getDatalistId('input-ca-client', 'ca-clients-list'),
+                type: document.getElementById('input-svc-type').value,
+                lead_project: getDatalistId('input-lead-project', 'people-list'),
+                coordinator: getDatalistId('input-coordinator', 'people-list'),
+                tech_lead: getDatalistId('input-tech-lead', 'people-list'),
+                start: startDate,
+                end_original: endDateOrig,
+                end_real: endDateReal,
+                integrate: integrate,
+                docIds: attachedDocIds,
+                commercial: commercial,
+                execution: execution
+            };
+
+            if (!payload.name || !payload.sf_account_id || !payload.start) {
+                alert('Erro: Campos obrigatórios: Nome, Cliente e Data Início.');
+                return;
+            }
+
+            document.getElementById('modal-loader').classList.remove('hidden');
+
+            fetch('/api/services', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            })
+            .then(res => res.json())
+            .then(data => {
+                document.getElementById('modal-loader').classList.add('hidden');
+                if (data.success) {
+                    alert('Sucesso: ' + data.message);
+                    closeModal('service-modal');
+                    filterServices(); 
+                } else {
+                    alert('Erro: ' + data.message);
+                }
+            })
+            .catch(err => {
+                document.getElementById('modal-loader').classList.add('hidden');
+                console.error(err);
+                alert('Erro: Falha na comunicação.');
+            });
+        }
+        
+        // Função showToast removida para evitar erros de DOM.
+        console.log("Services App Loaded v2");
+        renderServices();
+    </script>
+</body>
+</html>

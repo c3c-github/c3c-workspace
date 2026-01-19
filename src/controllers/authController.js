@@ -83,15 +83,20 @@ exports.azureCallback = async (req, res) => {
             grupos: grupos      
         };
 
+        // Força salvamento antes do redirect (embora cookie-session seja auto, bom para debug)
+        req.session.isChanged = true; 
         res.redirect('/dashboard');
 
     } catch (error) {
-        console.error("Erro no Login:", error);
-        res.render('negado', { mensagem: 'Erro técnico no processo de login.' });
+        console.error("❌ Erro Crítico no Login:", error.response ? error.response.data : error.message);
+        res.render('negado', { mensagem: 'Erro técnico no processo de login: ' + (error.message || 'Desconhecido') });
     }
 };
 
 exports.logout = (req, res) => {
+    console.log("🚪 Logout solicitado para:", req.session ? req.session.user : 'Sessão anônima');
     req.session = null;
+    // Opcional: Redirecionar para logout da Microsoft se necessário
+    // const azureLogout = `https://login.microsoftonline.com/${process.env.AZURE_TENANT_ID}/oauth2/v2.0/logout?post_logout_redirect_uri=${encodeURIComponent(process.env.REDIRECT_URI.replace('/auth/callback',''))}`;
     res.redirect('/');
 };

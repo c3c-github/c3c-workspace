@@ -17,7 +17,7 @@ app.use(express.json());
 // Sessão
 app.use(session({
     name: 'session',
-    keys: [process.env.SESSION_SECRET],
+    keys: [process.env.SESSION_SECRET || 'force_logout_secret_v2_2026'],
     maxAge: 24 * 60 * 60 * 1000 // 24 horas
 }));
 

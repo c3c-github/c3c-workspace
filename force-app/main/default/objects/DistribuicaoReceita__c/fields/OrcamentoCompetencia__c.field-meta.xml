@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>OrcamentoCompetencia__c</fullName>
+    <description>Competência que recebe o valor.</description>
+    <externalId>false</externalId>
+    <label>Orçamento Competência</label>
+    <referenceTo>OrcamentoCompetencia__c</referenceTo>
+    <relationshipLabel>Distribuições de Receita</relationshipLabel>
+    <relationshipName>DistribuicoesReceita</relationshipName>
+    <relationshipOrder>1</relationshipOrder>
+    <reparentableMasterDetail>false</reparentableMasterDetail>
+    <trackTrending>false</trackTrending>
+    <type>MasterDetail</type>
+    <writeRequiresMasterRead>false</writeRequiresMasterRead>
+</CustomField>

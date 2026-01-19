@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomObject xmlns="http://soap.sforce.com/2006/04/metadata">
+    <actionOverrides>
+        <actionName>Accept</actionName>
+        <type>Default</type>
+    </actionOverrides>
+    <deploymentStatus>Deployed</deploymentStatus>
+    <description>Orçamento mensal por competência e profissional alocado.</description>
+    <label>Orçamento Competência</label>
+    <nameField>
+        <displayFormat>OC-{000000}</displayFormat>
+        <label>ID Orçamento</label>
+        <type>AutoNumber</type>
+    </nameField>
+    <pluralLabel>Orçamentos Competência</pluralLabel>
+    <sharingModel>ReadWrite</sharingModel>
+    <visibility>Public</visibility>
+</CustomObject>

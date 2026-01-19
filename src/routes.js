@@ -10,6 +10,7 @@ const hrController = require('./controllers/hrController');
 const timesheetController = require('./controllers/timesheetController');
 const operationsController = require('./controllers/operationsController'); 
 const supportController = require('./controllers/supportController');
+const serviceController = require('./controllers/serviceController');
 
 const requireAuth = (req, res, next) => {
     if (!req.session || !req.session.user) { return res.redirect('/'); }
@@ -30,6 +31,15 @@ router.get('/auth/callback', authController.azureCallback);
 router.get('/logout', authController.logout);
 
 router.get('/dashboard', requireAuth, dashboardController.renderHome);
+
+// --- GESTÃO DE SERVIÇOS (NOVO MÓDULO) ---
+router.get('/services', requireAuth, requireGroup('GESTOR_FINANCEIRO'), serviceController.renderServicesPage);
+router.get('/api/services', requireAuth, requireGroup('GESTOR_FINANCEIRO'), serviceController.getServices);
+router.get('/api/services/:id', requireAuth, requireGroup('GESTOR_FINANCEIRO'), serviceController.getServiceDetails);
+router.post('/api/services', requireAuth, requireGroup('GESTOR_FINANCEIRO'), serviceController.saveService);
+router.post('/api/services/doc', requireAuth, requireGroup('GESTOR_FINANCEIRO'), upload.single('files'), serviceController.uploadDocument);
+router.delete('/api/services/doc/:docId', requireAuth, requireGroup('GESTOR_FINANCEIRO'), serviceController.deleteDocument);
+router.get('/api/services/doc/:docId', requireAuth, requireGroup('GESTOR_FINANCEIRO'), serviceController.downloadDocument);
 
 // --- APROVAÇÕES ---
 router.get('/approvals', requireAuth, requireGroup('GESTOR'), (req, res) => { res.render('approvals', { user: req.session.user, page: 'approvals' }); });
