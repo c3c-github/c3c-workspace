@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>ReceitaRealizada__c</fullName>
+    <description>Soma das distribuições de receita realizadas via parcelas faturadas.</description>
+    <externalId>false</externalId>
+    <label>Receita Realizada</label>
+    <summarizedField>DistribuicaoReceita__c.ValorDistribuido__c</summarizedField>
+    <summaryForeignKey>DistribuicaoReceita__c.OrcamentoCompetencia__c</summaryForeignKey>
+    <summaryOperation>sum</summaryOperation>
+    <trackTrending>false</trackTrending>
+    <type>Summary</type>
+</CustomField>

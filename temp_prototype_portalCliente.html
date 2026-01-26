@@ -1,0 +1,930 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portal do Cliente - C3C</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Montserrat', 'sans-serif'] },
+                    colors: {
+                        c3c: {
+                            blue: '#2978FF',
+                            teal: '#1DDDBD',
+                            dark: '#1a1a1a',
+                            bg: '#F8FAFC'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body { font-family: 'Montserrat', sans-serif; background-color: #F8FAFC; -webkit-font-smoothing: antialiased; }
+        .fade-in { animation: fadeIn 0.4s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+        
+        .modal-backdrop { background-color: rgba(15, 23, 42, 0.6); backdrop-filter: blur(4px); z-index: 100; }
+        
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #E2E8F0; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #CBD5E1; }
+
+        /* Path Steps Component */
+        .path-step { 
+            position: relative; 
+            flex: 1; 
+            padding: 12px 0; 
+            text-align: center; 
+            font-size: 10px; 
+            font-weight: 800; 
+            text-transform: uppercase;
+            clip-path: polygon(92% 0%, 100% 50%, 92% 100%, 0% 100%, 8% 50%, 0% 0%);
+            background: #F1F5F9;
+            color: #94A3B8;
+            margin-right: -4px;
+            transition: all 0.2s ease;
+        }
+        .path-step:first-child { clip-path: polygon(92% 0%, 100% 50%, 92% 100%, 0% 100%, 0% 0%); }
+        .path-step:last-child { clip-path: polygon(100% 0%, 100% 100%, 0% 100%, 8% 50%, 0% 0%); margin-right: 0; }
+        .path-step.active { background: #2978FF; color: white; }
+        .path-step.completed { background: #1DDDBD; color: white; }
+
+        .timeline-item { position: relative; padding-left: 28px; }
+        .timeline-line { position: absolute; left: 11px; top: 24px; bottom: 0; width: 2px; background: #E2E8F0; }
+        .timeline-item:last-child .timeline-line { display: none; }
+        .timeline-dot { position: absolute; left: 5px; top: 6px; width: 14px; height: 14px; border-radius: 50%; background: white; border: 3px solid #2978FF; z-index: 1; }
+        
+        .filter-pill.active { background-color: #1a1a1a; color: white; }
+    </style>
+</head>
+<body class="h-screen flex overflow-hidden">
+
+    <!-- AUTH AREA -->
+    <div id="auth-container" class="fixed inset-0 z-[200] bg-white flex items-center justify-center p-6">
+        <div class="w-full max-w-md bg-white rounded-3xl p-8 transition-all">
+            <div class="flex flex-col items-center mb-10">
+                <div class="w-20 h-20 bg-gradient-to-br from-c3c-blue to-c3c-teal rounded-[2rem] flex items-center justify-center shadow-xl mb-6 transform rotate-12">
+                    <span class="text-white font-black text-3xl tracking-tighter -rotate-12">C3C</span>
+                </div>
+                <h1 class="text-2xl font-black text-slate-800 tracking-tight">Portal do Cliente</h1>
+                <p class="text-slate-400 text-sm mt-2">Tecnologia que impulsiona seu negócio.</p>
+            </div>
+
+            <div id="step-email" class="auth-step fade-in">
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2 ml-1">E-mail Corporativo</label>
+                        <div class="relative">
+                            <i data-lucide="mail" class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-300"></i>
+                            <input type="email" id="login-email" class="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-4 focus:ring-blue-100 focus:border-c3c-blue outline-none transition-all font-medium text-slate-700" placeholder="nome@empresa.com">
+                        </div>
+                    </div>
+                    <button onclick="sendOTP()" id="btn-login" class="w-full bg-c3c-blue hover:bg-blue-600 text-white font-bold py-4 rounded-2xl shadow-lg shadow-blue-200 transition-all active:scale-[0.98] flex items-center justify-center gap-3">
+                        Continuar <i data-lucide="chevron-right" class="w-5 h-5"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div id="step-otp" class="auth-step hidden-step hidden fade-in text-center">
+                 <div class="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-6 text-c3c-blue">
+                    <i data-lucide="shield-check" class="w-8 h-8"></i>
+                </div>
+                 <h2 class="text-xl font-bold text-slate-800 mb-2">Verificação</h2>
+                 <p class="mb-8 text-sm text-slate-400 leading-relaxed">Enviamos um código para <br><strong id="display-email-otp" class="text-slate-700 underline">...</strong></p>
+                 <div class="flex justify-center mb-8">
+                    <input type="text" maxlength="6" id="otp-input" class="w-48 tracking-[0.5em] text-center text-3xl font-black border-b-4 border-slate-200 focus:border-c3c-blue outline-none text-slate-700 bg-transparent transition-colors" placeholder="000000">
+                 </div>
+                 <button onclick="verifyOTP()" id="btn-verify" class="w-full bg-c3c-teal hover:bg-emerald-500 text-white font-bold py-4 rounded-2xl shadow-lg shadow-emerald-100 transition-all">Verificar e Entrar</button>
+                 <button onclick="location.reload()" class="mt-8 text-xs font-bold text-slate-400 hover:text-c3c-blue transition-colors">USAR OUTRO E-MAIL</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MAIN APP -->
+    <div id="app-container" class="hidden flex-1 flex h-screen overflow-hidden bg-c3c-bg">
+        
+        <!-- Sidebar -->
+        <aside class="w-20 lg:w-64 bg-white border-r border-slate-200 flex flex-col z-50 transition-all">
+            <div class="h-20 flex items-center px-6 border-b border-slate-50">
+                <div class="w-10 h-10 bg-c3c-blue rounded-xl flex items-center justify-center text-white font-black text-sm shadow-lg shadow-blue-100 shrink-0">C3C</div>
+                <span class="ml-3 font-extrabold text-slate-800 text-xl tracking-tighter hidden lg:block">Portal</span>
+            </div>
+            
+            <div class="p-4 hidden lg:block">
+                <div class="bg-gradient-to-r from-slate-50 to-white rounded-2xl p-4 border border-slate-100">
+                    <p class="text-[9px] text-c3c-blue font-black uppercase tracking-widest mb-1">Contexto Atual</p>
+                    <h3 class="font-bold text-slate-700 text-sm truncate">Tech Solutions LTDA</h3>
+                </div>
+            </div>
+
+            <nav class="flex-1 px-3 space-y-2 mt-4">
+                <button onclick="switchView('dashboard')" id="nav-dashboard" class="w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl bg-c3c-blue text-white shadow-xl shadow-blue-100 transition-all">
+                    <i data-lucide="layout-dashboard" class="w-5 h-5"></i>
+                    <span class="text-sm font-bold hidden lg:block">Dashboard</span>
+                </button>
+                <button onclick="switchView('tickets')" id="nav-tickets" class="w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl text-slate-400 hover:bg-slate-50 hover:text-c3c-blue transition-all">
+                    <i data-lucide="message-square" class="w-5 h-5"></i>
+                    <span class="text-sm font-bold hidden lg:block">Help Desk</span>
+                </button>
+                <button onclick="switchView('contracts')" id="nav-contracts" class="w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl text-slate-400 hover:bg-slate-50 hover:text-c3c-blue transition-all">
+                    <i data-lucide="bar-chart-3" class="w-5 h-5"></i>
+                    <span class="text-sm font-bold hidden lg:block">Extrato de Horas</span>
+                </button>
+            </nav>
+
+            <div class="p-4 border-t border-slate-50">
+                <button onclick="location.reload()" class="flex items-center gap-3 text-slate-400 hover:text-red-500 font-bold w-full px-4 py-3 transition-colors">
+                    <i data-lucide="power" class="w-5 h-5"></i>
+                    <span class="text-sm hidden lg:block">Encerrar Sessão</span>
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="flex-1 flex flex-col relative overflow-hidden">
+            
+            <header class="h-20 bg-white border-b border-slate-100 flex items-center justify-between px-8 shrink-0 z-10">
+                <div class="flex flex-col">
+                    <h2 class="text-xl font-black text-slate-800 tracking-tight" id="page-title">Visão Geral</h2>
+                    <div class="flex items-center gap-2">
+                        <span class="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></span>
+                        <p class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Sistema Online</p>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-6">
+                    <div class="relative hidden md:block">
+                        <select id="contract-selector" onchange="changeContext(this.value)" class="bg-slate-50 border border-slate-200 text-xs font-bold text-slate-600 pl-4 pr-10 py-2.5 rounded-xl appearance-none outline-none focus:ring-2 focus:ring-blue-100 cursor-pointer transition-all">
+                            <option value="all">Todos os Contratos</option>
+                            <option value="salesforce">Sustentação Salesforce</option>
+                            <option value="infra">Infraestrutura Cloud</option>
+                        </select>
+                        <i data-lucide="chevron-down" class="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none"></i>
+                    </div>
+
+                    <div class="flex items-center gap-3 pl-6 border-l border-slate-100">
+                        <div class="text-right hidden sm:block">
+                            <p class="text-xs font-black text-slate-800">Roberto Carlos</p>
+                            <p class="text-[10px] text-slate-400 font-bold uppercase">Gestor de TI</p>
+                        </div>
+                        <div class="w-10 h-10 rounded-2xl bg-slate-100 border border-slate-200 flex items-center justify-center font-black text-c3c-blue">RC</div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Views -->
+            <div class="flex-1 overflow-y-auto p-8" id="main-scroll">
+
+                <!-- DASHBOARD -->
+                <div id="view-dashboard" class="fade-in space-y-8">
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                        <!-- Chart Card -->
+                        <div class="lg:col-span-2 bg-white p-8 rounded-[2rem] border border-slate-100 shadow-sm">
+                            <div class="flex justify-between items-center mb-8">
+                                <div>
+                                    <h3 class="text-lg font-black text-slate-800 tracking-tight">Consumo de Horas</h3>
+                                    <p class="text-sm text-slate-400">Total acumulado no mês de Janeiro</p>
+                                </div>
+                                <div class="text-right">
+                                    <span class="text-2xl font-black text-c3c-blue">45h</span>
+                                    <span class="text-xs font-bold text-slate-300 ml-1">/ 200h</span>
+                                </div>
+                            </div>
+                            <div class="h-64 flex items-center justify-center">
+                                <canvas id="hoursChart"></canvas>
+                            </div>
+                        </div>
+
+                        <!-- Ticket Summary -->
+                        <div class="space-y-6">
+                            <div class="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm group hover:border-c3c-blue transition-all cursor-pointer" onclick="switchView('tickets')">
+                                <div class="flex justify-between items-start mb-4">
+                                    <div class="w-12 h-12 bg-orange-50 rounded-2xl flex items-center justify-center text-orange-500 group-hover:bg-c3c-blue group-hover:text-white transition-all">
+                                        <i data-lucide="clock" class="w-6 h-6"></i>
+                                    </div>
+                                    <span class="text-[10px] font-black bg-orange-100 text-orange-600 px-3 py-1 rounded-full uppercase tracking-widest" id="dash-open-tickets-count">3 Abertos</span>
+                                </div>
+                                <h4 class="font-bold text-slate-800">Chamados Pendentes</h4>
+                                <p class="text-xs text-slate-400 mt-1">Clique para ver os detalhes da fila.</p>
+                            </div>
+
+                            <div class="bg-slate-900 p-8 rounded-[2rem] shadow-xl shadow-slate-200 relative overflow-hidden">
+                                <div class="relative z-10">
+                                    <h3 class="text-white font-bold text-lg leading-tight">Suporte Prioritário<br>C3C Operations</h3>
+                                    <p class="text-slate-400 text-xs mt-3 mb-6">Tempo médio de resposta: <span class="text-c3c-teal font-bold">14 min</span></p>
+                                    <button onclick="openNewTicketModal()" class="w-full py-3 bg-c3c-blue hover:bg-blue-600 text-white font-bold rounded-xl text-sm transition-all shadow-lg shadow-blue-900/20 flex items-center justify-center gap-2">
+                                        <i data-lucide="plus" class="w-4 h-4"></i> Novo Chamado
+                                    </button>
+                                </div>
+                                <div class="absolute -right-4 -bottom-4 opacity-10">
+                                    <i data-lucide="life-buoy" class="w-32 h-32 text-white"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- HELP DESK -->
+                <div id="view-tickets" class="hidden h-[calc(100vh-160px)] flex flex-col lg:flex-row gap-6">
+                    <!-- Lista -->
+                    <div id="tickets-list-side" class="w-full lg:w-96 flex flex-col bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden shrink-0">
+                        <div class="p-5 border-b border-slate-50 space-y-4">
+                            <button onclick="openNewTicketModal()" class="w-full bg-slate-900 text-white text-xs font-black py-3 rounded-xl flex items-center justify-center gap-2 hover:bg-slate-800 transition-all">
+                                <i data-lucide="plus" class="w-4 h-4"></i> CRIAR CHAMADO
+                            </button>
+                            
+                            <!-- Filtros -->
+                            <div class="flex gap-2 p-1 bg-slate-50 rounded-xl">
+                                <button onclick="setTicketFilter('todos')" id="filter-todos" class="filter-pill active flex-1 py-2 text-[10px] font-black uppercase rounded-lg transition-all">Todos</button>
+                                <button onclick="setTicketFilter('abertos')" id="filter-abertos" class="filter-pill flex-1 py-2 text-[10px] font-black uppercase rounded-lg transition-all">Abertos</button>
+                                <button onclick="setTicketFilter('fechados')" id="filter-fechados" class="filter-pill flex-1 py-2 text-[10px] font-black uppercase rounded-lg transition-all">Fechados</button>
+                            </div>
+
+                            <div class="relative">
+                                <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300"></i>
+                                <input type="text" id="ticket-search-input" onkeyup="renderTicketsList()" placeholder="Buscar ID ou título..." class="w-full bg-slate-50 border-none rounded-xl pl-10 pr-4 py-2.5 text-xs font-medium focus:ring-2 focus:ring-blue-100 outline-none">
+                            </div>
+                        </div>
+                        <div id="tickets-list-container" class="flex-1 overflow-y-auto p-4 space-y-3 bg-slate-50/30">
+                            <!-- JS -->
+                        </div>
+                    </div>
+
+                    <!-- Detalhe -->
+                    <div id="tickets-detail-side" class="hidden lg:flex flex-1 bg-white rounded-3xl border border-slate-100 shadow-sm flex-col overflow-hidden relative">
+                        <!-- Empty -->
+                        <div id="ticket-empty" class="absolute inset-0 flex flex-col items-center justify-center text-slate-300 z-0 bg-white">
+                            <div class="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mb-4">
+                                <i data-lucide="layout-template" class="w-10 h-10"></i>
+                            </div>
+                            <p class="text-sm font-bold">Selecione um chamado</p>
+                        </div>
+                        
+                        <div id="ticket-panel" class="hidden z-10 h-full flex flex-col">
+                            <div class="p-6 border-b border-slate-100">
+                                <div class="flex items-center gap-3 mb-4 lg:hidden">
+                                    <button onclick="toggleMobileTicketList(true)" class="p-2 bg-slate-100 rounded-lg text-slate-600"><i data-lucide="arrow-left" class="w-4 h-4"></i></button>
+                                    <span class="text-xs font-bold text-slate-400">Voltar para lista</span>
+                                </div>
+                                <div class="flex justify-between items-start mb-6">
+                                    <div>
+                                        <div class="flex items-center gap-2 mb-2">
+                                            <span class="bg-slate-100 text-slate-500 px-2 py-1 rounded-lg text-[10px] font-black font-mono" id="detail-number">#0000</span>
+                                            <span class="bg-blue-50 text-c3c-blue px-2 py-1 rounded-lg text-[10px] font-black uppercase tracking-tighter" id="detail-area">AREA</span>
+                                        </div>
+                                        <h1 class="text-xl font-black text-slate-800 tracking-tight" id="detail-title">...</h1>
+                                    </div>
+                                    <div class="flex flex-col items-end gap-2">
+                                        <div class="bg-emerald-50 px-4 py-2 rounded-2xl border border-emerald-100 text-right">
+                                            <p class="text-[9px] text-emerald-600 font-black uppercase tracking-widest">SLA Ativo</p>
+                                            <p class="text-sm font-black text-emerald-700" id="detail-sla">0h 00m</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div id="status-path-container" class="flex w-full overflow-hidden rounded-xl bg-slate-100">
+                                    <!-- JS -->
+                                </div>
+                            </div>
+
+                            <!-- Contextual Actions Bar -->
+                            <div id="ticket-actions-bar" class="px-6 py-3 bg-slate-50 border-b border-slate-100 flex items-center justify-end gap-3 min-h-[56px]">
+                                <!-- JS Injects Buttons -->
+                            </div>
+
+                            <!-- Tabs -->
+                            <div class="flex px-6 border-b border-slate-100 gap-8">
+                                <button onclick="switchDetailTab('timeline')" id="dt-timeline" class="py-4 text-xs font-black border-b-2 border-c3c-blue text-c3c-blue">TIMELINE</button>
+                                <button onclick="switchDetailTab('info')" id="dt-info" class="py-4 text-xs font-bold text-slate-400">DETALHES</button>
+                                <button onclick="switchDetailTab('attach')" id="dt-attach" class="py-4 text-xs font-bold text-slate-400">ANEXOS</button>
+                            </div>
+
+                            <div class="flex-1 overflow-y-auto p-6 bg-slate-50/30">
+                                <div id="view-timeline" class="space-y-2">
+                                    <div id="timeline-list"></div>
+                                </div>
+                                <div id="view-info" class="hidden">
+                                    <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm mb-6">
+                                        <h4 class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">Descrição do Problema</h4>
+                                        <p class="text-sm text-slate-600 leading-relaxed" id="detail-desc">...</p>
+                                    </div>
+                                    
+                                    <div id="estimate-panel" class="hidden bg-blue-900 text-white p-6 rounded-2xl shadow-xl mb-6">
+                                        <div class="flex justify-between items-center">
+                                            <div>
+                                                <h4 class="text-xs font-black text-blue-300 uppercase tracking-widest mb-1">Estimativa de Melhoria</h4>
+                                                <p class="text-lg font-bold">Total previsto: <span id="estimate-hours-text">12.5h</span></p>
+                                            </div>
+                                            <button onclick="approveEstimateAction()" class="px-6 py-3 bg-c3c-teal text-slate-900 font-black rounded-xl text-xs hover:bg-white transition-all shadow-lg">APROVAR ESTIMATIVA</button>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div id="view-attach" class="hidden flex flex-col items-center justify-center h-48 text-slate-400">
+                                    <i data-lucide="paperclip" class="w-8 h-8 mb-2"></i>
+                                    <p class="text-xs font-bold">Nenhum anexo encontrado</p>
+                                </div>
+                            </div>
+
+                            <div class="p-6 bg-white border-t border-slate-100" id="reply-area">
+                                <div class="flex gap-4 items-end bg-slate-50 p-2 rounded-2xl border border-slate-100 focus-within:border-c3c-blue transition-all">
+                                    <textarea id="new-comment-text" class="flex-1 bg-transparent border-none outline-none p-3 text-sm text-slate-700 resize-none h-14" placeholder="Adicionar resposta..."></textarea>
+                                    <button onclick="postComment()" class="w-12 h-12 bg-c3c-blue text-white rounded-xl flex items-center justify-center shadow-lg shadow-blue-100 hover:bg-blue-600 transition-all shrink-0">
+                                        <i data-lucide="send" class="w-5 h-5"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- CONTRATOS / EXTRATO -->
+                <div id="view-contracts" class="hidden space-y-6">
+                    <div class="flex flex-col md:flex-row justify-between md:items-center gap-4">
+                        <div>
+                            <h3 class="text-xl font-black text-slate-800 tracking-tight">Extrato de Contratos</h3>
+                            <p class="text-sm text-slate-400">Selecione um contrato para ver o detalhamento mensal.</p>
+                        </div>
+                        <button class="px-6 py-3 bg-slate-900 text-white font-bold rounded-xl text-xs flex items-center justify-center gap-2 shadow-lg">
+                            <i data-lucide="download" class="w-4 h-4"></i> EXPORTAR RELATÓRIO
+                        </button>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div onclick="selectContract('salesforce')" id="card-salesforce" class="group p-8 rounded-[2rem] border-2 bg-white cursor-pointer transition-all border-slate-100 hover:border-c3c-blue">
+                            <div class="flex justify-between items-start mb-6">
+                                <div>
+                                    <h4 class="font-bold text-slate-800 text-lg">Sustentação Salesforce</h4>
+                                    <span class="text-[10px] font-black text-c3c-blue uppercase tracking-widest">Ativo • #CS-9920</span>
+                                </div>
+                                <div class="w-12 h-12 bg-blue-50 rounded-2xl flex items-center justify-center text-c3c-blue group-hover:bg-c3c-blue group-hover:text-white transition-all">
+                                    <i data-lucide="layers" class="w-6 h-6"></i>
+                                </div>
+                            </div>
+                            <div class="flex justify-between text-sm mb-4">
+                                <span class="text-slate-400 font-medium">Consumo Mensal</span>
+                                <span class="font-black text-slate-800">45.5h / 200h</span>
+                            </div>
+                            <div class="w-full bg-slate-100 h-3 rounded-full overflow-hidden mb-4">
+                                <div class="bg-gradient-to-r from-c3c-blue to-c3c-teal h-full transition-all duration-1000" style="width: 22%"></div>
+                            </div>
+                            <p class="text-[10px] text-emerald-500 font-bold flex items-center gap-1"><i data-lucide="trending-down" class="w-3 h-3"></i> 12% abaixo da média anterior</p>
+                        </div>
+
+                        <div onclick="selectContract('cloud')" id="card-cloud" class="group p-8 rounded-[2rem] border-2 bg-white cursor-pointer transition-all border-slate-100 hover:border-c3c-blue opacity-60 grayscale hover:grayscale-0 hover:opacity-100">
+                            <div class="flex justify-between items-start mb-6">
+                                <div>
+                                    <h4 class="font-bold text-slate-800 text-lg">Infraestrutura Cloud</h4>
+                                    <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Em Pausa • #IN-1102</span>
+                                </div>
+                                <div class="w-12 h-12 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-400 group-hover:bg-c3c-blue group-hover:text-white transition-all">
+                                    <i data-lucide="cloud" class="w-6 h-6"></i>
+                                </div>
+                            </div>
+                            <div class="flex justify-between text-sm mb-4">
+                                <span class="text-slate-400 font-medium">Consumo Mensal</span>
+                                <span class="font-black text-slate-800">0h / 50h</span>
+                            </div>
+                            <div class="w-full bg-slate-100 h-3 rounded-full overflow-hidden mb-4">
+                                <div class="bg-slate-200 h-full w-0"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Detalhamento do Extrato (Filtro por Período Incluído) -->
+                    <div id="extrato-breakdown" class="fade-in bg-white rounded-[2rem] border border-slate-100 shadow-sm p-8">
+                        <div class="flex flex-col lg:flex-row justify-between lg:items-center gap-6 mb-8">
+                            <h3 class="text-lg font-black text-slate-800 tracking-tight flex items-center gap-2 shrink-0">
+                                <i data-lucide="clipboard-list" class="w-5 h-5 text-c3c-blue"></i>
+                                Lançamentos: <span id="extrato-target-name">Sustentação Salesforce</span>
+                            </h3>
+                            
+                            <!-- Filtro de Período -->
+                            <div class="flex flex-wrap items-center gap-3 bg-slate-50 p-2 rounded-2xl border border-slate-100">
+                                <div class="flex items-center gap-2 px-3">
+                                    <i data-lucide="calendar" class="w-4 h-4 text-slate-400"></i>
+                                    <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Período</span>
+                                </div>
+                                <input type="date" id="filter-date-start" onchange="applyExtratoDateFilter()" class="bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-xs font-bold text-slate-600 outline-none focus:ring-2 focus:ring-blue-100 transition-all">
+                                <span class="text-slate-300 font-bold">à</span>
+                                <input type="date" id="filter-date-end" onchange="applyExtratoDateFilter()" class="bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-xs font-bold text-slate-600 outline-none focus:ring-2 focus:ring-blue-100 transition-all">
+                                <button onclick="resetExtratoDates()" class="p-2 text-slate-400 hover:text-red-500 transition-colors" title="Limpar Filtros">
+                                    <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+                                </button>
+                            </div>
+
+                            <div class="flex items-center gap-4 text-xs font-bold text-slate-400 shrink-0">
+                                <span class="text-c3c-blue">Total filtrado: <span id="extrato-total-hours">45.5</span> horas</span>
+                            </div>
+                        </div>
+
+                        <div class="overflow-x-auto">
+                            <table class="w-full">
+                                <thead>
+                                    <tr class="text-left text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-50">
+                                        <th class="pb-4 px-4">Data</th>
+                                        <th class="pb-4 px-4">Ref. Chamado</th>
+                                        <th class="pb-4 px-4">Atividade / Descrição</th>
+                                        <th class="pb-4 px-4">Consultor</th>
+                                        <th class="pb-4 px-4 text-right">Horas</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="extrato-table-body" class="divide-y divide-slate-50">
+                                    <!-- JS Injects -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </main>
+    </div>
+
+    <!-- MODAL -->
+    <div id="new-ticket-modal" class="fixed inset-0 modal-backdrop hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-[2.5rem] shadow-2xl w-full max-w-lg overflow-hidden transform transition-all duration-300 scale-95 opacity-0">
+            <div class="p-8 border-b border-slate-50 flex justify-between items-center">
+                <h3 class="font-black text-xl text-slate-800 tracking-tight">Novo Chamado</h3>
+                <button onclick="closeModal('new-ticket-modal')" class="w-10 h-10 bg-slate-50 rounded-xl flex items-center justify-center text-slate-400 hover:text-slate-600"><i data-lucide="x" class="w-6 h-6"></i></button>
+            </div>
+            <div class="p-8 space-y-6">
+                <div>
+                    <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Contrato</label>
+                    <select class="w-full bg-slate-50 border border-slate-100 rounded-2xl p-4 outline-none focus:ring-2 focus:ring-blue-100 font-bold text-slate-700 text-sm appearance-none">
+                        <option>Sustentação Salesforce N2</option>
+                        <option>Infraestrutura Cloud</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Assunto do Chamado</label>
+                    <input type="text" id="new-ticket-title" class="w-full bg-slate-50 border border-slate-100 rounded-2xl p-4 outline-none focus:ring-2 focus:ring-blue-100 font-medium text-slate-700 text-sm" placeholder="Ex: Erro ao gerar proposta...">
+                </div>
+                <div>
+                    <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Descrição</label>
+                    <textarea id="new-ticket-desc" class="w-full bg-slate-50 border border-slate-100 rounded-2xl p-4 outline-none focus:ring-2 focus:ring-blue-100 font-medium text-slate-700 text-sm h-32 resize-none" placeholder="Detalhe sua necessidade aqui..."></textarea>
+                </div>
+            </div>
+            <div class="p-8 bg-slate-50 flex gap-4">
+                <button onclick="closeModal('new-ticket-modal')" class="flex-1 py-4 bg-white text-slate-400 font-bold rounded-2xl border border-slate-200">CANCELAR</button>
+                <button onclick="submitTicket()" class="flex-1 py-4 bg-c3c-blue text-white font-bold rounded-2xl shadow-lg shadow-blue-100">CRIAR CHAMADO</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Init Lucide
+        lucide.createIcons();
+
+        // Data Mock
+        let tickets = [
+            { id: 4505, title: "Erro Crítico Login Salesforce", area: "CRM", status: "Em Andamento", sla: "4h 12m", updated: "10:30", date: "22/12/2024", prio: "Alta", desc: "Erro 500 intermitente ao acessar o console de vendas pelo perfil de coordenador.", 
+              timeline: [
+                  { user: "Suporte C3C", text: "Iniciando análise nos logs de autenticação do sandbox.", time: "10:30", type: 'support' },
+                  { user: "Sistema", text: "Chamado triado para Sustentação N2.", time: "10:05", type: 'system' }
+              ] 
+            },
+            { id: 4490, title: "Nova Funcionalidade Dashboard", area: "CRM", status: "Aguardando", sla: "Pausado", updated: "Ontem", date: "21/12/2024", prio: "Média", desc: "Necessitamos de uma nova aba para visualização de leads por região.", 
+              hasEstimate: true,
+              estimateApproved: false,
+              estimateHours: 18.5,
+              timeline: [
+                  { user: "Suporte C3C", text: "Estimativa de 18.5 horas para desenvolvimento enviada. Favor aprovar para iniciarmos.", time: "Ontem 14:00", type: 'support' }
+              ] 
+            },
+            { id: 4400, title: "Relatório de Vendas Trimestral", area: "CRM", status: "Fechado", sla: "Entregue", updated: "01/12", date: "01/12/2024", prio: "Baixa", desc: "Solicitação de exportação de dados brutos.", 
+              timeline: [
+                  { user: "Sistema", text: "Chamado encerrado pelo consultor.", time: "01/12", type: 'system' }
+              ] 
+            }
+        ];
+
+        // Lançamentos Mock
+        const extratoData = {
+            salesforce: [
+                { data: '22/01/2025', id: '#4505', desc: 'Depuração de erro 500 no login', user: 'Maria (Dev)', horas: '4.5' },
+                { data: '20/01/2025', id: '#4490', desc: 'Análise técnica de requisitos do Dashboard', user: 'Roberto (Arquiteto)', horas: '2.0' },
+                { data: '18/01/2025', id: '-', desc: 'Reunião de Alinhamento Semanal', user: 'Ana (Gestora)', horas: '1.0' },
+                { data: '15/01/2025', id: '#4302', desc: 'Correção de regra de preço no CPQ', user: 'Maria (Dev)', horas: '12.0' },
+                { data: '10/01/2025', id: '#4110', desc: 'Importação de dados de novos leads', user: 'Sistema (C3C)', horas: '26.0' }
+            ],
+            cloud: []
+        };
+
+        let activeTicketId = null;
+        let activeContractId = 'salesforce';
+        let myChart = null;
+        let currentFilter = 'todos';
+
+        // AUTH LOGIC
+        function sendOTP() {
+            const email = document.getElementById('login-email').value;
+            if(!email.includes('@')) return alert("E-mail inválido");
+            
+            const btn = document.getElementById('btn-login');
+            btn.innerHTML = `<i data-lucide="loader" class="w-5 h-5 animate-spin"></i> Enviando...`;
+            lucide.createIcons();
+
+            setTimeout(() => {
+                document.getElementById('step-email').classList.add('hidden');
+                document.getElementById('step-otp').classList.remove('hidden');
+                document.getElementById('display-email-otp').innerText = email;
+            }, 800);
+        }
+
+        function verifyOTP() {
+            const btn = document.getElementById('btn-verify');
+            btn.innerHTML = `<i data-lucide="loader" class="w-5 h-5 animate-spin"></i> Autenticando...`;
+            lucide.createIcons();
+
+            setTimeout(() => {
+                document.getElementById('auth-container').classList.add('opacity-0', 'pointer-events-none');
+                document.getElementById('app-container').classList.remove('hidden');
+                initChart();
+                updateOpenCount();
+                switchView('dashboard');
+            }, 1000);
+        }
+
+        // NAVIGATION
+        function switchView(view) {
+            ['dashboard', 'tickets', 'contracts'].forEach(v => {
+                document.getElementById(`view-${v}`).classList.add('hidden');
+                const btn = document.getElementById(`nav-${v}`);
+                btn.classList.remove('bg-c3c-blue', 'text-white', 'shadow-xl', 'shadow-blue-100');
+                btn.classList.add('text-slate-400', 'hover:bg-slate-50');
+            });
+
+            document.getElementById(`view-${view}`).classList.remove('hidden');
+            const activeBtn = document.getElementById(`nav-${view}`);
+            activeBtn.classList.remove('text-slate-400', 'hover:bg-slate-50');
+            activeBtn.classList.add('bg-c3c-blue', 'text-white', 'shadow-xl', 'shadow-blue-100');
+            
+            const titles = {dashboard: 'Visão Geral', tickets: 'Help Desk', contracts: 'Extrato de Horas'};
+            document.getElementById('page-title').innerText = titles[view];
+
+            if(view === 'tickets') renderTicketsList();
+            if(view === 'contracts') selectContract('salesforce'); 
+        }
+
+        // CHART
+        function initChart() {
+            const ctx = document.getElementById('hoursChart').getContext('2d');
+            if(myChart) myChart.destroy();
+            
+            myChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Consumido', 'Restante'],
+                    datasets: [{
+                        data: [45, 155],
+                        backgroundColor: ['#2978FF', '#F1F5F9'],
+                        borderWidth: 0,
+                        hoverOffset: 4
+                    }]
+                },
+                options: {
+                    cutout: '80%',
+                    plugins: { legend: { display: false } },
+                    responsive: true,
+                    maintainAspectRatio: false
+                }
+            });
+        }
+
+        // TICKETS LOGIC
+        function setTicketFilter(filter) {
+            currentFilter = filter;
+            document.querySelectorAll('.filter-pill').forEach(btn => btn.classList.remove('active'));
+            document.getElementById(`filter-${filter}`).classList.add('active');
+            renderTicketsList();
+        }
+
+        function renderTicketsList() {
+            const container = document.getElementById('tickets-list-container');
+            const searchVal = document.getElementById('ticket-search-input').value.toLowerCase();
+            container.innerHTML = '';
+            
+            const filteredTickets = tickets.filter(t => {
+                const isClosed = t.status === 'Fechado';
+                if(currentFilter === 'abertos' && isClosed) return false;
+                if(currentFilter === 'fechados' && !isClosed) return false;
+                if(searchVal && !t.title.toLowerCase().includes(searchVal) && !String(t.id).includes(searchVal)) return false;
+                return true;
+            });
+
+            if(filteredTickets.length === 0) {
+                container.innerHTML = `<div class="p-8 text-center text-slate-300 font-bold text-xs uppercase tracking-widest">Nenhum chamado encontrado</div>`;
+                return;
+            }
+
+            filteredTickets.forEach(t => {
+                const isActive = activeTicketId === t.id;
+                const statusColor = t.status === 'Fechado' ? 'bg-slate-200 text-slate-500' : (t.status === 'Aguardando' ? 'bg-orange-100 text-orange-600' : 'bg-blue-100 text-c3c-blue');
+                
+                container.innerHTML += `
+                    <div onclick="openTicket(${t.id})" class="p-4 rounded-2xl border transition-all cursor-pointer ${isActive ? 'bg-white border-c3c-blue shadow-lg shadow-blue-50' : 'bg-white border-slate-100 hover:border-slate-300'}">
+                        <div class="flex justify-between items-start mb-2">
+                            <span class="text-[9px] font-black font-mono text-slate-400">#${t.id}</span>
+                            <span class="text-[9px] font-black ${statusColor} px-2 py-0.5 rounded-lg uppercase tracking-widest">${t.status}</span>
+                        </div>
+                        <h4 class="text-sm font-bold text-slate-700 mb-2 truncate">${t.title}</h4>
+                        <div class="flex justify-between text-[10px] font-bold text-slate-300">
+                            <span>${t.area}</span>
+                            <span>${t.updated}</span>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        function openTicket(id) {
+            activeTicketId = id;
+            const t = tickets.find(x => x.id === id);
+            
+            document.getElementById('ticket-empty').classList.add('hidden');
+            document.getElementById('ticket-panel').classList.remove('hidden');
+            
+            if(window.innerWidth < 1024) toggleMobileTicketList(false);
+
+            document.getElementById('detail-number').innerText = `#${t.id}`;
+            document.getElementById('detail-title').innerText = t.title;
+            document.getElementById('detail-area').innerText = t.area;
+            document.getElementById('detail-sla').innerText = t.sla;
+            document.getElementById('detail-desc').innerText = t.desc;
+
+            const estPanel = document.getElementById('estimate-panel');
+            if(t.hasEstimate && !t.estimateApproved) {
+                estPanel.classList.remove('hidden');
+                document.getElementById('estimate-hours-text').innerText = `${t.estimateHours}h`;
+            } else {
+                estPanel.classList.add('hidden');
+            }
+
+            renderTicketActions(t);
+            renderPath(t.status);
+            renderTimeline(t.timeline);
+            renderTicketsList();
+        }
+
+        function renderTicketActions(ticket) {
+            const actionBar = document.getElementById('ticket-actions-bar');
+            actionBar.innerHTML = '';
+
+            if(ticket.hasEstimate && !ticket.estimateApproved) {
+                actionBar.innerHTML += `
+                    <button onclick="approveEstimateAction()" class="flex items-center gap-2 px-5 py-2.5 bg-c3c-teal text-slate-900 rounded-xl text-[10px] font-black uppercase hover:bg-emerald-400 transition-all shadow-lg shadow-emerald-100">
+                        <i data-lucide="check-circle-2" class="w-4 h-4"></i> Aprovar Melhoria
+                    </button>
+                `;
+            }
+
+            if(ticket.status === 'Fechado') {
+                actionBar.innerHTML += `
+                    <button onclick="reopenTicketAction(${ticket.id})" class="flex items-center gap-2 px-5 py-2.5 bg-slate-900 text-white rounded-xl text-[10px] font-black uppercase hover:bg-slate-800 transition-all">
+                        <i data-lucide="rotate-ccw" class="w-4 h-4"></i> Reabrir Chamado
+                    </button>
+                `;
+            } else {
+                actionBar.innerHTML += `
+                    <button onclick="closeTicketAction(${ticket.id})" class="flex items-center gap-2 px-5 py-2.5 bg-white border border-slate-200 text-slate-400 rounded-xl text-[10px] font-black uppercase hover:bg-red-50 hover:text-red-500 hover:border-red-100 transition-all">
+                        <i data-lucide="x-circle" class="w-4 h-4"></i> Encerrar Chamado
+                    </button>
+                `;
+            }
+            lucide.createIcons();
+        }
+
+        function closeTicketAction(id) {
+            const t = tickets.find(x => x.id === id);
+            t.status = 'Fechado';
+            t.timeline.unshift({ user: "Sistema", text: "Chamado encerrado pelo cliente.", time: "Agora", type: 'system' });
+            t.updated = "Agora";
+            updateOpenCount();
+            openTicket(id);
+        }
+
+        function reopenTicketAction(id) {
+            const t = tickets.find(x => x.id === id);
+            t.status = 'Em Andamento';
+            t.timeline.unshift({ user: "Sistema", text: "Chamado reaberto pelo cliente.", time: "Agora", type: 'system' });
+            t.updated = "Agora";
+            updateOpenCount();
+            openTicket(id);
+        }
+
+        function approveEstimateAction() {
+            const t = tickets.find(x => x.id === activeTicketId);
+            t.estimateApproved = true;
+            t.status = 'Em Andamento';
+            t.timeline.unshift({ user: "Você", text: "Estimativa de " + t.estimateHours + "h aprovada.", time: "Agora", type: 'user' });
+            t.timeline.unshift({ user: "Sistema", text: "Desenvolvimento iniciado.", time: "Agora", type: 'system' });
+            openTicket(activeTicketId);
+        }
+
+        // CONTRACTS / EXTRATO LOGIC
+        function selectContract(contractId) {
+            activeContractId = contractId;
+            document.querySelectorAll('[id^="card-"]').forEach(el => {
+                el.classList.remove('border-c3c-blue', 'ring-4', 'ring-blue-50', 'opacity-100', 'grayscale-0');
+                el.classList.add('border-slate-100', 'opacity-60', 'grayscale');
+            });
+            const activeCard = document.getElementById(`card-${contractId}`);
+            activeCard.classList.add('border-c3c-blue', 'ring-4', 'ring-blue-50', 'opacity-100', 'grayscale-0');
+            activeCard.classList.remove('border-slate-100', 'opacity-60', 'grayscale');
+
+            document.getElementById('extrato-target-name').innerText = contractId === 'salesforce' ? 'Sustentação Salesforce' : 'Infraestrutura Cloud';
+            
+            renderExtratoTable();
+        }
+
+        function applyExtratoDateFilter() {
+            renderExtratoTable();
+        }
+
+        function resetExtratoDates() {
+            document.getElementById('filter-date-start').value = '';
+            document.getElementById('filter-date-end').value = '';
+            renderExtratoTable();
+        }
+
+        function renderExtratoTable() {
+            const tbody = document.getElementById('extrato-table-body');
+            const data = extratoData[activeContractId] || [];
+            const startDateVal = document.getElementById('filter-date-start').value;
+            const endDateVal = document.getElementById('filter-date-end').value;
+            
+            const startDate = startDateVal ? new Date(startDateVal) : null;
+            const endDate = endDateVal ? new Date(endDateVal) : null;
+
+            tbody.innerHTML = '';
+            let totalFilteredHours = 0;
+
+            // Filtragem por data
+            const filteredData = data.filter(item => {
+                if (!startDate && !endDate) return true;
+                
+                // Converte DD/MM/YYYY para Date object
+                const [day, month, year] = item.data.split('/');
+                const itemDate = new Date(`${year}-${month}-${day}`);
+                
+                if (startDate && itemDate < startDate) return false;
+                if (endDate && itemDate > endDate) return false;
+                
+                return true;
+            });
+
+            if (filteredData.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" class="py-12 text-center text-slate-300 font-bold uppercase text-[10px]">Nenhum lançamento encontrado para este período</td></tr>`;
+            } else {
+                filteredData.forEach(item => {
+                    totalFilteredHours += parseFloat(item.horas);
+                    tbody.innerHTML += `
+                        <tr class="hover:bg-slate-50 transition-colors group">
+                            <td class="py-4 px-4 text-xs font-bold text-slate-500">${item.data}</td>
+                            <td class="py-4 px-4 text-xs font-black text-c3c-blue">${item.id}</td>
+                            <td class="py-4 px-4 text-xs text-slate-700 font-medium">${item.desc}</td>
+                            <td class="py-4 px-4 text-[10px] font-bold text-slate-400">${item.user}</td>
+                            <td class="py-4 px-4 text-right text-xs font-black text-slate-800">${item.horas}h</td>
+                        </tr>
+                    `;
+                });
+            }
+            
+            document.getElementById('extrato-total-hours').innerText = totalFilteredHours.toFixed(1);
+            lucide.createIcons();
+        }
+
+        function updateOpenCount() {
+            const count = tickets.filter(t => t.status !== 'Fechado').length;
+            const badge = document.getElementById('dash-open-tickets-count');
+            if(badge) badge.innerText = `${count} Aberto${count !== 1 ? 's' : ''}`;
+        }
+
+        function toggleMobileTicketList(showList) {
+            const list = document.getElementById('tickets-list-side');
+            const detail = document.getElementById('tickets-detail-side');
+            if(showList) {
+                list.classList.remove('hidden');
+                detail.classList.add('hidden');
+            } else {
+                list.classList.add('hidden');
+                detail.classList.remove('hidden', 'lg:flex');
+                detail.classList.add('flex');
+            }
+        }
+
+        function renderPath(status) {
+            const steps = ['Novo', 'Em Andamento', 'Aguardando', 'Fechado'];
+            const container = document.getElementById('status-path-container');
+            container.innerHTML = '';
+            
+            let currentIdx = steps.indexOf(status);
+            if(status === 'Aguardando Aprovação' || status === 'Aguardando') currentIdx = 2;
+
+            steps.forEach((s, idx) => {
+                let state = '';
+                if(idx < currentIdx) state = 'completed';
+                else if(idx === currentIdx) state = 'active';
+                container.innerHTML += `<div class="path-step ${state}">${s}</div>`;
+            });
+        }
+
+        function renderTimeline(timeline) {
+            const list = document.getElementById('timeline-list');
+            list.innerHTML = '';
+            timeline.forEach(item => {
+                const isSupport = item.type === 'support';
+                const isSystem = item.type === 'system';
+
+                list.innerHTML += `
+                    <div class="timeline-item">
+                        <div class="timeline-line"></div>
+                        <div class="timeline-dot" style="${isSystem ? 'border-color: #E2E8F0' : ''}"></div>
+                        <div class="mb-6">
+                            <div class="flex items-center gap-2 mb-1">
+                                <span class="text-xs font-black text-slate-800">${item.user}</span>
+                                <span class="text-[10px] font-bold text-slate-300">${item.time}</span>
+                            </div>
+                            <div class="p-4 rounded-2xl text-sm ${isSupport ? 'bg-blue-50 text-slate-700 border border-blue-100' : 'bg-white text-slate-500 border border-slate-100'}">
+                                ${item.text}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        function postComment() {
+            const txt = document.getElementById('new-comment-text').value;
+            if(!txt) return;
+            const t = tickets.find(x => x.id === activeTicketId);
+            t.timeline.unshift({ user: "Você", text: txt, time: "Agora", type: 'user' });
+            renderTimeline(t.timeline);
+            document.getElementById('new-comment-text').value = '';
+        }
+
+        function switchDetailTab(tab) {
+            ['timeline', 'info', 'attach'].forEach(t => {
+                document.getElementById(`view-${t}`).classList.add('hidden');
+                const btn = document.getElementById(`dt-${t}`);
+                btn.classList.remove('border-b-2', 'border-c3c-blue', 'text-c3c-blue');
+                btn.classList.add('text-slate-400', 'font-bold');
+            });
+            document.getElementById(`view-${tab}`).classList.remove('hidden');
+            const active = document.getElementById(`dt-${tab}`);
+            active.classList.add('border-b-2', 'border-c3c-blue', 'text-c3c-blue');
+            active.classList.remove('text-slate-400');
+        }
+
+        function closeModal(id) {
+            const m = document.getElementById(id);
+            const inner = m.querySelector('div');
+            inner.classList.add('scale-95', 'opacity-0');
+            setTimeout(() => m.classList.add('hidden'), 300);
+        }
+
+        function openNewTicketModal() {
+            const m = document.getElementById('new-ticket-modal');
+            const inner = m.querySelector('div');
+            m.classList.remove('hidden');
+            setTimeout(() => {
+                inner.classList.remove('scale-95', 'opacity-0');
+            }, 10);
+        }
+
+        function submitTicket() {
+            const title = document.getElementById('new-ticket-title').value;
+            const desc = document.getElementById('new-ticket-desc').value;
+            if(!title) return alert("Assunto obrigatório");
+            closeModal('new-ticket-modal');
+            const newId = Math.floor(Math.random() * 9000);
+            tickets.unshift({
+                id: newId,
+                title: title,
+                area: "SUPORTE",
+                status: "Novo",
+                sla: "8h 00m",
+                updated: "Agora",
+                date: "Hoje",
+                prio: "Normal",
+                desc: desc,
+                timeline: [{ user: "Sistema", text: "Chamado registrado.", time: "Agora", type: 'system' }]
+            });
+            updateOpenCount();
+            switchView('tickets');
+            openTicket(newId);
+        }
+    </script>
+</body>
+</html>

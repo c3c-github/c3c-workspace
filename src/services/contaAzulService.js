@@ -74,3 +74,114 @@ exports.searchCustomers = async (query) => {
         ];
     }
 };
+
+exports.getSalesByCustomer = async (customerId) => {
+    if (!customerId) return [];
+    try {
+        const token = await getValidToken();
+        const url = `${CA_API_URL}/venda/busca?ids_clientes=${customerId}&tamanho_pagina=1000&campo_ordenado_descendente=DATA`; 
+        
+        const response = await axios.get(url, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        let sales = [];
+        // console.log("CA API Response Keys:", Object.keys(response.data)); // Debug
+
+        if (response.data && response.data.itens && Array.isArray(response.data.itens)) {
+            sales = response.data.itens;
+        } else if (response.data && Array.isArray(response.data)) {
+            sales = response.data;
+        }
+
+                return sales.map(s => {
+                    const rawStatus = (s.situacao && s.situacao.nome) ? s.situacao.nome : (s.status || 'PENDENTE');
+                    // Mapeamento para Title Case ou manter original se a picklist aceitar
+                    let displayStatus = rawStatus.charAt(0).toUpperCase() + rawStatus.slice(1).toLowerCase().replace('_', ' ');
+                    
+                    // Ajustes finos se necessário para bater com a Picklist
+                    if (rawStatus.toUpperCase() === 'EM_ANDAMENTO') displayStatus = 'Em Andamento';
+        
+                    return {
+                        id: s.id,
+                        number: s.numero,
+                        emissionDate: s.data_emissao || s.data,
+                        total: s.valor_total || s.total || 0,
+                        status: displayStatus
+                    };
+                });
+    } catch (e) {
+        console.error(`Erro ao buscar vendas do cliente ${customerId}:`, e.message);
+        if (e.response && e.response.data) {
+            console.error("Detalhes do erro Conta Azul:", JSON.stringify(e.response.data, null, 2));
+        }
+        return [];
+    }
+};
+
+exports.getSaleInstallments = async (saleId) => {
+    if (!saleId) return [];
+    try {
+        const token = await getValidToken();
+        
+        // 1. Buscar detalhes da venda para pegar o ID do evento financeiro
+        // Endpoint no singular conforme descoberta: /v1/venda/{id}
+        const saleUrl = `${CA_API_URL}/venda/${saleId}`;
+        const saleResponse = await axios.get(saleUrl, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        let eventId = null;
+        if (saleResponse.data && saleResponse.data.evento_financeiro) {
+            eventId = saleResponse.data.evento_financeiro.id;
+        }
+
+        if (!eventId) {
+            console.warn(`Venda ${saleId} não possui evento financeiro vinculado.`);
+            return [];
+        }
+
+        // 2. Buscar parcelas do evento financeiro
+        const installmentsUrl = `${CA_API_URL}/financeiro/eventos-financeiros/${eventId}/parcelas`;
+        const response = await axios.get(installmentsUrl, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        // console.log("Installments Raw Response:", JSON.stringify(response.data, null, 2));
+
+        if (response.data && Array.isArray(response.data)) {
+            return response.data.map(p => {
+                let normalizedStatus = 'Pendente';
+                const rawStatus = p.status || '';
+                if (['QUITADO', 'PAGO', 'CONFIRMADO'].includes(rawStatus.toUpperCase())) normalizedStatus = 'Pago';
+                else if (rawStatus.toUpperCase() === 'VENCIDO') normalizedStatus = 'Atrasado';
+                else if (rawStatus.toUpperCase() === 'CANCELADO') normalizedStatus = 'Cancelado';
+
+                return {
+                    ...p,
+                    status: normalizedStatus,
+                    financialEventId: eventId
+                };
+            });
+        } else if (response.data && Array.isArray(response.data.value)) {
+             return response.data.value.map(p => {
+                let normalizedStatus = 'Pendente';
+                const rawStatus = p.status || '';
+                if (['QUITADO', 'PAGO', 'CONFIRMADO'].includes(rawStatus.toUpperCase())) normalizedStatus = 'Pago';
+                else if (rawStatus.toUpperCase() === 'VENCIDO') normalizedStatus = 'Atrasado';
+                else if (rawStatus.toUpperCase() === 'CANCELADO') normalizedStatus = 'Cancelado';
+
+                return { ...p, status: normalizedStatus, financialEventId: eventId };
+             });
+        }
+        
+        return [];
+
+    } catch (e) {
+        console.error(`Erro ao buscar parcelas da venda ${saleId}:`, e.message);
+        if (e.response && e.response.data) {
+            console.error("Detalhes do erro Conta Azul (Parcelas):", JSON.stringify(e.response.data, null, 2));
+        }
+        return [];
+    }
+};

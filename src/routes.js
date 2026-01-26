@@ -40,6 +40,13 @@ router.post('/api/services', requireAuth, requireGroup('GESTOR_FINANCEIRO'), ser
 router.post('/api/services/doc', requireAuth, requireGroup('GESTOR_FINANCEIRO'), upload.single('files'), serviceController.uploadDocument);
 router.delete('/api/services/doc/:docId', requireAuth, requireGroup('GESTOR_FINANCEIRO'), serviceController.deleteDocument);
 router.get('/api/services/doc/:docId', requireAuth, requireGroup('GESTOR_FINANCEIRO'), serviceController.downloadDocument);
+router.get('/api/services/sales/available', requireAuth, requireGroup('GESTOR_FINANCEIRO'), serviceController.getAvailableSales);
+router.get('/api/services/sales/:saleId/installments', requireAuth, requireGroup('GESTOR_FINANCEIRO'), serviceController.getSaleInstallmentsPreview);
+router.post('/api/services/sales', requireAuth, requireGroup('GESTOR_FINANCEIRO'), serviceController.saveSales);
+router.delete('/api/services/sales/:id', requireAuth, requireGroup('GESTOR_FINANCEIRO'), serviceController.deleteSale);
+router.delete('/api/services/installments/:id', requireAuth, requireGroup('GESTOR_FINANCEIRO'), serviceController.deleteInstallment);
+router.delete('/api/services/allocation/:id', requireAuth, requireGroup('GESTOR_FINANCEIRO'), serviceController.deleteAllocation);
+router.delete('/api/services/commercial/:id', requireAuth, requireGroup('GESTOR_FINANCEIRO'), serviceController.deleteCommercialItem);
 
 // --- APROVAÇÕES ---
 router.get('/approvals', requireAuth, requireGroup('GESTOR'), (req, res) => { res.render('approvals', { user: req.session.user, page: 'approvals' }); });

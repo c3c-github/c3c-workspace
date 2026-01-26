@@ -1,0 +1,774 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portal do Cliente - C3C</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Ícones Lucide -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Fonte Montserrat -->
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Montserrat', 'sans-serif'],
+                    },
+                    colors: {
+                        c3c: {
+                            blue: '#2978FF',
+                            teal: '#1DDDBD',
+                            dark: '#1a1a1a',
+                            bg: '#F8FAFC'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body { font-family: 'Montserrat', sans-serif; background-color: #F8FAFC; }
+        .fade-in { animation: fadeIn 0.5s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        
+        .modal-backdrop { background-color: rgba(0, 0, 0, 0.5); backdrop-filter: blur(2px); z-index: 50; }
+        
+        /* Estilos do Ticket */
+        .timeline-item { position: relative; padding-left: 24px; padding-bottom: 24px; border-left: 2px solid #E5E7EB; }
+        .timeline-item:last-child { border-left: 2px solid transparent; }
+        .timeline-dot { position: absolute; left: -7px; top: 0; width: 12px; height: 12px; border-radius: 50%; background: white; border: 2px solid #2978FF; }
+        
+        /* Chat Bubbles */
+        .chat-bubble { max-width: 80%; padding: 12px; border-radius: 12px; font-size: 13px; position: relative; }
+        .chat-client { background-color: #EEF2FF; color: #1e3a8a; border-bottom-right-radius: 2px; align-self: flex-end; }
+        .chat-support { background-color: #FFFFFF; border: 1px solid #E5E7EB; color: #374151; border-bottom-left-radius: 2px; align-self: flex-start; }
+        
+        /* Login Transitions */
+        .auth-step { transition: all 0.3s ease-in-out; }
+        .hidden-step { display: none; opacity: 0; }
+        
+        /* Path Steps CSS */
+        .path-container { display: flex; width: 100%; margin-bottom: 0; border-radius: 6px; overflow: hidden; border: 1px solid #E5E7EB; background: #F9FAFB; }
+        .path-step { flex: 1; text-align: center; padding: 10px 4px; font-size: 10px; font-weight: 700; text-transform: uppercase; color: #9CA3AF; background: #F3F4F6; position: relative; clip-path: polygon(0% 0%, 95% 0%, 100% 50%, 95% 100%, 0% 100%, 5% 50%); margin-left: -10px; padding-left: 15px; display: flex; align-items: center; justify-content: center; }
+        .path-step:first-child { margin-left: 0; padding-left: 0; clip-path: polygon(0% 0%, 95% 0%, 100% 50%, 95% 100%, 0% 100%); }
+        .path-step:last-child { clip-path: polygon(0% 0%, 100% 0%, 100% 100%, 0% 100%, 5% 50%); }
+        .path-step.active { background: #2978FF; color: white; }
+        .path-step.completed { background: #1DDDBD; color: white; }
+
+        /* Abas Internas */
+        .tab-active { border-bottom: 2px solid #2978FF; color: #2978FF; font-weight: 700; background-color: white; }
+        .tab-inactive { border-bottom: 2px solid transparent; color: #6B7280; font-weight: 500; }
+        .tab-inactive:hover { color: #1a1a1a; background-color: #F9FAFB; }
+    </style>
+</head>
+<body class="h-screen flex overflow-hidden bg-c3c-bg">
+
+    <!-- ========================================== -->
+    <!-- ÁREA DE AUTENTICAÇÃO (LOGIN 2FA) -->
+    <!-- ========================================== -->
+    <div id="auth-container" class="fixed inset-0 z-[100] bg-white flex items-center justify-center">
+        <div class="w-full max-w-md p-8">
+            <div class="flex justify-center mb-8">
+                <div class="w-16 h-16 bg-gradient-to-br from-[#2978FF] to-[#1DDDBD] rounded-2xl flex items-center justify-center shadow-lg">
+                    <span class="text-white font-bold text-2xl tracking-tighter">C3C</span>
+                </div>
+            </div>
+            <div id="step-email" class="auth-step fade-in text-center">
+                <h2 class="text-2xl font-bold text-gray-800 mb-2">Portal do Cliente</h2>
+                <p class="text-sm text-gray-500 mb-8">Digite seu e-mail cadastrado para acessar seus contratos.</p>
+                <div class="space-y-4 text-left">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 mb-1">E-mail Corporativo</label>
+                        <div class="relative">
+                            <i data-lucide="mail" class="absolute left-3 top-3 w-5 h-5 text-gray-400"></i>
+                            <input type="email" id="login-email" class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-all" placeholder="nome@empresa.com">
+                        </div>
+                    </div>
+                    <button onclick="sendOTP()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg shadow-md transition-transform active:scale-95 flex items-center justify-center gap-2">
+                        Acessar Portal <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                    </button>
+                </div>
+            </div>
+            <div id="step-otp" class="auth-step hidden-step text-center">
+                 <div class="inline-flex items-center justify-center w-12 h-12 bg-blue-50 rounded-full mb-4 text-blue-600">
+                    <i data-lucide="shield-check" class="w-6 h-6"></i>
+                </div>
+                 <h2 class="text-xl font-bold text-gray-800 mb-2">Verificação</h2>
+                 <p class="mb-6 text-sm text-gray-500">Digite o código de 6 dígitos enviado para <br><strong id="display-email-otp" class="text-gray-800">...</strong></p>
+                 <div class="flex justify-center gap-2 mb-8">
+                    <input type="text" maxlength="6" class="w-full tracking-[1em] text-center text-2xl font-mono font-bold border-2 border-gray-300 rounded-lg py-3 focus:border-blue-500 outline-none text-gray-700" placeholder="000000">
+                 </div>
+                 <button onclick="verifyOTP()" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 rounded-lg shadow-md transition-transform active:scale-95">Verificar e Entrar</button>
+                 <button onclick="resetLogin()" class="mt-6 text-xs text-gray-400 hover:text-blue-600 hover:underline">Voltar / Corrigir E-mail</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- APLICAÇÃO (DASHBOARD) -->
+    <!-- ========================================== -->
+    <div id="app-container" class="hidden flex-1 flex h-screen overflow-hidden">
+        
+        <!-- Sidebar -->
+        <aside class="w-64 bg-white border-r border-gray-100 flex flex-col z-20">
+            <div class="h-20 flex items-center px-8 border-b border-gray-50">
+                <div class="w-8 h-8 bg-gradient-to-br from-[#2978FF] to-[#1DDDBD] rounded-lg flex items-center justify-center text-white font-bold text-xs">C3C</div>
+                <span class="ml-3 font-bold text-gray-800 text-lg">Portal</span>
+            </div>
+            
+            <div class="p-6">
+                <div class="bg-blue-50 rounded-xl p-4 border border-blue-100">
+                    <p class="text-xs text-blue-600 font-bold uppercase mb-1">Cliente</p>
+                    <h3 class="font-bold text-gray-800">Tech Solutions</h3>
+                    <p class="text-[10px] text-gray-500 mt-1">CNPJ: 12.345.678/0001-90</p>
+                </div>
+            </div>
+
+            <nav class="flex-1 px-4 space-y-1">
+                <button onclick="switchView('dashboard')" id="nav-dashboard" class="w-full flex items-center gap-3 px-4 py-3 rounded-lg bg-gray-900 text-white shadow-md transition-all">
+                    <i data-lucide="layout-grid" class="w-5 h-5"></i>
+                    <span class="text-sm font-medium">Visão Geral</span>
+                </button>
+                <button onclick="switchView('tickets')" id="nav-tickets" class="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-gray-500 hover:bg-gray-50 hover:text-blue-600 transition-all">
+                    <i data-lucide="life-buoy" class="w-5 h-5"></i>
+                    <span class="text-sm font-medium">Chamados (Help Desk)</span>
+                </button>
+                <button onclick="switchView('contracts')" id="nav-contracts" class="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-gray-500 hover:bg-gray-50 hover:text-blue-600 transition-all">
+                    <i data-lucide="file-text" class="w-5 h-5"></i>
+                    <span class="text-sm font-medium">Extrato & Horas</span>
+                </button>
+            </nav>
+
+            <div class="p-4 border-t border-gray-100">
+                <button onclick="logout()" class="flex items-center justify-center lg:justify-start gap-2 text-gray-400 hover:text-red-500 text-sm font-bold w-full px-2 py-2">
+                    <i data-lucide="log-out" class="w-4 h-4"></i> <span class="hidden lg:inline">Sair</span>
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="flex-1 flex flex-col relative overflow-hidden bg-[#F8FAFC]">
+            
+            <!-- Header Global (Seletor de Contexto) -->
+            <header class="h-20 bg-white border-b border-gray-200 flex items-center justify-between px-8 shrink-0">
+                <div class="flex flex-col justify-center">
+                    <h2 class="text-lg font-bold text-gray-800" id="page-title">Visão Geral</h2>
+                    <p class="text-xs text-gray-500" id="current-context-label">Todos os Contratos</p>
+                </div>
+
+                <div class="flex items-center gap-4">
+                    <!-- Seletor de Contrato (Contexto) -->
+                    <div class="relative group">
+                        <div class="flex items-center gap-2 bg-gray-50 border border-gray-200 px-3 py-2 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors">
+                            <i data-lucide="layers" class="w-4 h-4 text-indigo-600"></i>
+                            <select id="contract-selector" onchange="changeContext(this.value)" class="bg-transparent text-sm font-bold text-gray-700 outline-none cursor-pointer w-48 appearance-none">
+                                <option value="all">Todos os Contratos</option>
+                                <option value="salesforce">Sustentação Salesforce</option>
+                                <option value="infra">Infraestrutura Cloud</option>
+                            </select>
+                            <i data-lucide="chevron-down" class="w-4 h-4 text-gray-400"></i>
+                        </div>
+                    </div>
+
+                    <div class="h-8 w-px bg-gray-200"></div>
+
+                    <button class="p-2 text-gray-400 hover:text-blue-600 relative">
+                        <i data-lucide="bell" class="w-5 h-5"></i>
+                        <span class="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border border-white"></span>
+                    </button>
+                    <div class="flex items-center gap-3 border-l border-gray-200 pl-4">
+                        <div class="text-right hidden sm:block">
+                            <p class="text-sm font-bold text-gray-800">Roberto Cliente</p>
+                            <p class="text-xs text-gray-500">Gestor de TI</p>
+                        </div>
+                        <div class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 font-bold border border-blue-200">RC</div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Scrollable Area -->
+            <div class="flex-1 overflow-y-auto p-8 fade-in" id="main-scroll">
+
+                <!-- VIEW 1: DASHBOARD -->
+                <div id="view-dashboard" class="space-y-8">
+                    <!-- Cards -->
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div class="bg-white p-6 rounded-xl border border-gray-200 shadow-sm relative overflow-hidden">
+                            <p class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Saldo de Horas (Dez)</p>
+                            <div class="flex items-end gap-2">
+                                <span class="text-4xl font-extrabold text-blue-600" id="dash-hours">45h</span>
+                                <span class="text-sm text-gray-500 mb-1">/ 200h</span>
+                            </div>
+                            <div class="w-full bg-gray-100 h-1.5 rounded-full mt-4">
+                                <div class="bg-blue-500 h-1.5 rounded-full" style="width: 22%"></div>
+                            </div>
+                        </div>
+
+                        <div class="bg-white p-6 rounded-xl border border-gray-200 shadow-sm hover:border-blue-300 transition-colors cursor-pointer" onclick="switchView('tickets')">
+                            <div class="flex justify-between items-start">
+                                <p class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Chamados Abertos</p>
+                                <i data-lucide="external-link" class="w-4 h-4 text-gray-300"></i>
+                            </div>
+                            <div class="flex items-end gap-2">
+                                <span class="text-4xl font-extrabold text-gray-800">3</span>
+                                <span class="text-sm text-yellow-600 font-bold mb-1">Em Andamento</span>
+                            </div>
+                            <p class="text-xs text-gray-500 mt-4">1 Aguardando sua resposta</p>
+                        </div>
+
+                        <div class="bg-gradient-to-br from-indigo-900 to-blue-900 p-6 rounded-xl shadow-lg text-white flex flex-col justify-between">
+                            <div>
+                                <p class="text-xs font-bold text-blue-200 uppercase tracking-wider mb-1">Suporte Rápido</p>
+                                <h3 class="font-bold text-lg">Precisa de ajuda agora?</h3>
+                            </div>
+                            <button onclick="openNewTicketModal()" class="mt-4 w-full py-2 bg-white text-blue-900 font-bold rounded-lg text-sm hover:bg-blue-50 transition-colors flex items-center justify-center gap-2">
+                                <i data-lucide="plus-circle" class="w-4 h-4"></i> Abrir Novo Chamado
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- VIEW 2: CHAMADOS (HELP DESK - BASEADO NA OPERAÇÃO) -->
+                <div id="view-tickets" class="hidden flex h-[calc(100vh-140px)] gap-6">
+                    
+                    <!-- Lista de Chamados (Esquerda) -->
+                    <div class="w-full md:w-[350px] flex flex-col border border-gray-200 bg-white rounded-xl overflow-hidden shadow-sm">
+                        
+                        <!-- Barra de Ferramentas -->
+                        <div class="p-3 border-b border-gray-200 bg-white flex flex-col gap-3">
+                            <button onclick="openNewTicketModal()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold py-2.5 rounded-lg flex items-center justify-center gap-2 shadow-sm transition-all active:scale-95">
+                                <i data-lucide="plus-circle" class="w-4 h-4"></i> Novo Chamado
+                            </button>
+                            <div class="relative">
+                                <input type="text" id="search-tickets" onkeyup="filterTickets()" placeholder="Buscar por ID ou assunto..." class="w-full border border-gray-200 rounded-lg px-3 py-2 text-xs focus:ring-2 focus:ring-indigo-500 outline-none pl-8 bg-gray-50">
+                                <i data-lucide="search" class="w-4 h-4 text-gray-400 absolute left-2.5 top-2"></i>
+                            </div>
+                            <div class="flex gap-1 overflow-x-auto pb-1">
+                                <button onclick="filterStatus('all')" class="flex-1 py-1.5 text-xs font-bold rounded bg-indigo-50 text-indigo-700 border border-indigo-100">Todos</button>
+                                <button onclick="filterStatus('pending')" class="flex-1 py-1.5 text-xs font-bold rounded bg-white text-gray-500 border border-gray-200 hover:bg-gray-50">Pendentes</button>
+                                <button onclick="filterStatus('closed')" class="flex-1 py-1.5 text-xs font-bold rounded bg-white text-gray-500 border border-gray-200 hover:bg-gray-50">Fechados</button>
+                            </div>
+                        </div>
+
+                        <!-- Lista -->
+                        <div id="tickets-list-container" class="flex-1 overflow-y-auto p-2 space-y-2 bg-gray-50/50">
+                            <!-- Cards Injetados via JS -->
+                        </div>
+                    </div>
+
+                    <!-- Detalhe do Chamado (Direita) -->
+                    <div class="hidden md:flex flex-1 bg-white rounded-xl border border-gray-200 flex-col overflow-hidden relative shadow-sm" id="ticket-workspace">
+                        
+                        <!-- Estado Vazio -->
+                        <div id="ticket-empty" class="absolute inset-0 flex flex-col items-center justify-center text-gray-400 z-10 bg-white">
+                            <i data-lucide="inbox" class="w-16 h-16 mb-4 text-gray-300"></i>
+                            <p class="text-sm font-medium">Selecione um chamado para ver o andamento.</p>
+                        </div>
+                        
+                        <!-- Painel do Ticket -->
+                        <div id="ticket-panel" class="flex-1 flex flex-col h-full hidden z-10 bg-white w-full">
+                            
+                            <!-- Banner de Aprovação de Estimativa (Oculto por padrão) -->
+                            <div id="approval-banner" class="hidden px-6 py-3 bg-yellow-50 border-b border-yellow-200 flex justify-between items-center">
+                                <div class="flex items-center gap-3">
+                                    <div class="bg-yellow-100 p-1.5 rounded-full text-yellow-700"><i data-lucide="clock" class="w-5 h-5"></i></div>
+                                    <div>
+                                        <p class="text-sm font-bold text-yellow-800">Aprovação de Estimativa Necessária</p>
+                                        <p class="text-xs text-yellow-700">O suporte estimou <span id="estim-hours" class="font-bold">4.0h</span> para esta tarefa. Deseja aprovar?</p>
+                                    </div>
+                                </div>
+                                <div class="flex gap-2">
+                                     <button onclick="approveEstimate(false)" class="text-xs text-red-600 font-bold hover:underline px-2 py-1.5">Rejeitar</button>
+                                     <button onclick="approveEstimate(true)" class="text-xs bg-green-600 text-white px-4 py-1.5 rounded font-bold hover:bg-green-700 shadow-sm flex items-center gap-1"><i data-lucide="check" class="w-3 h-3"></i> Aprovar Execução</button>
+                                </div>
+                            </div>
+
+                            <!-- Header do Ticket -->
+                            <div class="px-6 py-5 border-b border-gray-200 bg-white">
+                                <div class="flex justify-between items-start mb-4">
+                                    <div>
+                                        <div class="flex items-center gap-3 mb-1">
+                                            <span class="bg-gray-100 text-gray-600 px-2 py-0.5 rounded text-xs font-mono font-bold" id="detail-number">#0000</span>
+                                            <span class="text-[10px] bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded border border-indigo-100 font-bold uppercase" id="detail-area">Área</span>
+                                            <span class="text-[10px] bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded border border-yellow-200 font-bold" id="detail-status">Status</span>
+                                        </div>
+                                        <h1 class="text-xl font-bold text-gray-900" id="detail-title">Titulo do Chamado</h1>
+                                    </div>
+                                    <div class="text-right flex flex-col gap-2 items-end">
+                                        <button class="text-xs border border-red-200 text-red-500 hover:bg-red-50 px-3 py-1.5 rounded font-bold transition-colors" onclick="closeTicketClient()">Encerrar Chamado</button>
+                                        <p class="text-[10px] text-gray-400 font-bold">SLA: <span class="text-green-600" id="detail-sla">4h 30m</span></p>
+                                    </div>
+                                </div>
+                                
+                                <!-- Barra de Progresso do Status -->
+                                <div id="status-path-container" class="w-full mb-2">
+                                    <!-- JS Injects Path -->
+                                </div>
+                            </div>
+
+                            <!-- Abas Internas -->
+                            <div class="px-6 pt-2 border-b border-gray-200 bg-gray-50/50 flex gap-6">
+                                <button onclick="switchDetailTab('timeline')" id="dt-timeline" class="pb-3 text-sm tab-active">Linha do Tempo</button>
+                                <button onclick="switchDetailTab('info')" id="dt-info" class="pb-3 text-sm tab-inactive">Detalhes & Configurações</button>
+                                <button onclick="switchDetailTab('attach')" id="dt-attach" class="pb-3 text-sm tab-inactive">Anexos</button>
+                            </div>
+
+                            <!-- Conteúdo das Abas -->
+                            <div class="flex-1 overflow-y-auto p-6 bg-gray-50">
+                                
+                                <!-- ABA TIMELINE (Histórico + Comentários) -->
+                                <div id="view-timeline" class="space-y-6">
+                                    <div id="timeline-list" class="space-y-0">
+                                        <!-- JS Injects Timeline Items -->
+                                    </div>
+                                </div>
+
+                                <!-- ABA INFO (Agora com Edição) -->
+                                <div id="view-info" class="hidden space-y-4">
+                                    <div class="bg-white p-4 rounded-lg border border-gray-200 shadow-sm mb-4">
+                                        <h4 class="text-xs font-bold text-gray-400 uppercase mb-3">Gerenciar Chamado</h4>
+                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <div>
+                                                <label class="block text-xs font-bold text-gray-700 mb-1">Prioridade</label>
+                                                <select id="client-priority" onchange="updateTicketData('priority', this.value)" class="w-full border border-gray-300 rounded p-2 text-sm bg-white cursor-pointer focus:ring-2 focus:ring-blue-500 outline-none">
+                                                    <option value="Baixa">Baixa</option>
+                                                    <option value="Média">Média</option>
+                                                    <option value="Alta">Alta</option>
+                                                    <option value="Crítica">Crítica</option>
+                                                </select>
+                                            </div>
+                                            <div>
+                                                <label class="block text-xs font-bold text-gray-700 mb-1">Expectativa de Entrega</label>
+                                                <input type="date" id="client-expectation" onchange="updateTicketData('expectation', this.value)" class="w-full border border-gray-300 rounded p-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
+                                        <p class="text-xs font-bold text-gray-400 uppercase mb-2">Descrição Original</p>
+                                        <p class="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap" id="detail-desc">...</p>
+                                    </div>
+                                    
+                                    <div class="grid grid-cols-2 gap-4">
+                                        <div class="bg-white p-3 rounded border border-gray-200">
+                                            <p class="text-xs text-gray-400 font-bold uppercase">Criado em</p>
+                                            <p class="text-sm font-medium text-gray-800" id="detail-date">...</p>
+                                        </div>
+                                        <div class="bg-white p-3 rounded border border-gray-200">
+                                            <p class="text-xs text-gray-400 font-bold uppercase">Tipo</p>
+                                            <p class="text-sm font-medium text-gray-800" id="detail-type">Incidente</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- ABA ANEXOS -->
+                                <div id="view-attach" class="hidden">
+                                    <div id="attach-list" class="grid grid-cols-2 gap-4">
+                                        <!-- Mock Anexo -->
+                                        <div class="bg-white p-3 rounded border border-gray-200 flex items-center gap-3">
+                                            <div class="bg-indigo-50 p-2 rounded text-indigo-600"><i data-lucide="file" class="w-4 h-4"></i></div>
+                                            <div class="overflow-hidden">
+                                                <p class="text-xs font-bold truncate">erro_print.png</p>
+                                                <p class="text-[10px] text-gray-400">2.4 MB</p>
+                                            </div>
+                                            <button class="ml-auto text-gray-400 hover:text-indigo-600"><i data-lucide="download" class="w-4 h-4"></i></button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                            </div>
+
+                            <!-- Footer: Input de Mensagem -->
+                            <div class="p-4 border-t border-gray-200 bg-white" id="ticket-footer-action">
+                                <label class="text-xs font-bold text-gray-500 uppercase mb-2 block">Responder / Adicionar Informação</label>
+                                <div class="flex gap-2">
+                                    <button class="p-2 text-gray-400 hover:text-blue-600 bg-gray-50 rounded-lg border border-gray-200"><i data-lucide="paperclip" class="w-5 h-5"></i></button>
+                                    <textarea id="new-comment-text" class="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none resize-none h-12" placeholder="Escreva aqui..."></textarea>
+                                    <button onclick="postComment()" class="px-4 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 shadow-sm font-bold text-sm">Enviar</button>
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+
+                <!-- VIEW 3: CONTRATOS (Extrato) -->
+                <div id="view-contracts" class="hidden">
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="text-xl font-bold text-gray-800">Meus Contratos</h2>
+                        <div class="flex gap-2">
+                            <input type="date" class="border border-gray-300 rounded px-2 py-1 text-xs text-gray-600" value="2024-12-01">
+                            <span class="text-gray-400 text-sm flex items-center">até</span>
+                            <input type="date" class="border border-gray-300 rounded px-2 py-1 text-xs text-gray-600" value="2024-12-31">
+                            <button class="text-xs font-bold text-blue-600 border border-blue-200 px-3 py-1.5 rounded hover:bg-blue-50">Baixar Relatório PDF</button>
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-xl border border-gray-200 p-6 mb-6">
+                        <div class="flex justify-between mb-4">
+                            <div>
+                                <h3 class="font-bold text-gray-800">Sustentação Salesforce N2</h3>
+                                <p class="text-sm text-gray-500">Vigência: 01/01/2024 a 31/12/2025</p>
+                            </div>
+                            <div class="text-right">
+                                <p class="text-xs font-bold text-gray-400 uppercase">Saldo Restante</p>
+                                <p class="text-2xl font-bold text-blue-600">155h</p>
+                            </div>
+                        </div>
+                        
+                        <div class="w-full bg-gray-100 h-4 rounded-full overflow-hidden relative mb-2">
+                            <div class="bg-green-500 h-full" style="width: 22%" title="Consumido"></div>
+                        </div>
+                        <div class="flex justify-between text-xs text-gray-500 font-medium">
+                            <span>0h</span>
+                            <span>45h usadas</span>
+                            <span>Total: 200h</span>
+                        </div>
+                    </div>
+
+                    <h3 class="font-bold text-gray-700 mb-3 text-sm uppercase">Extrato de Lançamentos</h3>
+                    <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
+                        <table class="w-full text-sm text-left">
+                            <thead class="bg-gray-50 text-gray-500 uppercase text-xs font-bold border-b border-gray-200">
+                                <tr>
+                                    <th class="px-6 py-3">Data</th>
+                                    <th class="px-6 py-3">Ref. Chamado</th>
+                                    <th class="px-6 py-3">Descrição da Atividade</th>
+                                    <th class="px-6 py-3">Consultor</th>
+                                    <th class="px-6 py-3 text-right">Horas</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-100">
+                                <tr class="hover:bg-gray-50">
+                                    <td class="px-6 py-3 text-gray-500">22/12/2024</td>
+                                    <td class="px-6 py-3 font-bold text-blue-600">#4505</td>
+                                    <td class="px-6 py-3 text-gray-700">Análise de logs e correção backend</td>
+                                    <td class="px-6 py-3 text-gray-500 text-xs">Maria Costa</td>
+                                    <td class="px-6 py-3 text-right font-bold text-gray-800">4.0h</td>
+                                </tr>
+                                <tr class="hover:bg-gray-50">
+                                    <td class="px-6 py-3 text-gray-500">21/12/2024</td>
+                                    <td class="px-6 py-3 font-bold text-blue-600">-</td>
+                                    <td class="px-6 py-3 text-gray-700">Reunião Mensal de Acompanhamento</td>
+                                    <td class="px-6 py-3 text-gray-500 text-xs">Ana Coord</td>
+                                    <td class="px-6 py-3 text-right font-bold text-gray-800">1.0h</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+            </div>
+        </main>
+    </div>
+
+    <!-- MODAL NOVO CHAMADO -->
+    <div id="new-ticket-modal" class="fixed inset-0 modal-backdrop hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg p-6 transform scale-95 transition-transform duration-300 flex flex-col max-h-[90vh]">
+            <div class="flex justify-between items-center mb-6 border-b border-gray-100 pb-4">
+                <h3 class="font-bold text-xl text-gray-800">Abrir Novo Chamado</h3>
+                <button onclick="closeModal('new-ticket-modal')" class="text-gray-400 hover:text-gray-600"><i data-lucide="x" class="w-6 h-6"></i></button>
+            </div>
+            
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-bold text-gray-700 mb-1">Contrato / Serviço</label>
+                    <select class="w-full border border-gray-300 rounded-lg p-2.5 bg-white text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
+                        <option>Sustentação Salesforce N2</option>
+                        <option>Infraestrutura Cloud</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-bold text-gray-700 mb-1">Assunto</label>
+                    <input type="text" class="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="Ex: Erro no relatório mensal">
+                </div>
+                <div>
+                    <label class="block text-sm font-bold text-gray-700 mb-1">Tipo</label>
+                    <select class="w-full border border-gray-300 rounded-lg p-2.5 bg-white text-sm">
+                        <option>Incidente (Erro/Falha)</option>
+                        <option>Dúvida</option>
+                        <option>Solicitação de Serviço</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-bold text-gray-700 mb-1">Descrição Detalhada</label>
+                    <textarea class="w-full border border-gray-300 rounded-lg p-2.5 h-32 resize-none focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="Descreva o problema, passos para reproduzir, etc..."></textarea>
+                </div>
+            </div>
+            <div class="p-5 border-t border-gray-100 bg-gray-50 rounded-b-xl flex justify-end gap-3 shrink-0">
+                <button onclick="closeModal('new-ticket-modal')" class="px-5 py-2.5 border border-gray-300 rounded-lg text-gray-600 font-bold hover:bg-gray-50">Cancelar</button>
+                <button onclick="submitTicket()" class="px-5 py-2.5 bg-indigo-600 text-white rounded-lg font-bold hover:bg-indigo-700 shadow-md">Enviar Solicitação</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        lucide.createIcons();
+
+        // --- DADOS MOCK ---
+        const tickets = [
+            { id: 4505, title: "Erro Crítico Login Salesforce", area: "Sustentação", status: "Em Andamento", sla: "4h", updated: "Hoje 10:30", pending: false, closed: false, date: "22/12/2024", prio: "Alta", desc: "Erro 500 ao tentar logar.", type: "Incidente", estimateHours: 0, estimatePending: false,
+              timeline: [
+                  { user: "Sistema", text: "Chamado criado.", time: "10:00" },
+                  { user: "Maria (Suporte)", text: "Iniciando análise dos logs de autenticação.", time: "10:30" }
+              ] 
+            },
+            { id: 4490, title: "Liberação de Acesso VPN", area: "Infraestrutura", status: "Aguardando Resposta", sla: "Pausado", updated: "Ontem", pending: true, closed: false, date: "21/12/2024", prio: "Média", desc: "Novo colaborador precisa de VPN. Estimativa de 4h para configuração.", type: "Solicitação", estimateHours: 4.0, estimatePending: true,
+              timeline: [
+                  { user: "Roberto (Suporte)", text: "Preciso da aprovação da estimativa (4h) para prosseguir com a configuração.", time: "Ontem 14:00" }
+              ] 
+            },
+            { id: 4400, title: "Extração Relatório Mensal", area: "Sustentação", status: "Fechado", sla: "Ok", updated: "01/12", pending: false, closed: true, date: "01/12/2024", prio: "Baixa", desc: "Solicito extração.", type: "Solicitação", estimateHours: 0, estimatePending: false,
+              timeline: [
+                  { user: "Sistema", text: "Chamado encerrado.", time: "01/12" }
+              ] 
+            }
+        ];
+
+        let activeTicketId = null;
+
+        // --- AUTH ---
+        function sendOTP() {
+            const email = document.getElementById('login-email').value;
+            if(!email) return alert("Digite seu e-mail.");
+            
+            document.getElementById('step-email').classList.add('hidden-step');
+            document.getElementById('step-otp').classList.remove('hidden-step');
+            document.getElementById('display-email-otp').innerText = email;
+        }
+
+        function verifyOTP() {
+            const btn = document.querySelector('#step-otp button');
+            btn.innerHTML = `<i data-lucide="loader" class="animate-spin w-5 h-5 inline"></i> Verificando...`;
+            lucide.createIcons();
+
+            setTimeout(() => {
+                document.getElementById('auth-container').classList.add('opacity-0');
+                setTimeout(() => {
+                    document.getElementById('auth-container').style.display = 'none';
+                    document.getElementById('app-container').classList.remove('hidden');
+                    switchView('dashboard');
+                }, 500);
+            }, 1000);
+        }
+        function resetLogin() { location.reload(); }
+
+        // --- NAVEGAÇÃO ---
+        function switchView(viewName) {
+            ['dashboard', 'tickets', 'contracts'].forEach(v => {
+                document.getElementById(`view-${v}`).classList.add('hidden');
+                document.getElementById(`nav-${v}`).classList.remove('bg-gray-900', 'text-white', 'shadow-md');
+                document.getElementById(`nav-${v}`).classList.add('text-gray-500', 'hover:bg-gray-50');
+            });
+            document.getElementById(`view-${viewName}`).classList.remove('hidden');
+            const activeBtn = document.getElementById(`nav-${viewName}`);
+            activeBtn.classList.remove('text-gray-500', 'hover:bg-gray-50');
+            activeBtn.classList.add('bg-gray-900', 'text-white', 'shadow-md');
+            
+            const titles = {'dashboard': 'Visão Geral', 'tickets': 'Central de Ajuda', 'contracts': 'Meus Contratos'};
+            document.getElementById('page-title').innerText = titles[viewName];
+
+            if(viewName === 'tickets') filterStatus('all'); 
+        }
+
+        // --- TICKETS LOGIC ---
+        function filterStatus(status) {
+            const list = document.getElementById('tickets-list-container');
+            list.innerHTML = '';
+            
+            const filtered = tickets.filter(t => {
+                if (status === 'all') return true;
+                if (status === 'closed') return t.closed;
+                if (status === 'pending') return t.pending; // Aguardando Cliente
+                return !t.closed; // Open default
+            });
+
+            if(filtered.length === 0) {
+                list.innerHTML = '<p class="text-center text-gray-400 text-xs mt-10">Nenhum chamado encontrado.</p>';
+                return;
+            }
+
+            filtered.forEach(t => {
+                let borderClass = t.closed ? 'border-l-4 border-l-gray-400 bg-gray-50' : (t.pending ? 'border-l-4 border-l-yellow-400 bg-yellow-50/30' : 'border-l-4 border-l-green-500 bg-white');
+                let statusBadge = t.closed ? 'bg-gray-200 text-gray-600' : (t.pending ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-700');
+                
+                list.innerHTML += `
+                <div onclick="openTicket(${t.id})" class="p-3 rounded-lg border border-gray-200 cursor-pointer hover:shadow-md transition-all ${borderClass} mb-2 relative group">
+                    <div class="flex justify-between items-start mb-1">
+                        <span class="text-xs font-bold text-gray-700">#${t.id}</span>
+                        <span class="text-[9px] ${statusBadge} px-2 py-0.5 rounded font-bold">${t.status}</span>
+                    </div>
+                    <h4 class="font-bold text-sm text-gray-800 mb-1 truncate">${t.title}</h4>
+                    <div class="flex justify-between items-center text-xs text-gray-500">
+                        <span>${t.area}</span>
+                        <span>${t.updated}</span>
+                    </div>
+                    ${t.pending ? '<p class="text-[10px] text-red-500 font-bold mt-2 flex items-center gap-1"><i data-lucide="alert-circle" class="w-3 h-3"></i> Ação Necessária</p>' : ''}
+                </div>`;
+            });
+            lucide.createIcons();
+        }
+
+        function openTicket(id) {
+            const t = tickets.find(x => x.id === id);
+            activeTicketId = id;
+            document.getElementById('ticket-empty').classList.add('hidden');
+            document.getElementById('ticket-panel').classList.remove('hidden');
+            
+            document.getElementById('detail-number').innerText = `#${t.id}`;
+            document.getElementById('detail-title').innerText = t.title;
+            document.getElementById('detail-area').innerText = t.area;
+            document.getElementById('detail-status').innerText = t.status;
+            document.getElementById('detail-sla').innerText = t.sla;
+            
+            document.getElementById('detail-desc').innerText = t.desc;
+            document.getElementById('detail-date').innerText = t.date;
+            document.getElementById('detail-prio').innerText = t.prio;
+
+            // Configurações do Cliente (Editáveis)
+            const prioSelect = document.getElementById('client-priority');
+            prioSelect.value = t.prio;
+            prioSelect.disabled = t.closed;
+
+            const dateInput = document.getElementById('client-expectation');
+            dateInput.disabled = t.closed;
+            
+            // Lógica de Aprovação
+            const approvalBanner = document.getElementById('approval-banner');
+            if (t.estimatePending) {
+                approvalBanner.classList.remove('hidden');
+                document.getElementById('estim-hours').innerText = t.estimateHours + 'h';
+            } else {
+                approvalBanner.classList.add('hidden');
+            }
+
+            renderPath(t.status);
+
+            const timeline = document.getElementById('ticket-timeline');
+            timeline.innerHTML = '';
+            t.timeline.forEach(item => {
+                timeline.innerHTML += `
+                <div class="timeline-item pb-6">
+                    <div class="timeline-dot"></div>
+                    <div class="bg-white border border-gray-100 p-3 rounded-lg shadow-sm">
+                        <div class="flex justify-between mb-1">
+                            <span class="text-xs font-bold text-gray-800">${item.user}</span>
+                            <span class="text-[10px] text-gray-400">${item.time}</span>
+                        </div>
+                        <p class="text-sm text-gray-600">${item.text}</p>
+                    </div>
+                </div>`;
+            });
+            lucide.createIcons();
+        }
+
+        function approveEstimate(approved) {
+            const t = tickets.find(x => x.id === activeTicketId);
+            t.estimatePending = false;
+            
+            if (approved) {
+                t.status = "Em Andamento";
+                t.timeline.unshift({ user: "Você", text: `Estimativa de ${t.estimateHours}h aprovada.`, time: "Agora" });
+                alert("Estimativa aprovada! O técnico iniciará o trabalho.");
+            } else {
+                t.timeline.unshift({ user: "Você", text: "Estimativa rejeitada.", time: "Agora" });
+                alert("Estimativa rejeitada. O chamado voltará para análise.");
+            }
+            
+            t.pending = false;
+            openTicket(activeTicketId); // Refresh
+            filterStatus('all'); // Refresh list badge
+        }
+
+        function updateTicketData(field, value) {
+            const t = tickets.find(x => x.id === activeTicketId);
+            if (t.closed) return;
+            
+            if (field === 'priority') t.prio = value;
+            // Mock server update
+            console.log(`Updated ${field} to ${value}`);
+        }
+
+        function closeTicketClient() {
+            if(!confirm("Deseja realmente encerrar este chamado?")) return;
+            const t = tickets.find(x => x.id === activeTicketId);
+            t.status = "Fechado";
+            t.closed = true;
+            t.timeline.unshift({ user: "Você", text: "Chamado encerrado pelo cliente.", time: "Agora" });
+            
+            alert("Chamado encerrado com sucesso.");
+            openTicket(activeTicketId);
+            filterStatus('all');
+        }
+
+        function renderPath(status) {
+            const steps = ['Novo', 'Em Andamento', 'Aguardando', 'Fechado'];
+            let html = '';
+            let activeFound = false;
+            
+            steps.forEach(s => {
+                let classes = "path-step";
+                if (s === status || (status === 'Aguardando Resposta' && s === 'Aguardando')) { 
+                    classes += " active"; 
+                    activeFound = true; 
+                } else if (!activeFound) {
+                    classes += " completed";
+                }
+                html += `<div class="${classes}">${s}</div>`;
+            });
+            
+            document.getElementById('status-path-container').innerHTML = `<div class="path-container">${html}</div>`;
+        }
+
+        function postComment() {
+            const txt = document.getElementById('new-comment-text').value;
+            if(!txt) return;
+            const t = tickets.find(x => x.id === activeTicketId);
+            if(t.closed) return alert("Chamado fechado.");
+            
+            t.timeline.unshift({ user: "Você", text: txt, time: "Agora" });
+            openTicket(activeTicketId); // Re-render
+            document.getElementById('new-comment-text').value = '';
+        }
+
+        // --- ABAS DETALHE ---
+        function switchDetailTab(t) {
+            ['timeline','info','attach'].forEach(x => {
+                document.getElementById(`view-${x}`).classList.add('hidden');
+                document.getElementById(`dt-${x}`).className = 'pb-3 text-sm tab-inactive whitespace-nowrap';
+            });
+            document.getElementById(`view-${t}`).classList.remove('hidden');
+            document.getElementById(`dt-${t}`).className = 'pb-3 text-sm tab-active whitespace-nowrap';
+        }
+
+        // --- MODALS ---
+        function openNewTicketModal() {
+            const m = document.getElementById('new-ticket-modal');
+            m.classList.remove('hidden');
+            setTimeout(() => m.querySelector('div').classList.remove('scale-95'), 10);
+        }
+        function closeModal(id) {
+            const m = document.getElementById(id);
+            m.classList.add('hidden');
+            m.querySelector('div').classList.add('scale-95');
+        }
+        function submitTicket() {
+            closeModal('new-ticket-modal');
+            alert("Chamado #9999 criado com sucesso!");
+            switchView('tickets');
+        }
+        function logout() { location.reload(); }
+
+        // Init
+        lucide.createIcons();
+    </script>
+</body>
+</html>

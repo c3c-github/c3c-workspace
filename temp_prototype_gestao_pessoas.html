@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestão de Pessoas (RH & Alocação) - C3C</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Ícones Lucide -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Fonte Montserrat -->
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Montserrat', 'sans-serif'],
+                    },
+                    colors: {
+                        c3c: {
+                            blue: '#2978FF',
+                            teal: '#1DDDBD',
+                            dark: '#1a1a1a',
+                            bg: '#F8FAFC'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body { font-family: 'Montserrat', sans-serif; background-color: #F8FAFC; }
+        .fade-in { animation: fadeIn 0.4s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        
+        .modal-backdrop { background-color: rgba(0, 0, 0, 0.5); backdrop-filter: blur(2px); z-index: 50; }
+        html { scroll-behavior: smooth; }
+
+        /* GANTT (Mapa de Alocação) - Visual "Espaçoso" */
+        .gantt-wrapper { overflow-x: auto; border: 1px solid #E5E7EB; border-radius: 8px; background: white; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); }
+        .gantt-table { width: max-content; border-collapse: separate; border-spacing: 0; min-width: 100%; }
+        
+        /* Colunas Fixas */
+        .gantt-col-fixed { 
+            position: sticky; left: 0; z-index: 30; background: white; width: 320px; min-width: 320px;
+            border-right: 2px solid #E5E7EB; box-shadow: 4px 0 6px -4px rgba(0,0,0,0.1);
+        }
+        
+        /* Cabeçalho */
+        .gantt-header-month { font-size: 12px; font-weight: 800; text-transform: uppercase; color: #374151; border-bottom: 1px solid #E5E7EB; border-right: 1px solid #E5E7EB; background: #F3F4F6; padding: 12px 0; text-align: center; }
+        .gantt-header-week { font-size: 10px; text-align: center; color: #6B7280; border-bottom: 1px solid #E5E7EB; border-right: 1px solid #F3F4F6; width: 45px; padding: 8px 0; background: #FFFFFF; font-weight: 600; }
+        
+        /* Corpo e Linhas - Mais Altura */
+        .gantt-row { height: 64px; transition: background-color 0.2s; }
+        .gantt-row:hover { background-color: #F9FAFB; }
+        .gantt-cell { border-right: 1px solid #F3F4F6; border-bottom: 1px solid #F3F4F6; position: relative; padding: 0; }
+        
+        /* Linhas de Grupo */
+        .gantt-row-group td { background-color: #EEF2FF; border-bottom: 1px solid #E5E7EB; border-top: 1px solid #E5E7EB; font-weight: 700; color: #374151; font-size: 13px; padding: 12px 24px; text-transform: uppercase; letter-spacing: 0.05em; }
+        
+        /* Barras - Mais Visíveis */
+        .gantt-bar {
+            position: absolute; height: 32px; border-radius: 6px; top: 16px;
+            font-size: 11px; color: white; display: flex; align-items: center; padding: 0 12px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1); cursor: pointer; transition: all 0.2s;
+            white-space: nowrap; overflow: hidden; font-weight: 600; z-index: 10;
+        }
+        .gantt-bar:hover { z-index: 20; transform: scale(1.02); box-shadow: 0 4px 8px rgba(0,0,0,0.15); filter: brightness(1.05); }
+        .gantt-bar.vacation { background: repeating-linear-gradient(45deg, #14B8A6, #14B8A6 10px, #0D9488 10px, #0D9488 20px); }
+        
+        /* Botões de Ação na Linha */
+        .action-btn-row { opacity: 0; transition: opacity 0.2s; }
+        .gantt-row:hover .action-btn-row { opacity: 1; }
+    </style>
+</head>
+<body class="h-screen flex overflow-hidden bg-c3c-bg">
+
+    <!-- SIDEBAR -->
+    <aside class="w-20 lg:w-64 bg-white border-r border-gray-100 flex flex-col z-20 transition-all duration-300">
+        <div class="h-20 flex items-center justify-center lg:justify-start lg:px-8 border-b border-gray-50">
+            <div class="w-8 h-8 bg-gradient-to-br from-[#2978FF] to-[#1DDDBD] rounded-lg flex items-center justify-center text-white font-bold text-xs">C3C</div>
+            <span class="hidden lg:block ml-3 font-bold text-gray-800 tracking-wide text-lg">Workplace</span>
+        </div>
+        <nav class="flex-1 py-6 space-y-2">
+            <a href="#" class="w-full flex items-center justify-center lg:justify-start gap-3 px-4 lg:px-6 py-3 text-gray-400 hover:bg-gray-50 transition-colors">
+                <i data-lucide="briefcase" class="w-5 h-5"></i>
+                <span class="hidden lg:block text-sm">Gestão de Projetos</span>
+            </a>
+            <a href="#" class="w-full flex items-center justify-center lg:justify-start gap-3 px-4 lg:px-6 py-3 bg-indigo-900 text-white border-r-4 border-purple-400 font-semibold transition-colors shadow-lg">
+                <i data-lucide="users" class="w-5 h-5 text-purple-400"></i>
+                <span class="hidden lg:block text-sm">Gestão de Pessoas</span>
+            </a>
+        </nav>
+        
+        <div class="p-4 border-t border-gray-100 bg-gray-50">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center text-purple-700 font-bold border-2 border-white shadow-sm">RH</div>
+                <div class="hidden lg:block overflow-hidden">
+                    <p class="text-sm font-bold text-gray-800 truncate">Ana Clara</p>
+                    <p class="text-xs text-gray-500 truncate">Head de Pessoas</p>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- MAIN CONTENT -->
+    <main class="flex-1 flex flex-col relative w-full overflow-hidden">
+        
+        <!-- Header -->
+        <header class="h-20 bg-white border-b border-gray-200 flex items-center justify-between px-8 shrink-0 z-10">
+            <div class="flex items-center gap-6">
+                <h1 class="text-xl font-bold text-gray-800 flex items-center gap-2">
+                    <i data-lucide="users" class="w-6 h-6 text-purple-600"></i>
+                    Quadro de Colaboradores & Capacidade
+                </h1>
+                
+                <div class="h-8 w-px bg-gray-200"></div>
+
+                <!-- Busca Rápida -->
+                <div class="relative w-64">
+                    <i data-lucide="search" class="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2"></i>
+                    <input type="text" placeholder="Buscar por nome ou projeto..." class="w-full bg-gray-50 border border-gray-200 rounded-lg pl-9 pr-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all">
+                </div>
+            </div>
+
+            <div class="flex items-center gap-4">
+                <!-- Botão Novo Colaborador Removido -->
+            </div>
+        </header>
+
+        <!-- Content Scrollable -->
+        <div class="flex-1 overflow-y-auto p-8 fade-in bg-c3c-bg">
+            
+            <!-- KPIs de RH -->
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-10">
+                <div class="bg-white p-5 rounded-xl border border-gray-200 shadow-sm flex flex-col justify-between">
+                    <div class="flex justify-between items-start">
+                        <p class="text-xs font-bold text-gray-400 uppercase">Headcount Total</p>
+                        <i data-lucide="users" class="w-5 h-5 text-blue-500"></i>
+                    </div>
+                    <div class="mt-2">
+                        <span class="text-3xl font-extrabold text-gray-900">42</span>
+                        <span class="text-xs text-gray-400 ml-1">Ativos</span>
+                    </div>
+                </div>
+
+                <div class="bg-white p-5 rounded-xl border border-gray-200 shadow-sm flex flex-col justify-between">
+                    <div class="flex justify-between items-start">
+                        <p class="text-xs font-bold text-gray-400 uppercase">Em Bench (Ociosos)</p>
+                        <i data-lucide="coffee" class="w-5 h-5 text-orange-500"></i>
+                    </div>
+                    <div class="mt-2">
+                        <span class="text-3xl font-extrabold text-orange-600">3</span>
+                        <span class="text-xs text-orange-500 font-bold ml-1">Disponíveis</span>
+                    </div>
+                </div>
+
+                <div class="bg-white p-5 rounded-xl border border-gray-200 shadow-sm flex flex-col justify-between">
+                    <div class="flex justify-between items-start">
+                        <p class="text-xs font-bold text-gray-400 uppercase">Férias Próximas</p>
+                        <i data-lucide="palmtree" class="w-5 h-5 text-teal-500"></i>
+                    </div>
+                    <div class="mt-2">
+                        <span class="text-3xl font-extrabold text-gray-900">5</span>
+                        <span class="text-xs text-gray-400 ml-1">neste mês</span>
+                    </div>
+                </div>
+
+                <div class="bg-white p-5 rounded-xl border border-gray-200 shadow-sm flex flex-col justify-between">
+                    <div class="flex justify-between items-start">
+                        <p class="text-xs font-bold text-gray-400 uppercase">Rentabilidade Média</p>
+                        <i data-lucide="trending-up" class="w-5 h-5 text-green-500"></i>
+                    </div>
+                    <div class="mt-2">
+                        <span class="text-3xl font-extrabold text-green-600">32%</span>
+                        <span class="text-xs text-gray-400 ml-1">Margem sobre custo</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SEÇÃO 1: MAPA DE CAPACIDADE (GANTT) -->
+            <div class="mb-10">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-lg font-bold text-gray-800 flex items-center gap-2">
+                        <i data-lucide="calendar-range" class="w-5 h-5 text-purple-600"></i> Mapa de Alocação & Capacidade (Trimestral)
+                    </h2>
+                    <div class="flex items-center gap-4">
+                        <div class="flex gap-1 bg-white border border-gray-200 p-1 rounded-lg">
+                            <button onclick="renderGantt('person')" class="px-3 py-1.5 text-xs font-bold text-indigo-600 bg-indigo-50 rounded shadow-sm">Por Pessoa</button>
+                            <button onclick="renderGantt('project')" class="px-3 py-1.5 text-xs font-bold text-gray-500 hover:text-gray-700 hover:bg-gray-50 rounded">Por Projeto</button>
+                        </div>
+                        <div class="flex gap-3 text-xs font-bold border-l border-gray-200 pl-4">
+                            <div class="flex items-center gap-2"><span class="w-3 h-3 rounded bg-blue-500"></span> Projeto</div>
+                            <div class="flex items-center gap-2"><span class="w-3 h-3 rounded bg-teal-500"></span> Férias</div>
+                            <div class="flex items-center gap-2"><span class="w-3 h-3 rounded bg-red-400"></span> Bench</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="gantt-wrapper shadow-sm">
+                    <table class="gantt-table">
+                        <thead id="gantt-head">
+                            <!-- JS Generated -->
+                        </thead>
+                        <tbody id="gantt-body">
+                            <!-- JS Generated -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- SEÇÃO 2: LISTA DE PROFISSIONAIS (Simplificada) -->
+            <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden mb-10">
+                <div class="p-5 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
+                    <h2 class="font-bold text-gray-800 text-lg flex items-center gap-2">
+                        <i data-lucide="list" class="w-5 h-5 text-gray-500"></i> Lista de Profissionais
+                    </h2>
+                    <div class="flex gap-2">
+                        <select class="text-xs border border-gray-300 rounded px-3 py-2 bg-white text-gray-600 outline-none font-medium">
+                            <option>Todos os Cargos</option>
+                            <option>Desenvolvedor</option>
+                            <option>Analista</option>
+                            <option>Gestão</option>
+                        </select>
+                        <select class="text-xs border border-gray-300 rounded px-3 py-2 bg-white text-gray-600 outline-none font-medium">
+                            <option>Status: Todos</option>
+                            <option>Alocado</option>
+                            <option>Bench</option>
+                            <option>Férias</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <table class="w-full text-sm text-left">
+                    <thead class="bg-gray-100 text-gray-500 uppercase text-[10px] font-bold border-b border-gray-200">
+                        <tr>
+                            <th class="px-6 py-4 w-1/3">Colaborador</th>
+                            <th class="px-4 py-4 w-1/4">Cargo</th>
+                            <th class="px-4 py-4 text-center">Status Alocação</th>
+                            <th class="px-4 py-4 text-center">Qtd. Projetos</th>
+                            <th class="px-4 py-4 text-right">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-100" id="people-table">
+                        <!-- JS Populates -->
+                    </tbody>
+                </table>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- MODAL DE GESTÃO DE ALOCAÇÃO & FÉRIAS (Unificado) -->
+    <div id="allocation-manage-modal" class="fixed inset-0 modal-backdrop hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg transform scale-95 transition-transform duration-300 flex flex-col max-h-[90vh]">
+             <div class="p-5 border-b border-gray-100 flex justify-between items-center bg-gray-50 rounded-t-xl">
+                <div>
+                    <h3 class="font-bold text-gray-900 text-lg">Gestão de Alocação & Férias</h3>
+                    <p class="text-xs text-gray-500" id="manage-alloc-name">Recurso</p>
+                </div>
+                <button onclick="closeModal('allocation-manage-modal')" class="text-gray-400 hover:text-gray-600"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            
+            <div class="p-6 overflow-y-auto">
+                <div class="mb-6 flex justify-between items-center bg-blue-50 p-4 rounded-lg border border-blue-100">
+                    <div>
+                        <p class="text-xs font-bold text-blue-700 uppercase">Capacidade Total</p>
+                        <p class="text-sm text-blue-600">168h / Mês</p>
+                    </div>
+                    <div class="text-right">
+                        <p class="text-xs font-bold text-blue-700 uppercase">Ocupação Atual</p>
+                        <p class="text-xl font-bold text-blue-800" id="manage-alloc-total">100%</p>
+                    </div>
+                </div>
+                
+                <h4 class="text-xs font-bold text-gray-400 uppercase mb-3 border-b pb-1">Alocações Ativas</h4>
+                <div id="manage-alloc-list" class="space-y-3 mb-6">
+                    <!-- Cards de Alocação (Projetos e Férias) -->
+                </div>
+
+                <div class="flex gap-3 pt-2">
+                    <button onclick="addAllocationToResource('project')" class="flex-1 py-2.5 border-2 border-dashed border-gray-300 text-gray-500 rounded-lg text-xs font-bold hover:border-blue-400 hover:text-blue-600 hover:bg-blue-50 transition-colors flex items-center justify-center gap-2">
+                        <i data-lucide="plus" class="w-4 h-4"></i> Adicionar Projeto
+                    </button>
+                    <button onclick="addAllocationToResource('vacation')" class="flex-1 py-2.5 border-2 border-dashed border-gray-300 text-gray-500 rounded-lg text-xs font-bold hover:border-teal-400 hover:text-teal-600 hover:bg-teal-50 transition-colors flex items-center justify-center gap-2">
+                        <i data-lucide="palmtree" class="w-4 h-4"></i> Marcar Férias
+                    </button>
+                </div>
+            </div>
+            
+            <div class="p-5 border-t border-gray-100 bg-gray-50 rounded-b-xl flex justify-end gap-2">
+                <button onclick="closeModal('allocation-manage-modal')" class="px-4 py-2 bg-white border border-gray-300 text-gray-700 text-sm font-bold rounded-lg hover:bg-gray-100">Cancelar</button>
+                <button onclick="alert('Salvo!'); closeModal('allocation-manage-modal')" class="px-4 py-2 bg-blue-600 text-white text-sm font-bold rounded-lg hover:bg-blue-700 shadow-md">Salvar Alterações</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL DE CADASTRO DE PESSOA (Simplificado) -->
+    <div id="person-modal" class="fixed inset-0 modal-backdrop hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg p-6 transform scale-95 transition-transform duration-300">
+            <h3 class="font-bold text-gray-900 text-lg mb-4">Novo Colaborador</h3>
+            <div class="space-y-4">
+                <input type="text" placeholder="Nome Completo" class="w-full border rounded p-2 text-sm">
+                <input type="text" placeholder="Cargo" class="w-full border rounded p-2 text-sm">
+                <select class="w-full border rounded p-2 text-sm text-gray-600"><option>CLT</option><option>PJ</option></select>
+            </div>
+            <div class="flex justify-end gap-2 mt-6">
+                <button onclick="closeModal('person-modal')" class="px-4 py-2 border rounded text-sm hover:bg-gray-50">Cancelar</button>
+                <button onclick="closeModal('person-modal'); alert('Cadastrado!')" class="px-4 py-2 bg-purple-600 text-white rounded text-sm font-bold hover:bg-purple-700">Salvar</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        lucide.createIcons();
+
+        // --- DADOS MOCK ---
+        // Alocações com tipo (projeto ou férias)
+        const flatAllocations = [
+            { id: 1, resName: "Maria Costa", role: "Sênior", projName: "Salesforce N2", pct: 50, startW: 1, durW: 8, color: "blue", type: "project" },
+            { id: 2, resName: "Maria Costa", role: "Sênior", projName: "Squad Alpha", pct: 50, startW: 1, durW: 12, color: "purple", type: "project" },
+            { id: 3, resName: "João Silva", role: "Pleno", projName: "Salesforce N2", pct: 100, startW: 1, durW: 4, color: "blue", type: "project" },
+            { id: 4, resName: "João Silva", role: "Pleno", projName: "Férias", pct: 100, startW: 5, durW: 2, color: "teal", type: "vacation" },
+            { id: 5, resName: "Pedro Lima", role: "Júnior", projName: "Salesforce N2", pct: 100, startW: 3, durW: 12, color: "blue", type: "project" }
+        ];
+
+        const people = [
+            { id: 1, name: "Maria Costa", role: "Salesforce Senior", status: "Alocado", projectCount: 2, alloc: 100 },
+            { id: 2, name: "João Silva", role: "Dev Fullstack Pleno", status: "Alocado", projectCount: 2, alloc: 100 }, // Inclui férias como item
+            { id: 3, name: "Pedro Lima", role: "Dev Junior", status: "Alocado", projectCount: 1, alloc: 100 },
+            { id: 4, name: "Ana Souza", role: "Infra Junior", status: "Bench", projectCount: 0, alloc: 0 }
+        ];
+
+        // --- RENDERIZAR GANTT (Visual Espaçoso) ---
+        function renderGantt(sortBy) {
+            const head = document.getElementById('gantt-head');
+            const body = document.getElementById('gantt-body');
+            
+            // Header: Jan-Mar (12 Semanas)
+            let months = ['Jan', 'Fev', 'Mar'];
+            let headerMonthHTML = `<th class="gantt-col-fixed p-3 text-left bg-gray-50 border-r border-gray-200">${sortBy === 'person' ? 'Profissional' : 'Projeto'}</th>`;
+            let headerWeekHTML = `<th class="gantt-col-fixed border-r border-gray-200 p-2 text-xs text-gray-400 bg-white">Alocações</th>`; 
+            
+            months.forEach(m => {
+                headerMonthHTML += `<th colspan="4" class="gantt-header-month">${m}</th>`;
+                for(let i=1; i<=4; i++) headerWeekHTML += `<th class="gantt-header-week">S${i}</th>`;
+            });
+
+            head.innerHTML = `<tr>${headerMonthHTML}</tr><tr>${headerWeekHTML}</tr>`;
+            body.innerHTML = '';
+            
+            // Sort & Group
+            let data = [...flatAllocations];
+            if(sortBy === 'person') data.sort((a,b) => a.resName.localeCompare(b.resName));
+            else data.sort((a,b) => a.projName.localeCompare(b.projName));
+
+            let lastGroup = '';
+
+            data.forEach(row => {
+                const groupKey = sortBy === 'person' ? row.resName : row.projName;
+                const secondaryKey = sortBy === 'person' ? row.projName : row.resName;
+
+                if(groupKey !== lastGroup) {
+                    const addBtn = `<button class="ml-2 text-blue-600 hover:text-blue-800 p-1 bg-blue-50 rounded-full transition-colors" onclick="openAllocationManage(1)" title="Gerenciar Alocação"><i data-lucide="plus" class="w-3 h-3"></i></button>`;
+                    body.innerHTML += `<tr class="gantt-row-group"><td colspan="13" class="flex items-center justify-between border-r border-gray-200">${groupKey} ${addBtn}</td></tr>`;
+                    lastGroup = groupKey;
+                }
+
+                let cells = '';
+                for(let i=1; i<=12; i++) cells += `<td class="gantt-cell ${i%4===0 ? 'border-r-2 border-gray-200' : ''}"></td>`;
+
+                const left = ((row.startW - 1) * (100/12)).toFixed(2);
+                const width = (row.durW * (100/12)).toFixed(2);
+                let bgClass = 'bg-blue-500';
+                if (row.type === 'vacation') bgClass = 'vacation'; 
+                else if (row.color === 'purple') bgClass = 'bg-purple-500';
+
+                // Usando openAllocationManage para edição unificada
+                const barHtml = `
+                <div class="gantt-bar ${bgClass}" style="left: ${left}%; width: ${width}%;" onclick="openAllocationManage(1)">
+                    <span>${row.pct}%</span>
+                </div>`;
+
+                body.innerHTML += `
+                <tr class="gantt-row">
+                    <td class="gantt-col-fixed p-2 pl-8 text-xs font-medium text-gray-600 border-b border-gray-100 bg-white truncate flex items-center justify-between">
+                        <span>${secondaryKey}</span>
+                        <div class="action-btn-row flex gap-1">
+                            <button class="text-gray-300 hover:text-blue-600" onclick="openAllocationManage(1)"><i data-lucide="edit-2" class="w-3 h-3"></i></button>
+                        </div>
+                    </td>
+                    <td colspan="12" class="p-0 border-b border-gray-100 relative h-10">
+                        <div class="absolute inset-0 flex w-full h-full pointer-events-none">${Array(12).fill('<div class="flex-1 border-r border-gray-100"></div>').join('')}</div>
+                        ${barHtml}
+                    </td>
+                </tr>`;
+            });
+        }
+
+        // --- RENDERIZAR TABELA SIMPLIFICADA ---
+        function renderTable() {
+            const tbody = document.getElementById('people-table');
+            tbody.innerHTML = '';
+
+            people.forEach(p => {
+                let statusColor = p.status === 'Alocado' ? 'text-blue-600 bg-blue-50' : (p.status === 'Bench' ? 'text-orange-600 bg-orange-50' : 'text-gray-600 bg-gray-50');
+                
+                tbody.innerHTML += `
+                <tr class="hover:bg-gray-50 transition-colors border-b border-gray-100 group">
+                    <td class="px-6 py-4">
+                        <div class="flex items-center gap-3">
+                            <div class="w-9 h-9 rounded-full bg-purple-100 flex items-center justify-center text-xs font-bold text-purple-700 border border-purple-200">${p.name.charAt(0)}</div>
+                            <div>
+                                <p class="font-bold text-gray-900 text-sm">${p.name}</p>
+                                <p class="text-[10px] text-gray-400">ID: ${p.id}</p>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="px-4 py-4 text-sm text-gray-600 font-medium">${p.role}</td>
+                    <td class="px-4 py-4 text-center">
+                        <span class="${statusColor} px-2 py-1 rounded text-xs font-bold border border-transparent">${p.status}</span>
+                    </td>
+                    <td class="px-4 py-4 text-center text-sm font-bold text-gray-700">${p.projectCount}</td>
+                    <td class="px-4 py-4 text-right">
+                        <button onclick="openAllocationManage(${p.id})" class="text-xs font-bold text-blue-600 hover:text-blue-800 bg-blue-50 px-3 py-1.5 rounded border border-blue-100 hover:bg-blue-100 transition-colors shadow-sm">
+                            Gestão de Alocação
+                        </button>
+                    </td>
+                </tr>`;
+            });
+            lucide.createIcons();
+        }
+
+        // --- MODAL DE GESTÃO DE ALOCAÇÃO & FÉRIAS (Unificado) ---
+        function openAllocationManage(id) {
+            const p = people.find(x => x.id === id) || people[0]; // Mock fallback
+            document.getElementById('manage-alloc-name').innerText = p.name;
+            
+            const list = document.getElementById('manage-alloc-list');
+            list.innerHTML = '';
+
+            // Filtrar alocações do recurso (Mock)
+            const allocs = flatAllocations.filter(a => a.id === id || (id===1 && a.resName.includes("Maria"))); // Mock logic
+            
+            if (allocs.length === 0) list.innerHTML = '<p class="text-sm text-gray-400 text-center py-2">Sem alocações ativas.</p>';
+
+            allocs.forEach(a => {
+                let borderClass = a.type === 'vacation' ? 'border-teal-200 bg-teal-50' : 'border-gray-200 bg-white';
+                let icon = a.type === 'vacation' ? 'palmtree' : 'briefcase';
+                let label = a.type === 'vacation' ? 'Férias / Licença' : 'Projeto';
+
+                list.innerHTML += `
+                <div class="flex flex-col p-3 rounded-lg border ${borderClass} shadow-sm relative group">
+                    <div class="absolute top-3 right-3 cursor-pointer text-gray-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"><i data-lucide="trash-2" class="w-4 h-4"></i></div>
+                    
+                    <div class="flex items-center gap-2 mb-3">
+                        <i data-lucide="${icon}" class="w-4 h-4 text-gray-500"></i>
+                        <span class="text-xs font-bold text-gray-400 uppercase">${label}</span>
+                    </div>
+
+                    <div class="mb-3">
+                        <input type="text" value="${a.projName}" class="w-full text-sm font-bold text-gray-800 border border-transparent hover:border-gray-300 rounded p-1 -ml-1 focus:ring-0 bg-transparent" ${a.type==='vacation'?'readonly':''}>
+                    </div>
+                    
+                    <div class="grid grid-cols-3 gap-3">
+                        <div>
+                            <label class="block text-[10px] font-bold text-gray-400 mb-1">Dedicação (%)</label>
+                            <input type="number" value="${a.pct}" class="w-full border border-gray-300 rounded p-1 text-center font-bold text-blue-600 text-xs">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-gray-400 mb-1">Início</label>
+                            <input type="date" value="2025-01-01" class="w-full border border-gray-300 rounded p-1 text-xs text-gray-600">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-gray-400 mb-1">Fim</label>
+                            <input type="date" value="2025-02-28" class="w-full border border-gray-300 rounded p-1 text-xs text-gray-600">
+                        </div>
+                    </div>
+                </div>`;
+            });
+            
+            openModal('allocation-manage-modal');
+            lucide.createIcons();
+        }
+
+        function addAllocationToResource(type) {
+            const list = document.getElementById('manage-alloc-list');
+            let borderClass = type === 'vacation' ? 'border-teal-200 bg-teal-50' : 'border-blue-200 bg-blue-50';
+            let icon = type === 'vacation' ? 'palmtree' : 'briefcase';
+            let label = type === 'vacation' ? 'Nova Férias / Licença' : 'Novo Projeto';
+            let val = type === 'vacation' ? 'Férias' : '';
+
+            const item = `
+            <div class="flex flex-col p-3 rounded-lg border ${borderClass} shadow-sm relative fade-in">
+                <div class="absolute top-3 right-3 cursor-pointer text-gray-400 hover:text-red-500" onclick="this.parentElement.remove()"><i data-lucide="trash-2" class="w-4 h-4"></i></div>
+                <div class="flex items-center gap-2 mb-3">
+                    <i data-lucide="${icon}" class="w-4 h-4 text-gray-500"></i>
+                    <span class="text-xs font-bold text-gray-500 uppercase">${label}</span>
+                </div>
+                <div class="mb-3">
+                     ${type === 'project' ? 
+                     '<select class="w-full text-sm border border-gray-300 rounded p-1 bg-white"><option>Selecione o Projeto...</option><option>Salesforce N2</option></select>' : 
+                     `<input type="text" value="${val}" class="w-full text-sm font-bold text-gray-800 bg-transparent border-none p-0" readonly>`}
+                </div>
+                <div class="grid grid-cols-3 gap-3">
+                    <div><label class="block text-[10px] font-bold text-gray-400 mb-1">%</label><input type="number" value="100" class="w-full border border-gray-300 rounded p-1 text-center text-xs"></div>
+                    <div><label class="block text-[10px] font-bold text-gray-400 mb-1">Início</label><input type="date" class="w-full border border-gray-300 rounded p-1 text-xs"></div>
+                    <div><label class="block text-[10px] font-bold text-gray-400 mb-1">Fim</label><input type="date" class="w-full border border-gray-300 rounded p-1 text-xs"></div>
+                </div>
+            </div>`;
+            
+            list.insertAdjacentHTML('beforeend', item);
+            lucide.createIcons();
+        }
+
+        // Utils
+        function openPersonModal() { openModal('person-modal'); }
+        function openModal(id) { document.getElementById(id).classList.remove('hidden'); setTimeout(() => { document.getElementById(id).classList.remove('opacity-0'); document.querySelector('#'+id+' > div').classList.remove('scale-95'); }, 10); }
+        function closeModal(id) { document.getElementById(id).classList.add('opacity-0'); setTimeout(() => document.getElementById(id).classList.add('hidden'), 300); }
+        function setActiveLink(clicked) { document.querySelectorAll('.nav-link').forEach(l => { l.classList.remove('active'); l.classList.add('inactive'); }); clicked.classList.add('active'); clicked.classList.remove('inactive'); }
+
+        // Init
+        renderTable();
+        renderGantt('person');
+        lucide.createIcons();
+    </script>
+</body>
+</html>

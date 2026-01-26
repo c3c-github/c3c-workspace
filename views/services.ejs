@@ -59,22 +59,30 @@
 
             <div class="p-4 border-b border-gray-100 bg-gray-50 rounded-t-xl shrink-0">
                 <div class="flex justify-between items-center mb-4">
-                    <div class="flex items-center gap-3"><h3 class="font-bold text-gray-900 text-lg" id="modal-svc-title">Novo Serviço</h3><span id="badge-status" class="bg-green-100 text-green-700 text-[10px] px-2 py-0.5 rounded border border-green-200 font-bold uppercase">Novo</span></div>
-                    <button onclick="closeModal('service-modal')" class="text-gray-400 hover:text-gray-600"><i data-lucide="x" class="w-6 h-6"></i></button>
+                    <div class="flex items-center gap-3">
+                        <h3 class="font-bold text-gray-900 text-lg" id="modal-svc-title">Novo Serviço</h3>
+                        <span id="badge-status" class="bg-green-100 text-green-700 text-[10px] px-2 py-0.5 rounded border border-green-200 font-bold uppercase">Novo</span>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <button onclick="saveService()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-lg shadow-md flex items-center gap-2 transition-transform active:scale-95">
+                            <i data-lucide="check" class="w-3.5 h-3.5"></i> Salvar
+                        </button>
+                        <button onclick="closeModal('service-modal')" class="text-gray-400 hover:text-gray-600"><i data-lucide="x" class="w-6 h-6"></i></button>
+                    </div>
                 </div>
                 <div class="grid grid-cols-3 gap-4">
                     <div class="bg-white border border-gray-200 p-3 rounded-lg shadow-sm flex justify-between items-center"><div><p class="text-[10px] font-bold text-gray-400 uppercase">Vendido (Baseline)</p><p class="text-lg font-bold text-gray-800" id="card-prop-rev">R$ 0,00</p></div><div class="text-right"><p class="text-[10px] font-bold text-gray-400">Margem</p><p class="text-sm font-bold text-blue-600" id="card-prop-margin">0%</p></div></div>
                     <div class="bg-white border border-gray-200 p-3 rounded-lg shadow-sm flex justify-between items-center"><div><p class="text-[10px] font-bold text-gray-400 uppercase">Previsto (Alocação)</p><p class="text-lg font-bold text-gray-800" id="card-fcst-rev">R$ 0,00</p></div><div class="text-right"><p class="text-[10px] font-bold text-gray-400">Margem</p><p class="text-sm font-bold text-indigo-600" id="card-fcst-margin">0%</p></div></div>
-                    <div class="bg-white border border-gray-200 p-3 rounded-lg shadow-sm flex justify-between items-center"><div><p class="text-[10px] font-bold text-gray-400 uppercase">Realizado (YTD)</p><p class="text-lg font-bold text-gray-800" id="card-act-rev">R$ 0,00</p></div><div class="text-right"><p class="text-[10px] font-bold text-gray-400">Margem</p><p class="text-sm font-bold text-green-600" id="card-act-margin">0%</p></div></div>
+                    <div class="bg-white border border-gray-200 p-3 rounded-lg shadow-sm flex justify-between items-center"><div><p class="text-[10px] font-bold text-gray-400 uppercase">Realizado</p><p class="text-lg font-bold text-gray-800" id="card-act-rev">R$ 0,00</p></div><div class="text-right"><p class="text-[10px] font-bold text-gray-400">Margem</p><p class="text-sm font-bold text-green-600" id="card-act-margin">0%</p></div></div>
                 </div>
             </div>
             <div class="flex border-b border-gray-200 bg-white shrink-0 px-6 overflow-x-auto">
                 <button onclick="switchTab('general')" id="tab-general" class="modal-tab-active px-6 py-3 text-xs uppercase font-bold tracking-wide transition-colors whitespace-nowrap">Visão Geral</button>
+                <button onclick="switchTab('billing')" id="tab-billing" class="modal-tab-inactive px-6 py-3 text-xs uppercase font-bold tracking-wide transition-colors whitespace-nowrap">Faturamento</button>
                 <button onclick="switchTab('commercial')" id="tab-commercial" class="modal-tab-inactive px-6 py-3 text-xs uppercase font-bold tracking-wide transition-colors whitespace-nowrap">Planejamento Comercial</button>
                 <button onclick="switchTab('execution')" id="tab-execution" class="modal-tab-inactive px-6 py-3 text-xs uppercase font-bold tracking-wide transition-colors whitespace-nowrap">Previsão (Alocação)</button>
                 <button onclick="switchTab('realized')" id="tab-realized" class="modal-tab-inactive px-6 py-3 text-xs uppercase font-bold tracking-wide transition-colors whitespace-nowrap">Execução (Real)</button>
                 <button onclick="switchTab('financial')" id="tab-financial" class="modal-tab-inactive px-6 py-3 text-xs uppercase font-bold tracking-wide transition-colors whitespace-nowrap">Financeiro Detalhado</button>
-                <button onclick="switchTab('billing')" id="tab-billing" class="modal-tab-inactive px-6 py-3 text-xs uppercase font-bold tracking-wide transition-colors whitespace-nowrap">Faturamento</button>
             </div>
             <div class="flex-1 overflow-y-auto p-6 bg-white text-sm">
                 <!-- 1. GERAL -->
@@ -127,6 +135,89 @@
                         </div>
                     </div>
                 </div>
+                <!-- 2. FATURAMENTO -->
+                <div id="view-billing" class="hidden space-y-6">
+                    <!-- SEÇÃO 1: GESTÃO DE VENDAS (CONTAS A RECEBER) -->
+                    <div class="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
+                        <div class="flex justify-between items-center mb-4">
+                            <div>
+                                <h4 class="text-sm font-bold text-gray-800 flex items-center gap-2">
+                                    <i data-lucide="dollar-sign" class="w-4 h-4 text-green-600"></i> 
+                                    Vendas Vinculadas (Conta Azul)
+                                </h4>
+                                <p class="text-[10px] text-gray-500 mt-1">Selecione as vendas do ERP que compõem este contrato.</p>
+                            </div>
+                        </div>
+
+                        <div class="overflow-x-auto border border-gray-100 rounded-lg">
+                            <table class="w-full text-xs text-left">
+                                <thead class="bg-gray-50 font-bold text-gray-600 uppercase text-[10px]">
+                                    <tr>
+                                        <th class="px-4 py-3 w-64">Buscar Venda (Nº / Valor)</th>
+                                        <th class="px-4 py-3 text-center w-32">Data Venda</th>
+                                        <th class="px-4 py-3 text-center w-32">Status</th>
+                                        <th class="px-4 py-3 text-right w-32">Valor Total</th>
+                                        <th class="px-4 py-3 w-10"></th>
+                                    </tr>
+                                </thead>
+                                <tbody id="linked-sales-rows" class="divide-y divide-gray-100 bg-white"></tbody>
+                                <tfoot class="bg-gray-50 font-bold text-gray-700 border-t border-gray-200">
+                                    <tr>
+                                        <td colspan="3" class="px-4 py-3 text-right uppercase text-[10px]">Total Vinculado:</td>
+                                        <td class="px-4 py-3 text-right text-green-700" id="total-linked-sales">R$ 0,00</td>
+                                        <td></td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                            <div class="p-2 bg-gray-50 border-t border-gray-200">
+                                <button onclick="addSalesRow()" class="w-full bg-white border border-gray-300 text-gray-700 text-xs px-3 py-2 rounded font-bold hover:bg-gray-100 flex items-center justify-center gap-2">
+                                    <i data-lucide="plus" class="w-3 h-3"></i> Adicionar Venda
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Datalist para Vendas (Preenchido via JS) -->
+                    <datalist id="available-sales-list"></datalist>
+
+                    <!-- SEÇÃO 2: PARCELAS -->
+                    <div class="bg-white border border-gray-200 rounded-lg p-6 shadow-sm mt-6">
+                        <div class="flex justify-between items-center mb-4">
+                            <div>
+                                <h4 class="text-sm font-bold text-gray-800 flex items-center gap-2">
+                                    <i data-lucide="calendar-check" class="w-4 h-4 text-indigo-600"></i> 
+                                    Previsão de Parcelas (ERP)
+                                </h4>
+                                <p class="text-[10px] text-gray-500 mt-1">Parcelas geradas automaticamente a partir das vendas vinculadas.</p>
+                            </div>
+                        </div>
+                        <div class="overflow-x-auto border border-gray-100 rounded-lg">
+                            <table class="w-full text-xs text-left">
+                                <thead class="bg-gray-50 font-bold text-gray-600 uppercase text-[10px]">
+                                    <tr>
+                                        <th class="px-4 py-3 w-10">#</th>
+                                        <th class="px-4 py-3">Descrição / Venda</th>
+                                        <th class="px-4 py-3 text-center">Competência</th>
+                                        <th class="px-4 py-3 text-center">Vencimento</th>
+                                        <th class="px-4 py-3 text-center">Status</th>
+                                        <th class="px-4 py-3 text-right">Valor</th>
+                                        <th class="px-4 py-3 w-10"></th>
+                                    </tr>
+                                </thead>
+                                <tbody id="svc-billing-list" class="divide-y divide-gray-100 bg-white">
+                                    <tr><td colspan="7" class="px-4 py-6 text-center text-gray-400 italic">Nenhuma parcela disponível. Vincule vendas para gerar.</td></tr>
+                                </tbody>
+                                <tfoot class="bg-gray-50 font-bold text-gray-700 border-t border-gray-200">
+                                    <tr>
+                                        <td colspan="5" class="px-4 py-3 text-right uppercase text-[10px]">Total Parcelas:</td>
+                                        <td class="px-4 py-3 text-right text-indigo-700" id="total-installments">R$ 0,00</td>
+                                        <td></td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    </div>
+                </div>
                 <!-- OUTRAS ABAS (Mantidas) -->
                 <div id="view-commercial" class="hidden space-y-6">
                     <div class="flex justify-between items-center bg-blue-50 p-4 rounded-lg">
@@ -150,15 +241,7 @@
                     <div class="flex justify-between items-center mb-4"><h4 class="text-sm font-bold text-gray-800">DRE do Projeto Detalhada (Todo o Período)</h4></div>
                     <div class="overflow-x-auto border border-gray-200 rounded-lg shadow-sm"><table class="w-full text-left table-dense"><thead class="bg-gray-800 text-white font-bold text-[10px] uppercase"><tr><th class="w-24 py-3">Mês/Ano</th><th class="text-right bg-gray-700 px-2">Rec. Vendida</th><th class="text-right bg-gray-700 px-2">Custo Vendido</th><th class="text-right border-r border-gray-600 px-2">Margem</th><th class="text-right bg-indigo-900 px-2">Rec. Prevista</th><th class="text-right bg-indigo-900 px-2">Custo Prev.</th><th class="text-right border-r border-gray-600 px-2">Margem</th><th class="text-right bg-teal-900 px-2">Rec. Real</th><th class="text-right bg-teal-900 px-2">Custo Real</th><th class="text-right px-2">Margem</th></tr></thead><tbody id="financial-grid" class="divide-y divide-gray-200 bg-white"></tbody><tfoot id="financial-foot" class="bg-gray-100 font-bold text-gray-800 border-t-2 border-gray-300"></tfoot></table></div>
                 </div>
-                <div id="view-billing" class="hidden space-y-6">
-                    <div class="bg-green-50 border border-green-200 p-4 rounded-lg mb-4"><div class="flex gap-4 w-full"><div class="w-1/2"><label class="text-[10px] font-bold text-green-800 uppercase">Modelo</label><select class="w-full text-xs border border-green-300 rounded p-1"><option>Recorrente</option><option>Horas</option><option>Fixo</option></select></div><div class="w-1/2"><label class="text-[10px] font-bold text-green-800 uppercase">Pagamento</label><select class="w-full text-xs border border-green-300 rounded p-1"><option>30 Dias</option><option>15 Dias</option><option>À Vista</option></select></div></div></div>
-                     <div class="overflow-x-auto border border-gray-200 rounded-lg"><table class="w-full text-xs text-left"><thead class="bg-gray-100 font-bold text-gray-600"><tr><th class="px-3 py-2 w-10">#</th><th class="px-3 py-2">Descrição</th><th class="px-3 py-2">Competência</th><th class="px-3 py-2">Vencimento</th><th class="px-3 py-2 text-right">Valor</th><th class="px-3 py-2 w-10"></th></tr></thead><tbody id="svc-billing-list" class="divide-y divide-gray-200"></tbody></table><div class="p-2 bg-gray-50 border-t border-gray-200"><button onclick="addBillingRow()" class="w-full bg-white border border-green-200 text-green-700 text-xs px-3 py-2 rounded font-bold hover:bg-green-100 whitespace-nowrap flex items-center justify-center gap-2"><i data-lucide="plus" class="w-3 h-3"></i> Adicionar Parcela</button></div></div>
                 </div>
-            </div>
-            <div class="p-4 border-t border-gray-100 bg-gray-50 rounded-b-xl flex justify-end items-center shrink-0">
-                <button onclick="saveService()" class="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold rounded-lg shadow-md flex items-center gap-2 transition-transform active:scale-95">
-                    <i data-lucide="check" class="w-4 h-4"></i> Salvar
-                </button>
             </div>
         </div>
     </div>
@@ -199,6 +282,12 @@
         const holidays = ["01/01", "21/04", "01/05", "07/09", "12/10", "02/11", "15/11", "25/12"];
 
         // --- GLOBAL HELPERS & CALCS ---
+        function calculateMargin(revenue, cost) {
+            if (revenue > 0) return Math.round(((revenue - cost) / revenue) * 100);
+            if (cost > 0) return -100;
+            return 0;
+        }
+
         function countBusinessDays(startDate, endDate) {
             if(!startDate || !endDate) return 0;
             const s = startDate.split('-'); const e = endDate.split('-');
@@ -230,7 +319,7 @@
             document.getElementById('comm-total-hours').innerText = cHours.toFixed(1) + 'h';
             document.getElementById('comm-total-rev').innerText = moneyValue(cRev);
             document.getElementById('comm-total-cost').innerText = moneyValue(cCost);
-            document.getElementById('comm-total-margin').innerText = cRev > 0 ? Math.round(((cRev-cCost)/cRev)*100) + '%' : '0%';
+            document.getElementById('comm-total-margin').innerText = calculateMargin(cRev, cCost) + '%';
 
             let aRev=0, aCost=0, aHours=0, aDays=0;
             document.querySelectorAll('.exec-row').forEach(tr => {
@@ -241,10 +330,14 @@
             });
             document.getElementById('exec-total-days').innerText = aDays; document.getElementById('exec-total-hours').innerText = aHours.toFixed(1) + 'h';
             document.getElementById('exec-total-rev').innerText = moneyValue(aRev); document.getElementById('exec-total-cost').innerText = moneyValue(aCost);
-            document.getElementById('exec-total-margin').innerText = aRev > 0 ? Math.round(((aRev-aCost)/aRev)*100) + '%' : '0%';
+            document.getElementById('exec-total-margin').innerText = calculateMargin(aRev, aCost) + '%';
 
-            let rRev = aRev * 0.9; let rCost = aCost * 0.95;
-            updateSummaryCards(cRev, cRev>0?Math.round(((cRev-cCost)/cRev)*100):0, aRev, aRev>0?Math.round(((aRev-aCost)/aRev)*100):0, rRev, rRev>0?Math.round(((rRev-rCost)/rRev)*100):0);
+            // VALORES ATUAIS (REALIZADOS) - Vêm do Banco de Dados via currentServiceData
+            const rRev = currentServiceData?.act?.rev || 0;
+            const rMargin = currentServiceData?.act?.margin || 0;
+            console.log(`[calculateAllTotals] currentServiceData.id: ${currentServiceData?.id}, rRev: ${rRev}, rMargin: ${rMargin}`);
+
+            updateSummaryCards(cRev, calculateMargin(cRev, cCost), aRev, calculateMargin(aRev, aCost), rRev, rMargin);
         }
 
         function recalcDistribution() {
@@ -272,7 +365,7 @@
                     // Sem venda: No Billable
                     tr.cells[2].querySelector('input').value = '0.00';
                     tr.querySelector('.cell-rev').innerText = moneyValue(0);
-                    tr.querySelector('.cell-margin').innerText = '-100%';
+                    tr.querySelector('.cell-margin').innerText = calculateMargin(0, totalCost) + '%';
                 }
             });
             Object.keys(distributionMap).forEach(commId => {
@@ -284,19 +377,65 @@
                     let myShareRev = (group.totalCostIncurred > 0) ? (commRev * myCost) / group.totalCostIncurred : 0;
                     tr.cells[2].querySelector('input').value = myHours > 0 ? (myShareRev / myHours).toFixed(2) : '0.00';
                     tr.querySelector('.cell-rev').innerText = moneyValue(myShareRev);
-                    tr.querySelector('.cell-margin').innerText = myShareRev > 0 ? Math.round(((myShareRev - myCost) / myShareRev) * 100) + '%' : '0%';
+                    tr.querySelector('.cell-margin').innerText = calculateMargin(myShareRev, myCost) + '%';
                 });
             });
             calculateAllTotals(); updateRealizedView(); refreshAllForecasts();
         }
 
         function updateRealizedView() {
-            const rows = document.getElementById('realized-rows'); rows.innerHTML = '';
-            document.querySelectorAll('.exec-row').forEach(tr => {
-                const person = tr.cells[1].querySelector('select').selectedOptions[0]?.text || 'Indefinido';
-                const salePrice = parseFloat(tr.cells[2].querySelector('input').value) || 0;
-                rows.innerHTML += `<tr><td class="px-2 py-2 text-xs text-gray-700">${person}</td><td class="px-2 py-2 text-right text-xs font-bold text-gray-400">0.0h</td><td class="px-2 py-2 text-right text-xs text-gray-400">R$ 0,00</td><td class="px-2 py-2 text-right text-xs text-blue-600">${salePrice.toFixed(2)}</td><td class="px-2 py-2 text-right text-xs text-gray-400 font-bold">R$ 0,00</td><td class="px-2 py-2 text-right text-xs font-bold text-gray-400">0%</td></tr>`;
-            });
+            const rows = document.getElementById('realized-rows');
+            if (!rows) return;
+            rows.innerHTML = '';
+            
+            let totalHours = 0, totalCost = 0, totalRevenue = 0;
+
+            if (currentServiceData && currentServiceData.execution) {
+                currentServiceData.execution.forEach(item => {
+                    const person = item.person || 'Indefinido';
+                    const hours = item.totalRealizedHours || 0;
+                    const cost = item.totalRealizedCost || 0;
+                    const salePrice = item.saleApplied || 0;
+                    const measuredRevenue = item.totalRealizedRevenue || 0;
+                    const realizedMargin = calculateMargin(measuredRevenue, cost);
+
+                    rows.innerHTML += `
+                        <tr>
+                            <td class="px-2 py-2 text-xs text-gray-700">${person}</td>
+                            <td class="px-2 py-2 text-right text-xs font-bold text-gray-600">${hours.toFixed(1)}h</td>
+                            <td class="px-2 py-2 text-right text-xs text-red-600">${moneyValue(cost)}</td>
+                            <td class="px-2 py-2 text-right text-xs text-blue-600">${moneyValue(salePrice)}</td>
+                            <td class="px-2 py-2 text-right text-xs font-bold text-green-700">${moneyValue(measuredRevenue)}</td>
+                            <td class="px-2 py-2 text-right text-xs font-bold text-indigo-600">${realizedMargin.toFixed(0)}%</td>
+                        </tr>`;
+                    
+                    totalHours += hours;
+                    totalCost += cost;
+                    totalRevenue += measuredRevenue;
+                });
+            }
+            
+            // Add footer with totals
+            const table = rows.parentElement;
+            let tfoot = table.querySelector('tfoot');
+            if (tfoot) tfoot.remove(); // Remove existing footer to prevent duplicates
+            
+            tfoot = document.createElement('tfoot');
+            tfoot.className = "bg-gray-50 font-bold text-gray-700 border-t-2 border-gray-200";
+            
+            const totalMargin = calculateMargin(totalRevenue, totalCost);
+
+            tfoot.innerHTML = `
+                <tr>
+                    <td class="px-2 py-2 text-right text-[10px] uppercase">Totais:</td>
+                    <td class="px-2 py-2 text-right text-xs">${totalHours.toFixed(1)}h</td>
+                    <td class="px-2 py-2 text-right text-xs text-red-700">${moneyValue(totalCost)}</td>
+                    <td class="px-2 py-2"></td>
+                    <td class="px-2 py-2 text-right text-xs text-green-800">${moneyValue(totalRevenue)}</td>
+                    <td class="px-2 py-2 text-right text-xs text-indigo-700">${totalMargin.toFixed(0)}%</td>
+                </tr>
+            `;
+            table.appendChild(tfoot);
         }
 
         function showToast(title, message, color = 'green') {
@@ -325,13 +464,32 @@
             setTimeout(() => el.classList.add('translate-y-20','opacity-0'), 3000); 
         }
 
+        function generateRealizedForecast(year) {
+            const forecast = Array.from({length: 12}, () => ({ rev: 0, cost: 0 }));
+            if (!currentServiceData || !currentServiceData.execution) return forecast;
+
+            currentServiceData.execution.forEach(execItem => {
+                if (execItem.monthlyRealized) {
+                    execItem.monthlyRealized.forEach(realMonth => {
+                        const monthDate = new Date(realMonth.month + 'T00:00:00');
+                        if (monthDate.getFullYear() === year) {
+                            const monthIndex = monthDate.getMonth();
+                            forecast[monthIndex].rev += realMonth.revenue;
+                            forecast[monthIndex].cost += realMonth.cost;
+                        }
+                    });
+                }
+            });
+            return forecast;
+        }
+
         function refreshAllForecasts() {
             const yrComm = parseInt(document.getElementById('forecast-year-comm').value);
             const yrAlloc = parseInt(document.getElementById('forecast-year-alloc').value);
             const yrReal = parseInt(document.getElementById('forecast-year-real').value);
             const cMonths = generatePreciseForecast('comm-row', yrComm); renderMonthlyTable(cMonths, 'monthly-forecast-header', 'monthly-forecast-body', yrComm);
             const aMonths = generatePreciseForecast('exec-row', yrAlloc); renderMonthlyTable(aMonths, 'alloc-forecast-header', 'alloc-forecast-body', yrAlloc);
-            const rMonthsRaw = generatePreciseForecast('exec-row', yrReal); const rMonths = rMonthsRaw.map(d => ({ rev: d.rev * 0.9, cost: d.cost * 0.95 }));
+            const rMonths = generateRealizedForecast(yrReal);
             renderMonthlyTable(rMonths, 'realized-forecast-header', 'realized-forecast-body', yrReal);
             generateDREDetailed();
         }
@@ -371,18 +529,19 @@
                 h += `<th class="text-right px-2 font-bold text-gray-500">${months[i]}/${year.toString().substr(2)}</th>`;
                 bRev += `<td class="text-right text-xs text-gray-600">${moneyValue(d.rev)}</td>`;
                 bCost += `<td class="text-right text-xs text-red-500">${moneyValue(d.cost)}</td>`;
-                const marg = d.rev > 0 ? Math.round(((d.rev-d.cost)/d.rev)*100) : 0;
+                const marg = calculateMargin(d.rev, d.cost);
                 bMarg += `<td class="text-right text-xs text-blue-600 font-bold">${marg}%</td>`;
                 tRev += d.rev; tCost += d.cost;
             });
+            const tMarg = calculateMargin(tRev, tCost);
             h += '<th class="text-right px-2 bg-gray-50">Total</th>';
             bRev += `<td class="text-right font-bold text-xs bg-gray-50 text-green-700">${moneyValue(tRev)}</td></tr>`;
             bCost += `<td class="text-right font-bold text-xs bg-gray-50 text-red-600">${moneyValue(tCost)}</td></tr>`;
-            bMarg += `<td></td></tr>`;
+            bMarg += `<td class="text-right font-bold text-xs bg-gray-50 text-blue-700">${tMarg}%</td></tr>`;
             document.getElementById(headId).innerHTML = h; document.getElementById(bodyId).innerHTML = bRev + bCost + bMarg;
         }
 
-        function generateDREDetailed() {
+function generateDREDetailed() {
             let minDate, maxDate;
             const processRows = (selector, iStart, iEnd) => {
                 document.querySelectorAll(selector).forEach(tr => {
@@ -396,22 +555,47 @@
             const months = []; let cur = new Date(minDate.split('-')[0], minDate.split('-')[1]-1, 1);
             const end = new Date(maxDate.split('-')[0], maxDate.split('-')[1]-1, 1); 
             while(cur <= end) { months.push(new Date(cur)); cur.setMonth(cur.getMonth() + 1); }
+            
             const cData = months.map(m => calcMonthData('.comm-row', m, 3, 4, 1, 2, 6));
             const aData = months.map(m => calcMonthData('.exec-row', m, 4, 5, 2, 3, 6));
-            const rData = aData.map(d => ({ rev: d.rev * 0.9, cost: d.cost * 0.95 }));
+            
+            const serviceMonthlyRealized = {}; // { 'YYYY-MM-DD': { rev: sumRev, cost: sumCost } }
+            if (currentServiceData && currentServiceData.execution) {
+                currentServiceData.execution.forEach(execItem => {
+                    if (execItem.monthlyRealized) {
+                        execItem.monthlyRealized.forEach(monthData => {
+                            const monthKey = monthData.month; // Competencia__c comes as YYYY-MM-DD from backend
+                            if (!serviceMonthlyRealized[monthKey]) {
+                                serviceMonthlyRealized[monthKey] = { rev: 0, cost: 0 };
+                            }
+                            serviceMonthlyRealized[monthKey].rev += monthData.revenue;
+                            serviceMonthlyRealized[monthKey].cost += monthData.cost;
+                        });
+                    }
+                });
+            }
+
+            const rData = months.map(targetMonth => {
+                const targetMonthStr = targetMonth.toISOString().split('T')[0];
+                const aggregatedData = serviceMonthlyRealized[targetMonthStr];
+                return {
+                    rev: aggregatedData ? aggregatedData.rev : 0,
+                    cost: aggregatedData ? aggregatedData.cost : 0,
+                };
+            });
             let html = '';
             months.forEach((m, i) => {
                 const c = cData[i], a = aData[i], r = rData[i];
-                const cMarg = c.rev > 0 ? Math.round(((c.rev-c.cost)/c.rev)*100) : 0;
-                const aMarg = a.rev > 0 ? Math.round(((a.rev-a.cost)/a.rev)*100) : 0;
-                const rMarg = r.rev > 0 ? Math.round(((r.rev-r.cost)/r.rev)*100) : 0;
+                const cMarg = calculateMargin(c.rev, c.cost);
+                const aMarg = calculateMargin(a.rev, a.cost);
+                const rMarg = calculateMargin(r.rev, r.cost);
                 html += `<tr><td class="font-bold text-xs capitalize">${m.toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' })}</td><td class="text-right text-xs text-gray-600">${moneyValue(c.rev)}</td><td class="text-right text-xs text-red-400">${moneyValue(c.cost)}</td><td class="text-right text-xs font-bold border-r border-gray-200">${cMarg}%</td><td class="text-right text-xs text-indigo-600">${moneyValue(a.rev)}</td><td class="text-right text-xs text-red-400">${moneyValue(a.cost)}</td><td class="text-right text-xs font-bold border-r border-gray-200">${aMarg}%</td><td class="text-right text-xs text-green-600">${moneyValue(r.rev)}</td><td class="text-right text-xs text-red-400">${moneyValue(r.cost)}</td><td class="text-right text-xs font-bold">${rMarg}%</td></tr>`;
             });
             const sum = (arr, k) => arr.reduce((a,b) => a + b[k], 0);
             const ctRev = sum(cData,'rev'), ctCost = sum(cData,'cost');
             const atRev = sum(aData,'rev'), atCost = sum(aData,'cost');
             const rtRev = sum(rData,'rev'), rtCost = sum(rData,'cost');
-            const footHtml = `<tr class="bg-gray-100 font-bold border-t border-gray-300"><td class="py-2">TOTAL</td><td class="text-right text-xs">${moneyValue(ctRev)}</td><td class="text-right text-xs">${moneyValue(ctCost)}</td><td class="text-right text-xs border-r border-gray-300">${ctRev>0?Math.round(((ctRev-ctCost)/ctRev)*100):0}%</td><td class="text-right text-xs text-indigo-800">${moneyValue(atRev)}</td><td class="text-right text-xs text-indigo-800">${moneyValue(atCost)}</td><td class="text-right text-xs border-r border-gray-200">${atRev>0?Math.round(((atRev-atCost)/atRev)*100):0}%</td><td class="text-right text-xs text-green-800">${moneyValue(rtRev)}</td><td class="text-right text-xs text-green-800">${moneyValue(rtCost)}</td><td class="text-right text-xs">${rtRev>0?Math.round(((rtRev-rtCost)/rtRev)*100):0}%</td></tr>`;
+            const footHtml = `<tr class="bg-gray-100 font-bold border-t border-gray-300"><td class="py-2">TOTAL</td><td class="text-right text-xs">${moneyValue(ctRev)}</td><td class="text-right text-xs">${moneyValue(ctCost)}</td><td class="text-right text-xs border-r border-gray-300">${calculateMargin(ctRev, ctCost)}%</td><td class="text-right text-xs text-indigo-800">${moneyValue(atRev)}</td><td class="text-right text-xs text-indigo-800">${moneyValue(atCost)}</td><td class="text-right text-xs border-r border-gray-200">${calculateMargin(atRev, atCost)}%</td><td class="text-right text-xs text-green-800">${moneyValue(rtRev)}</td><td class="text-right text-xs text-green-800">${moneyValue(rtCost)}</td><td class="text-right text-xs">${calculateMargin(rtRev, rtCost)}%</td></tr>`;
             document.getElementById('financial-grid').innerHTML = html; document.getElementById('financial-foot').innerHTML = footHtml;
         }
 
@@ -676,6 +860,23 @@
                         }
                     }
                     
+                    // Populate Linked Sales (Inline Rows)
+                    document.getElementById('linked-sales-rows').innerHTML = '';
+                    if (data.sales && data.sales.length > 0) {
+                        data.sales.forEach(s => addSalesRow(s));
+                    }
+
+                    // Populate Installments
+                    document.getElementById('svc-billing-list').innerHTML = '';
+                    if (data.installments && data.installments.length > 0) {
+                        data.installments.forEach(i => addBillingRow(i));
+                    } else {
+                        document.getElementById('svc-billing-list').innerHTML = '<tr><td colspan="7" class="px-4 py-6 text-center text-gray-400 italic">Nenhuma parcela disponível. Vincule vendas para gerar.</td></tr>';
+                    }
+                    
+                    // Trigger async load of options
+                    setTimeout(() => loadSalesOptions(), 500);
+                    
                     const commRows = document.getElementById('commercial-rows'); 
                     if(commRows) {
                         commRows.innerHTML = '';
@@ -720,8 +921,40 @@
             const tbody = document.getElementById('commercial-rows'); const tr = document.createElement('tr');
             tr.className = "comm-row group hover:bg-gray-50"; tr.dataset.id = data.id || `new-${Date.now()}`;
             // Ajuste: value do select é o NOME do produto
-            tr.innerHTML = `<td><select class="input-inline font-semibold text-gray-700" onchange="onProductChange(this)">${getProductOptions(data.productName)}</select></td><td><input type="number" step="1" class="input-inline text-right" placeholder="0.00" value="${data.saleRate || ''}" oninput="calcRow(this)"></td><td><input type="number" step="1" class="input-inline text-right" placeholder="0.00" value="${data.costEst || ''}" oninput="calcRow(this)"></td><td><input type="date" class="input-inline text-center" value="${data.start || ''}" onchange="calcRow(this)"></td><td><input type="date" class="input-inline text-center" value="${data.end || ''}" onchange="calcRow(this)"></td><td class="text-center text-xs text-gray-500 cell-days">0</td><td><input type="number" step="1" class="input-inline text-center" value="${data.alloc || 100}" oninput="calcRow(this)"></td><td class="text-right font-bold text-xs pt-2 cell-hours">0h</td><td class="text-right font-bold text-xs pt-2 text-green-700 bg-green-50 cell-rev">R$ 0,00</td><td class="text-right font-bold text-xs pt-2 text-red-600 cell-cost">R$ 0,00</td><td class="text-right font-bold text-xs pt-2 cell-margin">0%</td><td class="text-center"><button class="text-gray-300 hover:text-red-500 group-hover:opacity-100" onclick="removeRow(this)"><i data-lucide="trash-2" class="w-3 h-3"></i></button></td>`;
+            tr.innerHTML = `<td><select class="input-inline font-semibold text-gray-700" onchange="onProductChange(this)">${getProductOptions(data.productName)}</select></td><td><input type="number" step="1" class="input-inline text-right" placeholder="0.00" value="${data.saleRate || ''}" oninput="calcRow(this)"></td><td><input type="number" step="1" class="input-inline text-right" placeholder="0.00" value="${data.costEst || ''}" oninput="calcRow(this)"></td><td><input type="date" class="input-inline text-center" value="${data.start || ''}" onchange="calcRow(this)"></td><td><input type="date" class="input-inline text-center" value="${data.end || ''}" onchange="calcRow(this)"></td><td class="text-center text-xs text-gray-500 cell-days">0</td><td><input type="number" step="1" class="input-inline text-center" value="${data.alloc || 100}" oninput="calcRow(this)"></td><td class="text-right font-bold text-xs pt-2 cell-hours">0h</td><td class="text-right font-bold text-xs pt-2 text-green-700 bg-green-50 cell-rev">R$ 0,00</td><td class="text-right font-bold text-xs pt-2 text-red-600 cell-cost">R$ 0,00</td><td class="text-right font-bold text-xs pt-2 cell-margin">0%</td><td class="text-center"><button class="text-gray-300 hover:text-red-500 group-hover:opacity-100" onclick="deleteCommercialRow(this)"><i data-lucide="trash-2" class="w-3 h-3"></i></button></td>`;
             tbody.appendChild(tr); if(data.productName) calcRow(tr.querySelector('select')); lucide.createIcons();
+        }
+
+        function deleteCommercialRow(btn) {
+            const tr = btn.closest('tr');
+            const id = tr.dataset.id;
+            
+            if (id && !id.startsWith('new')) {
+                if(!confirm("Excluir este item comercial e seus orçamentos permanentemente?")) return;
+                
+                document.getElementById('modal-loader').classList.remove('hidden');
+                fetch(`/api/services/commercial/${id}`, { method: 'DELETE' })
+                    .then(res => res.json())
+                    .then(data => {
+                        document.getElementById('modal-loader').classList.add('hidden');
+                        if(data.success) {
+                            tr.remove();
+                            calculateAllTotals();
+                            recalcDistribution();
+                            alert('Item comercial excluído.');
+                        } else {
+                            alert('Erro ao excluir: ' + data.error);
+                        }
+                    })
+                    .catch(err => {
+                        document.getElementById('modal-loader').classList.add('hidden');
+                        alert('Erro de comunicação.');
+                    });
+            } else {
+                tr.remove();
+                calculateAllTotals();
+                recalcDistribution();
+            }
         }
 
         function onProductChange(select) {
@@ -745,15 +978,58 @@
             const rev = totalHours * saleRate; const cost = totalHours * costRate;
             tr.querySelector('.cell-days').innerText = days; tr.querySelector('.cell-hours').innerText = totalHours.toFixed(1) + 'h';
             tr.querySelector('.cell-rev').innerText = moneyValue(rev); tr.querySelector('.cell-cost').innerText = moneyValue(cost);
-            tr.querySelector('.cell-margin').innerText = rev > 0 ? Math.round(((rev-cost)/rev)*100) + '%' : '0%';
+            tr.querySelector('.cell-margin').innerText = calculateMargin(rev, cost) + '%';
             calculateAllTotals(); recalcDistribution(); refreshAllForecasts();
         }
 
         function addExecutionRow(data = {}) {
             const tbody = document.getElementById('execution-rows'); const tr = document.createElement('tr');
             tr.className = "exec-row group hover:bg-gray-50";
-            tr.innerHTML = `<td><select class="input-inline text-xs font-bold text-indigo-700" onfocus="this.innerHTML = getCommLinkOptions(this.value)" onchange="onAllocLinkChange(this)">${getCommLinkOptions(data.commercialLinkId)}</select></td><td><select class="input-inline" onchange="onPersonChange(this)">${getPeopleOptions(data.person)}</select></td><td><input class="input-inline text-right readonly-field" readonly value="${data.saleApplied || '0.00'}"></td><td><input class="input-inline text-right readonly-field" readonly value="${data.costReal || '0.00'}"></td><td><input type="date" class="input-inline text-center" value="${data.start || ''}" onchange="recalcDistribution()"></td><td><input type="date" class="input-inline text-center" value="${data.end || ''}" onchange="recalcDistribution()"></td><td><input type="number" class="input-inline text-center" value="${data.alloc || 100}" oninput="recalcDistribution()"></td><td class="text-center text-xs text-gray-500 cell-days">0</td><td class="text-right font-bold text-xs pt-2 cell-hours">0h</td><td class="text-right font-bold text-xs pt-2 text-green-700 bg-green-50 cell-rev">R$ 0,00</td><td class="text-right font-bold text-xs pt-2 text-red-600 cell-cost">R$ 0,00</td><td class="text-right font-bold text-xs pt-2 cell-margin">0%</td><td class="text-center"><button class="text-gray-300 hover:text-red-500 group-hover:opacity-100" onclick="removeRow(this)"><i data-lucide="trash-2" class="w-3 h-3"></i></button></td>`;
+            // FIX: Ensure data-id is set correctly. If data.id exists, use it; otherwise generate a temp ID.
+            tr.dataset.id = data.id || `new-${Date.now()}`; 
+            
+            tr.innerHTML = `<td><select class="input-inline text-xs font-bold text-indigo-700" onfocus="this.innerHTML = getCommLinkOptions(this.value)" onchange="onAllocLinkChange(this)">${getCommLinkOptions(data.commercialLinkId)}</select></td><td><select class="input-inline" onchange="onPersonChange(this)">${getPeopleOptions(data.person)}</select></td><td><input class="input-inline text-right readonly-field" readonly value="${data.saleApplied || '0.00'}"></td><td><input class="input-inline text-right readonly-field" readonly value="${data.costReal || '0.00'}"></td><td><input type="date" class="input-inline text-center" value="${data.start || ''}" onchange="recalcDistribution()"></td><td><input type="date" class="input-inline text-center" value="${data.end || ''}" onchange="recalcDistribution()"></td><td><input type="number" class="input-inline text-center" value="${data.alloc || 100}" oninput="recalcDistribution()"></td><td class="text-center text-xs text-gray-500 cell-days">0</td><td class="text-right font-bold text-xs pt-2 cell-hours">0h</td><td class="text-right font-bold text-xs pt-2 text-green-700 bg-green-50 cell-rev">R$ 0,00</td><td class="text-right font-bold text-xs pt-2 text-red-600 cell-cost">R$ 0,00</td><td class="text-right font-bold text-xs pt-2 cell-margin">0%</td><td class="text-center"><button class="text-gray-300 hover:text-red-500 group-hover:opacity-100" onclick="deleteAllocationRow(this)"><i data-lucide="trash-2" class="w-3 h-3"></i></button></td>`;
             tbody.appendChild(tr); if(data.person) onPersonChange(tr.cells[1].querySelector('select')); lucide.createIcons();
+        }
+
+        function deleteAllocationRow(btn) {
+            console.log("deleteAllocationRow called"); // Debug
+            const tr = btn.closest('tr');
+            const id = tr.dataset.id;
+            console.log("Allocation ID:", id); // Debug
+            
+            if (id && !id.startsWith('new')) {
+                if(!confirm("Excluir esta alocação permanentemente?")) return;
+                
+                console.log("Sending DELETE request..."); // Debug
+                document.getElementById('modal-loader').classList.remove('hidden');
+                fetch(`/api/services/allocation/${id}`, { method: 'DELETE' })
+                    .then(res => {
+                        console.log("Response Status:", res.status); // Debug
+                        return res.json();
+                    })
+                    .then(data => {
+                        console.log("Response Data:", data); // Debug
+                        document.getElementById('modal-loader').classList.add('hidden');
+                        if(data.success) {
+                            tr.remove();
+                            recalcDistribution();
+                            // showToast('Sucesso', 'Alocação excluída.'); // showToast removed due to DOM errors
+                            alert('Alocação excluída.');
+                        } else {
+                            alert('Erro ao excluir: ' + data.error);
+                        }
+                    })
+                    .catch(err => {
+                        console.error("Fetch Error:", err); // Debug
+                        document.getElementById('modal-loader').classList.add('hidden');
+                        alert('Erro de comunicação.');
+                    });
+            } else {
+                console.log("Removing unsaved row"); // Debug
+                tr.remove();
+                recalcDistribution();
+            }
         }
 
         function onPersonChange(select) { select.closest('tr').cells[3].querySelector('input').value = select.selectedOptions[0].dataset.cost || 0; recalcDistribution(); }
@@ -804,8 +1080,334 @@
             }
         }
 
-        function addBillingRow(d={}) { const t=document.getElementById('svc-billing-list'); const r=t.children.length+1; t.insertAdjacentHTML('beforeend', `<tr><td class="px-3 py-2 text-center text-gray-400">${r}</td><td class="px-3 py-2"><input class="input-inline" value="${d.desc||''}" placeholder="Desc"></td><td class="px-3 py-2"><input class="input-inline" type="month" value="${d.month||''}"></td><td class="px-3 py-2"><input class="input-inline" type="date" value="${d.date||''}"></td><td class="px-3 py-2 text-right"><input class="input-inline text-right font-bold text-gray-700" value="${d.value||''}" placeholder="0,00"></td><td class="px-3 py-2 text-center"><button onclick="removeRow(this)"><i data-lucide="trash-2" class="w-3 h-3 text-red-400"></i></button></td></tr>`); lucide.createIcons(); }
-        function removeRow(btn) { btn.closest('tr').remove(); recalcDistribution(); }
+        function addBillingRow(d={}) { 
+            const t=document.getElementById('svc-billing-list'); 
+            if(t.innerText.includes('Nenhuma parcela')) t.innerHTML = '';
+            const r=t.children.length+1; 
+            
+            // Normalize and debug
+            const statusVal = (d.status || '').trim();
+            const statusUpper = statusVal.toUpperCase();
+            console.log(`[addBillingRow] Status: "${statusVal}" -> Upper: "${statusUpper}"`);
+
+            let statusClass = 'bg-yellow-100 text-yellow-700';
+            if (['PAGO', 'QUITADO', 'APROVADO', 'CONFIRMADO'].includes(statusUpper)) statusClass = 'bg-green-100 text-green-700';
+            else if (statusUpper === 'ATRASADO' || statusUpper === 'VENCIDO') statusClass = 'bg-red-100 text-red-700';
+            else if (statusUpper === 'CANCELADO') statusClass = 'bg-gray-100 text-gray-700';
+            
+            const tr = document.createElement('tr');
+            tr.className = "group hover:bg-gray-50 installment-row";
+            if (d.originSaleId) tr.dataset.originSaleId = d.originSaleId;
+            if (d.id) tr.dataset.id = d.id;
+
+            // Formatação do valor (Moeda BRL)
+            const formattedValue = d.value ? parseFloat(d.value).toLocaleString('pt-BR', { minimumFractionDigits: 2 }) : '';
+            
+            // Campos readonly se vierem do ERP
+            const isReadonly = d.originSaleId ? 'readonly tabindex="-1"' : '';
+            const readonlyClass = d.originSaleId ? 'bg-gray-50 text-gray-500 cursor-not-allowed border-transparent' : 'font-bold text-gray-800';
+
+            tr.innerHTML = `
+                <td class="px-4 py-3 text-center text-gray-400 font-medium">${r}</td>
+                <td class="px-4 py-3">
+                    <input class="input-inline font-semibold text-gray-700 ${d.originSaleId ? 'bg-gray-50' : ''}" value="${d.desc||''}" placeholder="Descrição" ${isReadonly}>
+                </td>
+                <td class="px-4 py-3 text-center">
+                    <input class="input-inline text-center ${d.originSaleId ? 'bg-gray-50' : ''}" type="month" value="${d.month||''}" ${isReadonly}>
+                </td>
+                <td class="px-4 py-3 text-center">
+                    <input class="input-inline text-center ${d.originSaleId ? 'bg-gray-50' : ''}" type="date" value="${d.date||''}" ${isReadonly}>
+                </td>
+                <td class="px-4 py-3 text-center">
+                    <span class="sale-status px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${statusClass}">${d.status || 'Pendente'}</span>
+                </td>
+                <td class="px-4 py-3 text-right">
+                    <input class="input-inline text-right ${readonlyClass}" type="text" 
+                           value="${formattedValue}" placeholder="0,00" oninput="calcInstallmentsTotal()" ${isReadonly}>
+                </td>
+                <td class="px-4 py-3 text-center">
+                    ${!d.originSaleId ? 
+                        `<button onclick="deleteInstallmentRow(this)" class="text-gray-300 hover:text-red-500 transition-colors"><i data-lucide="trash-2" class="w-4 h-4"></i></button>` : 
+                        `<i data-lucide="lock" class="w-3 h-3 text-gray-300 mx-auto"></i>`
+                    }
+                </td>
+            `; 
+            t.appendChild(tr);
+            lucide.createIcons(); 
+            calcInstallmentsTotal();
+        }
+
+        function calcInstallmentsTotal() {
+            let total = 0;
+            document.querySelectorAll('.installment-row').forEach(tr => {
+                const input = tr.querySelectorAll('input')[3]; // O campo de valor
+                // Converter "1.234,56" para 1234.56
+                const valStr = input.value.replace(/\./g, '').replace(',', '.');
+                total += parseFloat(valStr || 0);
+            });
+            document.getElementById('total-installments').innerText = moneyValue(total);
+        }
+
+        // --- LINKED SALES FUNCTIONS (INLINE) ---
+        let availableSalesMap = {}; 
+
+        async function loadSalesOptions(force = false) {
+            const caClientId = document.querySelector('#ca-clients-list option[value="' + document.getElementById('input-ca-client').value + '"]')?.dataset.id 
+                             || document.getElementById('input-ca-client').value;
+            const datalist = document.getElementById('available-sales-list');
+            
+            // Se já carregado e não for forçado, não busca de novo
+            if (Object.keys(availableSalesMap).length > 0 && !force) return;
+            
+            if (!caClientId || caClientId.length < 5) return; 
+
+            // Feedback visual de carregamento nos inputs
+            const inputs = document.querySelectorAll('.sale-search-input:not([readonly])');
+            const loaders = document.querySelectorAll('.sale-loader');
+            inputs.forEach(i => i.placeholder = "Carregando vendas...");
+            loaders.forEach(l => l.classList.remove('hidden'));
+
+            try {
+                const res = await fetch(`/api/services/sales/available?caClientId=${caClientId}`);
+                const sales = await res.json();
+                
+                datalist.innerHTML = '';
+                availableSalesMap = {};
+                sales.forEach(s => {
+                    const label = `Venda #${s.number} - ${moneyValue(s.total)}`;
+                    availableSalesMap[label] = s;
+                    datalist.insertAdjacentHTML('beforeend', `<option value="${label}">Venda: ${new Date(s.emissionDate).toLocaleDateString('pt-BR')} | Status: ${s.status}</option>`);
+                });
+            } catch (e) { 
+                console.error("Erro ao carregar vendas:", e); 
+            } finally {
+                inputs.forEach(i => i.placeholder = "Buscar venda...");
+                loaders.forEach(l => l.classList.add('hidden'));
+            }
+        }
+
+        async function addSalesRow(data = {}) {
+            const tbody = document.getElementById('linked-sales-rows');
+            const tr = document.createElement('tr');
+            tr.className = "sale-row group hover:bg-gray-50";
+            tr.dataset.id = data.id || `new-${Date.now()}`; // Store SF ID
+            
+            // Se for uma nova linha manual, força a carga/atualização das opções
+            if(!data.id_ca) await loadSalesOptions(true);
+            // Se for carga inicial (vindo do banco), carrega apenas se necessário (cache)
+            else if (Object.keys(availableSalesMap).length === 0) await loadSalesOptions();
+
+            const inputValue = data.number ? `Venda #${data.number} - ${moneyValue(data.total)}` : '';
+            if(data.id_ca && data.number) {
+                 availableSalesMap[inputValue] = { id: data.id_ca, number: data.number, emissionDate: data.date, total: data.total, status: data.status };
+            }
+
+            // Bloquear edição se já estiver salvo no SF
+            const isSaved = data.id && !data.id.startsWith('new');
+            const readonlyAttr = isSaved ? 'readonly' : '';
+            const bgClass = isSaved ? 'bg-gray-100 cursor-not-allowed' : 'bg-gray-50';
+
+            // Normalize and debug
+            const statusVal = (data.status || '').trim();
+            const statusUpper = statusVal.toUpperCase();
+            console.log(`[addSalesRow] Status: "${statusVal}" -> Upper: "${statusUpper}"`);
+
+            let statusClass = 'bg-yellow-100 text-yellow-700';
+            if (['APROVADO', 'EM_ANDAMENTO', 'FINALIZADO', 'CONCLUIDO'].includes(statusUpper)) statusClass = 'bg-green-100 text-green-700';
+            else if (statusUpper === 'CANCELADO' || statusUpper === 'REPROVADO') statusClass = 'bg-red-100 text-red-700';
+            else if (statusUpper === 'RASCUNHO' || statusUpper === 'PENDENTE') statusClass = 'bg-yellow-100 text-yellow-700';
+
+            tr.innerHTML = `
+                <td class="px-4 py-2">
+                    <div class="relative flex items-center">
+                        <input list="available-sales-list" class="sale-search-input w-full border border-gray-200 rounded pl-2 pr-8 py-1.5 text-xs font-bold text-gray-700 focus:outline-none focus:ring-1 focus:ring-indigo-500 ${bgClass}" 
+                               placeholder="Buscar venda..." 
+                               value="${inputValue}"
+                               onchange="onSaleChange(this)" onfocus="loadSalesOptions()" ${readonlyAttr}>
+                        
+                        <div class="sale-loader absolute right-12 hidden">
+                            <div class="w-3 h-3 border-2 border-indigo-200 border-t-indigo-600 rounded-full animate-spin"></div>
+                        </div>
+
+                        ${!isSaved ? 
+                            `<button onclick="clearSaleInput(this)" class="absolute right-7 text-gray-400 hover:text-red-500"><i data-lucide="x" class="w-3 h-3"></i></button>` : ''
+                        }
+                        <input type="hidden" class="sale-id-ca" value="${data.id_ca || ''}">
+                    </div>
+                </td>
+                <td class="px-4 py-2 text-center text-gray-500 text-xs sale-date">${data.date ? new Date(data.date).toLocaleDateString('pt-BR') : '-'}</td>
+                <td class="px-4 py-2 text-center">
+                    <span class="sale-status px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${statusClass}">
+                        ${statusVal || '-'}
+                    </span>
+                </td>
+                <td class="px-4 py-2 text-right font-bold text-gray-800 sale-total">${moneyValue(data.total)}</td>
+                <td class="px-4 py-2 text-center">
+                    <button onclick="removeSalesRow(this)" class="text-gray-300 hover:text-red-500 transition-colors"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                </td>
+            `;
+            tbody.appendChild(tr);
+            lucide.createIcons();
+            calcSalesTotal();
+        }
+
+        function clearSaleInput(btn) {
+            const container = btn.parentElement;
+            const input = container.querySelector('input[list]');
+            input.value = '';
+            onSaleChange(input); // Trigger cleanup
+            input.focus();
+        }
+
+        async function onSaleChange(input) {
+            const val = input.value;
+            const data = availableSalesMap[val];
+            const tr = input.closest('tr');
+            const oldIdCa = tr.querySelector('.sale-id-ca').value;
+
+            if (data) {
+                // VERIFICAÇÃO DE DUPLICIDADE:
+                const isDuplicate = Array.from(document.querySelectorAll('.sale-id-ca')).some(el => {
+                    return el !== tr.querySelector('.sale-id-ca') && el.value === data.id;
+                });
+
+                if (isDuplicate) {
+                    alert('Esta venda já está vinculada a este serviço.');
+                    input.value = '';
+                    return onSaleChange(input); // Limpa a linha
+                }
+
+                if (oldIdCa === data.id) return; // No change
+
+                tr.querySelector('.sale-id-ca').value = data.id;
+                tr.querySelector('.sale-date').innerText = new Date(data.emissionDate).toLocaleDateString('pt-BR');
+                
+                const statusSpan = tr.querySelector('.sale-status');
+                const sUpper = (data.status || '').toUpperCase();
+                let sClass = 'bg-yellow-100 text-yellow-700';
+                if (['APROVADO', 'EM ANDAMENTO', 'EM_ANDAMENTO', 'FINALIZADO', 'CONCLUIDO'].includes(sUpper)) sClass = 'bg-green-100 text-green-700';
+                else if (sUpper === 'CANCELADO' || sUpper === 'REPROVADO') sClass = 'bg-red-100 text-red-700';
+
+                statusSpan.innerText = data.status;
+                statusSpan.className = `sale-status px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${sClass}`;
+                
+                tr.querySelector('.sale-total').innerText = moneyValue(data.total);
+
+                // Fetch and add installments preview
+                try {
+                    document.getElementById('modal-loader').classList.remove('hidden');
+                    const res = await fetch(`/api/services/sales/${data.id}/installments`);
+                    const insts = await res.json();
+                    
+                    // Se estiver trocando a venda nesta linha, remove as parcelas da venda anterior
+                    if(oldIdCa) {
+                        document.querySelectorAll(`.installment-row[data-origin-sale-id="${oldIdCa}"]`).forEach(el => el.remove());
+                    }
+
+                    insts.forEach(i => {
+                        addBillingRow({ ...i, originSaleId: data.id });
+                    });
+                } catch (e) {
+                    console.error("Erro ao buscar parcelas:", e);
+                } finally {
+                    document.getElementById('modal-loader').classList.add('hidden');
+                }
+            } else {
+                // Limpar se inválido e remover parcelas associadas
+                if(oldIdCa) {
+                    document.querySelectorAll(`.installment-row[data-origin-sale-id="${oldIdCa}"]`).forEach(el => el.remove());
+                }
+                tr.querySelector('.sale-id-ca').value = '';
+                tr.querySelector('.sale-date').innerText = '-';
+                tr.querySelector('.sale-status').innerText = '-';
+                tr.querySelector('.sale-total').innerText = 'R$ 0,00';
+            }
+            calcSalesTotal();
+        }
+
+        function removeSalesRow(btn) {
+            const tr = btn.closest('tr');
+            const sfId = tr.dataset.id;
+            const idCa = tr.querySelector('.sale-id-ca').value;
+
+            const performRemoval = () => {
+                // Remove associated installments from DOM
+                if(idCa) {
+                    document.querySelectorAll(`.installment-row[data-origin-sale-id="${idCa}"]`).forEach(el => el.remove());
+                }
+                tr.remove();
+                calcSalesTotal();
+                loadSalesOptions(true); 
+            };
+
+            if (sfId && !sfId.startsWith('new')) {
+                if(!confirm("Desvincular esta venda e suas parcelas?")) return;
+                
+                document.getElementById('modal-loader').classList.remove('hidden');
+                fetch(`/api/services/sales/${sfId}`, { method: 'DELETE' })
+                    .then(res => res.json())
+                    .then(data => {
+                        document.getElementById('modal-loader').classList.add('hidden');
+                        if(data.success) {
+                            performRemoval();
+                            alert('Venda desvinculada.');
+                        } else {
+                            alert('Erro ao desvincular: ' + data.error);
+                        }
+                    })
+                    .catch(err => {
+                        document.getElementById('modal-loader').classList.add('hidden');
+                        alert('Erro de comunicação.');
+                    });
+            } else {
+                performRemoval();
+            }
+        }
+
+        function calcSalesTotal() {
+            let total = 0;
+            document.querySelectorAll('.sale-row').forEach(tr => {
+                const valStr = tr.querySelector('.sale-total').innerText;
+                total += parseFloat(valStr.replace(/[^0-9,-]+/g,"").replace(",",".") || 0);
+            });
+            document.getElementById('total-linked-sales').innerText = moneyValue(total);
+        }
+
+        function deleteInstallmentRow(btn) {
+            const tr = btn.closest('tr');
+            const id = tr.dataset.id;
+            
+            if (id && !id.startsWith('new')) {
+                if(!confirm("Excluir esta parcela permanentemente?")) return;
+                
+                document.getElementById('modal-loader').classList.remove('hidden');
+                fetch(`/api/services/installments/${id}`, { method: 'DELETE' })
+                    .then(res => res.json())
+                    .then(data => {
+                        document.getElementById('modal-loader').classList.add('hidden');
+                        if(data.success) {
+                            tr.remove();
+                            calcInstallmentsTotal();
+                            alert('Parcela excluída.');
+                        } else {
+                            alert('Erro ao excluir: ' + data.error);
+                        }
+                    })
+                    .catch(err => {
+                        document.getElementById('modal-loader').classList.add('hidden');
+                        alert('Erro de comunicação.');
+                    });
+            } else {
+                tr.remove();
+                calcInstallmentsTotal();
+            }
+        }
+
+        function removeRow(btn) { 
+            btn.closest('tr').remove(); 
+            recalcDistribution(); 
+            calcInstallmentsTotal(); 
+        }
         function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
         function switchTab(t) { ['general','commercial','execution','financial','billing','realized'].forEach(x => { document.getElementById(`view-${x}`).classList.add('hidden'); document.getElementById(`tab-${x}`).className = 'modal-tab-inactive px-6 py-3 text-xs uppercase font-bold tracking-wide transition-colors whitespace-nowrap'; }); document.getElementById(`view-${t}`).classList.remove('hidden'); document.getElementById(`tab-${t}`).className = 'modal-tab-active px-6 py-3 text-xs uppercase font-bold tracking-wide transition-colors whitespace-nowrap'; }
         
@@ -892,6 +1494,44 @@
                 }
             });
 
+            // Capture Selected Sales (From Inline Rows)
+            const salesPayload = [];
+            document.querySelectorAll('.sale-row').forEach(tr => {
+                const idCa = tr.querySelector('.sale-id-ca').value;
+                if(idCa) {
+                    const totalStr = tr.querySelector('.sale-total').innerText.replace(/[^0-9,-]+/g,"").replace(",",".");
+                    const dateStr = tr.querySelector('.sale-date').innerText;
+                    let emissionDate = null;
+                    if(dateStr && dateStr !== '-') {
+                        const parts = dateStr.split('/');
+                        if(parts.length === 3) emissionDate = `${parts[2]}-${parts[1]}-${parts[0]}`;
+                    }
+                    salesPayload.push({
+                        id: idCa,
+                        number: tr.querySelector('input[list]').value.match(/#(\d+)/)?.[1] || 'S/N',
+                        emissionDate: emissionDate,
+                        total: parseFloat(totalStr) || 0,
+                        status: tr.querySelector('.sale-status').innerText
+                    });
+                }
+            });
+
+            // Capture Installments
+            const installmentsPayload = [];
+            document.querySelectorAll('.installment-row').forEach(tr => {
+                const inputs = tr.querySelectorAll('input');
+                const valStr = inputs[3].value.replace(/\./g, '').replace(',', '.');
+                installmentsPayload.push({
+                    id: tr.dataset.id || null,
+                    desc: inputs[0].value,
+                    month: inputs[1].value,
+                    date: inputs[2].value,
+                    status: tr.querySelector('.sale-status')?.innerText.trim() || 'Pendente',
+                    value: parseFloat(valStr) || 0,
+                    originSaleId: tr.dataset.originSaleId
+                });
+            });
+
             const payload = {
                 id: currentServiceData.id,
                 name: document.getElementById('input-svc-name').value,
@@ -907,7 +1547,9 @@
                 integrate: integrate,
                 docIds: attachedDocIds,
                 commercial: commercial,
-                execution: execution
+                execution: execution,
+                selectedSales: salesPayload,
+                installments: installmentsPayload // NEW
             };
 
             if (!payload.name || !payload.sf_account_id || !payload.start) {
@@ -926,9 +1568,26 @@
             .then(data => {
                 document.getElementById('modal-loader').classList.add('hidden');
                 if (data.success) {
-                    alert('Sucesso: ' + data.message);
-                    closeModal('service-modal');
-                    filterServices(); 
+                    // Após salvar o serviço com sucesso, vincular as vendas e salvar parcelas
+                    if (salesPayload.length > 0 || installmentsPayload.length > 0) {
+                        fetch('/api/services/sales', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ 
+                                serviceId: data.id, 
+                                sales: salesPayload,
+                                installments: installmentsPayload // Incluindo parcelas
+                            })
+                        }).then(() => {
+                            alert('Sucesso: Serviço salvo e vendas vinculadas!');
+                            closeModal('service-modal');
+                            filterServices();
+                        });
+                    } else {
+                        alert('Sucesso: ' + data.message);
+                        closeModal('service-modal');
+                        filterServices();
+                    }
                 } else {
                     alert('Erro: ' + data.message);
                 }

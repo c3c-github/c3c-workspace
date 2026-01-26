@@ -1,0 +1,1 @@
+System.schedule('ContaAzul Sync Hourly', '0 0 * * * ?', new ContaAzulSyncSchedule());
