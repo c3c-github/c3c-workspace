@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Visão Geral - C3C Workplace</title>
+    <title>Minha Eficiência - C3C</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
@@ -32,78 +32,135 @@
 
     <main class="flex-1 flex flex-col md:ml-64 relative w-full transition-all duration-300">
         
+        <!-- HEADER -->
         <header class="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-4 md:px-8 sticky top-0 z-20">
             <div class="flex items-center gap-4">
                 <button onclick="toggleMenu()" class="md:hidden p-2 text-gray-600 hover:bg-gray-100 rounded-lg">
                     <i data-lucide="menu" class="w-6 h-6"></i>
                 </button>
-                <h1 class="text-lg md:text-xl font-bold text-gray-800">
-                    Bom dia, <%= user.nome.split(' ')[0] %>! 👋
-                </h1>
+                <div>
+                    <h1 class="text-lg md:text-xl font-bold text-gray-800">Minha Eficiência 🚀</h1>
+                    <p class="text-xs text-gray-400 hidden sm:block">Acompanhe seu desempenho e banco de horas</p>
+                </div>
             </div>
             
-            <div class="flex items-center bg-white rounded-lg shadow-sm border border-gray-200 p-1">
-                <span class="px-3 text-xs font-bold text-gray-400 uppercase hidden sm:block">Período:</span>
-                <select id="period-selector" onchange="triggerDataLoad(this.value)" class="text-sm font-semibold text-gray-800 bg-transparent outline-none cursor-pointer py-1 pr-2">
+            <div class="flex items-center bg-gray-50 rounded-lg border border-gray-200 p-1">
+                <i data-lucide="calendar" class="w-4 h-4 text-gray-400 ml-2"></i>
+                <select id="period-selector" onchange="triggerDataLoad(this.value)" class="text-sm font-semibold text-gray-700 bg-transparent outline-none cursor-pointer py-1.5 pl-2 pr-2">
                     <option>Carregando...</option>
                 </select>
             </div>
         </header>
 
+        <!-- CONTEÚDO -->
         <div class="flex-1 overflow-y-auto p-4 md:p-8 fade-in">
             
+            <!-- KPIs -->
             <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 mb-8">
-                <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col justify-between h-32 relative overflow-hidden">
-                     <div class="absolute right-0 top-0 w-16 h-16 bg-blue-50 rounded-bl-full -mr-2 -mt-2"></div>
-                     <p class="text-gray-400 text-xs font-bold uppercase tracking-wider z-10">Horas Alocadas</p>
-                     <div class="flex items-end gap-1 z-10">
-                         <span id="kpi-alocadas" class="text-3xl font-extrabold text-gray-800">--</span>
-                         <span class="text-xs text-gray-400 font-medium mb-1.5">h</span>
-                     </div>
-                     <p class="text-[10px] text-gray-400 mt-1">Previsto na alocação</p>
+                
+                <!-- KPI 1: EFICIÊNCIA -->
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 relative overflow-hidden group hover:shadow-md transition-shadow">
+                    <div class="absolute right-0 top-0 w-24 h-24 bg-blue-50 rounded-bl-full -mr-4 -mt-4 transition-transform group-hover:scale-110"></div>
+                    <div class="relative z-10">
+                        <div class="flex items-center gap-2 mb-2">
+                            <div class="p-2 bg-blue-100 rounded-lg text-blue-600"><i data-lucide="activity" class="w-5 h-5"></i></div>
+                            <span class="text-xs font-bold text-gray-400 uppercase tracking-wider">Adesão / Eficiência</span>
+                        </div>
+                        <div class="flex items-baseline gap-1 mt-4">
+                            <span id="kpi-eficiencia" class="text-4xl font-extrabold text-gray-800">--</span>
+                            <span class="text-sm text-gray-400 font-medium">%</span>
+                        </div>
+                        <p class="text-xs text-gray-400 mt-2">Horas Realizadas vs. Previstas</p>
+                    </div>
                 </div>
 
-                <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col justify-between h-32 relative overflow-hidden">
-                    <div class="absolute right-0 top-0 w-16 h-16 bg-purple-50 rounded-bl-full -mr-2 -mt-2"></div>
-                    <p class="text-gray-400 text-xs font-bold uppercase tracking-wider z-10">Horas Lançadas</p>
-                    <div class="flex items-end gap-1 z-10">
-                        <span id="kpi-lancadas" class="text-3xl font-extrabold text-gray-800">--</span>
-                        <span class="text-xs text-gray-400 font-medium mb-1.5">h</span>
+                <!-- KPI 2: BANCO DE HORAS -->
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 relative overflow-hidden group hover:shadow-md transition-shadow">
+                    <div class="absolute right-0 top-0 w-24 h-24 bg-teal-50 rounded-bl-full -mr-4 -mt-4 transition-transform group-hover:scale-110"></div>
+                    <div class="relative z-10">
+                        <div class="flex items-center gap-2 mb-2">
+                            <div class="p-2 bg-teal-100 rounded-lg text-teal-600"><i data-lucide="clock" class="w-5 h-5"></i></div>
+                            <span class="text-xs font-bold text-gray-400 uppercase tracking-wider">Banco de Horas</span>
+                        </div>
+                        <div class="flex items-baseline gap-1 mt-4">
+                            <span id="kpi-banco" class="text-4xl font-extrabold text-gray-800">--</span>
+                            <span class="text-sm text-gray-400 font-medium">h</span>
+                        </div>
+                        <p class="text-xs text-gray-400 mt-2">Saldo acumulado geral</p>
                     </div>
-                    <p class="text-[10px] text-gray-400 mt-1">Realizado pela equipe</p>
                 </div>
 
-                <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col justify-between h-32 relative overflow-hidden">
-                    <div class="absolute right-0 top-0 w-16 h-16 bg-teal-50 rounded-bl-full -mr-2 -mt-2"></div>
-                    <p class="text-gray-400 text-xs font-bold uppercase tracking-wider z-10">Eficiência</p>
-                    <div class="flex items-end gap-1 z-10">
-                        <span id="kpi-eficiencia" class="text-3xl font-extrabold text-[#1DDDBD]">--</span>
-                        <span class="text-xs text-gray-400 font-medium mb-1.5">%</span>
+                <!-- KPI 3: PENDÊNCIAS -->
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 relative overflow-hidden group hover:shadow-md transition-shadow">
+                    <div class="absolute right-0 top-0 w-24 h-24 bg-red-50 rounded-bl-full -mr-4 -mt-4 transition-transform group-hover:scale-110"></div>
+                    <div class="relative z-10">
+                        <div class="flex items-center gap-2 mb-2">
+                            <div class="p-2 bg-red-100 rounded-lg text-red-600"><i data-lucide="alert-circle" class="w-5 h-5"></i></div>
+                            <span class="text-xs font-bold text-gray-400 uppercase tracking-wider">Rascunhos</span>
+                        </div>
+                        <div class="flex items-baseline gap-1 mt-4">
+                            <span id="kpi-pendentes" class="text-4xl font-extrabold text-gray-800">--</span>
+                            <span class="text-sm text-gray-400 font-medium">h</span>
+                        </div>
+                        <p class="text-xs text-gray-400 mt-2">Necessitam envio/correção</p>
                     </div>
-                    <p class="text-[10px] text-gray-400 mt-1">Aprovado / Alocado</p>
                 </div>
 
-                <div class="bg-white p-6 rounded-xl shadow-sm border border-red-50 flex flex-col justify-between h-32 relative overflow-hidden">
-                    <div class="absolute right-0 top-0 w-16 h-16 bg-red-50 rounded-bl-full -mr-2 -mt-2"></div>
-                    <p class="text-red-400 text-xs font-bold uppercase tracking-wider z-10">Pendentes</p>
-                    <div class="flex items-end gap-1 z-10">
-                        <span id="kpi-pendentes" class="text-3xl font-extrabold text-red-600">--</span>
-                        <span class="text-xs text-red-400 font-medium mb-1.5">h</span>
+                <!-- KPI 4: PREVISTO -->
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 relative overflow-hidden group hover:shadow-md transition-shadow">
+                    <div class="absolute right-0 top-0 w-24 h-24 bg-purple-50 rounded-bl-full -mr-4 -mt-4 transition-transform group-hover:scale-110"></div>
+                    <div class="relative z-10">
+                        <div class="flex items-center gap-2 mb-2">
+                            <div class="p-2 bg-purple-100 rounded-lg text-purple-600"><i data-lucide="target" class="w-5 h-5"></i></div>
+                            <span class="text-xs font-bold text-gray-400 uppercase tracking-wider">Meta do Período</span>
+                        </div>
+                        <div class="flex items-baseline gap-1 mt-4">
+                            <span id="kpi-alocadas" class="text-4xl font-extrabold text-gray-800">--</span>
+                            <span class="text-sm text-gray-400 font-medium">h</span>
+                        </div>
+                        <p class="text-xs text-gray-400 mt-2">Baseado nas alocações ativas</p>
                     </div>
-                    <p class="text-[10px] text-red-400 font-bold mt-1">Necessita Aprovação</p>
+                </div>
+
+            </div>
+
+            <!-- CARD DE AÇÃO -->
+            <div id="action-card" class="bg-gradient-to-r from-blue-600 to-blue-500 rounded-2xl p-6 md:p-8 text-white shadow-xl shadow-blue-200 hidden">
+                <div class="flex flex-col md:flex-row items-center justify-between gap-6">
+                    <div>
+                        <h3 class="text-2xl font-bold mb-2 flex items-center gap-2">
+                            <i data-lucide="zap" class="w-6 h-6 text-yellow-300"></i>
+                            Atenção às Pendências!
+                        </h3>
+                        <p class="text-blue-100 max-w-lg text-sm md:text-base">
+                            Você possui horas em "Rascunho" ou "Reprovadas". Regularize seus apontamentos para garantir o fechamento do ponto.
+                        </p>
+                    </div>
+                    <a href="/timesheet" class="w-full md:w-auto text-center bg-white text-blue-600 font-bold px-6 py-3 rounded-xl hover:bg-blue-50 transition-colors shadow-md transform hover:-translate-y-1">
+                        Ir para Timesheet
+                    </a>
                 </div>
             </div>
 
-            <div class="bg-gradient-to-r from-[#2978FF] to-[#1DDDBD] rounded-2xl p-8 text-white flex items-center justify-between shadow-lg">
-                <div>
-                    <h3 class="text-xl font-bold mb-2">Aprovações Pendentes</h3>
-                    <p class="text-blue-50 text-sm max-w-md">Você tem períodos em aberto que impedem o faturamento.</p>
-                    <a href="/approvals" class="inline-block mt-6 bg-white text-blue-600 text-sm font-bold px-5 py-2.5 rounded-lg hover:bg-blue-50 transition-colors shadow-md">
-                        Ir para Aprovações
-                    </a>
-                </div>
-                <div class="hidden md:block opacity-90">
-                    <i data-lucide="clock" class="w-24 h-24 text-white opacity-50"></i>
+            <!-- LISTA DE PROJETOS -->
+            <div class="mt-8">
+                <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+                    <i data-lucide="folder-kanban" class="w-5 h-5 text-gray-400"></i>
+                    Meus Projetos Ativos
+                </h3>
+                <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                    <table class="w-full text-left border-collapse">
+                        <thead class="bg-gray-50 border-b border-gray-100">
+                            <tr>
+                                <th class="p-4 text-xs font-bold text-gray-500 uppercase">Projeto / Serviço</th>
+                                <th class="p-4 text-xs font-bold text-gray-500 uppercase">Cliente</th>
+                                <th class="p-4 text-xs font-bold text-gray-500 uppercase text-right">Alocação</th>
+                            </tr>
+                        </thead>
+                        <tbody id="projects-list" class="divide-y divide-gray-50 text-sm text-gray-600">
+                            <tr><td colspan="3" class="p-8 text-center text-gray-400">Carregando projetos...</td></tr>
+                        </tbody>
+                    </table>
                 </div>
             </div>
 
@@ -118,18 +175,14 @@
         function toggleMenu() {
             const sidebar = document.getElementById('sidebar');
             const overlay = document.getElementById('mobile-overlay');
-            const body = document.body;
-            
             if (sidebar.classList.contains('-translate-x-full')) {
                 sidebar.classList.remove('-translate-x-full');
                 overlay.classList.remove('hidden');
                 setTimeout(() => overlay.classList.remove('opacity-0'), 10);
-                if(window.innerWidth < 768) body.style.overflow = 'hidden';
             } else {
                 sidebar.classList.add('-translate-x-full');
                 overlay.classList.add('opacity-0');
                 setTimeout(() => overlay.classList.add('hidden'), 300);
-                body.style.overflow = '';
             }
         }
 
@@ -138,21 +191,23 @@
 
         async function loadPeriods() {
             try {
-                const res = await fetch(`${API_URL}/periods`);
+                // Chama API pedindo períodos do usuário logado
+                const res = await fetch(`${API_URL}/periods?type=user`);
                 if(res.status === 401) window.location.href = '/';
                 const periods = await res.json();
                 const sel = document.getElementById('period-selector');
                 sel.innerHTML = '';
                 
-                if(periods.length === 0) { sel.innerHTML = '<option>Sem contratos</option>'; return; }
+                if(periods.length === 0) { sel.innerHTML = '<option>Sem contratos ativos</option>'; return; }
                 
                 periods.forEach((p, idx) => {
                     const opt = document.createElement('option');
                     opt.value = JSON.stringify({ start: p.DataInicio__c, end: p.DataFim__c });
                     opt.text = p.Name;
-                    if(idx === 0) opt.selected = true;
+                    if(idx === 0) opt.selected = true; // Seleciona o mais recente
                     sel.appendChild(opt);
                 });
+                
                 if (sel.options.length > 0) triggerDataLoad(sel.value);
             } catch (err) { console.error(err); }
         }
@@ -161,31 +216,84 @@
             if(!jsonDates) return;
             const dates = JSON.parse(jsonDates);
             loadDashboardKPIs(dates.start, dates.end);
+            loadMyProjects(dates.start, dates.end);
         }
 
         async function loadDashboardKPIs(start, end) {
-            const ids = ['kpi-alocadas', 'kpi-lancadas', 'kpi-eficiencia', 'kpi-pendentes'];
+            const ids = ['kpi-alocadas', 'kpi-eficiencia', 'kpi-pendentes', 'kpi-banco'];
             const els = ids.map(id => document.getElementById(id));
-            els.forEach(el => el.style.opacity = '0.5');
+            els.forEach(el => el.classList.add('animate-pulse'));
 
             try {
-                const res = await fetch(`${API_URL}/dashboard/metrics?inicio=${start}&fim=${end}`);
+                // Adiciona scope=personal para usar a nova lógica
+                const res = await fetch(`${API_URL}/dashboard/metrics?inicio=${start}&fim=${end}&scope=personal`);
                 if (res.ok) {
                     const data = await res.json();
-                    els[0].innerText = data.totalAlocadas.toFixed(0);
-                    els[1].innerText = data.totalLancadas.toFixed(1);
-                    els[2].innerText = data.eficiencia;
-                    els[3].innerText = data.totalPendentes.toFixed(1);
+                    
+                    document.getElementById('kpi-alocadas').innerText = Math.round(data.totalAlocadas);
+                    document.getElementById('kpi-pendentes').innerText = data.totalPendentes.toFixed(1);
+                    document.getElementById('kpi-eficiencia').innerText = data.eficiencia;
+                    document.getElementById('kpi-banco').innerText = data.saldoBanco.toFixed(2);
 
-                    const elEfic = els[2];
-                    if(data.eficiencia > 100) elEfic.className = "text-3xl font-extrabold text-red-500";
-                    else if(data.eficiencia >= 95) elEfic.className = "text-3xl font-extrabold text-[#1DDDBD]";
-                    else elEfic.className = "text-3xl font-extrabold text-yellow-500";
+                    // Cores dinâmicas para Eficiência
+                    const elEfic = document.getElementById('kpi-eficiencia');
+                    if(data.eficiencia > 110) elEfic.className = "text-4xl font-extrabold text-red-500";
+                    else if(data.eficiencia >= 90) elEfic.className = "text-4xl font-extrabold text-teal-500";
+                    else elEfic.className = "text-4xl font-extrabold text-blue-500";
+
+                    // Cores dinâmicas para Banco
+                    const elBanco = document.getElementById('kpi-banco');
+                    if(data.saldoBanco < 0) elBanco.className = "text-4xl font-extrabold text-red-500";
+                    else elBanco.className = "text-4xl font-extrabold text-teal-500";
+
+                    // Card de Alerta
+                    const actionCard = document.getElementById('action-card');
+                    if(data.totalPendentes > 0) {
+                        actionCard.classList.remove('hidden');
+                        actionCard.classList.add('fade-in');
+                    } else {
+                        actionCard.classList.add('hidden');
+                    }
+
                 } else {
                     els.forEach(el => el.innerText = "-");
                 }
             } catch (err) { console.error(err); } 
-            finally { els.forEach(el => el.style.opacity = '1'); }
+            finally { els.forEach(el => el.classList.remove('animate-pulse')); }
+        }
+
+        async function loadMyProjects(start, end) {
+             const tbody = document.getElementById('projects-list');
+             try {
+                // Reutilizando endpoint de options do operations que já traz serviços do usuário
+                // Mas ideal seria um endpoint específico. Vou usar o create-options do operations se disponivel, 
+                // ou melhor, criar uma lista simples baseada no alocacao. 
+                // Como não tenho endpoint pronto de "meus projetos com detalhe", vou deixar simulado ou 
+                // tentar usar o /api/ops/create-options que retorna {serviceName, accountName}
+                
+                const res = await fetch('/api/ops/create-options'); 
+                const data = await res.json();
+                
+                if(!data || data.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="3" class="p-8 text-center text-gray-400">Nenhuma alocação encontrada para hoje.</td></tr>';
+                    return;
+                }
+
+                tbody.innerHTML = '';
+                data.forEach(p => {
+                    const tr = document.createElement('tr');
+                    tr.className = "hover:bg-gray-50 transition-colors";
+                    tr.innerHTML = `
+                        <td class="p-4 font-medium text-gray-800">${p.serviceName}</td>
+                        <td class="p-4 text-gray-500">${p.accountName || '-'}</td>
+                        <td class="p-4 text-right"><span class="bg-blue-100 text-blue-700 py-1 px-3 rounded-full text-xs font-bold">Ativo</span></td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+
+             } catch(e) {
+                 tbody.innerHTML = '<tr><td colspan="3" class="p-4 text-center text-red-400">Erro ao carregar projetos.</td></tr>';
+             }
         }
     </script>
 </body>

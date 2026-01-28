@@ -51,6 +51,7 @@ router.delete('/api/services/commercial/:id', requireAuth, requireGroup('GESTOR_
 // --- APROVAÇÕES ---
 router.get('/approvals', requireAuth, requireGroup('GESTOR'), (req, res) => { res.render('approvals', { user: req.session.user, page: 'approvals' }); });
 router.get('/api/dashboard/metrics', requireAuth, apiController.getDashboardMetrics);
+router.get('/api/dashboard/allocations', requireAuth, apiController.getMyAllocations);
 router.get('/api/approvals/projects', requireAuth, requireGroup('GESTOR'), apiController.getProjects);
 router.get('/api/approvals/:serviceId/resources', requireAuth, requireGroup('GESTOR'), apiController.getProjectResources);
 router.get('/api/approvals/:serviceId/resources/:personId/activities', requireAuth, requireGroup('GESTOR'), apiController.getResourceActivities);

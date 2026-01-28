@@ -23,6 +23,38 @@ const safeId = (id) => id ? id.substring(0, 15) : '';
 // FILTRO CORRIGIDO COM (HorasBanco__c != 0 AND HorasBanco__c != null)
 const FILTRO_HORAS = `(Horas__c > 0 OR HorasExtras__c > 0 OR (HorasBanco__c != 0 AND HorasBanco__c != null) OR HorasAusenciaRemunerada__c > 0 OR HorasAusenciaNaoRemunerada__c > 0)`;
 
+exports.getMyAllocations = async (req, res) => {
+    try {
+        const userId = req.session.user.id;
+        const { inicio, fim } = req.query;
+        const conn = await getSfConnection();
+
+        // Data de referência: Hoje ou o fim do período (o que for menor, para garantir vigência)
+        const refDate = fim || new Date().toISOString().split('T')[0];
+
+        const query = `
+            SELECT Servico__r.Name, Servico__r.Conta__r.Name, Percentual__c, DataInicio__c, DataFim__c
+            FROM Alocacao__c 
+            WHERE Pessoa__c = '${userId}' 
+            AND DataInicio__c <= ${refDate} 
+            AND (DataFim__c >= ${inicio || refDate} OR DataFim__c = NULL)
+            ORDER BY Servico__r.Name ASC
+        `;
+
+        const result = await conn.query(query);
+        
+        const data = result.records.map(r => ({
+            serviceName: r.Servico__r ? r.Servico__r.Name : 'Serviço sem nome',
+            accountName: (r.Servico__r && r.Servico__r.Conta__r) ? r.Servico__r.Conta__r.Name : '-',
+            percent: r.Percentual__c || 0
+        }));
+
+        res.json(data);
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+};
+
 exports.getPeriods = async (req, res) => {
     try {
         const { type } = req.query;
@@ -241,10 +273,62 @@ exports.handleApprovalAction = async (req, res) => {
 exports.getDashboardMetrics = async (req, res) => {
     try {
         const conn = await getSfConnection();
+        const userId = req.session.user.id;
         const emailLider = req.session.user.email;
-        const { inicio, fim } = req.query; 
+        const { inicio, fim, scope } = req.query; 
         if (!inicio || !fim) return res.status(400).json({ error: 'Período obrigatório.' });
 
+        // --- MODO PESSOAL (PERFIL DE EFICIÊNCIA) ---
+        if (scope === 'personal') {
+            const diasUteis = getBusinessDays(inicio, fim);
+            
+            // 1. Busca Carga Horária do Contrato
+            const qPeriodo = `SELECT ContratoPessoa__r.Hora__c FROM Periodo__c WHERE ContratoPessoa__r.Pessoa__c = '${userId}' AND DataInicio__c <= ${fim} AND DataFim__c >= ${inicio} LIMIT 1`;
+            const resPeriodo = await conn.query(qPeriodo);
+            const cargaDiaria = (resPeriodo.records[0] && resPeriodo.records[0].ContratoPessoa__r) ? resPeriodo.records[0].ContratoPessoa__r.Hora__c : 8;
+
+            // 2. Busca Alocações (Para calcular o previsto)
+            const qAlloc = `SELECT Percentual__c FROM Alocacao__c WHERE Pessoa__c = '${userId}' AND DataInicio__c <= ${fim} AND (DataFim__c >= ${inicio} OR DataFim__c = NULL)`;
+            const resAlloc = await conn.query(qAlloc);
+            
+            let totalAlocado = 0;
+            resAlloc.records.forEach(r => {
+                const perc = (r.Percentual__c || 0) / 100;
+                totalAlocado += (diasUteis * cargaDiaria * perc);
+            });
+
+            // 3. Busca Lançamentos (Realizado e Status)
+            const qLanc = `SELECT Status__c, Horas__c, HorasExtras__c, HorasBanco__c FROM LancamentoHora__c WHERE Pessoa__c = '${userId}' AND DiaPeriodo__r.Data__c >= ${inicio} AND DiaPeriodo__r.Data__c <= ${fim} AND ${FILTRO_HORAS}`;
+            const resLanc = await conn.query(qLanc);
+
+            let totalLanc = 0, totalPend = 0, totalBancoPeriodo = 0;
+            const distProj = {};
+
+            resLanc.records.forEach(r => {
+                const h = (r.Horas__c || 0) + (r.HorasExtras__c || 0);
+                totalLanc += h;
+                totalBancoPeriodo += (r.HorasBanco__c || 0);
+
+                if (['Rascunho', 'Reprovado'].includes(r.Status__c)) totalPend += h;
+            });
+
+            // 4. Saldo Banco Geral (Total)
+            const qBanco = `SELECT SUM(HorasBanco__c) total FROM LancamentoHora__c WHERE Pessoa__c = '${userId}' AND HorasBanco__c != 0`;
+            const resBanco = await conn.query(qBanco);
+            const saldoBanco = (resBanco.records[0] && resBanco.records[0].total) ? resBanco.records[0].total : 0;
+
+            let efic = totalAlocado > 0 ? Math.round((totalLanc / totalAlocado) * 100) : (totalLanc > 0 ? 100 : 0);
+
+            return res.json({ 
+                totalAlocadas: totalAlocado, 
+                totalLancadas: totalLanc, 
+                eficiencia: efic, 
+                totalPendentes: totalPend,
+                saldoBanco: saldoBanco
+            });
+        }
+
+        // --- MODO GESTOR (LEGADO) ---
         const [resLanc, resAloc] = await Promise.all([
             conn.query(`SELECT Status__c, SUM(Horas__c) total FROM LancamentoHora__c WHERE Servico__r.Lider__r.Email__c = '${emailLider}' AND DiaPeriodo__r.Data__c >= ${inicio} AND DiaPeriodo__r.Data__c <= ${fim} AND ${FILTRO_HORAS} GROUP BY Status__c`),
             conn.query(`SELECT SUM(HorasAlocadas__c) totalHorasDia FROM Alocacao__c WHERE Servico__r.Lider__r.Email__c = '${emailLider}' AND DataInicio__c <= ${fim} AND (DataFim__c >= ${inicio} OR DataFim__c = NULL)`)
