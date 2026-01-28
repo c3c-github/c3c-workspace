@@ -280,14 +280,28 @@ exports.getDashboardMetrics = async (req, res) => {
 
         // --- MODO PESSOAL (PERFIL DE EFICIÊNCIA) ---
         if (scope === 'personal') {
-            const diasUteis = getBusinessDays(inicio, fim);
-            
-            // 1. Busca Carga Horária do Contrato
-            const qPeriodo = `SELECT ContratoPessoa__r.Hora__c FROM Periodo__c WHERE ContratoPessoa__r.Pessoa__c = '${userId}' AND DataInicio__c <= ${fim} AND DataFim__c >= ${inicio} LIMIT 1`;
+            // 1. Busca Dados do Período (Carga Horária e ID)
+            const qPeriodo = `
+                SELECT Id, ContratoPessoa__r.Hora__c 
+                FROM Periodo__c 
+                WHERE ContratoPessoa__r.Pessoa__c = '${userId}' 
+                AND DataInicio__c <= ${fim} AND DataFim__c >= ${inicio} 
+                LIMIT 1
+            `;
             const resPeriodo = await conn.query(qPeriodo);
-            const cargaDiaria = (resPeriodo.records[0] && resPeriodo.records[0].ContratoPessoa__r) ? resPeriodo.records[0].ContratoPessoa__r.Hora__c : 8;
+            const periodoRecord = resPeriodo.records[0];
+            
+            const cargaDiaria = (periodoRecord && periodoRecord.ContratoPessoa__r) ? periodoRecord.ContratoPessoa__r.Hora__c : 8;
+            
+            // 2. Conta Dias Úteis Reais (Query separada para evitar erro de relacionamento)
+            let diasUteis = 0;
+            if (periodoRecord) {
+                const qDias = `SELECT COUNT(Id) total FROM DiaPeriodo__c WHERE Periodo__c = '${periodoRecord.Id}' AND Tipo__c = 'Útil'`;
+                const resDias = await conn.query(qDias);
+                diasUteis = (resDias.records[0] && resDias.records[0].total) ? resDias.records[0].total : 0;
+            }
 
-            // 2. Busca Alocações (Para calcular o previsto)
+            // 3. Busca Alocações (Para calcular o previsto)
             const qAlloc = `SELECT Percentual__c FROM Alocacao__c WHERE Pessoa__c = '${userId}' AND DataInicio__c <= ${fim} AND (DataFim__c >= ${inicio} OR DataFim__c = NULL)`;
             const resAlloc = await conn.query(qAlloc);
             
