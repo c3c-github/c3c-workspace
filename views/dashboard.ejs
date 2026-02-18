@@ -44,9 +44,17 @@
                 </div>
             </div>
             
-            <div class="flex items-center bg-gray-50 rounded-lg border border-gray-200 px-3 py-1.5">
-                <i data-lucide="calendar" class="w-4 h-4 text-blue-500 mr-2"></i>
-                <span id="current-period-name" class="text-sm font-bold text-gray-700">Carregando período...</span>
+            <div class="flex items-center gap-3">
+                <% if (user.grupos && user.grupos.includes('LOGIN_AS')) { %>
+                <button onclick="document.getElementById('impersonate-modal').classList.remove('hidden')" class="bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold px-3 py-1.5 rounded-lg flex items-center gap-2 shadow-sm transition-transform active:scale-95">
+                    <i data-lucide="venetian-mask" class="w-4 h-4"></i> Simular Acesso
+                </button>
+                <% } %>
+                
+                <div class="flex items-center bg-gray-50 rounded-lg border border-gray-200 px-3 py-1.5">
+                    <i data-lucide="calendar" class="w-4 h-4 text-blue-500 mr-2"></i>
+                    <span id="current-period-name" class="text-sm font-bold text-gray-700">Carregando período...</span>
+                </div>
             </div>
         </header>
 
@@ -297,6 +305,71 @@
                  console.error("Erro ao carregar projetos:", e);
                  tbody.innerHTML = `<tr><td colspan="3" class="p-4 text-center text-red-400">Erro: ${e.message}</td></tr>`;
              }
+        }
+    </script>
+    <!-- MODAL IMPERSONATE -->
+    <div id="impersonate-modal" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-md transform transition-all p-6">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="font-bold text-gray-800 flex items-center gap-2"><i data-lucide="venetian-mask" class="w-5 h-5 text-purple-600"></i> Simular Usuário</h3>
+                <button onclick="document.getElementById('impersonate-modal').classList.add('hidden')" class="text-gray-400 hover:text-gray-600"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            
+            <div class="mb-4">
+                <input type="text" id="imp-search" placeholder="Digite nome ou email (min 3 chars)..." class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 outline-none">
+            </div>
+            
+            <div id="imp-results" class="max-h-60 overflow-y-auto space-y-2 mb-2">
+                <p class="text-xs text-gray-400 text-center py-2">Digite para buscar...</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- IMPERSONATION LOGIC ---
+        const impInput = document.getElementById('imp-search');
+        if(impInput) {
+            let debounceTimer;
+            impInput.addEventListener('input', (e) => {
+                clearTimeout(debounceTimer);
+                debounceTimer = setTimeout(() => searchUsers(e.target.value), 300);
+            });
+        }
+
+        async function searchUsers(term) {
+            const list = document.getElementById('imp-results');
+            if(term.length < 3) { list.innerHTML = '<p class="text-xs text-gray-400 text-center">Digite mais...</p>'; return; }
+            
+            list.innerHTML = '<p class="text-xs text-gray-400 text-center animate-pulse">Buscando...</p>';
+            try {
+                const res = await fetch(`/api/admin/users?term=${encodeURIComponent(term)}`);
+                const data = await res.json();
+                
+                list.innerHTML = '';
+                if(data.length === 0) return list.innerHTML = '<p class="text-xs text-gray-400 text-center">Ninguém encontrado.</p>';
+                
+                data.forEach(u => {
+                    const item = document.createElement('div');
+                    item.className = "flex justify-between items-center p-3 bg-gray-50 hover:bg-purple-50 border border-gray-100 rounded-lg cursor-pointer transition-colors";
+                    item.innerHTML = `<div><p class="text-sm font-bold text-gray-800">${u.name}</p><p class="text-[10px] text-gray-500">${u.email}</p></div><i data-lucide="arrow-right" class="w-4 h-4 text-purple-400"></i>`;
+                    item.onclick = () => confirmImpersonate(u.id, u.name);
+                    list.appendChild(item);
+                });
+                lucide.createIcons();
+            } catch(e) { console.error(e); }
+        }
+
+        async function confirmImpersonate(id, name) {
+            if(!confirm(`Deseja entrar como: ${name}?`)) return;
+            try {
+                const res = await fetch('/auth/impersonate', { 
+                    method: 'POST', 
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ targetId: id })
+                });
+                if(res.ok) window.location.reload();
+                else alert('Erro ao simular.');
+            } catch(e) { alert('Erro de conexão.'); }
         }
     </script>
 </body>

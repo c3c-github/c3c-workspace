@@ -88,9 +88,15 @@
                     <% } %>
                 </p>
             </div>
-            <a href="/logout" title="Sair">
-                <i data-lucide="log-out" class="w-4 h-4 text-gray-400 cursor-pointer hover:text-red-500 transition-colors"></i>
-            </a>
+            <% if (user.isImpersonating) { %>
+                <a href="/auth/stop-impersonate" title="Voltar ao Admin" class="bg-purple-100 p-2 rounded-full hover:bg-purple-200 transition-colors">
+                    <i data-lucide="venetian-mask" class="w-4 h-4 text-purple-600"></i>
+                </a>
+            <% } else { %>
+                <a href="/logout" title="Sair">
+                    <i data-lucide="log-out" class="w-4 h-4 text-gray-400 cursor-pointer hover:text-red-500 transition-colors"></i>
+                </a>
+            <% } %>
         </div>
     </div>
 </aside>

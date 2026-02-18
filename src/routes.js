@@ -30,6 +30,11 @@ router.get('/auth/login', authController.azureLogin);
 router.get('/auth/callback', authController.azureCallback);
 router.get('/logout', authController.logout);
 
+// --- IMPERSONATION (LOGIN AS) ---
+router.post('/auth/impersonate', requireAuth, requireGroup('LOGIN_AS'), authController.impersonateUser);
+router.get('/auth/stop-impersonate', requireAuth, authController.stopImpersonation);
+router.get('/api/admin/users', requireAuth, requireGroup('LOGIN_AS'), authController.getUsersForImpersonation);
+
 router.get('/dashboard', requireAuth, dashboardController.renderHome);
 
 // --- GESTÃO DE SERVIÇOS (NOVO MÓDULO) ---
