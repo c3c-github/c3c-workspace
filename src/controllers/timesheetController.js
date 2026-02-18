@@ -73,6 +73,44 @@ async function getOrCreateResponsavel(conn, atividadeId, alocacaoId) {
     } catch (e) { throw e; }
 }
 
+async function syncDiaPeriodoTotals(conn, diaPeriodoId) {
+    if (!diaPeriodoId) return;
+    
+    // Consultamos TODOS os lançamentos atuais do dia para garantir a integridade
+    const query = `
+        SELECT Horas__c, HorasExtras__c, HorasBanco__c, HorasAusenciaRemunerada__c, HorasAusenciaNaoRemunerada__c 
+        FROM LancamentoHora__c 
+        WHERE DiaPeriodo__c = '${diaPeriodoId}'
+    `;
+    
+    const result = await conn.query(query);
+    
+    let totalNormal = 0;
+    let totalExtra = 0;
+    let totalBanco = 0;
+    let totalAusRem = 0;
+    let totalAusNaoRem = 0;
+    
+    result.records.forEach(r => {
+        totalNormal += (r.Horas__c || 0);
+        totalExtra += (r.HorasExtras__c || 0);
+        totalBanco += (r.HorasBanco__c || 0);
+        totalAusRem += (r.HorasAusenciaRemunerada__c || 0);
+        totalAusNaoRem += (r.HorasAusenciaNaoRemunerada__c || 0);
+    });
+    
+    await conn.sobject('DiaPeriodo__c').update({
+        Id: diaPeriodoId,
+        Hora__c: totalNormal,
+        HoraExtra__c: totalExtra,
+        HoraBanco__c: totalBanco,
+        HoraLicencaRemunerada__c: totalAusRem,
+        HoraLicencaNaoRemunerada__c: totalAusNaoRem,
+        HorasLancadas__c: totalNormal + totalExtra + totalAusRem + totalAusNaoRem
+    });
+    console.log(`✅ DiaPeriodo__c ${diaPeriodoId} sincronizado.`);
+}
+
 // ==============================================================================
 // CONTROLLERS
 // ==============================================================================
@@ -330,6 +368,10 @@ exports.saveEntry = async (req, res) => {
             payload.Servico__c = projectId; payload.Atividade__c = finalActivityId; payload.Responsavel__c = responsavelId;
             await conn.sobject('LancamentoHora__c').create(payload);
         }
+
+        // Sincroniza os totais no DiaPeriodo__c
+        await syncDiaPeriodoTotals(conn, stats.diaPeriodoId);
+
         res.json({ success: true });
 
     } catch (e) { res.status(500).json({ success: false, message: e.message }); }
@@ -348,7 +390,12 @@ exports.deleteEntry = async (req, res) => {
         const checkQ = `SELECT Id FROM LancamentoHora__c WHERE Pessoa__c='${userId}' AND DiaPeriodo__c='${log.DiaPeriodo__c}' AND Status__c NOT IN ('Rascunho','Reprovado') LIMIT 1`;
         if((await conn.query(checkQ)).totalSize > 0) return res.status(400).json({ success: false, message: 'Dia fechado.' });
 
+        const diaPeriodoId = log.DiaPeriodo__c;
         await conn.sobject('LancamentoHora__c').destroy(id);
+
+        // Sincroniza os totais no DiaPeriodo__c após a exclusão
+        await syncDiaPeriodoTotals(conn, diaPeriodoId);
+
         res.json({ success: true });
     } catch (e) { res.status(500).json({ success: false, message: e.message }); }
 };
