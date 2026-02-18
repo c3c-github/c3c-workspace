@@ -105,8 +105,7 @@ async function syncDiaPeriodoTotals(conn, diaPeriodoId) {
         HoraExtra__c: totalExtra,
         HoraBanco__c: totalBanco,
         HoraLicencaRemunerada__c: totalAusRem,
-        HoraLicencaNaoRemunerada__c: totalAusNaoRem,
-        HorasLancadas__c: totalNormal + totalExtra + totalAusRem + totalAusNaoRem
+        HoraLicencaNaoRemunerada__c: totalAusNaoRem
     });
     console.log(`✅ DiaPeriodo__c ${diaPeriodoId} sincronizado.`);
 }
