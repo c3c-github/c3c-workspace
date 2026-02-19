@@ -347,6 +347,8 @@
                 const dayNum = new Date(key+'T12:00:00').getDate();
                 let bg='bg-white border-gray-200 hover:border-blue-300', ind='', cnt='<span class="text-gray-300 text-xs">0h</span>';
                 
+                console.log(`[DEBUG UI] Dia: ${key} | Status Approval: ${d.status_approval} | Total: ${d.total}h`);
+
                 if(d.total>0 || d.entries.length>0) {
                     cnt=`<span class="font-bold text-gray-700 text-sm">${d.total}h</span>`;
                     

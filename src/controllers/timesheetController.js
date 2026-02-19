@@ -183,7 +183,9 @@ exports.getCalendarData = async (req, res) => {
             if (l.Status__c) allStatuses.add(l.Status__c);
 
             const date = l.DiaPeriodo__r.Data__c;
-            if (!lancamentosMap[date]) lancamentosMap[date] = { status: 'Rascunho', entries: [] };
+            if (!lancamentosMap[date]) {
+                lancamentosMap[date] = { status: 'Rascunho', entries: [] };
+            }
             
             const hNormais = l.Horas__c || 0;
             const hExtras = l.HorasExtras__c || 0;
@@ -194,6 +196,8 @@ exports.getCalendarData = async (req, res) => {
             totalBancoPeriodo += hBanco;
 
             const st = l.Status__c;
+            console.log(`[DEBUG] Dia: ${date} | Lançamento ID: ${l.Id} | Status: ${st}`);
+
             if (st === 'Reprovado') lancamentosMap[date].status = 'Reprovado';
             else if (st === 'Rascunho' && lancamentosMap[date].status !== 'Reprovado') lancamentosMap[date].status = 'Rascunho';
             else if ((st === 'Lançado' || st === 'Submetido') && !['Reprovado', 'Rascunho'].includes(lancamentosMap[date].status)) lancamentosMap[date].status = 'Lançado'; 
@@ -201,6 +205,8 @@ exports.getCalendarData = async (req, res) => {
             
             lancamentosMap[date].entries.push(l);
         });
+
+        console.log(`[DEBUG] Todos os Status encontrados no período:`, Array.from(allStatuses));
 
         const calendarGrid = {};
         let diasUteisCount = 0;
