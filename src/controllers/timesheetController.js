@@ -158,7 +158,7 @@ exports.getCalendarData = async (req, res) => {
             AND (Horas__c > 0 OR HorasExtras__c > 0 OR HorasAusenciaRemunerada__c > 0 OR HorasAusenciaNaoRemunerada__c > 0 OR (HorasBanco__c != null AND HorasBanco__c != 0))
         `;
 
-        const soqlSaldo = `SELECT SUM(HorasBanco__c) total FROM LancamentoHora__c WHERE Pessoa__c = '${userId}' AND HorasBanco__c != null AND HorasBanco__c != 0`;
+        const soqlSaldo = `SELECT SUM(HorasBanco__c) total FROM LancamentoHora__c WHERE Pessoa__c = '${userId}' AND HorasBanco__c != NULL AND HorasBanco__c != 0`;
 
         const [resDias, resLancamentos, resSaldo, resPeriodo] = await Promise.all([
             conn.query(soqlDias),
@@ -262,22 +262,7 @@ exports.getCalendarData = async (req, res) => {
 
         const totalContratado = horasDiarias * diasUteisCount;
 
-        let statusGeral = 'Em Aberto';
-        if (hasEntries) {
-            if (allStatuses.has('Rascunho') || allStatuses.has('Reprovado')) {
-                statusGeral = 'Em Aberto';
-            } else if (allStatuses.has('Lançado') || allStatuses.has('Submetido')) {
-                statusGeral = 'Aguardando Aprovação';
-            } else if (allStatuses.has('Faturado')) {
-                statusGeral = 'Faturado';
-            } else if (allStatuses.has('Fechado')) {
-                statusGeral = 'Fechado';
-            } else if (allStatuses.has('Aprovado')) {
-                statusGeral = 'Aprovado';
-            }
-        } else { statusGeral = 'Novo'; }
-
-        const saldoBancoTotal = (resSaldo.length > 0 && resSaldo[0].total) ? resSaldo[0].total : 0;
+        const saldoBancoTotal = (resSaldo.records && resSaldo.records[0] && resSaldo.records[0].total) ? resSaldo.records[0].total : 0;
 
         res.json({ periodId, grid: calendarGrid, summary: { totalContratado, totalRealizado: totalLancadoNoPeriodo, saldoBancoTotal, variacaoPeriodo: totalBancoPeriodo, statusGeral } });
     } catch (error) { res.status(500).json({ error: error.message }); }
