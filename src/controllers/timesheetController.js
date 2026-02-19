@@ -198,10 +198,27 @@ exports.getCalendarData = async (req, res) => {
             const st = l.Status__c;
             console.log(`[DEBUG] Dia: ${date} | Lançamento ID: ${l.Id} | Status: ${st}`);
 
-            if (st === 'Reprovado') lancamentosMap[date].status = 'Reprovado';
-            else if (st === 'Rascunho' && lancamentosMap[date].status !== 'Reprovado') lancamentosMap[date].status = 'Rascunho';
-            else if ((st === 'Lançado' || st === 'Submetido') && !['Reprovado', 'Rascunho'].includes(lancamentosMap[date].status)) lancamentosMap[date].status = 'Lançado'; 
-            else if (!['Reprovado', 'Rascunho', 'Lançado', 'Submetido'].includes(lancamentosMap[date].status)) lancamentosMap[date].status = st;
+            // Lógica de prioridade para o status do DIA:
+            // 1. Se houver qualquer 'Reprovado', o dia é 'Reprovado'
+            // 2. Senão, se houver 'Rascunho', o dia é 'Rascunho'
+            // 3. Senão, se houver 'Lançado' ou 'Submetido', o dia é 'Lançado'
+            // 4. Senão, assume o status do lançamento (Aprovado, Faturado, Fechado)
+            
+            const currentDayStatus = lancamentosMap[date].status;
+            
+            if (st === 'Reprovado') {
+                lancamentosMap[date].status = 'Reprovado';
+            } else if (st === 'Rascunho') {
+                if (currentDayStatus !== 'Reprovado') lancamentosMap[date].status = 'Rascunho';
+            } else if (st === 'Lançado' || st === 'Submetido') {
+                if (!['Reprovado', 'Rascunho'].includes(currentDayStatus)) lancamentosMap[date].status = 'Lançado';
+            } else {
+                // Para Aprovado, Faturado, Fechado
+                if (!['Reprovado', 'Rascunho', 'Lançado'].includes(currentDayStatus)) {
+                    // Se o novo status tiver maior "maturidade" ou se for o primeiro, atualiza
+                    lancamentosMap[date].status = st;
+                }
+            }
             
             lancamentosMap[date].entries.push(l);
         });
