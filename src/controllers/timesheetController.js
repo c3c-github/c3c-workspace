@@ -184,7 +184,7 @@ exports.getCalendarData = async (req, res) => {
 
             const date = l.DiaPeriodo__r.Data__c;
             if (!lancamentosMap[date]) {
-                lancamentosMap[date] = { status: 'Rascunho', entries: [] };
+                lancamentosMap[date] = { status: null, entries: [] };
             }
             
             const hNormais = l.Horas__c || 0;
@@ -196,7 +196,7 @@ exports.getCalendarData = async (req, res) => {
             totalBancoPeriodo += hBanco;
 
             const st = l.Status__c;
-            console.log(`[DEBUG] Dia: ${date} | Lançamento ID: ${l.Id} | Status: ${st}`);
+            // console.log(`[DEBUG] Dia: ${date} | Lançamento ID: ${l.Id} | Status: ${st}`);
 
             // Lógica de prioridade para o status do DIA:
             // 1. Se houver qualquer 'Reprovado', o dia é 'Reprovado'
@@ -215,7 +215,7 @@ exports.getCalendarData = async (req, res) => {
             } else {
                 // Para Aprovado, Faturado, Fechado
                 if (!['Reprovado', 'Rascunho', 'Lançado'].includes(currentDayStatus)) {
-                    // Se o novo status tiver maior "maturidade" ou se for o primeiro, atualiza
+                    // Se o novo status tiver maior "maturidade" ou se for o primeiro (null), atualiza
                     lancamentosMap[date].status = st;
                 }
             }
