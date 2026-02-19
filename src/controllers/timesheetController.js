@@ -241,9 +241,17 @@ exports.getCalendarData = async (req, res) => {
 
         let statusGeral = 'Em Aberto';
         if (hasEntries) {
-            if (allStatuses.has('Rascunho') || allStatuses.has('Reprovado')) statusGeral = 'Em Aberto';
-            else if (allStatuses.has('Lançado') || allStatuses.has('Submetido')) statusGeral = 'Aguardando Aprovação';
-            else if ([...allStatuses].every(s => ['Fechado', 'Faturado', 'Aprovado'].includes(s))) statusGeral = 'Aprovado';
+            if (allStatuses.has('Rascunho') || allStatuses.has('Reprovado')) {
+                statusGeral = 'Em Aberto';
+            } else if (allStatuses.has('Lançado') || allStatuses.has('Submetido')) {
+                statusGeral = 'Aguardando Aprovação';
+            } else if (allStatuses.has('Faturado')) {
+                statusGeral = 'Faturado';
+            } else if (allStatuses.has('Fechado')) {
+                statusGeral = 'Fechado';
+            } else if (allStatuses.has('Aprovado')) {
+                statusGeral = 'Aprovado';
+            }
         } else { statusGeral = 'Novo'; }
 
         const saldoBancoTotal = (resSaldo.length > 0 && resSaldo[0].total) ? resSaldo[0].total : 0;
