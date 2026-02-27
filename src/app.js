@@ -5,6 +5,9 @@ const routes = require('./routes');
 
 const app = express();
 
+// Configuração para o Heroku (Proxy)
+app.set('trust proxy', 1);
+
 // Configurações de View
 app.set('view engine', 'ejs');
 // Ajustamos para buscar a pasta views na raiz do projeto (um nível acima de src)
@@ -24,5 +27,6 @@ app.use(session({
 
 // Rotas
 app.use('/', routes);
+console.log('✅ Rotas carregadas');
 
 module.exports = app;

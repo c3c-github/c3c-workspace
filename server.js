@@ -1,12 +1,23 @@
+const fs = require('fs');
+const path = require('path');
 require('dotenv').config();
 const app = require('./src/app');
 
+// Garante que a pasta de uploads existe
+const uploadsDir = path.join(__dirname, 'uploads');
+if (!fs.existsSync(uploadsDir)) {
+    fs.mkdirSync(uploadsDir);
+    console.log('📁 Pasta uploads criada.');
+}
+
 process.on('uncaughtException', (err) => {
-    console.error('Uncaught Exception:', err);
+    console.error('❌ Uncaught Exception:', err);
+    process.exit(1);
 });
 
 process.on('unhandledRejection', (reason, promise) => {
-    console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+    console.error('❌ Unhandled Rejection at:', promise, 'reason:', reason);
+    process.exit(1);
 });
 
 const PORT = process.env.PORT || 3000;
