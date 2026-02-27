@@ -13,6 +13,7 @@ app.set('views', path.join(__dirname, '../views'));
 // Middlewares Globais
 app.use(express.static(path.join(__dirname, '../public'))); 
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
 // Sessão
 app.use(session({

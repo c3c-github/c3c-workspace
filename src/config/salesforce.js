@@ -6,6 +6,17 @@ let sfConnection = null;
 async function getSfConnection() {
     if (sfConnection) return sfConnection;
 
+    const { SF_CLIENT_ID, SF_CLIENT_SECRET, SF_LOGIN_URL } = process.env;
+
+    if (!SF_CLIENT_ID || !SF_CLIENT_SECRET || !SF_LOGIN_URL) {
+        const missing = [];
+        if (!SF_CLIENT_ID) missing.push('SF_CLIENT_ID');
+        if (!SF_CLIENT_SECRET) missing.push('SF_CLIENT_SECRET');
+        if (!SF_LOGIN_URL) missing.push('SF_LOGIN_URL');
+        console.error(`❌ Faltam variáveis de ambiente: ${missing.join(', ')}`);
+        throw new Error(`Configuração do Salesforce incompleta: ${missing.join(', ')}`);
+    }
+
     try {
         const params = new URLSearchParams();
         params.append('grant_type', 'client_credentials');

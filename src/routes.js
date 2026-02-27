@@ -26,6 +26,7 @@ const requireGroup = (groupCode) => {
 };
 
 router.get('/', authController.loginPage);
+router.get('/health', (req, res) => res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() }));
 router.get('/auth/login', authController.azureLogin);
 router.get('/auth/callback', authController.azureCallback);
 router.get('/logout', authController.logout);
@@ -98,13 +99,13 @@ router.post('/api/ops/tickets/:id/upload', requireAuth, upload.array('files'), o
 router.get('/support-management', requireAuth, requireGroup('GESTAO_SUPORTE'), supportController.renderPage);
 router.get('/api/support/metrics', requireAuth, requireGroup('GESTAO_SUPORTE'), supportController.getGlobalMetrics);
 router.get('/api/support/contracts', requireAuth, requireGroup('GESTAO_SUPORTE'), supportController.getContractsPerformance);
-router.get('/api/support/team', supportController.getTeamPerformance);
-router.get('/api/support/allocations', supportController.getAllocations);
-router.get('/api/support/extract', supportController.getContractExtract);
-router.get('/api/support/search-people', supportController.searchPeople);
-router.get('/api/support/my-services', supportController.getMyServices); 
-router.post('/api/support/allocation', supportController.saveAllocation);
-router.delete('/api/support/allocation/:id', supportController.deleteAllocation);
+router.get('/api/support/team', requireAuth, requireGroup('GESTAO_SUPORTE'), supportController.getTeamPerformance);
+router.get('/api/support/allocations', requireAuth, requireGroup('GESTAO_SUPORTE'), supportController.getAllocations);
+router.get('/api/support/extract', requireAuth, requireGroup('GESTAO_SUPORTE'), supportController.getContractExtract);
+router.get('/api/support/search-people', requireAuth, requireGroup('GESTAO_SUPORTE'), supportController.searchPeople);
+router.get('/api/support/my-services', requireAuth, requireGroup('GESTAO_SUPORTE'), supportController.getMyServices); 
+router.post('/api/support/allocation', requireAuth, requireGroup('GESTAO_SUPORTE'), supportController.saveAllocation);
+router.delete('/api/support/allocation/:id', requireAuth, requireGroup('GESTAO_SUPORTE'), supportController.deleteAllocation);
 
 // --- RH ---
 router.get('/hr', requireAuth, requireGroup('ADMIN_RH'), hrController.renderHrDashboard);

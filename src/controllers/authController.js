@@ -7,13 +7,25 @@ exports.loginPage = (req, res) => {
 };
 
 exports.azureLogin = (req, res) => {
-    const authUrl = `https://login.microsoftonline.com/${process.env.AZURE_TENANT_ID}/oauth2/v2.0/authorize?client_id=${process.env.AZURE_CLIENT_ID}&response_type=code&redirect_uri=${encodeURIComponent(process.env.REDIRECT_URI)}&response_mode=query&scope=User.Read openid profile email`;
+    const { AZURE_TENANT_ID, AZURE_CLIENT_ID, REDIRECT_URI } = process.env;
+    
+    if (!AZURE_TENANT_ID || !AZURE_CLIENT_ID || !REDIRECT_URI) {
+        return res.status(500).send('Configuração do Azure incompleta no servidor (Tenant, ClientID ou RedirectURI).');
+    }
+
+    const authUrl = `https://login.microsoftonline.com/${AZURE_TENANT_ID}/oauth2/v2.0/authorize?client_id=${AZURE_CLIENT_ID}&response_type=code&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&response_mode=query&scope=User.Read openid profile email`;
     res.redirect(authUrl);
 };
 
 exports.azureCallback = async (req, res) => {
     const { code } = req.query;
     if (!code) return res.send('Erro: Sem código do Azure.');
+
+    const { AZURE_TENANT_ID, AZURE_CLIENT_ID, AZURE_CLIENT_SECRET, REDIRECT_URI } = process.env;
+
+    if (!AZURE_TENANT_ID || !AZURE_CLIENT_ID || !AZURE_CLIENT_SECRET || !REDIRECT_URI) {
+        return res.status(500).send('Configuração do Azure incompleta no servidor.');
+    }
 
     try {
         // A. Pega Token Microsoft
