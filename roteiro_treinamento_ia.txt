@@ -1,0 +1,56 @@
+**CONTEXTO DO VÍDEO:**
+Você é um especialista em treinamento corporativo da empresa "C3C Software".
+Seu objetivo é narrar um vídeo tutorial apresentando o novo sistema "C3C Workplace" para os colaboradores de suporte e seus líderes.
+O tom de voz deve ser: Profissional, Claro, Empático, Moderno e Direto. Evite termos muito técnicos, foque na usabilidade.
+O vídeo será composto por gravações de tela que eu fornecerei. Sua narração deve guiar o espectador através dessas telas.
+
+---
+
+**ROTEIRO DE NARRAÇÃO (Sincronizado com Ações de Tela):**
+
+**[BLOCO 1: INTRODUÇÃO E DASHBOARD]**
+*(Cena Sugerida: Tela de Login e carregamento da Página Inicial com KPIs)*
+
+"Olá, time C3C! Bem-vindos ao 'C3C Workplace'.
+A partir desta segunda-feira, esta será a nossa plataforma oficial para centralizar a gestão de chamados e o seu controle de horas.
+Ao fazer o login, você é recebido pelo seu novo 'Painel de Eficiência'.
+O sistema é inteligente: ele já identifica seu contrato vigente e te mostra o que importa.
+Veja seus indicadores:
+Primeiro, sua 'Eficiência', que mostra se você está atingindo a meta de horas esperada.
+Ao lado, o seu 'Banco de Horas' acumulado e, muito importante, as 'Pendências'. Se este número estiver vermelho, significa que você tem horas em rascunho que precisam ser enviadas para fechar o ponto.
+Abaixo, você confere exatamente em quais clientes você está alocado hoje e qual o seu percentual de dedicação em cada um."
+
+**[BLOCO 2: MÓDULO DE OPERAÇÕES]**
+*(Cena Sugerida: Clicar no menu Operações, filtrar chamados e entrar em um Ticket)*
+
+"Vamos para a prática no menu 'Operações'. Aqui é onde você vai passar a maior parte do dia.
+Use os filtros no topo para alternar entre 'Meus Chamados', a 'Fila' de tickets disponíveis ou ver o que está com o 'Time'.
+Ao abrir um ticket, você tem o histórico completo. Mas a grande novidade está na barra lateral direita.
+Esqueça a necessidade de abrir outra ferramenta para apontar horas. Fez o atendimento? Já registre aqui mesmo.
+O sistema já sabe qual é o cliente e o projeto. Você só precisa descrever o que fez, colocar o tempo e salvar.
+Pronto! Isso já alimenta seu Timesheet automaticamente, sem retrabalho."
+
+**[BLOCO 3: TIMESHEET E FECHAMENTO]**
+*(Cena Sugerida: Menu Timesheet, visualização do calendário colorido e envio do dia)*
+
+"Falando em Timesheet, acesse este menu para conferir sua folha ponto.
+O calendário usa cores para facilitar sua vida: Azul para o que já foi lançado, Verde para aprovado e Amarelo para rascunhos.
+Clicando em um dia, você vê o detalhe de tudo que apontou lá na tela de Operações.
+Se esqueceu de algo, pode adicionar manualmente por aqui.
+E atenção para a regra de ouro: O lançamento nasce como 'Rascunho'. Para seu líder visualizar, você deve clicar no botão 'Enviar Dia' ou 'Enviar Período'. Só assim suas horas serão contabilizadas."
+
+**[BLOCO 4: GESTÃO DE SUPORTE (LÍDERES)]**
+*(Cena Sugerida: Menu 'Gestão de Suporte', visualização de cards de métricas, tabela de alocações e extrato de horas)*
+
+"Para nossos líderes e coordenadores, o módulo estratégico é a 'Gestão de Suporte'.
+Aqui você tem o controle total da operação em tempo real.
+Nos cards, acompanhe a saúde dos contratos e o desempenho global.
+Na visão de 'Alocações', você monitora quem do time está alocado em qual projeto e, crucialmente, quem já lançou horas e quem está pendente.
+É possível também extrair relatórios detalhados de consumo de horas por contrato, garantindo que o planejado esteja alinhado com o executado, tudo em uma única tela de comando."
+
+**[BLOCO 5: ENCERRAMENTO]**
+*(Cena Sugerida: Volta para o Dashboard inicial ou Logo da empresa)*
+
+"O C3C Workplace foi feito para simplificar nossa rotina e dar transparência ao nosso trabalho.
+O sistema já está no ar. Acessem, explorem e contem com a gente para qualquer dúvida.
+Bom trabalho a todos!"

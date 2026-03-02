@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gerador de Assinaturas - C3C</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Montserrat', 'sans-serif'] },
+                    colors: { c3c: { blue: '#2978FF', teal: '#1DDDBD', gray: '#F2F2F2' } }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { font-family: 'Montserrat', sans-serif; background-color: #F8FAFC; }
+        .bg-c3c-gradient { background: linear-gradient(135deg, #2978FF 0%, #1DDDBD 100%); }
+        .fade-in { animation: fadeIn 0.4s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .signature-preview-box { background: #ffffff; border: 1px solid #e2e8f0; }
+    </style>
+</head>
+<body class="h-screen flex overflow-hidden bg-[#F8FAFC]">
+
+    <div id="mobile-overlay" onclick="toggleMenu()" class="fixed inset-0 bg-black/50 z-30 hidden md:hidden transition-opacity opacity-0"></div>
+
+    <%- include('partials/sidebar', { page: 'utilities_signature' }) %>
+
+    <main class="flex-1 flex flex-col md:ml-64 relative w-full transition-all duration-300">
+        
+        <!-- HEADER -->
+        <header class="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-4 md:px-8 sticky top-0 z-20">
+            <div class="flex items-center gap-4">
+                <button onclick="toggleMenu()" class="md:hidden p-2 text-gray-600 hover:bg-gray-100 rounded-lg">
+                    <i data-lucide="menu" class="w-6 h-6"></i>
+                </button>
+                <div>
+                    <h1 class="text-lg md:text-xl font-bold text-gray-800">Gerador de Assinaturas 🎨</h1>
+                    <p class="text-xs text-gray-400 hidden sm:block">Padronize sua comunicação oficial</p>
+                </div>
+            </div>
+        </header>
+
+        <!-- CONTEÚDO -->
+        <div class="flex-1 overflow-y-auto p-4 md:p-8 fade-in">
+            
+            <div class="grid grid-cols-1 xl:grid-cols-12 gap-8 items-start">
+                
+                <!-- FORMULÁRIO -->
+                <div class="xl:col-span-4 bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+                    <h2 class="text-sm font-bold text-gray-400 uppercase tracking-widest mb-6 flex items-center gap-2">
+                        <i data-lucide="user-edit" class="w-4 h-4"></i> Seus Dados
+                    </h2>
+                    
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-xs font-bold text-gray-500 mb-1.5 uppercase">Nome Completo</label>
+                            <input type="text" id="input-name" value="<%= user.nome %>" class="w-full px-4 py-2 text-sm border border-gray-200 rounded-xl outline-none focus:border-blue-500 bg-gray-50/50">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-500 mb-1.5 uppercase">Cargo / Função</label>
+                            <input type="text" id="input-role" placeholder="Ex: Consultor Salesforce" class="w-full px-4 py-2 text-sm border border-gray-200 rounded-xl outline-none focus:border-blue-500 bg-gray-50/50">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-500 mb-1.5 uppercase">WhatsApp (Opcional)</label>
+                            <input type="text" id="input-phone" maxlength="15" placeholder="(11) 98765-4321" class="w-full px-4 py-2 text-sm border border-gray-200 rounded-xl outline-none focus:border-blue-500 bg-gray-50/50">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-500 mb-1.5 uppercase">E-mail Corporativo</label>
+                            <input type="email" id="input-email" value="<%= user.email %>" class="w-full px-4 py-2 text-sm border border-gray-200 rounded-xl outline-none focus:border-blue-500 bg-gray-50/50">
+                        </div>
+                        
+                        <div class="pt-4 border-t border-gray-100">
+                            <label class="block text-xs font-bold text-gray-500 mb-1.5 uppercase">Foto de Perfil (URL)</label>
+                            <input type="text" id="input-photo" placeholder="https://..." class="w-full px-4 py-2 text-sm border border-gray-200 rounded-xl outline-none focus:border-blue-500 bg-gray-50/50 mb-3">
+                            
+                            <div class="bg-blue-50/50 p-4 rounded-xl border border-blue-100">
+                                <label class="block text-[10px] font-bold text-blue-600 uppercase mb-2">Seu Mascote:</label>
+                                <select id="select-mascot" class="w-full px-3 py-2 bg-white border border-blue-200 rounded-lg outline-none text-xs text-gray-700 cursor-pointer">
+                                    <option value="capivorce">Capivorce</option>
+                                    <option value="mestrecoala">Mestre Coala</option>
+                                    <option value="salesmelo">Salesmelo</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button id="btn-copy" class="w-full mt-8 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl shadow-lg transition-all flex items-center justify-center gap-2 transform active:scale-95">
+                        <i data-lucide="copy" class="w-4 h-4"></i> Copiar Assinatura
+                    </button>
+                    <p id="copy-message" class="hidden text-center mt-3 text-xs font-bold text-teal-600 animate-bounce">Copiado com sucesso!</p>
+                </div>
+
+                <!-- PREVIEW -->
+                <div class="xl:col-span-8">
+                    <h2 class="text-sm font-bold text-gray-400 uppercase tracking-widest mb-6 flex items-center gap-2">
+                        <i data-lucide="eye" class="w-4 h-4"></i> Visualização
+                    </h2>
+                    
+                    <div class="bg-white p-4 md:p-12 rounded-3xl shadow-sm border border-gray-100 overflow-x-auto flex flex-col items-center">
+                        <div id="signature-container" class="p-4 bg-white">
+                            <!-- TABELA DE ASSINATURA -->
+                            <table border="0" cellpadding="0" cellspacing="0" style="width: 560px; min-width: 560px; border-collapse: collapse; font-family: 'Montserrat', Helvetica, Arial, sans-serif; background-color: #ffffff;">
+                                <tr>
+                                    <td style="padding-bottom: 20px;">
+                                        <table border="0" cellpadding="0" cellspacing="0" width="100%">
+                                            <tr>
+                                                <!-- Foto de Perfil -->
+                                                <td width="80" valign="middle" style="padding-right: 15px;">
+                                                    <img id="view-photo" src="" alt="Perfil" width="80" height="80" style="width: 80px; height: 80px; min-width: 80px; min-height: 80px; border-radius: 40px; object-fit: contain; display: block; border: 1px solid #f1f5f9; background-color: #ffffff;">
+                                                </td>
+                                                
+                                                <!-- Divisor Azul -->
+                                                <td width="2" style="background-color: #2978FF; font-size: 1px; line-height: 1px;">&nbsp;</td>
+                                                
+                                                <!-- Dados -->
+                                                <td valign="middle" style="padding: 0 20px;">
+                                                    <h3 id="view-name" style="margin: 0; font-size: 18px; font-weight: 700; color: #0f172a; line-height: 1.2;">Nome do Colaborador</h3>
+                                                    <p id="view-role" style="margin: 2px 0 10px 0; font-size: 11px; font-weight: 600; color: #2978FF; text-transform: uppercase; display: block;">Cargo na Empresa</p>
+                                                    
+                                                    <table border="0" cellpadding="0" cellspacing="0">
+                                                        <tr id="view-phone-row">
+                                                            <td width="16"><img src="https://img.icons8.com/ios-filled/32/2978FF/whatsapp.png" width="12" alt="WA"></td>
+                                                            <td style="font-size: 11px; color: #64748b; font-weight: 600; padding-left: 5px;">
+                                                                <a id="view-wa-link" href="#" style="color: #64748b; text-decoration: none;"><span id="view-phone-text"></span></a>
+                                                            </td>
+                                                        </tr>
+                                                        <tr id="view-email-row">
+                                                            <td width="16" style="padding-top: 4px;"><img src="https://img.icons8.com/ios-filled/32/2978FF/mail.png" width="12" alt="MAIL"></td>
+                                                            <td style="font-size: 11px; color: #64748b; font-weight: 600; padding-left: 5px; padding-top: 4px;">
+                                                                <a id="view-email-link" href="#" style="color: #64748b; text-decoration: none;"><span id="view-email-text"></span></a>
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td width="16" style="padding-top: 4px;"><img src="https://img.icons8.com/ios-filled/32/2978FF/globe.png" width="12" alt="W"></td>
+                                                            <td style="font-size: 11px; color: #64748b; font-weight: 600; padding-left: 5px; padding-top: 4px;">
+                                                                <a href="https://c3csoftware.com.br" style="color: #64748b; text-decoration: none;">c3csoftware.com.br</a>
+                                                            </td>
+                                                        </tr>
+                                                    </table>
+                                                </td>
+        
+                                                <!-- Mascote -->
+                                                <td width="65" valign="middle" align="right" style="padding-right: 15px;">
+                                                    <img id="view-mascot-img" src="" alt="Mascote" width="65" height="65" style="width: 65px; height: 65px; min-width: 65px; min-height: 65px; border-radius: 50%; object-fit: cover; display: block; background-color: #f1f5f9;">
+                                                </td>
+        
+                                                <!-- Salesforce Partner -->
+                                                <td width="65" valign="middle" align="right">
+                                                    <a href="https://appexchange.salesforce.com/appxConsultingListingDetail?listingId=a0N3u00000MRhO8EAL&legacy=true" target="_blank" style="text-decoration: none; display: block;">
+                                                        <img src="https://www.simantel.com/wp-content/uploads/2020/02/Salesforce-Partner-Logo.png" alt="Salesforce Partner" width="65" height="65" style="width: 65px; height: 65px; min-width: 65px; min-height: 65px; border-radius: 33px; object-fit: cover; display: block; background-color: #ffffff;">
+                                                    </a>
+                                                </td>
+                                            </tr>
+                                        </table>
+                                    </td>
+                                </tr>
+                                
+                                <tr>
+                                    <td height="2" style="border-bottom: 2px solid #2978FF; font-size: 1px; line-height: 1px;">&nbsp;</td>
+                                </tr>
+        
+                                <tr>
+                                    <td style="padding-top: 15px;">
+                                        <table width="100%" border="0" cellpadding="0" cellspacing="0">
+                                            <tr>
+                                                <td valign="middle">
+                                                    <table border="0" cellpadding="0" cellspacing="0">
+                                                        <tr>
+                                                            <td id="footer-logo-td" valign="middle">
+                                                                <img src="https://c3c.my.site.com/resource/1752735833000/logo" alt="C3C" height="24" style="height: 24px; display: block;">
+                                                            </td>
+                                                            <td id="footer-text-td" valign="middle" style="padding-left: 6px; font-size: 14px; font-weight: 700; color: #0f172a; font-family: 'Montserrat', sans-serif; line-height: 24px;">
+                                                                C3C<span style="color: #1DDDBD; font-weight: bold;">.</span>Software
+                                                            </td>
+                                                        </tr>
+                                                    </table>
+                                                </td>
+                                                <td align="right" valign="middle">
+                                                    <table border="0" cellpadding="0" cellspacing="0">
+                                                        <tr>
+                                                            <td style="padding-left: 12px;">
+                                                                <a href="https://www.linkedin.com/company/c3c-software" target="_blank">
+                                                                    <img src="https://img.icons8.com/ios-filled/50/2978FF/linkedin-circled--v1.png" width="24" alt="LinkedIn">
+                                                                </a>
+                                                            </td>
+                                                            <td style="padding-left: 12px;">
+                                                                <a href="https://www.instagram.com/c3csoftware/" target="_blank">
+                                                                    <img src="https://img.icons8.com/ios-filled/50/2978FF/instagram-new.png" width="24" alt="Instagram">
+                                                                </a>
+                                                            </td>
+                                                        </tr>
+                                                    </table>
+                                                </td>
+                                            </tr>
+                                        </table>
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+
+                        <div class="mt-12 bg-gray-50 p-6 rounded-2xl text-xs text-gray-500 max-w-lg border border-gray-100">
+                            <p class="font-bold mb-2 uppercase text-gray-400">Como usar:</p>
+                            <ol class="list-decimal list-inside space-y-1">
+                                <li>Clique no botão <b>Copiar Assinatura</b>.</li>
+                                <li>Abra as configurações do seu e-mail (Outlook/Gmail).</li>
+                                <li>Na seção <b>Assinatura</b>, dê um <b>Ctrl + V</b> no campo de texto.</li>
+                                <li>Salve as alterações e pronto! 🚀</li>
+                            </ol>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </main>
+
+    <script>
+        lucide.createIcons();
+
+        function toggleMenu() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('mobile-overlay');
+            if (sidebar.classList.contains('-translate-x-full')) {
+                sidebar.classList.remove('-translate-x-full');
+                overlay.classList.remove('hidden');
+                setTimeout(() => overlay.classList.remove('opacity-0'), 10);
+            } else {
+                sidebar.classList.add('-translate-x-full');
+                overlay.classList.add('opacity-0');
+                setTimeout(() => overlay.classList.add('hidden'), 300);
+            }
+        }
+
+        const logoUrl = "https://c3c.my.site.com/resource/1752735833000/logo";
+        const officialMascots = {
+            capivorce: 'https://lh3.googleusercontent.com/gg/AMW1TPqgxQEFKLlR7YkLAZj6U5rU8BToyfp4-IFrMGfY1OjQWOhGZNMYyDbyUITe0Zj76dTjQmoM3oFuQ5D4UZCpMIDBWXJrPY2mDvo1XTlyGkglHIIAywxpSq3Tg-S8H0jsBQCbYzwYZK8apxp6-XHAXT_K3qkD9WZD-q_2-Ms_y8T15Nz3kl4=s1024-rj-mp2',
+            mestrecoala: 'https://lh3.googleusercontent.com/gg/AMW1TPqYnCs5WRsoCnyWC1lbEMbF0C-9VrQbd0uokkCpxaCUtTpl6_vXc3WUHDuR6_wV7PIXS7SlimUM3oUa96LBXEHXQc7BfRflHsr3IkJGnCssq1e1bBsleOx2RnDoSv-ZjqXzn440Gsv158wmBmMmD0FzoguxZT0uTFVo4lFaEHwYyNROq5P_=s1024-rj-mp2',
+            salesmelo: 'https://lh3.googleusercontent.com/gg/AMW1TPoilzccBS3Msu7yZwu3mHSFCjr65OqCNs8Q1tMMyrTWc395efDIh9PSAOI-aCqeT2_mHSFCjr65OqCNs8Q1tMMyrTWc395efDIh9PSAOI-aCqeT2_mHIAPwE8z29n2uOnp0DCZknrYgV5upNrQvlNUZxWlKPzzZh5IE4Z8rDpd2cqy13jXkKpuktQDbr_SjoFRXRZStRyptNjdxjo7KfG_N-X4GuGGoKs=s1024-rj-mp2'
+        };
+
+        const inputs = {
+            name: document.getElementById('input-name'),
+            role: document.getElementById('input-role'),
+            phone: document.getElementById('input-phone'),
+            email: document.getElementById('input-email'),
+            photo: document.getElementById('input-photo'),
+            mascot: document.getElementById('select-mascot')
+        };
+
+        const view = {
+            name: document.getElementById('view-name'),
+            role: document.getElementById('view-role'),
+            phoneRow: document.getElementById('view-phone-row'),
+            phoneText: document.getElementById('view-phone-text'),
+            waLink: document.getElementById('view-wa-link'),
+            emailRow: document.getElementById('view-email-row'),
+            emailText: document.getElementById('view-email-text'),
+            emailLink: document.getElementById('view-email-link'),
+            photo: document.getElementById('view-photo'),
+            mascotImg: document.getElementById('view-mascot-img'),
+            footerLogoTd: document.getElementById('footer-logo-td'),
+            footerTextTd: document.getElementById('footer-text-td')
+        };
+
+        function phoneMask(value) {
+            if (!value) return "";
+            value = value.replace(/\D/g, "");
+            value = value.replace(/^(\d{2})(\d)/g, "($1) $2");
+            value = value.replace(/(\d)(\d{4})$/, "$1-$2");
+            return value;
+        }
+
+        function updatePreview() {
+            view.name.innerText = inputs.name.value || 'Nome do Colaborador';
+            
+            const rawRole = inputs.role.value.trim();
+            if (rawRole === "") {
+                view.role.style.display = 'none';
+            } else {
+                view.role.style.display = 'block';
+                view.role.innerText = rawRole;
+            }
+            
+            const rawPhone = inputs.phone.value.trim();
+            if (rawPhone === "") {
+                view.phoneRow.style.display = 'none';
+            } else {
+                view.phoneRow.style.display = 'table-row';
+                const cleanPhone = rawPhone.replace(/\D/g, ''); 
+                view.phoneText.innerText = rawPhone;
+                view.waLink.href = cleanPhone ? `https://wa.me/55${cleanPhone}` : "#";
+            }
+
+            const rawEmail = inputs.email.value.trim();
+            if (rawEmail === "") {
+                view.emailRow.style.display = 'none';
+            } else {
+                view.emailRow.style.display = 'table-row';
+                view.emailText.innerText = rawEmail;
+                view.emailLink.href = `mailto:${rawEmail}`;
+            }
+
+            const photoUrl = inputs.photo.value.trim();
+            if (photoUrl === "") {
+                view.photo.src = logoUrl; 
+                view.photo.style.objectFit = "contain";
+                view.footerLogoTd.style.display = 'none';
+                view.footerTextTd.style.paddingLeft = '0px';
+            } else {
+                view.photo.src = photoUrl;
+                view.photo.style.objectFit = "cover";
+                view.footerLogoTd.style.display = 'table-cell';
+                view.footerTextTd.style.paddingLeft = '6px';
+            }
+
+            view.mascotImg.src = officialMascots[inputs.mascot.value];
+        }
+
+        inputs.phone.addEventListener('input', (e) => {
+            e.target.value = phoneMask(e.target.value);
+            updatePreview();
+        });
+
+        ['name', 'role', 'email', 'photo', 'mascot'].forEach(key => {
+            inputs[key].addEventListener('input', updatePreview);
+        });
+
+        document.getElementById('btn-copy').addEventListener('click', function() {
+            const container = document.getElementById('signature-container');
+            const range = document.createRange();
+            range.selectNode(container);
+            window.getSelection().removeAllRanges();
+            window.getSelection().addRange(range);
+            
+            try {
+                document.execCommand('copy');
+                const msg = document.getElementById('copy-message');
+                msg.classList.remove('hidden');
+                setTimeout(() => msg.classList.add('hidden'), 3000);
+            } catch (err) {
+                console.error('Falha ao copiar');
+            }
+            window.getSelection().removeAllRanges();
+        });
+
+        updatePreview();
+    </script>
+</body>
+</html>

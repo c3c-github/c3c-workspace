@@ -24,6 +24,12 @@
             <span class="font-medium text-sm">Minhas Horas</span>
         </a>
 
+        <p class="px-6 text-xs font-semibold text-gray-400 uppercase tracking-wider mt-8 mb-2">Utilidades</p>
+        <a href="/utilities/signature" class="nav-item <%= (typeof page !== 'undefined' && page === 'utilities_signature') ? 'bg-[#EEF2FF] text-[#2978FF] border-r-4 border-[#2978FF]' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900' %> flex items-center gap-3 px-6 py-3 transition-colors">
+            <i data-lucide="pen-tool" class="w-5 h-5"></i>
+            <span class="font-medium text-sm">Gerador de Assinatura</span>
+        </a>
+
         <% if (user.grupos && user.grupos.includes('OPERACAO')) { %>
             <a href="/operations" class="nav-item <%= (typeof page !== 'undefined' && page === 'operations') ? 'bg-[#EEF2FF] text-[#2978FF] border-r-4 border-[#2978FF]' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900' %> flex items-center gap-3 px-6 py-3 transition-colors">
                 <i data-lucide="headset" class="w-5 h-5"></i>

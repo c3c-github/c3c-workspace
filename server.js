@@ -1,13 +1,25 @@
 const fs = require('fs');
 const path = require('path');
 require('dotenv').config();
-const app = require('./src/app');
 
-// Garante que a pasta de uploads existe
+// 1. Garante que a pasta de uploads existe antes de qualquer coisa
 const uploadsDir = path.join(__dirname, 'uploads');
 if (!fs.existsSync(uploadsDir)) {
-    fs.mkdirSync(uploadsDir);
-    console.log('📁 Pasta uploads criada.');
+    try {
+        fs.mkdirSync(uploadsDir);
+        console.log('📁 Pasta uploads criada.');
+    } catch (err) {
+        console.error('❌ Erro ao criar pasta uploads:', err);
+    }
+}
+
+// 2. Carrega a aplicação com log de erro
+let app;
+try {
+    app = require('./src/app');
+} catch (err) {
+    console.error('❌ Erro crítico ao carregar a aplicação (src/app):', err);
+    process.exit(1);
 }
 
 process.on('uncaughtException', (err) => {

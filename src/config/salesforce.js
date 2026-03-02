@@ -4,7 +4,16 @@ const jsforce = require('jsforce');
 let sfConnection = null;
 
 async function getSfConnection() {
-    if (sfConnection) return sfConnection;
+    if (sfConnection) {
+        try {
+            // Teste simples para ver se a sessão ainda é válida
+            await sfConnection.identity();
+            return sfConnection;
+        } catch (e) {
+            console.log("⚠️ Conexão Salesforce expirada, renovando...");
+            sfConnection = null;
+        }
+    }
 
     const { SF_CLIENT_ID, SF_CLIENT_SECRET, SF_LOGIN_URL } = process.env;
 

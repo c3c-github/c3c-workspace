@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gerador de Assinaturas - C3C Software</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc;
+        }
+        .font-montserrat {
+            font-family: 'Montserrat', sans-serif;
+        }
+        .c3c-gradient {
+            background: linear-gradient(90deg, #1DDDBD 0%, #2978FF 100%);
+        }
+        .signature-preview-box {
+            background: #ffffff;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05);
+            border: 1px solid #e2e8f0;
+        }
+        select {
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2364748b'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 1rem center;
+            background-size: 1.5em;
+        }
+    </style>
+</head>
+<body class="py-10 px-4">
+    <div class="max-w-6xl mx-auto">
+        <!-- Cabeçalho da Ferramenta -->
+        <div class="flex flex-col items-center mb-10">
+            <img src="https://c3c.my.site.com/resource/1752735833000/logo" alt="C3C Logo" class="h-10 mb-4">
+            <h1 class="text-2xl font-bold text-slate-800 font-montserrat uppercase tracking-tight">Gerador de Assinaturas C3C</h1>
+            <p class="text-slate-500 text-sm italic text-center">Versão final: C3C.Software com ponto alinhado e selo Salesforce linkado.</p>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+            <!-- Formulário -->
+            <div class="lg:col-span-5 bg-white p-8 rounded-3xl shadow-sm border border-slate-200">
+                <h2 class="text-lg font-semibold mb-6 text-slate-700 flex items-center gap-2">
+                    <span class="w-1.5 h-6 c3c-gradient rounded-full"></span>
+                    Dados Pessoais
+                </h2>
+                
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1.5 tracking-wider">Nome Completo</label>
+                        <input type="text" id="input-name" placeholder="Ex: Lucas Almeida" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-[#2978FF] transition-all">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1.5 tracking-wider">Cargo / Função (Opcional)</label>
+                        <input type="text" id="input-role" placeholder="Ex: Consultor Salesforce" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-[#2978FF] transition-all">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1.5 tracking-wider">WhatsApp (Opcional)</label>
+                        <input type="text" id="input-phone" maxlength="15" placeholder="(11) 98765-4321" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-[#2978FF] transition-all">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1.5 tracking-wider">E-mail Corporativo</label>
+                        <input type="email" id="input-email" placeholder="nome@c3csoftware.com.br" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-[#2978FF] transition-all">
+                    </div>
+                    
+                    <div class="pt-4 border-t border-slate-100">
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-2 tracking-wider">Foto de Perfil (URL)</label>
+                        <input type="text" id="input-photo" placeholder="https://..." class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-[#2978FF] mb-3 transition-all">
+                        
+                        <div class="bg-blue-50 p-4 rounded-xl">
+                            <label class="block text-[10px] font-bold text-blue-600 uppercase mb-2 tracking-widest">Seu Mascote Lateral:</label>
+                            <select id="select-mascot" class="w-full px-3 py-2 bg-white border border-blue-200 rounded-lg outline-none text-sm text-slate-700 cursor-pointer">
+                                <option value="capivorce">Capivorce</option>
+                                <option value="mestrecoala">Mestre Coala</option>
+                                <option value="salesmelo">Salesmelo</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <button id="btn-copy" class="w-full mt-8 c3c-gradient text-white font-bold py-4 rounded-2xl shadow-lg hover:shadow-xl transition-all flex items-center justify-center gap-3">
+                    Copiar Assinatura
+                </button>
+                <p id="copy-message" class="hidden text-center mt-3 text-sm font-semibold text-emerald-500 italic">Copiado! Basta colar no seu e-mail.</p>
+            </div>
+
+            <!-- Preview -->
+            <div class="lg:col-span-7">
+                <h2 class="text-lg font-semibold mb-6 text-slate-700">Visualização Final</h2>
+                
+                <div id="signature-preview" class="signature-preview-box p-8 rounded-3xl flex justify-center bg-white overflow-x-auto">
+                    <!-- ESTRUTURA DE TABELA PURA -->
+                    <table border="0" cellpadding="0" cellspacing="0" style="width: 560px; min-width: 560px; border-collapse: collapse; font-family: 'Montserrat', Helvetica, Arial, sans-serif; background-color: #ffffff;">
+                        <tr>
+                            <td style="padding-bottom: 20px;">
+                                <table border="0" cellpadding="0" cellspacing="0" width="100%">
+                                    <tr>
+                                        <!-- Foto de Perfil -->
+                                        <td width="80" valign="middle" style="padding-right: 15px;">
+                                            <img id="view-photo" src="" alt="Perfil" width="80" height="80" style="width: 80px; height: 80px; min-width: 80px; min-height: 80px; border-radius: 40px; object-fit: contain; display: block; border: 1px solid #f1f5f9; background-color: #ffffff;">
+                                        </td>
+                                        
+                                        <!-- Divisor Azul -->
+                                        <td width="2" style="background-color: #2978FF; font-size: 1px; line-height: 1px;">&nbsp;</td>
+                                        
+                                        <!-- Dados -->
+                                        <td valign="middle" style="padding: 0 20px;">
+                                            <h3 id="view-name" style="margin: 0; font-size: 18px; font-weight: 700; color: #0f172a; line-height: 1.2;">Nome do Colaborador</h3>
+                                            <p id="view-role" style="margin: 2px 0 10px 0; font-size: 11px; font-weight: 600; color: #2978FF; text-transform: uppercase; display: block;">Cargo na Empresa</p>
+                                            
+                                            <table border="0" cellpadding="0" cellspacing="0">
+                                                <tr id="view-phone-row">
+                                                    <td width="16"><img src="https://img.icons8.com/ios-filled/32/2978FF/whatsapp.png" width="12" alt="WA"></td>
+                                                    <td style="font-size: 11px; color: #64748b; font-weight: 600; padding-left: 5px;">
+                                                        <a id="view-wa-link" href="#" style="color: #64748b; text-decoration: none;"><span id="view-phone-text"></span></a>
+                                                    </td>
+                                                </tr>
+                                                <tr id="view-email-row">
+                                                    <td width="16" style="padding-top: 4px;"><img src="https://img.icons8.com/ios-filled/32/2978FF/mail.png" width="12" alt="MAIL"></td>
+                                                    <td style="font-size: 11px; color: #64748b; font-weight: 600; padding-left: 5px; padding-top: 4px;">
+                                                        <a id="view-email-link" href="#" style="color: #64748b; text-decoration: none;"><span id="view-email-text"></span></a>
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <td width="16" style="padding-top: 4px;"><img src="https://img.icons8.com/ios-filled/32/2978FF/globe.png" width="12" alt="W"></td>
+                                                    <td style="font-size: 11px; color: #64748b; font-weight: 600; padding-left: 5px; padding-top: 4px;">
+                                                        <a href="https://c3csoftware.com.br" style="color: #64748b; text-decoration: none;">c3csoftware.com.br</a>
+                                                    </td>
+                                                </tr>
+                                            </table>
+                                        </td>
+
+                                        <!-- Mascote -->
+                                        <td width="65" valign="middle" align="right" style="padding-right: 15px;">
+                                            <img id="view-mascot-img" src="" alt="Mascote" width="65" height="65" style="width: 65px; height: 65px; min-width: 65px; min-height: 65px; border-radius: 50%; object-fit: cover; display: block; background-color: #f1f5f9;">
+                                        </td>
+
+                                        <!-- Salesforce Partner (Linkado e Redondo) -->
+                                        <td width="65" valign="middle" align="right">
+                                            <a href="https://appexchange.salesforce.com/appxConsultingListingDetail?listingId=a0N3u00000MRhO8EAL&legacy=true" target="_blank" style="text-decoration: none; display: block;">
+                                                <img src="https://www.simantel.com/wp-content/uploads/2020/02/Salesforce-Partner-Logo.png" alt="Salesforce Partner" width="65" height="65" style="width: 65px; height: 65px; min-width: 65px; min-height: 65px; border-radius: 33px; object-fit: cover; display: block; background-color: #ffffff;">
+                                            </a>
+                                        </td>
+                                    </tr>
+                                </table>
+                            </td>
+                        </tr>
+                        
+                        <!-- Linha Divisora Sólida -->
+                        <tr>
+                            <td height="2" style="border-bottom: 2px solid #2978FF; font-size: 1px; line-height: 1px;">&nbsp;</td>
+                        </tr>
+
+                        <!-- Rodapé -->
+                        <tr>
+                            <td style="padding-top: 15px;">
+                                <table width="100%" border="0" cellpadding="0" cellspacing="0">
+                                    <tr>
+                                        <!-- Logo e Nome "C3C.Software" -->
+                                        <td valign="middle">
+                                            <table border="0" cellpadding="0" cellspacing="0">
+                                                <tr>
+                                                    <td id="footer-logo-td" valign="middle">
+                                                        <img src="https://c3c.my.site.com/resource/1752735833000/logo" alt="C3C" height="24" style="height: 24px; display: block;">
+                                                    </td>
+                                                    <td id="footer-text-td" valign="middle" style="padding-left: 6px; font-size: 14px; font-weight: 700; color: #0f172a; font-family: 'Montserrat', sans-serif; line-height: 24px;">
+                                                        C3C<span style="color: #1DDDBD; font-weight: bold;">.</span>Software
+                                                    </td>
+                                                </tr>
+                                            </table>
+                                        </td>
+                                        <!-- Sociais -->
+                                        <td align="right" valign="middle">
+                                            <table border="0" cellpadding="0" cellspacing="0">
+                                                <tr>
+                                                    <td style="padding-left: 12px;">
+                                                        <a href="https://www.linkedin.com/company/c3c-software" target="_blank">
+                                                            <img src="https://img.icons8.com/ios-filled/50/2978FF/linkedin-circled--v1.png" width="24" alt="LinkedIn">
+                                                        </a>
+                                                    </td>
+                                                    <td style="padding-left: 12px;">
+                                                        <a href="https://www.instagram.com/c3csoftware/" target="_blank">
+                                                            <img src="https://img.icons8.com/ios-filled/50/2978FF/instagram-new.png" width="24" alt="Instagram">
+                                                        </a>
+                                                    </td>
+                                                </tr>
+                                            </table>
+                                        </td>
+                                    </tr>
+                                </table>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const logoUrl = "https://c3c.my.site.com/resource/1752735833000/logo";
+        const officialMascots = {
+            capivorce: 'https://lh3.googleusercontent.com/gg/AMW1TPqgxQEFKLlR7YkLAZj6U5rU8BToyfp4-IFrMGfY1OjQWOhGZNMYyDbyUITe0Zj76dTjQmoM3oFuQ5D4UZCpMIDBWXJrPY2mDvo1XTlyGkglHIIAywxpSq3Tg-S8H0jsBQCbYzwYZK8apxp6-XHAXT_K3qkD9WZD-q_2-Ms_y8T15Nz3kl4=s1024-rj-mp2',
+            mestrecoala: 'https://lh3.googleusercontent.com/gg/AMW1TPqYnCs5WRsoCnyWC1lbEMbF0C-9VrQbd0uokkCpxaCUtTpl6_vXc3WUHDuR6_wV7PIXS7SlimUM3oUa96LBXEHXQc7BfRflHsr3IkJGnCssq1e1bBsleOx2RnDoSv-ZjqXzn440Gsv158wmBmMmD0FzoguxZT0uTFVo4lFaEHwYyNROq5P_=s1024-rj-mp2',
+            salesmelo: 'https://lh3.googleusercontent.com/gg/AMW1TPoilzccBS3Msu7yZwu3mHSFCjr65OqCNs8Q1tMMyrTWc395efDIh9PSAOI-aCqeT2_mHIAPwE8z29n2uOnp0DCZknrYgV5upNrQvlNUZxWlKPzzZh5IE4Z8rDpd2cqy13jXkKpuktQDbr_SjoFRXRZStRyptNjdxjo7KfG_N-X4GuGGoKs=s1024-rj-mp2'
+        };
+
+        const inputs = {
+            name: document.getElementById('input-name'),
+            role: document.getElementById('input-role'),
+            phone: document.getElementById('input-phone'),
+            email: document.getElementById('input-email'),
+            photo: document.getElementById('input-photo'),
+            mascot: document.getElementById('select-mascot')
+        };
+
+        const view = {
+            name: document.getElementById('view-name'),
+            role: document.getElementById('view-role'),
+            phoneRow: document.getElementById('view-phone-row'),
+            phoneText: document.getElementById('view-phone-text'),
+            waLink: document.getElementById('view-wa-link'),
+            emailRow: document.getElementById('view-email-row'),
+            emailText: document.getElementById('view-email-text'),
+            emailLink: document.getElementById('view-email-link'),
+            photo: document.getElementById('view-photo'),
+            mascotImg: document.getElementById('view-mascot-img'),
+            footerLogoTd: document.getElementById('footer-logo-td'),
+            footerTextTd: document.getElementById('footer-text-td')
+        };
+
+        function phoneMask(value) {
+            if (!value) return "";
+            value = value.replace(/\D/g, "");
+            value = value.replace(/^(\d{2})(\d)/g, "($1) $2");
+            value = value.replace(/(\d)(\d{4})$/, "$1-$2");
+            return value;
+        }
+
+        function updatePreview() {
+            view.name.innerText = inputs.name.value || 'Nome do Colaborador';
+            
+            // Cargo Opcional
+            const rawRole = inputs.role.value.trim();
+            if (rawRole === "") {
+                view.role.style.display = 'none';
+            } else {
+                view.role.style.display = 'block';
+                view.role.innerText = rawRole;
+            }
+            
+            // WhatsApp Opcional
+            const rawPhone = inputs.phone.value.trim();
+            if (rawPhone === "") {
+                view.phoneRow.style.display = 'none';
+            } else {
+                view.phoneRow.style.display = 'table-row';
+                const cleanPhone = rawPhone.replace(/\D/g, ''); 
+                view.phoneText.innerText = rawPhone;
+                view.waLink.href = cleanPhone ? `https://wa.me/55${cleanPhone}` : "#";
+            }
+
+            // Email Corporativo
+            const rawEmail = inputs.email.value.trim();
+            if (rawEmail === "") {
+                view.emailRow.style.display = 'none';
+            } else {
+                view.emailRow.style.display = 'table-row';
+                view.emailText.innerText = rawEmail;
+                view.emailLink.href = `mailto:${rawEmail}`;
+            }
+
+            // Lógica Foto e Rodapé
+            const photoUrl = inputs.photo.value.trim();
+            if (photoUrl === "") {
+                view.photo.src = logoUrl; 
+                view.photo.style.objectFit = "contain";
+                view.footerLogoTd.style.display = 'none';
+                view.footerTextTd.style.paddingLeft = '0px';
+            } else {
+                view.photo.src = photoUrl;
+                view.photo.style.objectFit = "cover";
+                view.footerLogoTd.style.display = 'table-cell';
+                view.footerTextTd.style.paddingLeft = '6px';
+            }
+
+            view.mascotImg.src = officialMascots[inputs.mascot.value];
+        }
+
+        inputs.phone.addEventListener('input', (e) => {
+            e.target.value = phoneMask(e.target.value);
+            updatePreview();
+        });
+
+        ['name', 'role', 'email', 'photo', 'mascot'].forEach(key => {
+            inputs[key].addEventListener('input', updatePreview);
+        });
+
+        document.getElementById('btn-copy').addEventListener('click', function() {
+            const container = document.getElementById('signature-preview');
+            const range = document.createRange();
+            range.selectNode(container);
+            window.getSelection().removeAllRanges();
+            window.getSelection().addRange(range);
+            
+            try {
+                document.execCommand('copy');
+                const msg = document.getElementById('copy-message');
+                msg.classList.remove('hidden');
+                setTimeout(() => msg.classList.add('hidden'), 3000);
+            } catch (err) {
+                console.error('Falha ao copiar');
+            }
+            window.getSelection().removeAllRanges();
+        });
+
+        updatePreview();
+    </script>
+</body>
+</html>

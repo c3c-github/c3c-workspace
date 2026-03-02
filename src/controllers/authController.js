@@ -45,7 +45,13 @@ exports.azureCallback = async (req, res) => {
         const userEmail = msUserRes.data.mail || msUserRes.data.userPrincipalName;
 
         // C. Busca dados no Salesforce
-        const conn = await getSfConnection();
+        let conn;
+        try {
+            conn = await getSfConnection();
+        } catch (sfConnErr) {
+            console.error("❌ Erro ao conectar no Salesforce:", sfConnErr.message);
+            return res.render('negado', { mensagem: 'Não foi possível conectar ao banco de dados Salesforce. Tente novamente em instantes.' });
+        }
         
         const soqlPessoa = `
             SELECT Id, Name, Email__c,

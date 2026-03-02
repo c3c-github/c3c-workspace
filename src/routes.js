@@ -11,6 +11,7 @@ const timesheetController = require('./controllers/timesheetController');
 const operationsController = require('./controllers/operationsController'); 
 const supportController = require('./controllers/supportController');
 const serviceController = require('./controllers/serviceController');
+const utilityController = require('./controllers/utilityController');
 
 const requireAuth = (req, res, next) => {
     if (!req.session || !req.session.user) { return res.redirect('/'); }
@@ -112,5 +113,8 @@ router.get('/hr', requireAuth, requireGroup('ADMIN_RH'), hrController.renderHrDa
 router.get('/api/hr/employees', requireAuth, requireGroup('ADMIN_RH'), hrController.getHrEmployees);
 router.get('/api/hr/employees/:personId/details', requireAuth, requireGroup('ADMIN_RH'), hrController.getEmployeeDetails);
 router.post('/api/hr/action', requireAuth, requireGroup('ADMIN_RH'), hrController.handleHrAction);
+
+// --- UTILIDADES ---
+router.get('/utilities/signature', requireAuth, utilityController.renderSignaturePage);
 
 module.exports = router;
