@@ -172,10 +172,9 @@
                                                 <td valign="middle">
                                                     <table border="0" cellpadding="0" cellspacing="0">
                                                         <tr>
-                                                            <td id="footer-logo-td" valign="middle">
-                                                                <img src="https://c3c.my.site.com/resource/1752735833000/logo" alt="C3C" height="24" style="height: 24px; display: block;">
-                                                            </td>
-                                                            <td id="footer-text-td" valign="middle" style="padding-left: 6px; font-size: 14px; font-weight: 700; color: #0f172a; font-family: 'Montserrat', sans-serif; line-height: 24px;">
+                                                                                                                    <td id="footer-logo-td" valign="middle">
+                                                                                                                        <img src="<%= baseUrl %>/assets/signatures/assinaturaLogo.png" alt="C3C" height="24" style="height: 24px; display: block;">
+                                                                                                                    </td>                                                            <td id="footer-text-td" valign="middle" style="padding-left: 6px; font-size: 14px; font-weight: 700; color: #0f172a; font-family: 'Montserrat', sans-serif; line-height: 24px;">
                                                                 C3C<span style="color: #1DDDBD; font-weight: bold;">.</span>Software
                                                             </td>
                                                         </tr>
@@ -237,11 +236,11 @@
             }
         }
 
-        const logoUrl = "https://c3c.my.site.com/resource/1752735833000/logo";
+        const logoUrl = "<%= baseUrl %>/assets/signatures/assinaturaLogo.png";
         const officialMascots = {
-            capivorce: 'https://lh3.googleusercontent.com/gg/AMW1TPqgxQEFKLlR7YkLAZj6U5rU8BToyfp4-IFrMGfY1OjQWOhGZNMYyDbyUITe0Zj76dTjQmoM3oFuQ5D4UZCpMIDBWXJrPY2mDvo1XTlyGkglHIIAywxpSq3Tg-S8H0jsBQCbYzwYZK8apxp6-XHAXT_K3qkD9WZD-q_2-Ms_y8T15Nz3kl4=s1024-rj-mp2',
-            mestrecoala: 'https://lh3.googleusercontent.com/gg/AMW1TPqYnCs5WRsoCnyWC1lbEMbF0C-9VrQbd0uokkCpxaCUtTpl6_vXc3WUHDuR6_wV7PIXS7SlimUM3oUa96LBXEHXQc7BfRflHsr3IkJGnCssq1e1bBsleOx2RnDoSv-ZjqXzn440Gsv158wmBmMmD0FzoguxZT0uTFVo4lFaEHwYyNROq5P_=s1024-rj-mp2',
-            salesmelo: 'https://lh3.googleusercontent.com/gg/AMW1TPoilzccBS3Msu7yZwu3mHSFCjr65OqCNs8Q1tMMyrTWc395efDIh9PSAOI-aCqeT2_mHSFCjr65OqCNs8Q1tMMyrTWc395efDIh9PSAOI-aCqeT2_mHIAPwE8z29n2uOnp0DCZknrYgV5upNrQvlNUZxWlKPzzZh5IE4Z8rDpd2cqy13jXkKpuktQDbr_SjoFRXRZStRyptNjdxjo7KfG_N-X4GuGGoKs=s1024-rj-mp2'
+            capivorce: '<%= baseUrl %>/assets/signatures/assinaturaCapivorce.png',
+            mestrecoala: '<%= baseUrl %>/assets/signatures/assinaturaMestreCoala.png',
+            salesmelo: '<%= baseUrl %>/assets/signatures/assinaturaSalesmelo.png'
         };
 
         const inputs = {
