@@ -76,10 +76,34 @@
                         </div>
                         
                         <div class="pt-4 border-t border-gray-100">
-                            <label class="block text-xs font-bold text-gray-500 mb-1.5 uppercase">Foto de Perfil (URL)</label>
-                            <input type="text" id="input-photo" placeholder="https://..." class="w-full px-4 py-2 text-sm border border-gray-200 rounded-xl outline-none focus:border-blue-500 bg-gray-50/50 mb-3">
+                            <label class="block text-xs font-bold text-gray-500 mb-2 uppercase flex justify-between">
+                                Foto de Perfil
+                                <span id="upload-status" class="text-[10px] lowercase font-medium text-gray-400"></span>
+                            </label>
                             
-                            <div class="bg-blue-50/50 p-4 rounded-xl border border-blue-100">
+                            <div class="relative group">
+                                <input type="file" id="input-file" accept="image/*" class="hidden">
+                                <label for="input-file" class="w-full flex items-center gap-3 px-4 py-3 border-2 border-dashed border-gray-200 rounded-xl cursor-pointer hover:border-blue-400 hover:bg-blue-50/30 transition-all group">
+                                    <div class="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center text-gray-400 group-hover:bg-blue-100 group-hover:text-blue-500 transition-colors">
+                                        <i data-lucide="upload-cloud" class="w-6 h-6"></i>
+                                    </div>
+                                    <div class="flex-1 min-w-0">
+                                        <p class="text-xs font-bold text-gray-600 truncate">Clique para fazer upload</p>
+                                        <p class="text-[10px] text-gray-400">JPG, PNG ou GIF (Máx 2MB)</p>
+                                    </div>
+                                </label>
+                            </div>
+
+                            <!-- Barra de Progresso (Oculta por padrão) -->
+                            <div id="progress-container" class="mt-3 hidden">
+                                <div class="w-full bg-gray-100 rounded-full h-1.5 overflow-hidden">
+                                    <div id="progress-bar" class="bg-blue-600 h-full transition-all duration-300" style="width: 0%"></div>
+                                </div>
+                            </div>
+                            
+                            <input type="hidden" id="input-photo" value="<%= user.foto || '' %>">
+                            
+                            <div class="mt-4 bg-blue-50/50 p-4 rounded-xl border border-blue-100">
                                 <label class="block text-[10px] font-bold text-blue-600 uppercase mb-2">Seu Mascote:</label>
                                 <select id="select-mascot" class="w-full px-3 py-2 bg-white border border-blue-200 rounded-lg outline-none text-xs text-gray-700 cursor-pointer">
                                     <option value="capivorce">Capivorce</option>
@@ -350,8 +374,56 @@
             updatePreview();
         });
 
-        ['name', 'role', 'email', 'photo', 'mascot'].forEach(key => {
+        ['name', 'role', 'email', 'mascot'].forEach(key => {
             inputs[key].addEventListener('input', updatePreview);
+        });
+
+        const fileInput = document.getElementById('input-file');
+        const progressContainer = document.getElementById('progress-container');
+        const progressBar = document.getElementById('progress-bar');
+        const uploadStatus = document.getElementById('upload-status');
+
+        fileInput.addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            // Validação simples
+            if (file.size > 2 * 1024 * 1024) { alert('Arquivo muito grande! Máximo 2MB.'); return; }
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            progressContainer.classList.remove('hidden');
+            progressBar.style.width = '0%';
+            uploadStatus.innerText = 'Subindo...';
+
+            const xhr = new XMLHttpRequest();
+            xhr.open('POST', '/api/utility/upload-photo', true);
+
+            xhr.upload.onprogress = (e) => {
+                if (e.lengthComputable) {
+                    const percent = Math.round((e.loaded / e.total) * 100);
+                    progressBar.style.width = percent + '%';
+                }
+            };
+
+            xhr.onload = function() {
+                if (xhr.status === 200) {
+                    const res = JSON.parse(xhr.responseText);
+                    inputs.photo.value = res.url;
+                    updatePreview();
+                    uploadStatus.innerText = '✓ Sucesso';
+                    setTimeout(() => {
+                        progressContainer.classList.add('hidden');
+                        uploadStatus.innerText = '';
+                    }, 3000);
+                } else {
+                    alert('Erro no upload. Tente novamente.');
+                    progressContainer.classList.add('hidden');
+                }
+            };
+
+            xhr.send(formData);
         });
 
         document.getElementById('btn-copy').addEventListener('click', function() {

@@ -116,5 +116,6 @@ router.post('/api/hr/action', requireAuth, requireGroup('ADMIN_RH'), hrControlle
 
 // --- UTILIDADES ---
 router.get('/utilities/signature', requireAuth, utilityController.renderSignaturePage);
+router.post('/api/utility/upload-photo', requireAuth, upload.single('file'), utilityController.uploadPhoto);
 
 module.exports = router;

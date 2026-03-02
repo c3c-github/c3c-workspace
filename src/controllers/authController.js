@@ -54,7 +54,7 @@ exports.azureCallback = async (req, res) => {
         }
         
         const soqlPessoa = `
-            SELECT Id, Name, Email__c,
+            SELECT Id, Name, Email__c, URL_Foto__c,
                    (SELECT Name FROM ContratosPessoa__r WHERE Status__c = 'Ativo' LIMIT 1),
                    (SELECT Grupo__r.Codigo__c FROM GruposDePermissao__r)
             FROM Pessoa__c 
@@ -90,7 +90,8 @@ exports.azureCallback = async (req, res) => {
             email: userEmail,
             funcao: grupos, 
             contrato: contrato, 
-            grupos: grupos      
+            grupos: grupos,
+            foto: pessoa.URL_Foto__c      
         };
 
         // Força salvamento antes do redirect (embora cookie-session seja auto, bom para debug)
@@ -144,7 +145,7 @@ exports.impersonateUser = async (req, res) => {
         
         // 1. Busca Dados Completos (Mesma lógica do Login)
         const soqlPessoa = `
-            SELECT Id, Name, Email__c,
+            SELECT Id, Name, Email__c, URL_Foto__c,
                    (SELECT Name FROM ContratosPessoa__r WHERE Status__c = 'Ativo' LIMIT 1),
                    (SELECT Grupo__r.Codigo__c FROM GruposDePermissao__r)
             FROM Pessoa__c 
@@ -176,6 +177,7 @@ exports.impersonateUser = async (req, res) => {
             funcao: grupos,
             contrato: contrato,
             grupos: grupos,
+            foto: pessoa.URL_Foto__c,
             isImpersonating: true // Flag visual
         };
 
