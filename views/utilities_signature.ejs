@@ -122,9 +122,9 @@
                     </h2>
                     
                     <div class="bg-white p-4 md:p-12 rounded-3xl shadow-sm border border-gray-100 overflow-x-auto flex flex-col items-center">
-                        <div id="signature-container" class="p-4 bg-white">
+                        <div id="signature-container" class="bg-white">
                             <!-- TABELA DE ASSINATURA -->
-                            <table border="0" cellpadding="0" cellspacing="0" style="width: 560px; min-width: 560px; border-collapse: collapse; font-family: 'Montserrat', Helvetica, Arial, sans-serif; background-color: #ffffff;">
+                            <table id="signature-table" border="0" cellpadding="0" cellspacing="0" style="width: 560px; min-width: 560px; border-collapse: collapse; font-family: 'Montserrat', Helvetica, Arial, sans-serif; background-color: #ffffff;">
                                 <tr>
                                     <td style="padding-bottom: 10px;">
                                         <table border="0" cellpadding="0" cellspacing="0" width="100%">
@@ -445,9 +445,9 @@
         });
 
         document.getElementById('btn-copy').addEventListener('click', function() {
-            const container = document.getElementById('signature-container');
+            const table = document.getElementById('signature-table');
             const range = document.createRange();
-            range.selectNode(container);
+            range.selectNode(table);
             window.getSelection().removeAllRanges();
             window.getSelection().addRange(range);
             
