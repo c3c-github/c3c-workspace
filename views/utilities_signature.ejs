@@ -126,7 +126,7 @@
                             <!-- TABELA DE ASSINATURA -->
                             <table border="0" cellpadding="0" cellspacing="0" style="width: 560px; min-width: 560px; border-collapse: collapse; font-family: 'Montserrat', Helvetica, Arial, sans-serif; background-color: #ffffff;">
                                 <tr>
-                                    <td style="padding-bottom: 20px;">
+                                    <td style="padding-bottom: 10px;">
                                         <table border="0" cellpadding="0" cellspacing="0" width="100%">
                                             <tr>
                                                 <!-- Foto de Perfil -->
@@ -181,7 +181,7 @@
                                 </tr>
                                 
                                 <tr>
-                                    <td height="2" style="border-bottom: 2px solid #2978FF; font-size: 1px; line-height: 1px;">&nbsp;</td>
+                                    <td height="2" style="border-bottom: 2px solid #2978FF; font-size: 1px; line-height: 1px;"></td>
                                 </tr>
         
                                 <tr>
@@ -191,9 +191,10 @@
                                                 <td valign="middle">
                                                     <table border="0" cellpadding="0" cellspacing="0">
                                                         <tr>
-                                                                                                                    <td id="footer-logo-td" valign="middle">
-                                                                                                                        <img src="<%= baseUrl %>/assets/signatures/assinaturaLogo.png" alt="C3C" height="24" style="height: 24px; display: block;">
-                                                                                                                    </td>                                                            <td id="footer-text-td" valign="middle" style="padding-left: 6px; font-size: 14px; font-weight: 700; color: #0f172a; font-family: 'Montserrat', sans-serif; line-height: 24px;">
+                                                            <td id="footer-logo-td" valign="middle">
+                                                                <img src="<%= baseUrl %>/assets/signatures/assinaturaLogo.png" alt="C3C" height="24" style="height: 24px; display: block;">
+                                                            </td>                                                            
+                                                            <td id="footer-text-td" valign="middle" style="padding-left: 6px; font-size: 14px; font-weight: 700; color: #0f172a; font-family: 'Montserrat', sans-serif; line-height: 24px;">
                                                                 C3C<span style="color: #1DDDBD; font-weight: bold;">.</span>Software
                                                             </td>
                                                         </tr>
@@ -250,29 +251,28 @@
                                         <i data-lucide="mail" class="w-6 h-6"></i> Passo a Passo: Configurar no Outlook
                                     </h3>
                                     
-                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-6">
-                                        <div class="flex gap-4 items-start">
-                                            <div class="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center text-sm font-bold shrink-0">1</div>
-                                            <p class="text-sm leading-relaxed text-blue-50">Abra o <b>Outlook</b> e clique no ícone de <b>Configurações</b> (engrenagem no topo).</p>
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                        <div class="flex gap-4 items-start bg-white/10 p-4 rounded-2xl">
+                                            <div class="w-8 h-8 rounded-full bg-white text-blue-600 flex items-center justify-center text-sm font-bold shrink-0">1</div>
+                                            <p class="text-sm leading-relaxed">Abra o <b>Outlook</b> e clique no ícone de <b>Configurações</b> (engrenagem no topo).</p>
                                         </div>
-                                        <div class="flex gap-4 items-start">
-                                            <div class="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center text-sm font-bold shrink-0">2</div>
-                                            <p class="text-sm leading-relaxed text-blue-50">Busque por <b>"Assinatura"</b> na barra de busca e selecione <b>Assinatura de e-mail</b>.</p>
+                                        <div class="flex gap-4 items-start bg-white/10 p-4 rounded-2xl">
+                                            <div class="w-8 h-8 rounded-full bg-white text-blue-600 flex items-center justify-center text-sm font-bold shrink-0">2</div>
+                                            <p class="text-sm leading-relaxed">Busque por <b>"Assinatura"</b> na barra de busca e selecione <b>Assinatura de e-mail</b>.</p>
                                         </div>
-                                        <div class="flex gap-4 items-start">
-                                            <div class="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center text-sm font-bold shrink-0">3</div>
-                                            <p class="text-sm leading-relaxed text-blue-50">Clique em <b>+ Adicionar assinatura</b>, dê um nome e no campo de texto dê um <b>Ctrl + V</b>.</p>
+                                        <div class="flex gap-4 items-start bg-white/10 p-4 rounded-2xl">
+                                            <div class="w-8 h-8 rounded-full bg-white text-blue-600 flex items-center justify-center text-sm font-bold shrink-0">3</div>
+                                            <p class="text-sm leading-relaxed">Clique em <b>+ Adicionar assinatura</b>, dê um nome e no campo de texto dê um <b>Ctrl + V</b>.</p>
                                         </div>
-                                        <div class="flex gap-4 items-start">
-                                            <div class="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center text-sm font-bold shrink-0">4</div>
-                                            <div class="text-sm leading-relaxed text-blue-50">
-                                                <p class="font-bold text-white mb-1 uppercase text-[10px] tracking-widest opacity-80">Importante:</p>
+                                        <div class="flex gap-4 items-start bg-white/10 p-4 rounded-2xl">
+                                            <div class="w-8 h-8 rounded-full bg-white text-blue-600 flex items-center justify-center text-sm font-bold shrink-0">4</div>
+                                            <div class="text-sm leading-relaxed">
                                                 Marque os flags <b>"Padrão para novas mensagens"</b> e <b>"Respostas/encaminhamentos"</b>.
                                             </div>
                                         </div>
-                                        <div class="flex gap-4 items-start">
-                                            <div class="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center text-sm font-bold shrink-0">5</div>
-                                            <p class="text-sm leading-relaxed text-blue-50">Clique em <b>Salvar</b> no final da página. Sua assinatura oficial está pronta! 🚀</p>
+                                        <div class="flex gap-4 items-start bg-white/10 p-4 rounded-2xl md:col-span-2 lg:col-span-1">
+                                            <div class="w-8 h-8 rounded-full bg-white text-blue-600 flex items-center justify-center text-sm font-bold shrink-0">5</div>
+                                            <p class="text-sm leading-relaxed">Clique em <b>Salvar</b> no final da página. Sua assinatura oficial está pronta! 🚀</p>
                                         </div>
                                     </div>
                                 </div>
