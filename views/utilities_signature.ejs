@@ -222,42 +222,85 @@
                             </table>
                         </div>
 
-                        <!-- Ações e Instruções -->
-                        <div class="mt-8 grid grid-cols-1 md:grid-cols-2 gap-6 w-full max-w-4xl">
-                            <!-- Coluna 1: Botões -->
-                            <div class="bg-gray-50 p-6 rounded-2xl border border-gray-100 flex flex-col justify-center">
-                                <button id="btn-copy" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-xl shadow-lg transition-all flex items-center justify-center gap-3 transform active:scale-95 mb-3">
-                                    <i data-lucide="copy" class="w-5 h-5"></i> Copiar Assinatura
-                                </button>
-                                <button id="btn-download" class="w-full bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 font-bold py-3 rounded-xl transition-all flex items-center justify-center gap-2">
-                                    <i data-lucide="download" class="w-4 h-4"></i> Baixar código HTML
-                                </button>
-                                <p id="copy-message" class="hidden text-center mt-3 text-xs font-bold text-teal-600 animate-bounce">✓ Copiado para a área de transferência!</p>
-                            </div>
+                        <!-- Ações e Guia de Configuração -->
+                        <div class="mt-8 w-full max-w-5xl">
+                            
+                            <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                                
+                                <!-- Coluna 1: Ações e Vídeo (7 colunas) -->
+                                <div class="lg:col-span-7 space-y-6">
+                                    
+                                    <!-- Card de Botões -->
+                                    <div class="bg-gray-50 p-6 rounded-3xl border border-gray-100 flex flex-col sm:flex-row gap-4">
+                                        <div class="flex-1">
+                                            <button id="btn-copy" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-2xl shadow-lg transition-all flex items-center justify-center gap-3 transform active:scale-95">
+                                                <i data-lucide="copy" class="w-5 h-5"></i> Copiar Assinatura
+                                            </button>
+                                            <p id="copy-message" class="hidden text-center mt-3 text-xs font-bold text-teal-600 animate-bounce">✓ Copiado com sucesso!</p>
+                                        </div>
+                                        <button id="btn-download" class="sm:w-auto px-6 bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 font-bold py-4 rounded-2xl transition-all flex items-center justify-center gap-2">
+                                            <i data-lucide="download" class="w-5 h-5"></i> HTML
+                                        </button>
+                                    </div>
 
-                            <!-- Coluna 2: Guia -->
-                            <div class="bg-blue-50/30 p-6 rounded-2xl border border-blue-100/50">
-                                <h4 class="text-[10px] font-bold text-blue-600 uppercase mb-3 flex items-center gap-2 tracking-widest">
-                                    <i data-lucide="help-circle" class="w-3 h-3"></i> Como utilizar:
-                                </h4>
-                                <ul class="space-y-2">
-                                    <li class="flex gap-2 text-xs text-gray-600">
-                                        <span class="w-4 h-4 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold text-[10px] shrink-0">1</span>
-                                        Clique no botão azul <b>Copiar Assinatura</b> acima.
-                                    </li>
-                                    <li class="flex gap-2 text-xs text-gray-600">
-                                        <span class="w-4 h-4 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold text-[10px] shrink-0">2</span>
-                                        Vá nas configurações do seu <b>Outlook/Gmail</b>.
-                                    </li>
-                                    <li class="flex gap-2 text-xs text-gray-600">
-                                        <span class="w-4 h-4 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold text-[10px] shrink-0">3</span>
-                                        Na área de Assinatura, dê um <b>Ctrl + V</b> (Colar).
-                                    </li>
-                                    <li class="flex gap-2 text-xs text-gray-600">
-                                        <span class="w-4 h-4 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold text-[10px] shrink-0">4</span>
-                                        Salve as alterações. Sucesso! 🚀
-                                    </li>
-                                </ul>
+                                    <!-- Card de Vídeo -->
+                                    <div class="bg-white rounded-3xl border border-gray-100 overflow-hidden shadow-sm">
+                                        <div class="p-4 border-b border-gray-50 bg-gray-50/50 flex items-center gap-2">
+                                            <div class="w-2 h-2 rounded-full bg-red-500 animate-pulse"></div>
+                                            <span class="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Tutorial em Vídeo</span>
+                                        </div>
+                                        <div class="aspect-video bg-slate-900 flex items-center justify-center group cursor-pointer relative">
+                                            <!-- Placeholder para Vídeo - Substituir o SRC conforme necessário -->
+                                            <iframe class="w-full h-full" src="https://www.youtube.com/embed/dQw4w9WgXcQ" title="Tutorial Assinatura C3C" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Coluna 2: Passo a Passo Outlook (5 colunas) -->
+                                <div class="lg:col-span-5">
+                                    <div class="bg-blue-600 rounded-3xl p-8 text-white shadow-xl shadow-blue-100 relative overflow-hidden h-full">
+                                        <!-- Decoração -->
+                                        <div class="absolute -right-10 -top-10 w-40 h-40 bg-white/10 rounded-full blur-3xl"></div>
+                                        
+                                        <div class="relative z-10">
+                                            <h3 class="text-xl font-bold mb-6 flex items-center gap-3">
+                                                <i data-lucide="mail" class="w-6 h-6"></i> Configurar no Outlook
+                                            </h3>
+                                            
+                                            <div class="space-y-6">
+                                                <div class="flex gap-4">
+                                                    <div class="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center text-xs font-bold shrink-0">1</div>
+                                                    <p class="text-sm leading-relaxed text-blue-50">Abra o Outlook e clique no ícone de <b>Configurações</b> (engrenagem).</p>
+                                                </div>
+                                                <div class="flex gap-4">
+                                                    <div class="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center text-xs font-bold shrink-0">2</div>
+                                                    <p class="text-sm leading-relaxed text-blue-50">Busque por <b>"Assinatura"</b> e selecione <b>Assinatura de e-mail</b>.</p>
+                                                </div>
+                                                <div class="flex gap-4">
+                                                    <div class="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center text-xs font-bold shrink-0">3</div>
+                                                    <p class="text-sm leading-relaxed text-blue-50">Clique em <b>+ Adicionar assinatura</b> e dê um nome a ela.</p>
+                                                </div>
+                                                <div class="flex gap-4">
+                                                    <div class="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center text-xs font-bold shrink-0">4</div>
+                                                    <div class="text-sm leading-relaxed text-blue-50">
+                                                        No campo de texto, dê um <b>Ctrl + V</b> para colar a assinatura que você copiou.
+                                                    </div>
+                                                </div>
+                                                <div class="flex gap-4">
+                                                    <div class="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center text-xs font-bold shrink-0">5</div>
+                                                    <p class="text-sm leading-relaxed text-blue-50 font-medium">Marque os flags de <b>"Padrão para novas mensagens"</b> e <b>"Respostas/encaminhamentos"</b>.</p>
+                                                </div>
+                                                <div class="flex gap-4">
+                                                    <div class="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center text-xs font-bold shrink-0">6</div>
+                                                    <button onclick="document.getElementById('btn-copy').click()" class="bg-white text-blue-600 px-4 py-2 rounded-xl text-xs font-bold hover:bg-blue-50 transition-colors shadow-lg">
+                                                        Salvar e Pronto! 🚀
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
                             </div>
                         </div>
                     </div>
