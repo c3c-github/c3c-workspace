@@ -66,7 +66,11 @@ exports.getHrEmployees = async (req, res) => {
 
         const periodDataMap = {};
         resPeriodos.records.forEach(p => {
-            periodDataMap[p.Id] = { approved: 0, closed: 0, billed: 0, pending: 0, totalRealizado: 0, projects: new Set() };
+            periodDataMap[p.Id] = { 
+                approved: 0, closed: 0, billed: 0, 
+                pendingRH: 0, pendingService: 0, draft: 0, rejected: 0,
+                totalRealizado: 0, projects: new Set() 
+            };
         });
 
         resProjetos.records.forEach(r => {
@@ -77,14 +81,18 @@ exports.getHrEmployees = async (req, res) => {
             const pId = r.Periodo__c;
             if (!periodDataMap[pId]) return;
             const st = r.Status__c;
+            const data = periodDataMap[pId];
             
-            if (st === 'Aprovado') periodDataMap[pId].approved++;
-            else if (st === 'Fechado') periodDataMap[pId].closed++;
-            else if (st === 'Faturado') periodDataMap[pId].billed++;
-            else if (st === 'Em aprovação do RH') periodDataMap[pId].pending++;
+            if (st === 'Aprovado') data.approved++;
+            else if (st === 'Fechado') data.closed++;
+            else if (st === 'Faturado') data.billed++;
+            else if (st === 'Em aprovação do RH') data.pendingRH++;
+            else if (st === 'Em aprovação do serviço') data.pendingService++;
+            else if (st === 'Rascunho') data.draft++;
+            else if (st.includes('Reprovado')) data.rejected++;
 
             const vol = (r.normal||0) + (r.extra||0) + Math.abs(r.banco||0) + (r.ausRem||0) + (r.ausNaoRem||0);
-            periodDataMap[pId].totalRealizado += vol;
+            data.totalRealizado += vol;
         });
 
         let kpiBurnout = 0, kpiOciosos = 0;
@@ -98,11 +106,14 @@ exports.getHrEmployees = async (req, res) => {
 
             let statusUI = 'Pendente', canAction = false;
             
-            if (!data || (data.approved + data.closed + data.billed + data.pending === 0)) {
+            if (!data || (data.approved + data.closed + data.billed + data.pendingRH + data.pendingService + data.draft + data.rejected === 0)) {
                 statusUI = 'Sem Lançamentos';
-            } else if (data.pending > 0) { 
+            } else if (data.pendingRH > 0) { 
                 statusUI = 'Aguardando Aprovação RH'; 
                 canAction = true; 
+            } else if (data.pendingService > 0 || data.draft > 0 || data.rejected > 0) {
+                statusUI = 'Pendente (Ajuste/Serviço)';
+                canAction = false;
             } else if (data.approved > 0 && data.closed === 0) { 
                 statusUI = 'Aprovado (Pronto p/ Fechamento)'; 
                 canAction = true; 
@@ -208,7 +219,6 @@ exports.handleHrAction = async (req, res) => {
     let novoStatus;
     if (action === 'approve') novoStatus = 'Aprovado';
     else if (action === 'reject') novoStatus = 'Reprovado RH';
-    else if (action === 'close') novoStatus = 'Fechado';
 
     try {
         const conn = await getSfConnection();
@@ -216,79 +226,34 @@ exports.handleHrAction = async (req, res) => {
 
         if (entryIds && Array.isArray(entryIds) && entryIds.length > 0) {
             const idsList = entryIds.map(id => `'${id}'`).join(',');
-            const statusNeeded = action === 'close' ? "Aprovado" : "Em aprovação do RH";
-            soql = `SELECT Id, HorasBanco__c, DiaPeriodo__r.Data__c FROM LancamentoHora__c WHERE Id IN (${idsList}) AND Status__c = '${statusNeeded}'`;
+            soql = `SELECT Id FROM LancamentoHora__c WHERE Id IN (${idsList}) AND Status__c = 'Em aprovação do RH'`;
         } else {
-            const statusFilter = action === 'close' ? "Status__c = 'Aprovado'" : "Status__c = 'Em aprovação do RH'";
             soql = `
-                SELECT Id, HorasBanco__c, DiaPeriodo__r.Data__c 
-                FROM LancamentoHora__c 
+                SELECT Id FROM LancamentoHora__c 
                 WHERE Pessoa__c = '${personId}'
                 AND DiaPeriodo__r.Data__c >= ${inicio} AND DiaPeriodo__r.Data__c <= ${fim}
-                AND ${statusFilter}
+                AND Status__c = 'Em aprovação do RH'
             `;
         }
         
         const result = await conn.query(soql);
         
         if (result.totalSize === 0) {
-            return res.json({ success: false, message: 'Nenhum lançamento elegível para esta ação.' });
+            return res.json({ success: false, message: 'Nenhum lançamento pendente no RH encontrado para esta ação.' });
         }
 
-        // --- LÓGICA DE FECHAMENTO COM BANCO ITEM A ITEM ---
-        if (action === 'close') {
-            try {
-                // 1. Garante que existe a "Conta" Pai
-                const bancoHorasId = await getOrCreateBancoHoras(conn, personId);
-                
-                const bankRecords = [];
-
-                // 2. Itera sobre cada lançamento para criar o espelho no banco
-                result.records.forEach(r => {
-                    // Verifica se tem horas de banco (Positivas ou Negativas)
-                    if (r.HorasBanco__c && r.HorasBanco__c !== 0) {
-                        bankRecords.push({
-                            BancoHoras__c: bancoHorasId,
-                            LancamentoHora__c: r.Id, // Vínculo 1 para 1
-                            Quantidade__c: r.HorasBanco__c,
-                            Data__c: r.DiaPeriodo__r ? r.DiaPeriodo__r.Data__c : fim, // Data do dia trabalhado
-                            Tipo__c: r.HorasBanco__c > 0 ? 'Crédito (Extra)' : 'Débito (Ausência)', // Ajuste conforme sua picklist
-                            Observacao__c: 'Fechamento Automático RH'
-                        });
-                    }
-                });
-
-                // 3. Bulk Insert dos registros de banco
-                if (bankRecords.length > 0) {
-                    const insertRes = await conn.sobject('RegistroBancoHoras__c').create(bankRecords);
-                    // Opcional: verificar erros no insertRes
-                    const failures = insertRes.filter(res => !res.success);
-                    if (failures.length > 0) {
-                        console.error("Erros ao criar registros de banco:", JSON.stringify(failures));
-                        // Dependendo da regra, pode dar throw aqui para não fechar os lançamentos
-                        throw new Error("Falha parcial ao gerar registros de banco. Operação abortada.");
-                    }
-                }
-
-            } catch (bancoError) {
-                console.error("Erro crítico banco de horas:", bancoError);
-                return res.status(500).json({ success: false, message: "Erro no Banco de Horas: " + bancoError.message });
-            }
-        }
-
-        // --- ATUALIZAÇÃO DOS STATUS (SE PASSOU PELO BANCO) ---
+        // --- ATUALIZAÇÃO DOS STATUS ---
         const updates = result.records.map(r => {
             const obj = { Id: r.Id, Status__c: novoStatus };
             if (action === 'reject' && motivo) obj.MotivoReprovacao__c = motivo;
-            if (action === 'close' || action === 'approve') obj.MotivoReprovacao__c = null;
+            if (action === 'approve') obj.MotivoReprovacao__c = null;
             return obj;
         });
         
         await conn.update('LancamentoHora__c', updates);
 
         let msg = 'Ação realizada com sucesso.';
-        if(action === 'close') msg = 'Período fechado e banco atualizado.';
-        else if(action === 'approve') msg = 'Lançamentos aprovados definitivamente.';
+        if(action === 'approve') msg = 'Lançamentos aprovados definitivamente.';
         else if(action === 'reject') msg = 'Lançamentos reprovados.';
 
         res.json({ success: true, message: msg });
