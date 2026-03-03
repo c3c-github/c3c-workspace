@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<PermissionSet xmlns="http://soap.sforce.com/2006/04/metadata">
+    <description>Permite permissões personalizadas para o Agente do Agentforce: usuário do agente do Unimed: unimed@00d4x0000022d9s.ext.</description>
+    <hasActivationRequired>false</hasActivationRequired>
+    <label>Unimed permissões</label>
+    <license>Einstein Agent</license>
+</PermissionSet>

@@ -91,41 +91,74 @@ exports.getProjects = async (req, res) => {
         const emailLider = req.session.user.email;
 
         // Query corrigida sem o campo Contrato__r inválido
-        const qAlloc = `SELECT Servico__c, Servico__r.Name, Servico__r.Conta__r.Name, Percentual__c, Pessoa__c FROM Alocacao__c WHERE Servico__r.Lider__r.Email__c = '${emailLider}' AND DataInicio__c <= ${fim} AND (DataFim__c >= ${inicio} OR DataFim__c = NULL)`;
-        const qLanc = `SELECT Servico__c, Servico__r.Name, Servico__r.Conta__r.Name, Status__c, Horas__c, HorasExtras__c FROM LancamentoHora__c WHERE Servico__r.Lider__r.Email__c = '${emailLider}' AND DiaPeriodo__r.Data__c >= ${inicio} AND DiaPeriodo__r.Data__c <= ${fim} AND ${FILTRO_HORAS}`;
+        const qAlloc = `
+            SELECT Servico__c, Servico__r.Name, Servico__r.Conta__r.Name, Servico__r.Tipo__c, 
+                   Servico__r.Contrato__r.HorasContratadas__c, Percentual__c, Pessoa__c 
+            FROM Alocacao__c 
+            WHERE Servico__r.Lider__r.Email__c = '${emailLider}' 
+            AND DataInicio__c <= ${fim} 
+            AND (DataFim__c >= ${inicio} OR DataFim__c = NULL)
+        `;
+        const qLanc = `
+            SELECT Servico__c, Servico__r.Name, Servico__r.Conta__r.Name, Servico__r.Tipo__c, 
+                   Servico__r.Contrato__r.HorasContratadas__c, Status__c, Horas__c, HorasExtras__c 
+            FROM LancamentoHora__c 
+            WHERE Servico__r.Lider__r.Email__c = '${emailLider}' 
+            AND DiaPeriodo__r.Data__c >= ${inicio} AND DiaPeriodo__r.Data__c <= ${fim} 
+            AND ${FILTRO_HORAS}
+        `;
 
         const [resAlloc, resLanc] = await Promise.all([conn.query(qAlloc), conn.query(qLanc)]);
 
         const projectsMap = {};
         const diasUteisPeriodo = getBusinessDays(inicio, fim);
 
-        resAlloc.records.forEach(row => {
+        // Função auxiliar para inicializar ou recuperar projeto no map com a lógica Suporte
+        const getOrInitProject = (row) => {
             const sId = safeId(row.Servico__c);
             if (!projectsMap[sId]) {
-                projectsMap[sId] = { serviceId: row.Servico__c, serviceName: row.Servico__r.Name, client: row.Servico__r.Conta__r.Name, metrics: { alocado: 0, normal: 0, extra: 0, ponderado: 0 }, teamSize: 0, idsAlocados: new Set(), statusUI: 'Ok' };
+                const sObj = row.Servico__r || {};
+                const isSupport = sObj.Tipo__c === 'Suporte';
+                const plannedHours = isSupport ? (sObj.Contrato__r?.HorasContratadas__c || 0) : 0;
+
+                projectsMap[sId] = { 
+                    serviceId: row.Servico__c, 
+                    serviceName: sObj.Name || 'Serviço', 
+                    client: sObj.Conta__r?.Name || 'Cliente', 
+                    metrics: { alocado: plannedHours, normal: 0, extra: 0, ponderado: 0 }, 
+                    teamSize: 0, 
+                    idsAlocados: new Set(), 
+                    statusUI: 'Ok',
+                    isSupport: isSupport
+                };
             }
-            const cargaDiaria = 8; 
-            const percent = (row.Percentual__c || 0) / 100;
-            projectsMap[sId].metrics.alocado += (diasUteisPeriodo * cargaDiaria * percent);
-            projectsMap[sId].idsAlocados.add(row.Pessoa__c);
+            return projectsMap[sId];
+        };
+
+        resAlloc.records.forEach(row => {
+            const p = getOrInitProject(row);
+            
+            // Se NÃO for suporte, somamos o planejado baseado no percentual das alocações
+            if (!p.isSupport) {
+                const cargaDiaria = 8; 
+                const percent = (row.Percentual__c || 0) / 100;
+                p.metrics.alocado += (diasUteisPeriodo * cargaDiaria * percent);
+            }
+            
+            p.idsAlocados.add(row.Pessoa__c);
         });
 
         resLanc.records.forEach(row => {
-            const sId = safeId(row.Servico__c);
-            if (!projectsMap[sId] && row.Servico__c) {
-                projectsMap[sId] = { serviceId: row.Servico__c, serviceName: row.Servico__r ? row.Servico__r.Name : 'Serviço', client: row.Servico__r && row.Servico__r.Conta__r ? row.Servico__r.Conta__r.Name : 'Cliente', metrics: { alocado: 0, normal: 0, extra: 0, ponderado: 0 }, teamSize: 0, idsAlocados: new Set(), statusUI: 'Ok' };
-            }
-            if (projectsMap[sId]) {
-                const norm = row.Horas__c || 0;
-                const ext = row.HorasExtras__c || 0;
-                projectsMap[sId].metrics.normal += norm;
-                projectsMap[sId].metrics.extra += ext;
-                projectsMap[sId].metrics.ponderado += (norm + ext);
-                
-                // Agora considera os novos status de fluxo
-                if (['Em aprovação do serviço', 'Rascunho', 'Reprovado serviço', 'Reprovado RH'].includes(row.Status__c)) {
-                    projectsMap[sId].statusUI = 'Aberto';
-                }
+            const p = getOrInitProject(row);
+            
+            const norm = row.Horas__c || 0;
+            const ext = row.HorasExtras__c || 0;
+            p.metrics.normal += norm;
+            p.metrics.extra += ext;
+            p.metrics.ponderado += (norm + ext);
+            
+            if (['Em aprovação do serviço', 'Rascunho', 'Reprovado serviço', 'Reprovado RH'].includes(row.Status__c)) {
+                p.statusUI = 'Aberto';
             }
         });
 
@@ -134,6 +167,10 @@ exports.getProjects = async (req, res) => {
             let percent = p.metrics.alocado > 0 ? Math.round((p.metrics.ponderado/p.metrics.alocado)*100) : (p.metrics.ponderado > 0 ? 100 : 0);
             return { ...p, percentual: percent };
         });
+        
+        // Ordenação por horas previstas (alocado) decrescente
+        result.sort((a, b) => b.metrics.alocado - a.metrics.alocado);
+
         res.json(result);
     } catch (e) { res.status(500).json({ error: e.message }); }
 };
