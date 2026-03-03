@@ -376,14 +376,23 @@
         function renderLogs(logs) { 
             const tb = document.getElementById('logs-table-body'); tb.innerHTML = ''; 
             logs.forEach(l => {
-                let btns = `<span class="text-xs text-gray-400 italic">${l.status || '-'}</span>`;
+                let btns = `<span class="text-[10px] text-gray-400 italic">${l.status || '-'}</span>`;
                 if (l.canEdit && currentTicketData.Status !== 'Closed') {
                     btns = `<div class="flex items-center justify-center gap-2">
                         <button onclick="openEditLog('${l.id}','${l.rawDate}','${l.hoursNormal}','${l.hoursExtra}','${l.desc}')" class="text-blue-500 hover:text-blue-700" title="Editar"><i data-lucide="pencil" class="w-3 h-3"></i></button>
                         <button onclick="deleteLog('${l.id}')" class="text-red-500 hover:text-red-700" title="Excluir"><i data-lucide="trash-2" class="w-3 h-3"></i></button>
                     </div>`;
                 }
-                tb.innerHTML += `<tr class="border-b text-xs"><td class="px-4 py-2">${l.date}</td><td class="px-4 py-2">${l.ownerName}</td><td class="px-4 py-2">${l.activity}</td><td class="px-4 py-2 text-center text-xs font-bold text-gray-500">${l.status || 'Rascunho'}</td><td class="px-4 py-2 text-center text-blue-600 font-bold">${l.hoursNormal}h</td><td class="px-4 py-2 text-center text-red-600 font-bold">${l.hoursExtra}h</td><td class="px-4 py-2 text-center">${btns}</td></tr>`;
+
+                // Mapeamento de cores de status
+                let stClass = 'text-gray-500';
+                if (l.status === 'Em aprovação do serviço') stClass = 'text-blue-600 font-bold';
+                else if (l.status === 'Em aprovação do RH') stClass = 'text-indigo-600 font-bold';
+                else if (l.status === 'Aprovado') stClass = 'text-green-600 font-bold';
+                else if (l.status === 'Reprovado serviço' || l.status === 'Reprovado RH') stClass = 'text-red-600 font-bold';
+                else if (l.status === 'Fechado' || l.status === 'Faturado') stClass = 'text-slate-500 font-bold';
+
+                tb.innerHTML += `<tr class="border-b text-xs"><td class="px-4 py-2">${l.date}</td><td class="px-4 py-2">${l.ownerName}</td><td class="px-4 py-2">${l.activity}</td><td class="px-4 py-2 text-center text-[10px] uppercase font-bold ${stClass}">${l.status || 'Rascunho'}</td><td class="px-4 py-2 text-center text-blue-600 font-bold">${l.hoursNormal}h</td><td class="px-4 py-2 text-center text-red-600 font-bold">${l.hoursExtra}h</td><td class="px-4 py-2 text-center">${btns}</td></tr>`;
             });
             lucide.createIcons();
         }

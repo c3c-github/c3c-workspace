@@ -86,21 +86,21 @@
                     <div class="p-2 bg-gray-50 rounded-full text-gray-400" id="card-banco-icon"><i data-lucide="scale" class="w-5 h-5"></i></div>
                 </div>
                 <div class="bg-white border border-gray-200 rounded-lg p-3 flex flex-col justify-center items-center">
-                    <p class="text-[10px] uppercase font-bold text-gray-400 tracking-wider mb-1">Status Folha</p>
-                    <span id="card-status-label" class="px-3 py-1 bg-gray-100 text-gray-500 text-xs font-bold rounded-full">Carregando...</span>
+                    <p class="text-[10px] uppercase font-bold text-gray-400 tracking-wider mb-1">Status Período</p>
+                    <span id="card-status-label" class="px-3 py-1 bg-gray-100 text-gray-500 text-xs font-bold rounded-full text-center">Carregando...</span>
                 </div>
             </div>
         </header>
 
         <div class="flex-1 overflow-y-auto p-8">
             <div class="flex flex-wrap gap-4 mb-6 bg-white p-4 rounded-lg border border-gray-100 shadow-sm items-center text-xs text-gray-600">
-                <span class="font-bold text-gray-400 uppercase mr-2 border-r border-gray-200 pr-4">Legenda:</span>
+                <span class="font-bold text-gray-400 uppercase mr-2 border-r border-gray-200 pr-4">Legenda Lançamentos:</span>
                 <div class="flex items-center gap-1"><span class="w-2 h-2 rounded-full border border-gray-400"></span> Rascunho</div>
-                <div class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-blue-400"></span> Lançado</div>
+                <div class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-blue-400"></span> Em apr. Serviço</div>
+                <div class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-indigo-400"></span> Em apr. RH</div>
                 <div class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-green-500"></span> Aprovado</div>
-                <div class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-red-500"></span> Reprovado</div>
-                <div class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-slate-500"></span> Fechado</div>
-                <div class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-amber-500"></span> Faturado</div>
+                <div class="flex items-center gap-1"><span class="w-2 h-2 rounded-full border border-red-500"></span> Repr. Serviço</div>
+                <div class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-red-500"></span> Repr. RH</div>
             </div>
 
             <div class="grid grid-cols-7 gap-4 mb-2 text-center">
@@ -218,7 +218,7 @@
                 </div>
             </div>
 
-            <div class="bg-white border-t border-gray-200 p-4 shrink-0 z-50 shadow-[0_-5px_15px_-5px_rgba(0,0,0,0.1)]">
+            <div class="bg-white border-t border-gray-200 p-4 shrink-0 z-[60] shadow-[0_-5px_15px_-5px_rgba(0,0,0,0.1)] relative">
                 <div class="flex justify-between items-center mb-3 pb-3 border-b border-gray-100">
                     <div class="flex gap-4">
                         <div class="text-center">
@@ -240,14 +240,8 @@
                     </div>
                 </div>
 
-                <div class="flex justify-between items-center">
-                    <p class="text-sm text-gray-500 font-medium" id="footer-status">Rascunho</p>
-                    <div class="flex gap-2">
-                        <button class="px-4 py-2 border border-gray-300 text-gray-600 rounded-lg font-bold text-sm hover:bg-gray-50 transition-colors" onclick="closeDayPanel()">Fechar</button>
-                        <button id="btn-submit-day" onclick="submitDay()" class="hidden px-6 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-bold text-sm shadow-md transition-transform active:scale-95 flex items-center gap-2">
-                           <span>🚀</span> Lançar Dia
-                        </button>
-                    </div>
+                <div class="flex justify-end items-center">
+                    <button class="px-4 py-2 border border-gray-300 text-gray-600 rounded-lg font-bold text-sm hover:bg-gray-50 transition-colors" onclick="closeDayPanel()">Fechar</button>
                 </div>
             </div>
         </div>
@@ -327,11 +321,16 @@
             else if (saldo < 0) saldoEl.className = "font-extrabold text-red-600 flex items-baseline";
             else saldoEl.className = "font-extrabold text-gray-700 flex items-baseline";
 
-            const st = summary.statusGeral || 'Em Aberto';
+            const st = summary.statusGeral || 'Aberto';
             lbl.innerText = st;
-            const mapClass = { 'Faturado': 'amber', 'Fechado': 'slate', 'Aprovado': 'green', 'Aguardando Aprovação': 'blue', 'Novo': 'gray' };
-            const color = mapClass[st] || 'yellow';
-            lbl.className = `px-3 py-1 bg-${color}-100 text-${color}-700 text-xs font-bold rounded-full border border-${color}-200`;
+            const mapClass = { 
+                'Aberto': 'blue', 
+                'Em emissão de nota': 'amber', 
+                'Em pagamento': 'orange', 
+                'Pago': 'green' 
+            };
+            const color = mapClass[st] || 'gray';
+            lbl.className = `px-3 py-1 bg-${color}-100 text-${color}-700 text-xs font-bold rounded-full border border-${color}-200 text-center`;
         }
 
         function renderGrid(grid) {
@@ -352,25 +351,38 @@
                 if(d.total>0 || d.entries.length>0) {
                     cnt=`<span class="font-bold text-gray-700 text-sm">${d.total}h</span>`;
                     
-                    // Mapeamento explícito de classes para evitar problemas com PurgeCSS do Tailwind
-                    if(d.status_approval === 'draft') {
-                        bg = 'bg-white border-gray-300 border-dashed';
-                    } else if(d.status_approval === 'submitted') {
-                        bg = 'bg-blue-50 border-blue-200';
-                        ind = '<div class="absolute top-2 right-2 w-2 h-2 bg-blue-400 rounded-full animate-pulse"></div>';
-                    } else if(d.status_approval === 'approved') {
-                        bg = 'bg-green-50 border-green-200';
-                        ind = '<div class="absolute top-2 right-2 w-2 h-2 bg-green-500 rounded-full"></div>';
-                    } else if(d.status_approval === 'rejected') {
-                        bg = 'bg-red-50 border-red-200';
-                        ind = '<i data-lucide="alert-circle" class="absolute top-2 right-2 w-4 h-4 text-red-600"></i>';
-                    } else if(d.status_approval === 'closed') {
-                        bg = 'bg-slate-50 border-slate-200';
-                        ind = '<i data-lucide="lock" class="absolute top-2 right-2 w-3 h-3 text-slate-500"></i>';
-                    } else if(d.status_approval === 'billed') {
-                        bg = 'bg-amber-50 border-amber-200';
-                        ind = '<i data-lucide="check-circle-2" class="absolute top-2 right-2 w-3 h-3 text-amber-600"></i>';
-                    }
+                    // Container de Indicadores (Múltiplas bolinhas)
+                    let dotContainer = '<div class="absolute top-2 right-2 flex gap-1 items-center">';
+                    
+                    (d.status_list || []).forEach(st => {
+                        if(st === 'draft') {
+                            dotContainer += '<div class="w-2 h-2 border border-gray-400 rounded-full" title="Rascunho"></div>';
+                        } else if(st === 'submitted_service') {
+                            dotContainer += '<div class="w-2 h-2 bg-blue-400 rounded-full animate-pulse" title="Pendente Serviço"></div>';
+                        } else if(st === 'submitted_rh') {
+                            dotContainer += '<div class="w-2 h-2 bg-indigo-400 rounded-full animate-pulse" title="Pendente RH"></div>';
+                        } else if(st === 'approved') {
+                            dotContainer += '<div class="w-2 h-2 bg-green-500 rounded-full" title="Aprovado"></div>';
+                        } else if(st === 'rejected_service') {
+                            dotContainer += '<div class="w-2 h-2 border border-red-500 rounded-full" title="Reprovado Serviço"></div>';
+                        } else if(st === 'rejected_rh') {
+                            dotContainer += '<div class="w-2 h-2 bg-red-500 rounded-full" title="Reprovado RH"></div>';
+                        } else if(st === 'closed') {
+                            dotContainer += '<i data-lucide="lock" class="w-3 h-3 text-slate-500"></i>';
+                        } else if(st === 'billed') {
+                            dotContainer += '<i data-lucide="check-circle-2" class="w-3 h-3 text-amber-600"></i>';
+                        }
+                    });
+                    
+                    dotContainer += '</div>';
+                    ind = dotContainer;
+
+                    // Background condicional (prioridade para cores de alerta)
+                    if(d.status_list.includes('rejected_rh') || d.status_list.includes('rejected_service')) bg = 'bg-red-50 border-red-200';
+                    else if(d.status_list.includes('submitted_service')) bg = 'bg-blue-50 border-blue-200';
+                    else if(d.status_list.includes('submitted_rh')) bg = 'bg-indigo-50 border-indigo-200';
+                    else if(d.status_list.includes('approved')) bg = 'bg-green-50 border-green-200';
+                    else bg = 'bg-white border-gray-200 hover:border-blue-300';
                 } else {
                     if(d.status_day==='holiday') cnt=`<span class="bg-rose-200 text-rose-700 text-[10px] px-2 py-0.5 rounded-full">${d.label}</span>`;
                     else if(d.status_day==='vacation') cnt=`<span class="bg-cyan-100 text-cyan-700 text-[10px] px-2 py-0.5 rounded-full">${d.label}</span>`;
@@ -392,8 +404,6 @@
             document.getElementById('panel-weekday').innerText=new Date(key+'T12:00:00').toLocaleDateString('pt-BR',{weekday:'long'});
             document.getElementById('panel-date').innerText=new Date(key+'T12:00:00').toLocaleDateString('pt-BR',{day:'numeric',month:'long'});
             
-            const stMap={'draft':'Rascunho', 'submitted':'Lançado', 'approved':'Aprovado', 'rejected':'Reprovado', 'closed':'Fechado', 'billed':'Faturado', 'empty':'Novo'};
-            document.getElementById('footer-status').innerText = "Status: " + (stMap[g.status_approval] || 'Rascunho');
             resetActivitySearch();
             resetForm(); 
             projectAllocationMap = {}; 
@@ -430,29 +440,26 @@
                 renderEntriesList();
                 validateRules('init'); 
 
-                // Lógica de Bloqueio e Botão Submeter
+                // Lógica de Bloqueio (Baseada no PERÍODO)
                 const isLocked = d.isLocked;
-                const hasDrafts = dayEntries.some(e => e.status === 'Rascunho');
-                const btnSubmit = document.getElementById('btn-submit-day');
+                const pStatus = d.periodoStatus;
                 const frm = document.getElementById('add-activity-container');
                 const alert = document.getElementById('readonly-alert');
 
                 if(isLocked) { 
                     frm.classList.add('opacity-50','pointer-events-none'); 
                     alert.classList.remove('hidden'); 
-                    document.getElementById('readonly-reason').innerText=`Bloqueado (Enviado/Aprovado)`;
-                    btnSubmit.style.display = 'none'; 
+                    document.getElementById('readonly-reason').innerText=`Período Bloqueado (${pStatus})`;
                 } else { 
                     frm.classList.remove('opacity-50','pointer-events-none');
                     alert.classList.add('hidden');
-                    btnSubmit.style.display = hasDrafts ? 'flex' : 'none'; 
                 }
 
                 const rej = document.getElementById('rejection-alert');
-                if(dayEntries.some(e => e.status === 'Reprovado')) {
+                const rejectedEntry = dayEntries.find(e => ['Reprovado serviço', 'Reprovado RH'].includes(e.status));
+                if(rejectedEntry) {
                      rej.classList.remove('hidden');
-                     const rItem = dayEntries.find(e => e.status === 'Reprovado' && e.reason);
-                     document.getElementById('rejection-reason').innerText = rItem ? rItem.reason : '';
+                     document.getElementById('rejection-reason').innerText = rejectedEntry.reason || 'Reprovado pelo gestor ou RH';
                 } else rej.classList.add('hidden');
 
             } catch(e) { console.error(e); allocL.innerHTML='Erro carregar'; }
@@ -466,8 +473,8 @@
                 dayEntries.forEach(e => {
                     const entryJson = JSON.stringify(e).replace(/"/g, '&quot;');
                     let brd='border-gray-200', msg='';
-                    if(e.status==='Reprovado') { brd='border-red-200 bg-red-50'; msg=`<div class="text-xs text-red-600 mt-1"><i data-lucide="alert-circle" class="w-3 h-3 inline"></i> ${e.reason||'Sem motivo'}</div>`; }
-                    const canEdit=['Rascunho','Reprovado'].includes(e.status);
+                    if(e.status.includes('Reprovado')) { brd='border-red-200 bg-red-50'; msg=`<div class="text-xs text-red-600 mt-1"><i data-lucide="alert-circle" class="w-3 h-3 inline"></i> ${e.reason||'Sem motivo informado'}</div>`; }
+                    const canEdit=['Rascunho','Reprovado serviço','Reprovado RH'].includes(e.status);
                     
                     let badges = '';
                     if(e.hours > 0) badges += `<span class="bg-gray-100 text-gray-700 px-2 py-0.5 rounded text-[10px] font-bold">Normal: ${e.hours}h</span> `;
@@ -477,8 +484,10 @@
 
                     // Visual do Status no card
                     let stColor = 'text-gray-400';
-                    if(e.status === 'Lançado') stColor = 'text-blue-500 font-bold';
-                    if(e.status === 'Aprovado') stColor = 'text-green-500 font-bold';
+                    if(e.status === 'Em aprovação do serviço') stColor = 'text-blue-500 font-bold';
+                    else if(e.status === 'Em aprovação do RH') stColor = 'text-indigo-500 font-bold';
+                    else if(e.status === 'Aprovado') stColor = 'text-green-500 font-bold';
+                    else if(e.status.includes('Reprovado')) stColor = 'text-red-500 font-bold';
 
                     entL.innerHTML+=`
                         <div onclick="editEntry(${canEdit ? entryJson : '{}'})" class="bg-white border ${brd} rounded-lg p-3 shadow-sm relative group hover:shadow-md transition-shadow ${canEdit ? 'cursor-pointer' : ''} pr-8">
@@ -487,7 +496,7 @@
                                     <p class="text-xs font-bold text-blue-600 truncate">${e.project}</p>
                                     <p class="text-sm text-gray-800 truncate">${e.activity}</p>
                                 </div>
-                                <span class="text-[10px] uppercase tracking-wide ${stColor}">${e.status}</span>
+                                <span class="text-[9px] uppercase tracking-wide ${stColor} text-right">${e.status}</span>
                             </div>
                             <div class="flex flex-wrap gap-2 mt-2">
                                 ${badges}
@@ -659,31 +668,7 @@
         function closeDayPanel() { document.getElementById('day-panel').classList.remove('open'); document.getElementById('day-panel').classList.add('closed'); const ov=document.getElementById('slide-overlay'); ov.classList.add('opacity-0'); setTimeout(()=>ov.classList.add('hidden'),300); }
         function selectProjectFromCard(id) { document.getElementById('input-project').value=id; resetActivitySearch(); }
 
-        // --- SUBMIT DAY ---
-        async function submitDay() {
-            if(!confirm("Enviar lançamentos deste dia para aprovação?")) return;
-            const btn = document.getElementById('btn-submit-day'); 
-            btn.disabled = true; btn.innerHTML = "<span>⏳</span> Enviando...";
-            
-            try {
-                // ENVIA DATA (string)
-                const res = await fetch('/api/timesheet/submit-day', { 
-                    method: 'POST', 
-                    headers: { 'Content-Type': 'application/json' }, 
-                    body: JSON.stringify({ date: currentOpenDate }) 
-                });
-                const d = await res.json();
-                if (d.success) { 
-                    alert(d.message); 
-                    closeDayPanel(); 
-                    loadCalendar(currentPeriods[currentPeriodIndex].Id); 
-                } else { 
-                    alert('Erro: ' + d.message); 
-                }
-            } catch (e) { alert('Erro de conexão.'); } 
-            finally { btn.disabled = false; btn.innerHTML = "<span>🚀</span> Lançar Dia"; }
-        }
-
+        // --- SUBMIT PERIOD ---
         async function submitPeriod() {
             if(!currentPeriods[currentPeriodIndex]) return;
             const pId = currentPeriods[currentPeriodIndex].Id;
@@ -731,8 +716,6 @@
                         return fetch(`/api/timesheet/day?date=${currentOpenDate}&diaPeriodoId=${currentOpenDayId}`); 
                     }).then(r=>r.json()).then(newData => { 
                         dayEntries=newData.entries; renderEntriesList(); validateRules('init'); resetForm(); 
-                        const hasDrafts = dayEntries.some(e => e.status === 'Rascunho');
-                        document.getElementById('btn-submit-day').style.display = hasDrafts ? 'flex' : 'none';
                     });
                 } else alert('Erro: '+d.message);
             } catch(e){ console.error(e); } finally { btn.innerText=originalText; btn.disabled=false; }
@@ -748,8 +731,6 @@
                          return fetch(`/api/timesheet/day?date=${currentOpenDate}&diaPeriodoId=${currentOpenDayId}`); 
                      }).then(r=>r.json()).then(newData => { 
                          dayEntries=newData.entries; renderEntriesList(); validateRules('init'); resetForm(); 
-                         const hasDrafts = dayEntries.some(e => e.status === 'Rascunho');
-                         document.getElementById('btn-submit-day').style.display = hasDrafts ? 'flex' : 'none';
                      });
                 } else alert('Erro: '+d.message);
             } catch(e) { alert('Erro técnico'); }

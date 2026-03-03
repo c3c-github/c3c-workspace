@@ -3,6 +3,11 @@
     <description>Concede acesso de leitura e escrita aos objetos de Venda, Parcela e Configuração de API.</description>
     <fieldPermissions>
         <editable>true</editable>
+        <field>Pessoa__c.URL_Foto__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
         <field>AlocacaoPrevista__c.CustoTotal__c</field>
         <readable>true</readable>
     </fieldPermissions>

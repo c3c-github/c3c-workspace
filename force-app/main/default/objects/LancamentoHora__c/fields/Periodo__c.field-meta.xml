@@ -2,7 +2,6 @@
 <CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
     <fullName>Periodo__c</fullName>
     <deleteConstraint>SetNull</deleteConstraint>
-    <externalId>false</externalId>
     <label>Período</label>
     <referenceTo>Periodo__c</referenceTo>
     <relationshipLabel>Lançamentos de horas</relationshipLabel>

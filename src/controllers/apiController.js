@@ -121,7 +121,11 @@ exports.getProjects = async (req, res) => {
                 projectsMap[sId].metrics.normal += norm;
                 projectsMap[sId].metrics.extra += ext;
                 projectsMap[sId].metrics.ponderado += (norm + ext);
-                if (['Lançado', 'Pendente', 'Rascunho', 'Submetido'].includes(row.Status__c)) projectsMap[sId].statusUI = 'Aberto';
+                
+                // Agora considera os novos status de fluxo
+                if (['Em aprovação do serviço', 'Rascunho', 'Reprovado serviço', 'Reprovado RH'].includes(row.Status__c)) {
+                    projectsMap[sId].statusUI = 'Aberto';
+                }
             }
         });
 
@@ -191,9 +195,9 @@ exports.getProjectResources = async (req, res) => {
                 r.totalRealizado += (hNorm + hExt); 
 
                 const st = row.Status__c;
-                if (['Lançado', 'Pendente', 'Rascunho', 'Submetido'].includes(st)) r.countPending++;
-                else if (['Aprovado', 'Faturado'].includes(st)) r.countApproved++;
-                else if (['Reprovado'].includes(st)) r.countRejected++;
+                if (['Em aprovação do serviço', 'Rascunho', 'Reprovado serviço', 'Reprovado RH'].includes(st)) r.countPending++;
+                else if (['Em aprovação do RH', 'Aprovado', 'Faturado', 'Fechado'].includes(st)) r.countApproved++;
+                else if (['Reprovado serviço'].includes(st)) r.countRejected++;
             }
         });
 
@@ -217,7 +221,7 @@ exports.getResourceActivities = async (req, res) => {
 
         // FILTRO APLICADO CONFORME SOLICITADO
         const soql = `
-            SELECT DiaPeriodo__r.Data__c, Atividade__r.Name, Status__c, Justificativa__c,
+            SELECT Id, DiaPeriodo__r.Data__c, Atividade__r.Name, Status__c, Justificativa__c,
                    Horas__c, HorasExtras__c, HorasBanco__c, 
                    HorasAusenciaRemunerada__c, HorasAusenciaNaoRemunerada__c
             FROM LancamentoHora__c 
@@ -230,6 +234,7 @@ exports.getResourceActivities = async (req, res) => {
 
         const result = await conn.query(soql);
         const activities = result.records.map(r => ({
+            id: r.Id,
             data: r.DiaPeriodo__r ? r.DiaPeriodo__r.Data__c : '-',
             atividade: r.Atividade__r ? r.Atividade__r.Name : 'Geral',
             status: r.Status__c,
@@ -245,19 +250,30 @@ exports.getResourceActivities = async (req, res) => {
 };
 
 exports.handleApprovalAction = async (req, res) => {
-    const { serviceId, personId, action, inicio, fim, motivo } = req.body;
-    const novoStatus = (action === 'approve') ? 'Aprovado' : 'Reprovado';
+    const { serviceId, personId, action, inicio, fim, motivo, entryIds } = req.body;
+    const novoStatus = (action === 'approve') ? 'Em aprovação do RH' : 'Reprovado serviço';
+    
     try {
         const conn = await getSfConnection();
-        const soqlBusca = `
-            SELECT Id FROM LancamentoHora__c 
-            WHERE Servico__c = '${serviceId}' AND Pessoa__c = '${personId}' 
-            AND DiaPeriodo__r.Data__c >= ${inicio} AND DiaPeriodo__r.Data__c <= ${fim} 
-            AND Status__c IN ('Lançado', 'Pendente', 'Reprovado', 'Rascunho', 'Submetido')
-            AND ${FILTRO_HORAS}
-        `;
+        let soqlBusca = '';
+
+        if (entryIds && Array.isArray(entryIds) && entryIds.length > 0) {
+            // Modo individual ou massa por IDs específicos
+            const idsList = entryIds.map(id => `'${id}'`).join(',');
+            soqlBusca = `SELECT Id FROM LancamentoHora__c WHERE Id IN (${idsList}) AND Status__c = 'Em aprovação do serviço'`;
+        } else {
+            // Modo legado: Por colaborador e serviço no período
+            soqlBusca = `
+                SELECT Id FROM LancamentoHora__c 
+                WHERE Servico__c = '${serviceId}' AND Pessoa__c = '${personId}' 
+                AND DiaPeriodo__r.Data__c >= ${inicio} AND DiaPeriodo__r.Data__c <= ${fim} 
+                AND Status__c = 'Em aprovação do serviço'
+                AND ${FILTRO_HORAS}
+            `;
+        }
+
         const resultBusca = await conn.query(soqlBusca);
-        if (resultBusca.totalSize === 0) return res.json({ success: false, message: 'Nada para processar.' });
+        if (resultBusca.totalSize === 0) return res.json({ success: false, message: 'Nenhum lançamento pendente encontrado.' });
 
         const allUpdates = resultBusca.records.map(rec => {
             const upd = { Id: rec.Id, Status__c: novoStatus };
@@ -265,8 +281,9 @@ exports.handleApprovalAction = async (req, res) => {
             if (action === 'approve') upd.MotivoReprovacao__c = null;
             return upd;
         });
+        
         await conn.update('LancamentoHora__c', allUpdates);
-        res.json({ success: true, message: 'Sucesso.' });
+        res.json({ success: true, message: `Lançamentos processados com sucesso.` });
     } catch (e) { res.status(500).json({ success: false, error: e.message }); }
 };
 
@@ -354,7 +371,7 @@ exports.getDashboardMetrics = async (req, res) => {
         resLanc.records.forEach(r => {
             const h = r.total || r.expr0 || 0;
             totalLanc += h;
-            if (['Lançado', 'Pendente', 'Rascunho', 'Submetido'].includes(r.Status__c)) totalPend += h;
+            if (['Em aprovação do serviço', 'Em aprovação do RH', 'Rascunho', 'Reprovado serviço', 'Reprovado RH'].includes(r.Status__c)) totalPend += h;
         });
         let efic = totalAlocado > 0 ? Math.round(((totalLanc - totalPend) / totalAlocado) * 100) : 0;
         res.json({ totalAlocadas: totalAlocado, totalLancadas: totalLanc, eficiencia: efic, totalPendentes: totalPend });

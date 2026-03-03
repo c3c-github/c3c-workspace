@@ -81,7 +81,7 @@ exports.getHrEmployees = async (req, res) => {
             if (st === 'Aprovado') periodDataMap[pId].approved++;
             else if (st === 'Fechado') periodDataMap[pId].closed++;
             else if (st === 'Faturado') periodDataMap[pId].billed++;
-            else periodDataMap[pId].pending++;
+            else if (st === 'Em aprovação do RH') periodDataMap[pId].pending++;
 
             const vol = (r.normal||0) + (r.extra||0) + Math.abs(r.banco||0) + (r.ausRem||0) + (r.ausNaoRem||0);
             periodDataMap[pId].totalRealizado += vol;
@@ -98,11 +98,19 @@ exports.getHrEmployees = async (req, res) => {
 
             let statusUI = 'Pendente', canAction = false;
             
-            if (!data || (data.approved + data.closed + data.billed + data.pending === 0)) statusUI = 'Sem Lançamentos';
-            else if (data.pending > 0) statusUI = 'Aguardando Aprovação';
-            else if (data.approved > 0 && data.closed === 0) { statusUI = 'Pronto para Fechamento'; canAction = true; }
-            else if (data.closed > 0) statusUI = 'Fechado';
-            else if (data.billed > 0) statusUI = 'Faturado';
+            if (!data || (data.approved + data.closed + data.billed + data.pending === 0)) {
+                statusUI = 'Sem Lançamentos';
+            } else if (data.pending > 0) { 
+                statusUI = 'Aguardando Aprovação RH'; 
+                canAction = true; 
+            } else if (data.approved > 0 && data.closed === 0) { 
+                statusUI = 'Aprovado (Pronto p/ Fechamento)'; 
+                canAction = true; 
+            } else if (data.closed > 0) {
+                statusUI = 'Fechado';
+            } else if (data.billed > 0) {
+                statusUI = 'Faturado';
+            }
 
             let statusKPI = 'healthy';
             if (totalHoras > (contractHours * 1.2)) { statusKPI = 'danger'; kpiBurnout++; }
@@ -144,7 +152,7 @@ exports.getEmployeeDetails = async (req, res) => {
         )`;
 
         const result = await conn.query(`
-            SELECT DiaPeriodo__r.Data__c, Servico__r.Name, Atividade__r.Name, Justificativa__c, Status__c,
+            SELECT Id, DiaPeriodo__r.Data__c, Servico__r.Name, Atividade__r.Name, Justificativa__c, Status__c, MotivoReprovacao__c,
                    Horas__c, HorasExtras__c, HorasBanco__c, 
                    HorasAusenciaRemunerada__c, HorasAusenciaNaoRemunerada__c
             FROM LancamentoHora__c 
@@ -164,10 +172,12 @@ exports.getEmployeeDetails = async (req, res) => {
             sumNormal += hN; sumExtra += hE; sumBanco += hB; sumAusencia += hA;
 
             return {
+                id: r.Id,
                 date: r.DiaPeriodo__r ? r.DiaPeriodo__r.Data__c : '-',
                 project: r.Servico__r ? r.Servico__r.Name : '-',
                 activity: r.Atividade__r ? r.Atividade__r.Name : 'Geral',
                 justification: r.Justificativa__c || '',
+                reason: r.MotivoReprovacao__c || '',
                 status: r.Status__c,
                 normal: hN, extraPgto: hE, banco: hB, ausencia: hA
             };
@@ -193,21 +203,31 @@ exports.getEmployeeDetails = async (req, res) => {
 
 // --- 3. AÇÃO RH (CORRIGIDA: 1 LANÇAMENTO -> 1 REGISTRO BANCO) ---
 exports.handleHrAction = async (req, res) => {
-    const { personId, action, inicio, fim, motivo } = req.body;
-    let novoStatus = action === 'close' ? 'Fechado' : 'Reprovado';
+    const { personId, action, inicio, fim, motivo, entryIds } = req.body;
+    
+    let novoStatus;
+    if (action === 'approve') novoStatus = 'Aprovado';
+    else if (action === 'reject') novoStatus = 'Reprovado RH';
+    else if (action === 'close') novoStatus = 'Fechado';
 
     try {
         const conn = await getSfConnection();
-        const statusFilter = action === 'close' ? "Status__c = 'Aprovado'" : "Status__c IN ('Lançado', 'Aprovado')";
-        
-        // ADICIONADO: DiaPeriodo__r.Data__c para usar a data correta no extrato
-        const soql = `
-            SELECT Id, HorasBanco__c, DiaPeriodo__r.Data__c 
-            FROM LancamentoHora__c 
-            WHERE Pessoa__c = '${personId}'
-            AND DiaPeriodo__r.Data__c >= ${inicio} AND DiaPeriodo__r.Data__c <= ${fim}
-            AND ${statusFilter}
-        `;
+        let soql = '';
+
+        if (entryIds && Array.isArray(entryIds) && entryIds.length > 0) {
+            const idsList = entryIds.map(id => `'${id}'`).join(',');
+            const statusNeeded = action === 'close' ? "Aprovado" : "Em aprovação do RH";
+            soql = `SELECT Id, HorasBanco__c, DiaPeriodo__r.Data__c FROM LancamentoHora__c WHERE Id IN (${idsList}) AND Status__c = '${statusNeeded}'`;
+        } else {
+            const statusFilter = action === 'close' ? "Status__c = 'Aprovado'" : "Status__c = 'Em aprovação do RH'";
+            soql = `
+                SELECT Id, HorasBanco__c, DiaPeriodo__r.Data__c 
+                FROM LancamentoHora__c 
+                WHERE Pessoa__c = '${personId}'
+                AND DiaPeriodo__r.Data__c >= ${inicio} AND DiaPeriodo__r.Data__c <= ${fim}
+                AND ${statusFilter}
+            `;
+        }
         
         const result = await conn.query(soql);
         
@@ -260,13 +280,18 @@ exports.handleHrAction = async (req, res) => {
         const updates = result.records.map(r => {
             const obj = { Id: r.Id, Status__c: novoStatus };
             if (action === 'reject' && motivo) obj.MotivoReprovacao__c = motivo;
-            if (action === 'close') obj.MotivoReprovacao__c = null;
+            if (action === 'close' || action === 'approve') obj.MotivoReprovacao__c = null;
             return obj;
         });
         
         await conn.update('LancamentoHora__c', updates);
 
-        res.json({ success: true, message: action === 'close' ? 'Período fechado e banco atualizado.' : 'Período reprovado.' });
+        let msg = 'Ação realizada com sucesso.';
+        if(action === 'close') msg = 'Período fechado e banco atualizado.';
+        else if(action === 'approve') msg = 'Lançamentos aprovados definitivamente.';
+        else if(action === 'reject') msg = 'Lançamentos reprovados.';
+
+        res.json({ success: true, message: msg });
 
     } catch (e) {
         console.error(e);

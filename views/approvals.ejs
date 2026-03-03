@@ -120,15 +120,20 @@
     <div id="modal-activities" class="fixed inset-0 z-[60] hidden">
         <div class="absolute inset-0 bg-black bg-opacity-30 backdrop-blur-sm transition-opacity" onclick="closeActivityModal()"></div>
         <div class="absolute inset-0 flex items-center justify-center p-4">
-            <div class="bg-white rounded-lg shadow-xl w-full max-w-4xl overflow-hidden flex flex-col max-h-[80vh] animate-[fadeIn_0.2s_ease-out]">
+            <div class="bg-white rounded-lg shadow-xl w-full max-w-5xl overflow-hidden flex flex-col max-h-[85vh] animate-[fadeIn_0.2s_ease-out]">
                 <div class="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
                     <h3 class="font-bold text-gray-900 flex items-center gap-2"><i data-lucide="list" class="w-5 h-5 text-indigo-600"></i> Extrato Detalhado</h3>
-                    <button onclick="closeActivityModal()"><i data-lucide="x" class="w-5 h-5 text-gray-400 hover:text-gray-600"></i></button>
+                    <div class="flex items-center gap-3">
+                        <button id="btn-mass-reject" onclick="openMassRejectModal()" class="hidden bg-red-50 text-red-600 px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-red-100 transition-colors border border-red-200">Reprovar Selecionados</button>
+                        <button id="btn-mass-approve" onclick="confirmMassApprove()" class="hidden bg-green-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-green-700 transition-colors shadow-sm">Aprovar Selecionados</button>
+                        <button onclick="closeActivityModal()" class="ml-2"><i data-lucide="x" class="w-5 h-5 text-gray-400 hover:text-gray-600"></i></button>
+                    </div>
                 </div>
                 <div class="overflow-auto p-0 flex-1">
                     <table class="w-full text-left text-xs">
                         <thead class="bg-white text-gray-500 font-bold border-b border-gray-100 sticky top-0 shadow-sm">
                             <tr>
+                                <th class="p-3 w-10"><input type="checkbox" id="check-all-entries" onchange="toggleAllEntries(this)" class="rounded border-gray-300"></th>
                                 <th class="p-3">Data</th>
                                 <th class="p-3">Atividade / Justificativa</th>
                                 <th class="p-3 text-right text-blue-600">Normal</th>
@@ -381,77 +386,114 @@
         }
 
         // --- 4. EXTRATO (MODAL) ---
+        let currentModalServiceId = null;
+        let currentModalPersonId = null;
+
         async function openActivityModal(serviceId, personId) {
+            currentModalServiceId = serviceId;
+            currentModalPersonId = personId;
             const modal = document.getElementById('modal-activities');
             const tbody = document.getElementById('activity-table-body');
-            tbody.innerHTML = '<tr><td colspan="7" class="text-center p-4 text-gray-400"><i data-lucide="loader-2" class="animate-spin inline"></i> Carregando...</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="8" class="text-center p-4 text-gray-400"><i data-lucide="loader-2" class="animate-spin inline"></i> Carregando...</td></tr>';
             lucide.createIcons();
             modal.classList.remove('hidden');
             
+            // Reset Mass Actions
+            document.getElementById('check-all-entries').checked = false;
+            updateMassActionButtons();
+
             const p = availablePeriods[currentPeriodIndex];
             try {
                 const res = await fetch(`${API_URL}/approvals/${serviceId}/resources/${personId}/activities?inicio=${p.DataInicio__c}&fim=${p.DataFim__c}`);
                 const activities = await res.json();
                 tbody.innerHTML = '';
                 
-                if(activities.length === 0) { tbody.innerHTML = '<tr><td colspan="7" class="text-center p-4 text-gray-400">Nenhum registro detalhado encontrado.</td></tr>'; return; }
+                if(activities.length === 0) { tbody.innerHTML = '<tr><td colspan="8" class="text-center p-4 text-gray-400">Nenhum registro detalhado encontrado.</td></tr>'; return; }
                 
                 activities.forEach(a => {
                     const justificativa = a.justificativa ? `<br><span class="text-[10px] text-gray-400 italic">"${a.justificativa}"</span>` : '';
-                    
-                    // CORREÇÃO DE DATA (Safe Format)
                     const dateFmt = formatSafeDate(a.data);
                     
                     // Status Badge
-                    let stBadge = `<span class="text-xs text-gray-400">${a.status}</span>`;
-                    if (['Lançado', 'Submetido', 'Pendente'].includes(a.status)) stBadge = `<span class="text-[10px] bg-blue-100 text-blue-700 px-2 py-0.5 rounded font-bold">Pendente</span>`;
-                    if (a.status === 'Rascunho') stBadge = `<span class="text-[10px] border border-gray-300 text-gray-500 px-2 py-0.5 rounded">Rascunho</span>`;
-                    if (a.status === 'Aprovado') stBadge = `<span class="text-[10px] bg-green-100 text-green-700 px-2 py-0.5 rounded font-bold">Aprovado</span>`;
-                    if (a.status === 'Reprovado') stBadge = `<span class="text-[10px] bg-red-100 text-red-700 px-2 py-0.5 rounded font-bold">Reprovado</span>`;
+                    let stBadge = `<span class="text-[10px] bg-gray-100 text-gray-500 px-2 py-0.5 rounded">${a.status}</span>`;
+                    let canSelect = false;
+
+                    if (a.status === 'Em aprovação do serviço') {
+                        stBadge = `<span class="text-[10px] bg-blue-100 text-blue-700 px-2 py-0.5 rounded font-bold border border-blue-200">Pendente Serviço</span>`;
+                        canSelect = true;
+                    } else if (a.status === 'Em aprovação do RH') {
+                        stBadge = `<span class="text-[10px] bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded font-bold">Pendente RH</span>`;
+                    } else if (a.status === 'Aprovado') {
+                        stBadge = `<span class="text-[10px] bg-green-100 text-green-700 px-2 py-0.5 rounded font-bold">Aprovado</span>`;
+                    } else if (a.status === 'Reprovado serviço') {
+                        stBadge = `<span class="text-[10px] bg-red-100 text-red-700 px-2 py-0.5 rounded font-bold">Reprovado Serviço</span>`;
+                    }
 
                     const val = (v, cls) => v > 0 ? `<span class="font-bold ${cls}">${v.toFixed(1)}h</span>` : '<span class="text-gray-200">-</span>';
 
+                    const checkbox = canSelect 
+                        ? `<input type="checkbox" class="entry-checkbox rounded border-gray-300 text-blue-600" value="${a.id}" onchange="updateMassActionButtons()">`
+                        : `<i data-lucide="lock" class="w-3 h-3 text-gray-300 mx-auto"></i>`;
+
                     tbody.innerHTML += `
                         <tr class="hover:bg-gray-50 border-b border-gray-50 last:border-0">
+                            <td class="p-3 text-center">${checkbox}</td>
                             <td class="p-3 text-xs text-gray-500 font-mono">${dateFmt}</td>
                             <td class="p-3 font-medium text-gray-800 leading-tight">${a.atividade}${justificativa}</td>
                             <td class="p-3 text-right">${val(a.normal, 'text-blue-600')}</td>
                             <td class="p-3 text-right">${val(a.extraPgto, 'text-green-600')}</td>
-                            <td class="p-3 text-right">${val(a.extraBanco + a.ausenciaBanco, 'text-teal-600')}</td>
-                            <td class="p-3 text-right">${val(a.ausenciaOutras, 'text-red-500')}</td>
+                            <td class="p-3 text-right">${val(a.extraBanco, 'text-teal-600')}</td>
+                            <td class="p-3 text-right">${val(a.ausenciaBanco, 'text-orange-500')}</td>
                             <td class="p-3 text-center">${stBadge}</td>
                         </tr>`;
                 });
-            } catch (err) { console.error(err); tbody.innerHTML = '<tr><td colspan="7" class="text-center p-4 text-red-500">Erro ao carregar extrato.</td></tr>'; }
+                lucide.createIcons();
+            } catch (err) { console.error(err); tbody.innerHTML = '<tr><td colspan="8" class="text-center p-4 text-red-500">Erro ao carregar extrato.</td></tr>'; }
         }
 
-        // --- HELPERS ---
-        function formatSafeDate(dateString) {
-            if (!dateString) return '-';
-            // Converte YYYY-MM-DD para DD/MM/YYYY sem sofrer com timezone
-            const parts = dateString.split('-');
-            if (parts.length === 3) return `${parts[2]}/${parts[1]}/${parts[0]}`;
-            return dateString;
+        function toggleAllEntries(master) {
+            const checks = document.querySelectorAll('.entry-checkbox');
+            checks.forEach(c => c.checked = master.checked);
+            updateMassActionButtons();
         }
 
-        function closeModal() { document.getElementById('modal-approval').classList.add('hidden'); }
-        function closeActivityModal() { document.getElementById('modal-activities').classList.add('hidden'); }
-        
-        async function approveAction(serviceId, personId, action, motivo = null) {
-            const msg = action === 'approve' ? 'Confirma APROVAÇÃO de todos os itens pendentes?' : 'Confirma REPROVAÇÃO?';
-            if(!motivo && !confirm(msg)) return;
+        function updateMassActionButtons() {
+            const selectedCount = document.querySelectorAll('.entry-checkbox:checked').length;
+            const btnApprove = document.getElementById('btn-mass-approve');
+            const btnReject = document.getElementById('btn-mass-reject');
             
-            const p = availablePeriods[currentPeriodIndex];
+            if(selectedCount > 0) {
+                btnApprove.classList.remove('hidden');
+                btnReject.classList.remove('hidden');
+                btnApprove.innerText = `Aprovar (${selectedCount})`;
+                btnReject.innerText = `Reprovar (${selectedCount})`;
+            } else {
+                btnApprove.classList.add('hidden');
+                btnReject.classList.add('hidden');
+            }
+        }
+
+        function getSelectedEntryIds() {
+            return Array.from(document.querySelectorAll('.entry-checkbox:checked')).map(cb => cb.value);
+        }
+
+        async function confirmMassApprove() {
+            const ids = getSelectedEntryIds();
+            if(!confirm(`Confirma a aprovação de ${ids.length} lançamento(s)?`)) return;
+            
             try {
                 const res = await fetch(`${API_URL}/approvals/action`, {
                     method: 'POST', headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ serviceId, personId, action, inicio: p.DataInicio__c, fim: p.DataFim__c, motivo })
+                    body: JSON.stringify({ entryIds: ids, action: 'approve' })
                 });
                 const result = await res.json();
-                if (result.success) { 
-                    openModal(serviceId, document.getElementById('modal-title').innerText); // Recarrega tabela
-                } else { alert('Erro: ' + result.message); }
-            } catch (err) { alert('Erro de comunicação.'); }
+                if (result.success) {
+                    await openActivityModal(currentModalServiceId, currentModalPersonId);
+                    await openModal(currentModalServiceId, document.getElementById('modal-title').innerText);
+                    const dates = availablePeriods[currentPeriodIndex];
+                    loadProjects(dates.DataInicio__c, dates.DataFim__c); // Feedback na lista principal
+                } else { alert(result.message); }
+            } catch (e) { alert('Erro na aprovação.'); }
         }
 
         function openRejectModal(serviceId, personId, name) {
@@ -462,14 +504,77 @@
             document.getElementById('modal-reject').classList.remove('hidden');
         }
 
-        function confirmReject() {
-            const sId = document.getElementById('reject-service-id').value;
-            const pId = document.getElementById('reject-person-id').value;
+        function openMassRejectModal() {
+            const ids = getSelectedEntryIds();
+            document.getElementById('reject-person-name').innerText = `${ids.length} lançamento(s) selecionado(s)`;
+            document.getElementById('reject-service-id').value = 'MASS';
+            document.getElementById('reject-person-id').value = 'MASS';
+            document.getElementById('reject-reason').value = '';
+            document.getElementById('modal-reject').classList.remove('hidden');
+        }
+
+        // Reutiliza confirmReject mas enviando IDs se for massa
+        async function confirmReject() {
+            const isMass = document.getElementById('reject-service-id').value === 'MASS';
             const reason = document.getElementById('reject-reason').value.trim();
             if(!reason) { alert("Motivo obrigatório."); return; }
-            approveAction(sId, pId, 'reject', reason);
-            document.getElementById('modal-reject').classList.add('hidden');
+
+            const payload = { action: 'reject', motivo: reason };
+            if (isMass) {
+                payload.entryIds = getSelectedEntryIds();
+            } else {
+                payload.serviceId = document.getElementById('reject-service-id').value;
+                payload.personId = document.getElementById('reject-person-id').value;
+                const p = availablePeriods[currentPeriodIndex];
+                payload.inicio = p.DataInicio__c;
+                payload.fim = p.DataFim__c;
+            }
+
+            try {
+                const res = await fetch(`${API_URL}/approvals/action`, {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const result = await res.json();
+                if (result.success) {
+                    document.getElementById('modal-reject').classList.add('hidden');
+                    await openActivityModal(currentModalServiceId, currentModalPersonId);
+                    await openModal(currentModalServiceId, document.getElementById('modal-title').innerText);
+                    const dates = availablePeriods[currentPeriodIndex];
+                    loadProjects(dates.DataInicio__c, dates.DataFim__c);
+                } else { alert(result.message); }
+            } catch (e) { alert('Erro na reprovação.'); }
         }
+
+        async function approveAction(serviceId, personId, action, motivo = null) {
+            const msg = action === 'approve' ? 'Confirma APROVAÇÃO de todos os itens pendentes?' : 'Confirma REPROVAÇÃO?';
+            if(!motivo && !confirm(msg)) return;
+            
+            const p = availablePeriods[currentPeriodIndex];
+            try {
+                const res = await fetch(`${API_URL}/approvals/action`, {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ serviceId, personId, action, inicio: p.DataInicio__c, fim: p.DataFim__c, motivo, entryIds: null })
+                });
+                const result = await res.json();
+                if (result.success) { 
+                    const checkAll = document.getElementById('check-all-entries');
+                    if(checkAll) checkAll.checked = false;
+                    updateMassActionButtons();
+                    openModal(serviceId, document.getElementById('modal-title').innerText); 
+                } else { alert('Erro: ' + result.message); }
+            } catch (err) { alert('Erro de comunicação.'); }
+        }
+
+        function formatSafeDate(dateString) {
+            if (!dateString) return '-';
+            const parts = dateString.split('-');
+            if (parts.length === 3) return `${parts[2]}/${parts[1]}/${parts[0]}`;
+            return dateString;
+        }
+
+        function closeModal() { document.getElementById('modal-approval').classList.add('hidden'); }
+        function closeActivityModal() { document.getElementById('modal-activities').classList.add('hidden'); }
     </script>
 </body>
 </html>

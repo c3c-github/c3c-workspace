@@ -1,8 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
     <fullName>Status__c</fullName>
-    <defaultValue>&apos;Lançado&apos;</defaultValue>
-    <externalId>false</externalId>
+    <defaultValue>&apos;Rascunho&apos;</defaultValue>
     <label>Status</label>
     <required>false</required>
     <trackHistory>false</trackHistory>
@@ -39,8 +38,28 @@
             </value>
             <value>
                 <fullName>Rascunho</fullName>
-                <default>false</default>
+                <default>true</default>
                 <label>Rascunho</label>
+            </value>
+            <value>
+                <fullName>Em aprovação do serviço</fullName>
+                <default>false</default>
+                <label>Em aprovação do serviço</label>
+            </value>
+            <value>
+                <fullName>Em aprovação do RH</fullName>
+                <default>false</default>
+                <label>Em aprovação do RH</label>
+            </value>
+            <value>
+                <fullName>Reprovado serviço</fullName>
+                <default>false</default>
+                <label>Reprovado serviço</label>
+            </value>
+            <value>
+                <fullName>Reprovado RH</fullName>
+                <default>false</default>
+                <label>Reprovado RH</label>
             </value>
         </valueSetDefinition>
     </valueSet>

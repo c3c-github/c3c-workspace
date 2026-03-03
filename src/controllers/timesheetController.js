@@ -180,11 +180,12 @@ exports.getCalendarData = async (req, res) => {
 
         resLancamentos.records.forEach(l => {
             hasEntries = true;
-            if (l.Status__c) allStatuses.add(l.Status__c);
+            const st = l.Status__c;
+            if (st) allStatuses.add(st);
 
             const date = l.DiaPeriodo__r.Data__c;
             if (!lancamentosMap[date]) {
-                lancamentosMap[date] = { status: null, entries: [] };
+                lancamentosMap[date] = { statuses: new Set(), entries: [] };
             }
             
             const hNormais = l.Horas__c || 0;
@@ -195,42 +196,16 @@ exports.getCalendarData = async (req, res) => {
             totalLancadoNoPeriodo += (hNormais + hExtras + hAusencias);
             totalBancoPeriodo += hBanco;
 
-            const st = l.Status__c;
-            // console.log(`[DEBUG] Dia: ${date} | Lançamento ID: ${l.Id} | Status: ${st}`);
-
-            // Lógica de prioridade para o status do DIA:
-            // 1. Se houver qualquer 'Reprovado', o dia é 'Reprovado'
-            // 2. Senão, se houver 'Rascunho', o dia é 'Rascunho'
-            // 3. Senão, se houver 'Lançado' ou 'Submetido', o dia é 'Lançado'
-            // 4. Senão, assume o status do lançamento (Aprovado, Faturado, Fechado)
-            
-            const currentDayStatus = lancamentosMap[date].status;
-            
-            if (st === 'Reprovado') {
-                lancamentosMap[date].status = 'Reprovado';
-            } else if (st === 'Rascunho') {
-                if (currentDayStatus !== 'Reprovado') lancamentosMap[date].status = 'Rascunho';
-            } else if (st === 'Lançado' || st === 'Submetido') {
-                if (!['Reprovado', 'Rascunho'].includes(currentDayStatus)) lancamentosMap[date].status = 'Lançado';
-            } else {
-                // Para Aprovado, Faturado, Fechado
-                if (!['Reprovado', 'Rascunho', 'Lançado'].includes(currentDayStatus)) {
-                    // Se o novo status tiver maior "maturidade" ou se for o primeiro (null), atualiza
-                    lancamentosMap[date].status = st;
-                }
-            }
-            
+            if (st) lancamentosMap[date].statuses.add(st);
             lancamentosMap[date].entries.push(l);
         });
-
-        console.log(`[DEBUG] Todos os Status encontrados no período:`, Array.from(allStatuses));
 
         const calendarGrid = {};
         let diasUteisCount = 0;
 
         resDias.records.forEach(dia => {
             const date = dia.Data__c;
-            const data = lancamentosMap[date] || { status: 'empty', entries: [] };
+            const data = lancamentosMap[date] || { statuses: new Set(), entries: [] };
             
             const totalDia = data.entries.reduce((acc, curr) => 
                 acc + (curr.Horas__c||0) + (curr.HorasExtras__c||0) + Math.abs(curr.HorasBanco__c||0) + (curr.HorasAusenciaRemunerada__c||0) + (curr.HorasAusenciaNaoRemunerada__c||0)
@@ -239,14 +214,17 @@ exports.getCalendarData = async (req, res) => {
             let isDiaUtil = (dia.Tipo__c !== 'Feriado' && dia.Tipo__c !== 'Férias' && dia.Tipo__c !== 'Não Útil' && !dia.Name.toLowerCase().includes('sábado') && !dia.Name.toLowerCase().includes('domingo'));
             if (isDiaUtil) diasUteisCount++; 
 
-            let statusApproval = 'draft';
-            if (data.status === 'empty') statusApproval = 'empty';
-            else if (data.status === 'Rascunho') statusApproval = 'draft';
-            else if (data.status === 'Lançado' || data.status === 'Submetido') statusApproval = 'submitted';
-            else if (data.status === 'Aprovado') statusApproval = 'approved';
-            else if (data.status === 'Reprovado') statusApproval = 'rejected';
-            else if (data.status === 'Faturado') statusApproval = 'billed';
-            else if (data.status === 'Fechado') statusApproval = 'closed';
+            const statusList = Array.from(data.statuses).map(st => {
+                if (st === 'Rascunho') return 'draft';
+                if (st === 'Em aprovação do serviço') return 'submitted_service';
+                if (st === 'Em aprovação do RH') return 'submitted_rh';
+                if (st === 'Aprovado') return 'approved';
+                if (st === 'Reprovado serviço') return 'rejected_service';
+                if (st === 'Reprovado RH') return 'rejected_rh';
+                if (st === 'Faturado') return 'billed';
+                if (st === 'Fechado') return 'closed';
+                return 'draft';
+            });
 
             let statusDay = 'normal';
             let label = '';
@@ -256,7 +234,7 @@ exports.getCalendarData = async (req, res) => {
 
             calendarGrid[date] = {
                 id: dia.Id, date: date, weekday: dia.Name, total: totalDia,
-                status_day: statusDay, label: label, status_approval: statusApproval, entries: data.entries
+                status_day: statusDay, label: label, status_list: statusList, entries: data.entries
             };
         });
 
@@ -288,29 +266,22 @@ exports.getDayDetails = async (req, res) => {
         const { date } = req.query;
         const userId = req.session.user.id;
         const conn = await getSfConnection();
+        const dateStr = date.includes('T') ? date.split('T')[0] : date;
 
         const logsQuery = `
             SELECT Id, Horas__c, HorasExtras__c, HorasAusenciaRemunerada__c, HorasAusenciaNaoRemunerada__c, HorasBanco__c, 
                    Status__c, Servico__r.Name, Servico__c, Atividade__r.Name, Atividade__c, Justificativa__c, MotivoReprovacao__c 
             FROM LancamentoHora__c 
-            WHERE Pessoa__c = '${userId}' AND DiaPeriodo__r.Data__c = ${date}
+            WHERE Pessoa__c = '${userId}' AND DiaPeriodo__r.Data__c = ${dateStr}
         `;
         const logsRes = await conn.query(logsQuery);
 
-        const diaQuery = `SELECT Id, Periodo__r.ContratoPessoa__r.Hora__c FROM DiaPeriodo__c WHERE Data__c = ${date} AND Periodo__r.ContratoPessoa__r.Pessoa__c = '${userId}' LIMIT 1`;
-        const diaRes = await conn.query(diaQuery);
+        const diaQuery = `SELECT Id, Periodo__r.Status__c, Periodo__r.ContratoPessoa__r.Hora__c FROM DiaPeriodo__c WHERE Data__c = ${dateStr} AND Periodo__r.ContratoPessoa__r.Pessoa__c = '${userId}' LIMIT 1`;
+        let diaRes = await conn.query(diaQuery);
         
-        const canEdit = !logsRes.records.some(l => !['Rascunho', 'Reprovado'].includes(l.Status__c));
-
-        const soqlAlloc = `SELECT Id, Servico__r.Name, Servico__c, Percentual__c FROM Alocacao__c WHERE Pessoa__c = '${userId}' AND DataInicio__c <= ${date} AND (DataFim__c >= ${date} OR DataFim__c = NULL)`;
-        const resAlloc = await conn.query(soqlAlloc);
-        const allocations = resAlloc.records.map(r => ({ id: r.Servico__c, alocacaoId: r.Id, name: r.Servico__r.Name }));
-        
-        let activities = [];
-        if(allocations.length > 0) {
-            const servIds = allocations.map(a => `'${a.id}'`).join(',');
-            const resAct = await conn.query(`SELECT Id, Name, Servico__c FROM Atividade__c WHERE Servico__c IN (${servIds}) ORDER BY Name ASC`);
-            activities = resAct.records.map(r => ({ id: r.Id, name: r.Name, projectId: r.Servico__c }));
+        // Se falhou sem aspas, tenta com aspas (resiliência de ambiente)
+        if (diaRes.totalSize === 0) {
+            diaRes = await conn.query(`SELECT Id, Periodo__r.Status__c, Periodo__r.ContratoPessoa__r.Hora__c FROM DiaPeriodo__c WHERE Data__c = '${dateStr}' AND Periodo__r.ContratoPessoa__r.Pessoa__c = '${userId}' LIMIT 1`);
         }
 
         const entries = logsRes.records.map(l => ({
@@ -321,7 +292,24 @@ exports.getDayDetails = async (req, res) => {
             status: l.Status__c, reason: l.MotivoReprovacao__c, justification: l.Justificativa__c
         }));
 
-        res.json({ date, allocations, activities, entries, isLocked: !canEdit, diaPeriodoId: diaRes.records[0]?.Id });
+        const uniqueStatuses = Array.from(new Set(logsRes.records.map(l => l.Status__c)));
+
+        const soqlAlloc = `SELECT Id, Servico__r.Name, Servico__c, Percentual__c FROM Alocacao__c WHERE Pessoa__c = '${userId}' AND DataInicio__c <= ${dateStr} AND (DataFim__c >= ${dateStr} OR DataFim__c = NULL)`;
+        const resAlloc = await conn.query(soqlAlloc);
+        const allocations = resAlloc.records.map(r => ({ id: r.Servico__c, alocacaoId: r.Id, name: r.Servico__r.Name }));
+        
+        let activities = [];
+        if(allocations.length > 0) {
+            const servIds = allocations.map(a => `'${a.id}'`).join(',');
+            const resAct = await conn.query(`SELECT Id, Name, Servico__c FROM Atividade__c WHERE Servico__c IN (${servIds}) ORDER BY Name ASC`);
+            activities = resAct.records.map(r => ({ id: r.Id, name: r.Name, projectId: r.Servico__c }));
+        }
+
+        // Bloqueia NOVOS lançamentos APENAS se o período NÃO estiver Aberto
+        const pStatus = diaRes.records[0]?.Periodo__r?.Status__c || 'Aberto';
+        const isLocked = pStatus !== 'Aberto';
+
+        res.json({ date: dateStr, allocations, activities, entries, isLocked, periodoStatus: pStatus, status_list: uniqueStatuses, diaPeriodoId: diaRes.records[0]?.Id });
     } catch (e) { res.status(500).json({ error: e.message }); }
 };
 
@@ -332,10 +320,24 @@ exports.saveEntry = async (req, res) => {
         const conn = await getSfConnection();
         const dateStr = date.split('T')[0];
 
-        // 1. Verifica Bloqueio do Dia (Novamente, para segurança)
-        const checkQuery = `SELECT Id FROM LancamentoHora__c WHERE Pessoa__c='${userId}' AND DiaPeriodo__r.Data__c=${dateStr} AND Status__c NOT IN ('Rascunho','Reprovado') LIMIT 1`;
-        const checkRes = await conn.query(checkQuery);
-        if(checkRes.totalSize > 0) return res.status(400).json({ success: false, message: 'Dia fechado.' });
+        // 1. Verifica se o PERÍODO está Aberto
+        const diaQuery = `SELECT Id, Periodo__r.Status__c FROM DiaPeriodo__c WHERE Id = '${diaPeriodoId}' LIMIT 1`;
+        const diaResForStatus = await conn.query(diaQuery);
+        const periodStatus = diaResForStatus.records[0]?.Periodo__r?.Status__c;
+
+        if (periodStatus && periodStatus !== 'Aberto') {
+            return res.status(400).json({ success: false, message: `Este período está com status "${periodStatus}" e não permite mais lançamentos ou edições.` });
+        }
+
+        // Mantemos a trava de status do LANÇAMENTO apenas para segurança de fluxo (não editar o que já está em aprovação avançada)
+        if (entryId) {
+            const checkQuery = `SELECT Id, Status__c FROM LancamentoHora__c WHERE Id = '${entryId}' LIMIT 1`;
+            const checkRes = await conn.query(checkQuery);
+            const currentStatus = checkRes.records[0]?.Status__c;
+            if (currentStatus && !['Rascunho', 'Reprovado serviço', 'Reprovado RH'].includes(currentStatus)) {
+                return res.status(400).json({ success: false, message: 'Este lançamento não pode mais ser editado por estar em processo de aprovação.' });
+            }
+        }
 
         // 2. Calcula Limites
         const stats = await calculateDailyStats(conn, userId, dateStr);
@@ -415,10 +417,20 @@ exports.deleteEntry = async (req, res) => {
         
         const log = await conn.sobject('LancamentoHora__c').retrieve(id);
         if(log.Pessoa__c !== userId) return res.status(403).json({ success: false, message: 'Sem permissão.' });
-        if(!['Rascunho','Reprovado'].includes(log.Status__c)) return res.status(400).json({ success: false, message: 'Item bloqueado.' });
+        
+        // Verifica se o PERÍODO está Aberto
+        const periodQuery = `SELECT Status__c FROM Periodo__c WHERE Id = '${log.Periodo__c}' LIMIT 1`;
+        const periodRes = await conn.query(periodQuery);
+        const periodStatus = periodRes.records[0]?.Status__c;
 
-        const checkQ = `SELECT Id FROM LancamentoHora__c WHERE Pessoa__c='${userId}' AND DiaPeriodo__c='${log.DiaPeriodo__c}' AND Status__c NOT IN ('Rascunho','Reprovado') LIMIT 1`;
-        if((await conn.query(checkQ)).totalSize > 0) return res.status(400).json({ success: false, message: 'Dia fechado.' });
+        if (periodStatus && periodStatus !== 'Aberto') {
+            return res.status(400).json({ success: false, message: `Este período (${periodStatus}) não permite exclusão de lançamentos.` });
+        }
+
+        // Regra de Status para Exclusão (Lançamento)
+        if(!['Rascunho', 'Reprovado serviço', 'Reprovado RH'].includes(log.Status__c)) {
+            return res.status(400).json({ success: false, message: 'Item bloqueado para exclusão.' });
+        }
 
         const diaPeriodoId = log.DiaPeriodo__c;
         await conn.sobject('LancamentoHora__c').destroy(id);
@@ -431,30 +443,8 @@ exports.deleteEntry = async (req, res) => {
 };
 
 exports.submitDay = async (req, res) => {
-    try {
-        const { date } = req.body;
-        const userId = req.session.user.id;
-        const conn = await getSfConnection();
-
-        if (!date) return res.status(400).json({ success: false, message: 'Data inválida.' });
-
-        // PADRONIZAÇÃO: Atualiza para 'Lançado'
-        const query = `
-            SELECT Id 
-            FROM LancamentoHora__c 
-            WHERE DiaPeriodo__r.Data__c = ${date} 
-            AND Pessoa__c = '${userId}' 
-            AND Status__c IN ('Rascunho', 'Reprovado')
-        `;
-        const result = await conn.query(query);
-
-        if (result.totalSize === 0) return res.json({ success: true, message: 'Nada para enviar.' });
-
-        const updates = result.records.map(r => ({ Id: r.Id, Status__c: 'Lançado' }));
-        await conn.sobject('LancamentoHora__c').update(updates);
-
-        res.json({ success: true, count: updates.length, message: 'Dia enviado para aprovação!' });
-    } catch (e) { res.status(500).json({ success: false, message: e.message }); }
+    // DESATIVADO: Lançamento agora é apenas por período
+    return res.status(405).json({ success: false, message: 'Envio por dia desativado. Use o envio por período.' });
 };
 
 exports.submitPeriod = async (req, res) => {
@@ -463,21 +453,21 @@ exports.submitPeriod = async (req, res) => {
         const userId = req.session.user.id;
         const conn = await getSfConnection();
 
-        // PADRONIZAÇÃO: Atualiza para 'Lançado'
+        // Busca todos os lançamentos que podem ser enviados
         const query = `
             SELECT Id 
             FROM LancamentoHora__c 
-            WHERE DiaPeriodo__r.Periodo__c = '${periodId}' 
+            WHERE Periodo__c = '${periodId}' 
             AND Pessoa__c = '${userId}' 
-            AND Status__c IN ('Rascunho', 'Reprovado')
+            AND Status__c IN ('Rascunho', 'Reprovado serviço', 'Reprovado RH')
         `;
         const result = await conn.query(query);
 
-        if (result.totalSize === 0) return res.json({ success: true, message: 'Período já enviado.' });
+        if (result.totalSize === 0) return res.json({ success: true, message: 'Nada para enviar.' });
 
-        const updates = result.records.map(r => ({ Id: r.Id, Status__c: 'Lançado' }));
+        const updates = result.records.map(r => ({ Id: r.Id, Status__c: 'Em aprovação do serviço' }));
         await conn.sobject('LancamentoHora__c').update(updates);
 
-        res.json({ success: true, message: 'Folha enviada com sucesso!' });
+        res.json({ success: true, message: 'Lançamentos enviados para aprovação do serviço!' });
     } catch (e) { res.status(500).json({ success: false, message: e.message }); }
 };

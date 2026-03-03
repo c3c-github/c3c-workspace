@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
     <fullName>Responsavel__c</fullName>
-    <externalId>false</externalId>
     <label>Responsável</label>
     <referenceTo>Responsavel__c</referenceTo>
     <relationshipLabel>Lançamentos de horas</relationshipLabel>

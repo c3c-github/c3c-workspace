@@ -59,13 +59,6 @@ async function calculateDailyStats(conn, userId, targetDate) {
     }
 }
 
-async function isDayLockedByDiaId(conn, diaPeriodoId, userId) {
-    if (!diaPeriodoId) return false;
-    const soql = `SELECT Id FROM LancamentoHora__c WHERE DiaPeriodo__c = '${diaPeriodoId}' AND Pessoa__c = '${userId}' AND Status__c NOT IN ('Rascunho', 'Reprovado') LIMIT 1`;
-    const res = await conn.query(soql);
-    return res.totalSize > 0;
-}
-
 // ==============================================================================
 // CONTROLLERS
 // ==============================================================================
@@ -84,9 +77,8 @@ exports.getLimits = async (req, res) => {
         if (!date) return res.status(400).json({ error: 'Data obrigatória.' });
         const conn = await getSfConnection();
         const stats = await calculateDailyStats(conn, userId, date);
-        let isLocked = false;
-        if (stats.exists && stats.diaPeriodoId) isLocked = await isDayLockedByDiaId(conn, stats.diaPeriodoId, userId);
-        res.json({ success: true, exists: stats.exists, limit: stats.limiteDia, usedNormal: stats.usedNormal, usedExtra: stats.usedExtra, remainingNormal: stats.saldoNormalDia, isLocked: isLocked });
+        // isLocked agora é sempre false para NOVOS lançamentos (apenas o período importa)
+        res.json({ success: true, exists: stats.exists, limit: stats.limiteDia, usedNormal: stats.usedNormal, usedExtra: stats.usedExtra, remainingNormal: stats.saldoNormalDia, isLocked: false });
     } catch (err) { res.status(500).json({ success: false, error: err.message }); }
 };
 
@@ -300,8 +292,14 @@ exports.saveLog = async (req, res) => {
         const stats = await calculateDailyStats(conn, userId, targetDate);
         if (!stats.exists) return res.status(400).json({ error: `Sem dia de ponto gerado para ${targetDate}.` });
 
-        const isLocked = await isDayLockedByDiaId(conn, stats.diaPeriodoId, userId);
-        if (isLocked) return res.status(400).json({ error: `Dia ${targetDate} fechado.` });
+        // --- NOVA VALIDAÇÃO: STATUS DO PERÍODO ---
+        const periodQuery = `SELECT Status__c FROM Periodo__c WHERE Id = '${stats.periodoId}' LIMIT 1`;
+        const periodRes = await conn.query(periodQuery);
+        const periodStatus = periodRes.records[0]?.Status__c;
+
+        if (periodStatus && periodStatus !== 'Aberto') {
+            return res.status(400).json({ error: `Este período (${periodStatus}) não permite mais inclusão ou edição de horas.` });
+        }
 
         let hNorm = hoursNormal ? parseFloat(hoursNormal.toString().replace(',', '.')) : 0;
         let hExtra = hoursExtra ? parseFloat(hoursExtra.toString().replace(',', '.')) : 0;
@@ -313,6 +311,12 @@ exports.saveLog = async (req, res) => {
         if (logId) {
             const oldLog = await conn.sobject('LancamentoHora__c').retrieve(logId);
             if (!areIdsEqual(oldLog.Pessoa__c, userId)) return res.status(403).json({ error: 'Acesso negado.' });
+            
+            // Regra de Status para Edição
+            if(!['Rascunho', 'Reprovado serviço', 'Reprovado RH'].includes(oldLog.Status__c)) {
+                return res.status(400).json({ error: 'Este lançamento está em aprovação ou já foi concluído e não permite edição.' });
+            }
+
             currentLogHours.n = oldLog.Horas__c || 0;
             currentLogHours.e = oldLog.HorasExtras__c || 0;
         }
@@ -393,10 +397,19 @@ exports.deleteLog = async (req, res) => {
         const log = await conn.sobject('LancamentoHora__c').retrieve(logId);
         if (!areIdsEqual(log.Pessoa__c, userId)) return res.status(403).json({ error: 'Acesso negado.' });
         
-        const isLocked = await isDayLockedByDiaId(conn, log.DiaPeriodo__c, userId);
-        if (isLocked) return res.status(400).json({ error: 'Dia fechado.' });
+        // --- NOVA VALIDAÇÃO: STATUS DO PERÍODO ---
+        const periodQuery = `SELECT Status__c FROM Periodo__c WHERE Id = '${log.Periodo__c}' LIMIT 1`;
+        const periodRes = await conn.query(periodQuery);
+        const periodStatus = periodRes.records[0]?.Status__c;
 
-        if (log.Status__c !== 'Rascunho' && log.Status__c !== 'Reprovado') return res.status(400).json({ error: 'Status impede exclusão.' });
+        if (periodStatus && periodStatus !== 'Aberto') {
+            return res.status(400).json({ error: `Este período (${periodStatus}) não permite a exclusão de lançamentos.` });
+        }
+
+        // Regra de Status para Exclusão (Lançamento)
+        if (!['Rascunho', 'Reprovado serviço', 'Reprovado RH'].includes(log.Status__c)) {
+            return res.status(400).json({ error: 'Este lançamento não permite exclusão.' });
+        }
 
         const ret = await conn.sobject('LancamentoHora__c').destroy(logId);
         if (ret.success) res.json({ success: true }); else res.status(400).json({ success: false });
