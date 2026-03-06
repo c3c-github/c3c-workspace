@@ -9,7 +9,6 @@ exports.renderServicesPage = async (req, res) => {
         const conn = await getSfConnection();
         const query = "SELECT Id, Name, Conta__r.Name, Tipo__c, Status__c, DataInicio__c, DataFimOriginal__c, DataFim__c, ReceitaVendida__c, CustoVendido__c, MargemVendida__c, ReceitaPrevista__c, CustoPrevisto__c, MargemPrevista__c, ReceitaRealizada__c, CustoRealizado__c, MargemRealizada__c FROM Servico__c WHERE Status__c = 'Ativo' ORDER BY Name ASC";
         const result = await conn.query(query);
-        console.log(result.records);
         const services = result.records.map(s => ({
             id: s.Id, name: s.Name, client: s.Conta__r ? s.Conta__r.Name : '', type: s.Tipo__c, status: s.Status__c || 'Ativo',
             dataInicio: s.DataInicio__c, dataFimOriginal: s.DataFimOriginal__c, dataFim: s.DataFim__c,
@@ -30,7 +29,6 @@ exports.getServices = async (req, res) => {
         const conn = await getSfConnection();
         const query = `SELECT Id, Name, Conta__r.Name, Tipo__c, Status__c, DataInicio__c, DataFimOriginal__c, DataFim__c, ReceitaVendida__c, CustoVendido__c, MargemVendida__c, ReceitaPrevista__c, CustoPrevisto__c, MargemPrevista__c, ReceitaRealizada__c, CustoRealizado__c, MargemRealizada__c FROM Servico__c ${whereClause} ORDER BY Name ASC`;
         const result = await conn.query(query);
-        console.log(result.records);
         res.json(result.records.map(s => ({
             id: s.Id, name: s.Name, client: s.Conta__r ? s.Conta__r.Name : '', type: s.Tipo__c, status: s.Status__c || 'Ativo',
             dataInicio: s.DataInicio__c, dataFimOriginal: s.DataFimOriginal__c, dataFim: s.DataFim__c,
@@ -47,7 +45,7 @@ exports.getServiceDetails = async (req, res) => {
     try {
         const conn = await getSfConnection();
         const [rSvc, rComm, rExec, rLinks, rSales] = await Promise.all([
-            conn.query(`SELECT Id, Name, Conta__c, Conta__r.Name, IDContaAzul__c, Tipo__c, Status__c, Lider__c, Coordenador__c, LiderTecnico__c, DataInicio__c, DataFimOriginal__c, DataFim__c, ReceitaVendida__c, CustoVendido__c, MargemVendida__c, ReceitaPrevista__c, CustoPrevisto__c, MargemPrevista__c, ReceitaRealizada__c, MargemRealizada__c FROM Servico__c WHERE Id = '${id}'`),
+            conn.query(`SELECT Id, Name, Conta__c, Conta__r.Name, IDContaAzul__c, Tipo__c, Status__c, Lider__c, Coordenador__c, LiderTecnico__c, DataInicio__c, DataFimOriginal__c, DataFim__c, ReceitaVendida__c, CustoVendido__c, MargemVendida__c, ReceitaPrevista__c, CustoPrevisto__c, MargemPrevista__c, ReceitaRealizada__c, MargemRealizada__c, RequerRelatorioFaturamento__c, SolicitaRelatorioHoras__c FROM Servico__c WHERE Id = '${id}'`),
             conn.query(`SELECT Id, Produto__c, TaxaVenda__c, CustoEstimado__c, DataInicio__c, DataFim__c, PercentualAlocacao__c, ReceitaTotal__c, CustoTotal__c, HorasTotais__c FROM AlocacaoPrevista__c WHERE Servico__c = '${id}'`),
             conn.query(`SELECT Id, Pessoa__c, Pessoa__r.Name, DataInicio__c, DataFimOriginal__c, Percentual__c, AlocacaoPrevista__c, TaxaVenda__c, CustoHr__c, Dias__c, HorasTotais__c, ReceitaTotal__c, CustoTotal__c, Margem__c FROM Alocacao__c WHERE Servico__c = '${id}'`),
             conn.query(`SELECT ContentDocumentId FROM ContentDocumentLink WHERE LinkedEntityId = '${id}'`),
@@ -112,6 +110,8 @@ exports.getServiceDetails = async (req, res) => {
             id: svc.Id, name: svc.Name, client: svc.Conta__r ? svc.Conta__r.Name : '', sf_account_id: svc.Conta__c, ca_client_id: svc.IDContaAzul__c,
             type: svc.Tipo__c, status: svc.Status__c, lead_project: svc.Lider__c, coordinator: svc.Coordenador__c, tech_lead: svc.LiderTecnico__c,
             dataInicio: svc.DataInicio__c, dataFimOriginal: svc.DataFimOriginal__c, dataFim: svc.DataFim__c, documents,
+            reqReport: svc.RequerRelatorioFaturamento__c || false,
+            solReport: svc.SolicitaRelatorioHoras__c || false,
             prop: { rev: svc.ReceitaVendida__c || 0, cost: svc.CustoVendido__c || 0, margin: parseFloat((svc.MargemVendida__c || 0).toFixed(2)) },
             fcst: { rev: svc.ReceitaPrevista__c || 0, cost: svc.CustoPrevisto__c || 0, margin: parseFloat((svc.MargemPrevista__c || 0).toFixed(2)) },
             act: { rev: svc.ReceitaRealizada__c || 0, cost: svc.CustoRealizado__c || 0, margin: parseFloat((margemReal || 0).toFixed(2)) },
@@ -136,7 +136,20 @@ exports.saveService = async (req, res) => {
         }
         const cleanId = (val) => (val && val.length >= 15) ? val : null;
         const cleanDate = (val) => (val && val.trim() !== "") ? val : null;
-        const svcRecord = { Name: data.name, Conta__c: accountId, IDContaAzul__c: data.ca_client_id, Tipo__c: data.type, DataInicio__c: cleanDate(data.start), DataFimOriginal__c: cleanDate(data.end_original), DataFim__c: cleanDate(data.end_real), Lider__c: cleanId(data.lead_project), Coordenador__c: cleanId(data.coordinator), LiderTecnico__c: cleanId(data.tech_lead) };
+        const svcRecord = { 
+            Name: data.name, 
+            Conta__c: accountId, 
+            IDContaAzul__c: data.ca_client_id, 
+            Tipo__c: data.type, 
+            DataInicio__c: cleanDate(data.start), 
+            DataFimOriginal__c: cleanDate(data.end_original), 
+            DataFim__c: cleanDate(data.end_real), 
+            Lider__c: cleanId(data.lead_project), 
+            Coordenador__c: cleanId(data.coordinator), 
+            LiderTecnico__c: cleanId(data.tech_lead),
+            RequerRelatorioFaturamento__c: data.reqReport || false,
+            SolicitaRelatorioHoras__c: data.solReport || false
+        };
         let result = data.id ? await conn.sobject('Servico__c').update({ ...svcRecord, Id: data.id }) : await conn.sobject('Servico__c').create(svcRecord);
         if (result.success) {
             const serviceId = result.id || data.id;

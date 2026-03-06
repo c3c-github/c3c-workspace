@@ -137,6 +137,45 @@
                 </div>
                 <!-- 2. FATURAMENTO -->
                 <div id="view-billing" class="hidden space-y-6">
+                    <!-- NOVOS CAMPOS DE CONFIGURAÇÃO (MODERNOS) -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 bg-gray-50/50 border border-gray-100 p-6 rounded-xl">
+                        
+                        <!-- Toggle 1 -->
+                        <div class="flex items-center justify-between bg-white p-4 rounded-xl border border-gray-200 shadow-sm hover:border-indigo-300 transition-all group cursor-pointer active:scale-[0.98]" onclick="triggerToggle('input-svc-req-report', event)">
+                            <div class="flex items-center gap-4">
+                                <div class="w-10 h-10 bg-indigo-50 text-indigo-600 rounded-lg flex items-center justify-center shrink-0 group-hover:bg-indigo-600 group-hover:text-white transition-colors">
+                                    <i data-lucide="shield-check" class="w-5 h-5"></i>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-bold text-gray-800 cursor-pointer" onclick="event.stopPropagation()">Obrigatório p/ Faturar</label>
+                                    <p class="text-[10px] text-gray-400 leading-tight">Exige auditoria técnica antes de liberar ao financeiro.</p>
+                                </div>
+                            </div>
+                            <label class="relative inline-flex items-center cursor-pointer" onclick="event.stopPropagation()">
+                                <input type="checkbox" id="input-svc-req-report" class="sr-only peer" onchange="syncReportToggles()">
+                                <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+                            </label>
+                        </div>
+
+                        <!-- Toggle 2 -->
+                        <div class="flex items-center justify-between bg-white p-4 rounded-xl border border-gray-200 shadow-sm hover:border-blue-300 transition-all group cursor-pointer active:scale-[0.98]" onclick="triggerToggle('input-svc-sol-report', event)">
+                            <div class="flex items-center gap-4">
+                                <div class="w-10 h-10 bg-blue-50 text-blue-600 rounded-lg flex items-center justify-center shrink-0 group-hover:bg-blue-600 group-hover:text-white transition-colors">
+                                    <i data-lucide="file-text" class="w-5 h-5"></i>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-bold text-gray-800 cursor-pointer" onclick="event.stopPropagation()">Cliente solicita Relatório</label>
+                                    <p class="text-[10px] text-gray-400 leading-tight">Gera automaticamente o extrato detalhado para o cliente.</p>
+                                </div>
+                            </div>
+                            <label class="relative inline-flex items-center cursor-pointer" onclick="event.stopPropagation()">
+                                <input type="checkbox" id="input-svc-sol-report" class="sr-only peer">
+                                <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                            </label>
+                        </div>
+
+                    </div>
+
                     <!-- SEÇÃO 1: GESTÃO DE VENDAS (CONTAS A RECEBER) -->
                     <div class="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
                         <div class="flex justify-between items-center mb-4">
@@ -273,6 +312,35 @@
 
     <script>
         lucide.createIcons();
+
+        function syncReportToggles() {
+            const req = document.getElementById('input-svc-req-report');
+            const sol = document.getElementById('input-svc-sol-report');
+            
+            if (req.checked) {
+                sol.checked = true;
+                sol.disabled = true;
+                // Feedback visual de desabilitado no container
+                sol.closest('.relative').classList.add('opacity-60', 'cursor-not-allowed');
+                sol.closest('.group').classList.add('opacity-60', 'pointer-events-none');
+            } else {
+                sol.disabled = false;
+                sol.closest('.relative').classList.remove('opacity-60', 'cursor-not-allowed');
+                sol.closest('.group').classList.remove('opacity-60', 'pointer-events-none');
+            }
+        }
+
+        function triggerToggle(id, event) {
+            const cb = document.getElementById(id);
+            if (!cb.disabled) {
+                cb.checked = !cb.checked;
+                // Disparar o evento change manualmente para rodar a lógica de sync
+                const e = new Event('change');
+                cb.dispatchEvent(e);
+                syncReportToggles();
+            }
+        }
+        
         let services = <%- JSON.stringify(services) %>;
         let currentServiceData = null; let metadata = {}; 
         let attachedDocIds = []; 
@@ -830,6 +898,11 @@ function generateDREDetailed() {
                         document.getElementById('input-svc-start').value = data.dataInicio || '';
                         document.getElementById('input-svc-end-orig').value = data.dataFimOriginal || '';
                         document.getElementById('input-svc-end-real').value = data.dataFim || '';
+
+                        // Novos campos de faturamento
+                        document.getElementById('input-svc-req-report').checked = data.reqReport || false;
+                        document.getElementById('input-svc-sol-report').checked = data.solReport || false;
+                        syncReportToggles(); // Aplicar dependência no load
 
                         document.getElementById('input-lead-project').value = getMetadataName(metadata.people, data.lead_project) || '';
                         document.getElementById('input-coordinator').value = getMetadataName(metadata.people, data.coordinator) || '';
@@ -1544,6 +1617,8 @@ function generateDREDetailed() {
                 start: startDate,
                 end_original: endDateOrig,
                 end_real: endDateReal,
+                reqReport: document.getElementById('input-svc-req-report').checked,
+                solReport: document.getElementById('input-svc-sol-report').checked,
                 integrate: integrate,
                 docIds: attachedDocIds,
                 commercial: commercial,

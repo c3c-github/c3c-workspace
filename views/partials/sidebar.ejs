@@ -37,11 +37,15 @@
             </a>
         <% } %>
 
-        <% if (user.grupos && user.grupos.includes('GESTOR')) { %>
+        <% if (user.grupos && (user.grupos.includes('GESTOR') || user.grupos.includes('DIRETOR'))) { %>
             <p class="px-6 text-xs font-semibold text-gray-400 uppercase tracking-wider mt-8 mb-2">Serviços</p>
             <a href="/approvals" class="nav-item <%= (typeof page !== 'undefined' && page === 'approvals') ? 'bg-[#EEF2FF] text-[#2978FF] border-r-4 border-[#2978FF]' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900' %> flex items-center gap-3 px-6 py-3 transition-colors">
                 <i data-lucide="check-square" class="w-5 h-5"></i>
                 <span class="font-medium text-sm">Aprovação de Horas</span>
+            </a>
+            <a href="/billing" class="nav-item <%= (typeof page !== 'undefined' && page === 'billing') ? 'bg-[#EEF2FF] text-[#2978FF] border-r-4 border-[#2978FF]' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900' %> flex items-center gap-3 px-6 py-3 transition-colors">
+                <i data-lucide="file-text" class="w-5 h-5"></i>
+                <span class="font-medium text-sm">Medição p/ Faturar</span>
             </a>
         <% } %>
 

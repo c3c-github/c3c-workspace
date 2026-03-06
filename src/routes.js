@@ -12,6 +12,7 @@ const operationsController = require('./controllers/operationsController');
 const supportController = require('./controllers/supportController');
 const serviceController = require('./controllers/serviceController');
 const utilityController = require('./controllers/utilityController');
+const billingController = require('./controllers/billingController');
 
 const requireAuth = (req, res, next) => {
     if (!req.session || !req.session.user) { return res.redirect('/'); }
@@ -117,5 +118,20 @@ router.post('/api/hr/action', requireAuth, requireGroup('ADMIN_RH'), hrControlle
 // --- UTILIDADES ---
 router.get('/utilities/signature', requireAuth, utilityController.renderSignaturePage);
 router.post('/api/utility/upload-photo', requireAuth, upload.single('file'), utilityController.uploadPhoto);
+
+// --- MEDIÇÃO E FATURAMENTO ---
+const canAccessBilling = (req, res, next) => {
+    const user = req.session.user;
+    if (user && user.grupos && (user.grupos.includes('GESTOR') || user.grupos.includes('DIRETOR'))) {
+        return next();
+    }
+    res.status(403).render('negado', { mensagem: 'Acesso restrito a Gestores e Diretores' });
+};
+
+router.get('/billing', requireAuth, canAccessBilling, billingController.renderBilling);
+router.get('/billing/report-print', requireAuth, canAccessBilling, billingController.renderPrintReport);
+router.get('/api/billing/grid', requireAuth, canAccessBilling, billingController.getBillingGrid);
+router.get('/api/billing/service-logs', requireAuth, canAccessBilling, billingController.getServiceLogs);
+router.post('/api/billing/save', requireAuth, canAccessBilling, billingController.saveAdjustments);
 
 module.exports = router;

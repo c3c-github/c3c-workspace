@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aprovação de Faturamento - C3C Workplace</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Ícones Lucide -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Fonte Montserrat -->
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Montserrat', 'sans-serif'],
+                    },
+                    colors: {
+                        c3c: {
+                            blue: '#2978FF',
+                            teal: '#1DDDBD',
+                            dark: '#1a1a1a',
+                            bg: '#F8FAFC'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body { font-family: 'Montserrat', sans-serif; background-color: #F8FAFC; }
+        .fade-in { animation: fadeIn 0.3s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+        
+        .modal-backdrop { background-color: rgba(0, 0, 0, 0.5); backdrop-filter: blur(2px); z-index: 50; }
+
+        /* Estilo do Input de Faturamento no nível de Log */
+        .input-log-billable {
+            width: 70px;
+            text-align: center;
+            font-weight: 700;
+            border: 1px solid #E2E8F0;
+            border-radius: 6px;
+            padding: 4px;
+            color: #2978FF;
+            transition: all 0.2s;
+        }
+        .input-log-billable:focus {
+            border-color: #2978FF;
+            outline: none;
+            background-color: #F0F7FF;
+        }
+        .input-log-billable.glosa {
+            border-color: #EF4444;
+            background-color: #FEF2F2;
+            color: #B91C1C;
+        }
+        .input-log-billable:disabled {
+            background-color: transparent;
+            color: #1e293b;
+            border-color: transparent;
+            cursor: default;
+            padding: 0;
+            width: auto;
+        }
+
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+        
+        @media print {
+            .no-print { display: none !important; }
+            .print-only { display: block !important; }
+            body { background: white; }
+            .modal-backdrop { position: relative; background: none; backdrop-filter: none; }
+            .rounded-2xl { border-radius: 0; border: none; box-shadow: none; }
+            .shadow-2xl { box-shadow: none; }
+            .h-\[85vh\] { height: auto; }
+            .overflow-y-auto { overflow: visible !important; }
+        }
+
+        table td, table th {
+            vertical-align: middle;
+        }
+    </style>
+</head>
+<body class="h-screen flex overflow-hidden bg-c3c-bg">
+
+    <!-- 1. SIDEBAR (no-print) -->
+    <aside class="w-20 lg:w-64 bg-white border-r border-gray-100 flex flex-col z-20 transition-all duration-300 no-print">
+        <div class="h-20 flex items-center justify-center lg:justify-start lg:px-8 border-b border-gray-50">
+            <!-- Logo C3C Atualizado -->
+            <div class="w-10 h-10 bg-white rounded-lg flex items-center justify-center shadow-sm border border-gray-100 p-1">
+                <img src="https://c3c.my.site.com/resource/1752735833000/logo" alt="Logo C3C" class="w-full h-auto">
+            </div>
+            <span class="hidden lg:block ml-3 font-bold text-gray-800 tracking-wide text-lg text-nowrap">Workplace</span>
+        </div>
+        <nav class="flex-1 py-6 space-y-2">
+            <a href="#" class="flex items-center justify-center lg:justify-start gap-3 px-4 lg:px-6 py-3 bg-blue-50 text-blue-600 border-r-4 border-blue-500 font-semibold transition-colors">
+                <i data-lucide="file-check" class="w-5 h-5"></i>
+                <span class="hidden lg:block text-sm">Medição Mensal</span>
+            </a>
+            <a href="#" class="flex items-center justify-center lg:justify-start gap-3 px-4 lg:px-6 py-3 text-gray-400 hover:bg-gray-50 transition-colors">
+                <i data-lucide="landmark" class="w-5 h-5"></i>
+                <span class="hidden lg:block text-sm">Faturamento/Financeiro</span>
+            </a>
+        </nav>
+    </aside>
+
+    <!-- 2. MAIN CONTENT -->
+    <main class="flex-1 flex flex-col relative w-full overflow-hidden">
+        
+        <!-- Header (no-print) -->
+        <header class="h-20 bg-white border-b border-gray-200 flex items-center justify-between px-8 shrink-0 z-10 no-print">
+            <div class="flex items-center gap-6">
+                <h1 class="text-xl font-bold text-gray-800">Fechamento de Medição</h1>
+                
+                <!-- Filtro de Período -->
+                <div class="flex items-center bg-gray-50 border border-gray-200 rounded-lg px-3 py-1.5 gap-2 shadow-sm">
+                    <i data-lucide="calendar" class="w-4 h-4 text-indigo-500"></i>
+                    <select class="bg-transparent text-sm font-bold text-gray-700 outline-none cursor-pointer">
+                        <option>Fevereiro 2025</option>
+                        <option>Janeiro 2025</option>
+                        <option>Dezembro 2024</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-4">
+                <div class="text-right hidden sm:block">
+                    <p class="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Perfil</p>
+                    <p class="text-sm font-bold text-blue-600">Liderança Operacional</p>
+                </div>
+            </div>
+        </header>
+
+        <!-- Conteúdo -->
+        <div class="flex-1 overflow-y-auto p-4 md:p-8 fade-in bg-c3c-bg no-print">
+            
+            <div class="mb-8">
+                <h2 class="text-lg font-bold text-gray-800 flex items-center gap-2">
+                    <i data-lucide="layers" class="w-5 h-5 text-blue-600"></i> Grade de Projetos
+                </h2>
+                <p class="text-xs text-gray-500 mt-1">Realize os ajustes de faturamento no extrato e feche a medição para liberar ao financeiro.</p>
+            </div>
+
+            <!-- Tabela Principal -->
+            <div class="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden overflow-x-auto">
+                <table class="w-full text-sm text-left border-collapse">
+                    <thead class="bg-gray-50 text-gray-400 uppercase text-[10px] font-bold border-b border-gray-200">
+                        <tr>
+                            <th class="px-6 py-4">Projeto / Cliente</th>
+                            <th class="px-6 py-4 text-center">Franquia (Previsto)</th>
+                            <th class="px-6 py-4 text-center">Lançado Equipe</th>
+                            <th class="px-6 py-4 text-center">A Faturar</th>
+                            <th class="px-6 py-4 text-center">Adesão</th>
+                            <th class="px-6 py-4 text-center">Valor/h Médio</th>
+                            <th class="px-6 py-4 text-center">Total Faturável</th>
+                            <th class="px-6 py-4 text-center">Status</th>
+                            <th class="px-6 py-4 text-right">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-100" id="billing-table-body">
+                        <!-- JS Populates -->
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Rodapé Informativo -->
+            <div class="mt-8 bg-blue-50 border border-blue-100 rounded-xl p-5 flex items-center gap-4">
+                <div class="bg-blue-600 p-2 rounded-lg text-white shadow-sm shrink-0"><i data-lucide="info" class="w-5 h-5"></i></div>
+                <div class="text-sm">
+                    <p class="font-bold text-blue-900">Regra de Faturamento (Suporte)</p>
+                    <p class="text-blue-700">Para suporte, o faturamento considera o maior entre <strong>A Faturar</strong> e <strong>Franquia</strong>. Relatório consolidado e anônimo para o cliente.</p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- MODAL: AUDITORIA E AJUSTES -->
+    <div id="extract-modal" class="fixed inset-0 modal-backdrop hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-5xl h-[85vh] flex flex-col transform scale-95 transition-transform duration-300 border border-gray-100">
+            <div class="p-6 border-b border-gray-100 flex justify-between items-start bg-gray-50 rounded-t-2xl no-print">
+                <div>
+                    <h3 class="text-xl font-bold text-gray-900" id="ext-project-name">Projeto</h3>
+                    <p class="text-sm text-gray-500" id="ext-client-name">Cliente</p>
+                </div>
+                <div class="flex gap-2">
+                    <button onclick="window.print()" class="bg-white border border-gray-300 text-gray-700 px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-gray-100 flex items-center gap-2 transition-colors">
+                        <i data-lucide="printer" class="w-4 h-4"></i> Imprimir Relatório
+                    </button>
+                    <button onclick="closeModal('extract-modal')" class="text-gray-400 hover:text-gray-600 p-2 transition-colors"><i data-lucide="x" class="w-6 h-6"></i></button>
+                </div>
+            </div>
+
+            <!-- Cabeçalho apenas para IMPRESSÃO -->
+            <div class="hidden print-only p-8 border-b-2 border-gray-100">
+                <div class="flex justify-between items-center mb-8">
+                    <!-- Logo C3C no Relatório -->
+                    <div class="w-16 h-16 bg-white rounded-xl flex items-center justify-center p-2 border border-gray-100">
+                        <img src="https://c3c.my.site.com/resource/1752735833000/logo" alt="Logo C3C" class="w-full h-auto">
+                    </div>
+                    <div class="text-right">
+                        <h2 class="text-2xl font-black text-gray-900 uppercase">Relatório de Medição Técnica</h2>
+                        <p class="text-gray-500 font-bold">Fevereiro 2025</p>
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-8">
+                    <div>
+                        <p class="text-[10px] font-bold text-gray-400 uppercase">Cliente</p>
+                        <p class="text-lg font-bold text-gray-800" id="print-client-name">-</p>
+                    </div>
+                    <div class="text-right">
+                        <p class="text-[10px] font-bold text-gray-400 uppercase">Projeto</p>
+                        <p class="text-lg font-bold text-gray-800" id="print-project-name">-</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="flex-1 overflow-y-auto p-6 bg-white" id="modal-content">
+                <!-- Conteúdo por Recurso ou Consolidado injetado via JS -->
+            </div>
+
+            <!-- TOTALIZADORES NO MODAL -->
+            <div class="px-8 py-4 bg-gray-50 border-t border-gray-100 grid grid-cols-2 md:grid-cols-5 gap-4 shrink-0">
+                <div class="text-center md:border-r border-gray-200">
+                    <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Franquia</p>
+                    <p class="text-lg font-bold text-gray-700" id="modal-val-franchise">0.0h</p>
+                </div>
+                <div class="text-center md:border-r border-gray-200 no-print">
+                    <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Total Lançado</p>
+                    <p class="text-lg font-bold text-gray-600" id="modal-val-logged">0.0h</p>
+                </div>
+                <div class="text-center md:border-r border-gray-200">
+                    <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">A Faturar</p>
+                    <p class="text-lg font-black text-blue-600" id="modal-subtotal-billable">0.0h</p>
+                </div>
+                <div class="text-center md:border-r border-gray-200">
+                    <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Status de Adesão</p>
+                    <div class="flex justify-center mt-1">
+                        <span id="modal-indicator-badge" class="px-3 py-1 rounded-full text-[10px] font-black border uppercase">0%</span>
+                    </div>
+                </div>
+                <div class="text-center">
+                    <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Total Faturável</p>
+                    <p class="text-lg font-black text-green-600" id="modal-subtotal-value">R$ 0,00</p>
+                </div>
+            </div>
+
+            <div class="p-6 border-t border-gray-100 bg-white rounded-b-2xl flex justify-end gap-3 shrink-0 no-print">
+                <button onclick="closeModal('extract-modal')" class="px-6 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg font-bold text-sm hover:bg-gray-50 transition-colors">Voltar</button>
+                <button onclick="confirmAdjustments()" id="btn-save-adjusts" class="px-6 py-2 bg-blue-600 text-white rounded-lg font-bold text-sm hover:bg-blue-700 shadow-md transition-all">Confirmar Ajustes</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: FINALIZAR (COM COMPROVANTE OPCIONAL) -->
+    <div id="finalize-modal" class="fixed inset-0 modal-backdrop hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8 transform scale-95 transition-transform duration-300">
+            <div class="text-center mb-6">
+                <div class="w-16 h-16 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-4 p-3">
+                    <img src="https://c3c.my.site.com/resource/1752735833000/logo" alt="Logo C3C" class="w-full h-auto">
+                </div>
+                <h3 class="text-xl font-bold text-gray-900">Finalizar Medição</h3>
+                <p class="text-sm text-gray-500 mt-1">Deseja enviar este projeto para o financeiro faturar?</p>
+            </div>
+
+            <div class="space-y-4">
+                <div class="border-2 border-dashed border-gray-200 rounded-xl p-4 text-center hover:border-blue-400 hover:bg-blue-50 transition-all cursor-pointer group relative">
+                    <input type="file" class="absolute inset-0 opacity-0 cursor-pointer" id="proof-upload">
+                    <i data-lucide="paperclip" class="w-6 h-6 text-gray-300 mx-auto mb-1 group-hover:text-blue-500"></i>
+                    <p class="text-[10px] font-bold text-gray-400 group-hover:text-blue-600 uppercase">Comprovante de Aprovação (Opcional)</p>
+                </div>
+                
+                <div>
+                    <label class="block text-[10px] font-bold text-gray-400 uppercase mb-1">Notas Internas</label>
+                    <textarea class="w-full border border-gray-200 rounded-lg p-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none resize-none h-20" placeholder="Ex: Cliente deu o ok via e-mail direto ao financeiro."></textarea>
+                </div>
+            </div>
+
+            <div class="mt-8 flex gap-3">
+                <button onclick="closeModal('finalize-modal')" class="flex-1 px-4 py-2 border border-gray-300 text-gray-600 rounded-lg font-bold text-sm">Voltar</button>
+                <button onclick="completeFinalization()" class="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-lg font-bold text-sm shadow-md hover:bg-indigo-700">Fechar e Travar</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        lucide.createIcons();
+
+        // --- DADOS MOCK ---
+        let projects = [
+            { 
+                id: 1, name: "Sustentação Salesforce N2", client: "Tech Solutions", type: "support",
+                franchise: 160, logged: 185.5, billable: 160, avgRate: 150.00, status: 'open', proof: null,
+                resources: [
+                    { name: "Maria Sênior", rate: 180.00, logs: [
+                        { id: 101, date: "02/02", desc: "Ajuste de Fluxos Salesforce", logged: 8.0, billable: 8.0 },
+                        { id: 102, date: "03/02", desc: "Reunião de Alinhamento", logged: 1.5, billable: 1.5 }
+                    ]},
+                    { name: "Lucas Estagiário", rate: 60.00, logs: [
+                        { id: 103, date: "04/02", desc: "Análise de logs (Treinamento)", logged: 10.0, billable: 3.0 }
+                    ]}
+                ]
+            },
+            { 
+                id: 2, name: "Infraestrutura Cloud", client: "Banco Alpha", type: "project",
+                franchise: 200, logged: 152.0, billable: 152.0, avgRate: 220.00, status: 'pending_ok', proof: null,
+                resources: [
+                    { name: "Roberto Analista", rate: 220.00, logs: [
+                        { id: 201, date: "05/02", desc: "Monitoramento de Instâncias", logged: 152.0, billable: 152.0 }
+                    ]}
+                ]
+            },
+            { 
+                id: 3, name: "Projeto Especial Migração", client: "Startup Go", type: "project",
+                franchise: 100, logged: 120.0, billable: 125.0, avgRate: 195.00, status: 'open', proof: null,
+                resources: [
+                    { name: "Arquiteto Tech", rate: 250.00, logs: [
+                        { id: 301, date: "06/02", desc: "Planejamento Arquitetura", logged: 120.0, billable: 125.0 }
+                    ]}
+                ]
+            }
+        ];
+
+        let activeProjectId = null;
+
+        function calculateProjectBillableValue(p) {
+            let baseHours = p.billable;
+            if (p.type === 'support' && p.billable < p.franchise) {
+                baseHours = p.franchise;
+            }
+            return baseHours * p.avgRate;
+        }
+
+        function getComparisonIndicator(billable, previsto) {
+            const diff = billable - previsto;
+            const percent = previsto > 0 ? ((billable / previsto) * 100).toFixed(0) : 0;
+            let colorClass = '';
+            let label = `${percent}%`;
+
+            if (Math.abs(diff) < 0.01) {
+                colorClass = 'text-green-600 bg-green-50 border-green-200';
+            } else if (billable < previsto) {
+                colorClass = 'text-red-600 bg-red-50 border-red-200';
+            } else {
+                colorClass = 'text-purple-600 bg-purple-50 border-purple-200';
+            }
+            return { colorClass, label, diff };
+        }
+
+        function renderTable() {
+            const tbody = document.getElementById('billing-table-body');
+            tbody.innerHTML = '';
+            projects.forEach(p => {
+                const isModified = Math.abs(p.billable - p.logged) > 0.01;
+                const indicator = getComparisonIndicator(p.billable, p.franchise);
+                const totalValue = calculateProjectBillableValue(p);
+                let statusBadge = '', actions = '';
+
+                switch(p.status) {
+                    case 'open':
+                        statusBadge = `<span class="bg-blue-50 text-blue-700 px-2 py-1 rounded text-[10px] font-black border border-blue-100 uppercase text-nowrap">Em Ajuste</span>`;
+                        actions = `
+                            <button onclick="openAuditoria(${p.id})" class="text-blue-600 font-bold text-xs hover:underline mr-4 flex items-center gap-1"><i data-lucide="list" class="w-3 h-3"></i> Auditar</button>
+                            <button onclick="changeStatus(${p.id}, 'pending_ok')" class="bg-gray-100 text-gray-700 px-3 py-1.5 rounded-lg font-bold text-xs hover:bg-gray-200 flex items-center gap-1 transition-colors"><i data-lucide="eye" class="w-3 h-3"></i> Pronto p/ OK</button>
+                        `;
+                        break;
+                    case 'pending_ok':
+                        statusBadge = `<span class="bg-orange-50 text-orange-700 px-2 py-1 rounded text-[10px] font-black border border-orange-100 uppercase text-nowrap">Aguardando Cliente</span>`;
+                        actions = `
+                            <button onclick="openAuditoria(${p.id})" class="p-2 text-gray-400 hover:text-blue-600 bg-gray-50 rounded-lg transition-colors" title="Ver Relatório PDF"><i data-lucide="printer" class="w-4 h-4"></i></button>
+                            <button onclick="openFinalizeModal(${p.id})" class="bg-indigo-600 text-white px-3 py-1.5 rounded-lg font-bold text-xs shadow-sm hover:bg-indigo-700 flex items-center gap-1"><i data-lucide="check" class="w-3 h-3"></i> Fechar Medição</button>
+                        `;
+                        break;
+                    case 'ready':
+                        statusBadge = `<span class="bg-green-50 text-green-700 px-2 py-1 rounded text-[10px] font-black border border-green-100 uppercase flex items-center gap-1 text-nowrap"><i data-lucide="check-circle" class="w-3 h-3"></i> Pronto p/ Financeiro</span>`;
+                        actions = `
+                            <span class="text-xs text-gray-400 italic mr-3 truncate max-w-[100px]">${p.proof || 'OK via E-mail'}</span>
+                            <button onclick="openAuditoria(${p.id})" class="text-gray-400 hover:text-blue-600 p-1"><i data-lucide="eye" class="w-4 h-4"></i></button>
+                            <button onclick="changeStatus(${p.id}, 'pending_ok')" class="text-gray-300 hover:text-red-500 text-[10px] font-bold ml-2 transition-colors uppercase tracking-widest">Reabrir</button>
+                        `;
+                        break;
+                }
+
+                tbody.innerHTML += `
+                <tr class="hover:bg-gray-50/50 transition-colors ${p.status === 'ready' ? 'bg-green-50/10' : ''}">
+                    <td class="px-6 py-5">
+                        <div class="flex items-center gap-3">
+                            <div class="p-2 bg-blue-50 rounded-lg text-blue-600 no-print shrink-0"><i data-lucide="briefcase" class="w-4 h-4"></i></div>
+                            <div>
+                                <p class="font-bold text-gray-800 text-sm leading-tight">${p.name}</p>
+                                <p class="text-[10px] text-gray-400 font-bold uppercase tracking-tighter">${p.client} • <span class="${p.type==='support'?'text-teal-600':'text-indigo-400'}">${p.type==='support'?'Suporte':'Projeto'}</span></p>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="px-6 py-5 text-center font-bold text-gray-400">${p.franchise.toFixed(1)}h</td>
+                    <td class="px-6 py-5 text-center font-bold text-gray-400">${p.logged.toFixed(1)}h</td>
+                    <td class="px-6 py-5 text-center">
+                        <span class="px-3 py-1.5 rounded-lg font-black text-sm border ${isModified ? 'bg-orange-50 text-orange-700 border-orange-200' : 'bg-blue-50 text-blue-700 border-blue-100'}">
+                            ${p.billable.toFixed(1)}h
+                        </span>
+                    </td>
+                    <td class="px-6 py-5 text-center">
+                         <span class="px-2 py-0.5 rounded-full text-[10px] font-black border uppercase ${indicator.colorClass}">
+                            ${indicator.label}
+                         </span>
+                    </td>
+                    <td class="px-6 py-5 text-center font-bold text-gray-600">R$ ${p.avgRate.toFixed(2)}</td>
+                    <td class="px-6 py-5 text-center">
+                        <p class="font-black text-gray-900 text-sm">R$ ${totalValue.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</p>
+                    </td>
+                    <td class="px-6 py-5 text-center">${statusBadge}</td>
+                    <td class="px-6 py-5 text-right">
+                        <div class="flex justify-end items-center gap-2">${actions}</div>
+                    </td>
+                </tr>`;
+            });
+            lucide.createIcons();
+        }
+
+        function openAuditoria(id) {
+            activeProjectId = id;
+            const p = projects.find(x => x.id === id);
+            const isClosed = p.status === 'ready';
+            const container = document.getElementById('modal-content');
+            container.innerHTML = '';
+
+            document.getElementById('ext-project-name').innerText = p.name;
+            document.getElementById('ext-client-name').innerText = p.client;
+            document.getElementById('print-project-name').innerText = p.name;
+            document.getElementById('print-client-name').innerText = p.client;
+
+            if (p.type === 'support') {
+                // VISÃO SUPORTE: Consolidada (Líder vê recurso, Cliente não)
+                let allLogs = [];
+                p.resources.forEach(res => {
+                    res.logs.forEach(log => {
+                        allLogs.push({ ...log, resourceName: res.name, rate: res.rate });
+                    });
+                });
+                allLogs.sort((a,b) => a.date.localeCompare(b.date));
+
+                let rowsHtml = '';
+                allLogs.forEach(log => {
+                    const glosaClass = log.billable < log.logged ? 'glosa' : '';
+                    rowsHtml += `
+                    <tr class="hover:bg-gray-50/50 transition-colors">
+                        <td class="px-4 py-3 font-mono text-gray-400 border-b border-gray-50">${log.date}</td>
+                        <td class="px-4 py-3 text-gray-800 border-b border-gray-50 leading-tight no-print font-semibold">
+                            ${log.resourceName}
+                        </td>
+                        <td class="px-4 py-3 text-gray-700 border-b border-gray-50 leading-tight">${log.desc}</td>
+                        <td class="px-4 py-3 text-center text-gray-400 font-bold border-b border-gray-50 no-print">${log.logged.toFixed(1)}h</td>
+                        <td class="px-4 py-3 text-center border-b border-gray-50">
+                            <input type="number" step="0.1" value="${log.billable}" 
+                                   class="input-log-billable ${glosaClass}" 
+                                   onchange="updateLogBillableSupport(${log.id}, this.value)"
+                                   ${isClosed ? 'disabled' : ''}>
+                        </td>
+                        <td class="px-4 py-3 text-right text-gray-500 font-medium border-b border-gray-50 no-print">R$ ${(log.billable * log.rate).toLocaleString('pt-BR', {minimumFractionDigits: 2})}</td>
+                    </tr>`;
+                });
+
+                container.innerHTML = `
+                <div class="mb-8">
+                    <h4 class="bg-gray-100 px-4 py-2 text-[10px] font-black text-gray-500 uppercase rounded-t-lg shadow-sm border border-gray-200 border-b-0 flex items-center gap-2">
+                        <i data-lucide="list" class="w-3 h-3"></i> Extrato de Atividades (Consolidado)
+                    </h4>
+                    <table class="w-full text-xs text-left border border-gray-200 rounded-b-lg overflow-hidden shadow-sm">
+                        <thead class="bg-white text-gray-400 font-bold border-b border-gray-100 uppercase tracking-widest">
+                            <tr>
+                                <th class="px-4 py-3 w-24">Data</th>
+                                <th class="px-4 py-3 w-32 no-print">Recurso (Líder)</th>
+                                <th class="px-4 py-3">Descrição Técnica</th>
+                                <th class="px-4 py-3 text-center w-24 no-print">Lançado (Int)</th>
+                                <th class="px-4 py-3 text-center w-24">Faturado (h)</th>
+                                <th class="px-4 py-3 text-right w-32 no-print">Valor Ref.</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white">${rowsHtml}</tbody>
+                    </table>
+                </div>`;
+
+            } else {
+                // VISÃO PROJETO: Detalhada por Recurso (Padrão)
+                p.resources.forEach(res => {
+                    let logsHtml = '';
+                    res.logs.forEach(log => {
+                        const glosaClass = log.billable < log.logged ? 'glosa' : '';
+                        logsHtml += `
+                        <tr class="hover:bg-gray-50/50 transition-colors">
+                            <td class="px-4 py-3 font-mono text-gray-400 border-b border-gray-50">${log.date}</td>
+                            <td class="px-4 py-3 text-gray-700 border-b border-gray-50 leading-tight">${log.desc}</td>
+                            <td class="px-4 py-3 text-center text-gray-400 font-bold border-b border-gray-50 no-print">${log.logged.toFixed(1)}h</td>
+                            <td class="px-4 py-3 text-center border-b border-gray-50">
+                                <input type="number" step="0.1" value="${log.billable}" 
+                                       class="input-log-billable ${glosaClass}" 
+                                       onchange="updateLogBillable('${res.name}', ${log.id}, this.value)"
+                                       ${isClosed ? 'disabled' : ''}>
+                            </td>
+                            <td class="px-4 py-3 text-right text-gray-500 font-medium border-b border-gray-50">R$ ${(log.billable * res.rate).toLocaleString('pt-BR', {minimumFractionDigits: 2})}</td>
+                        </tr>`;
+                    });
+
+                    container.innerHTML += `
+                    <div class="mb-8 last:mb-0">
+                        <div class="bg-gray-100 px-4 py-2 flex justify-between items-center rounded-t-lg shadow-sm border border-gray-200 border-b-0">
+                            <h4 class="text-[10px] font-black text-gray-500 uppercase flex items-center gap-2">
+                                <i data-lucide="user" class="w-3 h-3"></i> Profissional: ${res.name}
+                            </h4>
+                            <span class="text-[10px] font-bold text-indigo-600 bg-white px-2 py-0.5 rounded border border-indigo-100 no-print">
+                                Valor/h: R$ ${res.rate.toFixed(2)}
+                            </span>
+                        </div>
+                        <table class="w-full text-xs text-left border border-gray-200 rounded-b-lg overflow-hidden shadow-sm">
+                            <thead class="bg-white text-gray-400 font-bold border-b border-gray-100 uppercase tracking-widest">
+                                <tr>
+                                    <th class="px-4 py-3 w-24">Data</th>
+                                    <th class="px-4 py-3">Atividade / Evolução</th>
+                                    <th class="px-4 py-3 text-center w-24 no-print">Lançado (Int)</th>
+                                    <th class="px-4 py-3 text-center w-24">Faturado (h)</th>
+                                    <th class="px-4 py-3 text-right w-32">Total Linha</th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white">${logsHtml}</tbody>
+                        </table>
+                    </div>`;
+                });
+            }
+
+            updateModalTotals();
+            const saveBtn = document.getElementById('btn-save-adjusts');
+            if(isClosed) saveBtn.classList.add('hidden');
+            else saveBtn.classList.remove('hidden');
+
+            const modal = document.getElementById('extract-modal');
+            modal.classList.remove('hidden');
+            setTimeout(() => modal.classList.remove('opacity-0'), 10);
+            lucide.createIcons();
+        }
+
+        function updateModalTotals() {
+            const p = projects.find(x => x.id === activeProjectId);
+            let sumBillable = 0, sumLogged = 0, sumFinancial = 0;
+            p.resources.forEach(res => {
+                res.logs.forEach(log => {
+                    sumBillable += log.billable;
+                    sumLogged += log.logged;
+                    sumFinancial += (log.billable * res.rate);
+                });
+            });
+            const indicator = getComparisonIndicator(sumBillable, p.franchise);
+            document.getElementById('modal-val-franchise').innerText = p.franchise.toFixed(1) + 'h';
+            document.getElementById('modal-val-logged').innerText = sumLogged.toFixed(1) + 'h';
+            document.getElementById('modal-subtotal-billable').innerText = sumBillable.toFixed(1) + 'h';
+            const badge = document.getElementById('modal-indicator-badge');
+            badge.innerText = indicator.label;
+            badge.className = `px-3 py-1 rounded-full text-[10px] font-black border uppercase transition-colors ${indicator.colorClass}`;
+            let finalVal = sumFinancial;
+            if (p.type === 'support' && sumBillable < p.franchise) finalVal = p.franchise * p.avgRate;
+            document.getElementById('modal-subtotal-value').innerText = `R$ ${finalVal.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
+        }
+
+        function updateLogBillable(resName, logId, val) {
+            const p = projects.find(x => x.id === activeProjectId);
+            if (p.status === 'ready') return;
+            const res = p.resources.find(r => r.name === resName);
+            const log = res.logs.find(l => l.id === logId);
+            log.billable = parseFloat(val) || 0;
+            updateModalTotals();
+        }
+
+        function updateLogBillableSupport(logId, val) {
+            const p = projects.find(x => x.id === activeProjectId);
+            if (p.status === 'ready') return;
+            p.resources.forEach(res => {
+                const log = res.logs.find(l => l.id === logId);
+                if (log) log.billable = parseFloat(val) || 0;
+            });
+            updateModalTotals();
+        }
+
+        function confirmAdjustments() {
+            const p = projects.find(x => x.id === activeProjectId);
+            if (p.status === 'ready') return closeModal('extract-modal');
+            let sum = 0;
+            p.resources.forEach(res => res.logs.forEach(log => sum += log.billable));
+            p.billable = sum; 
+            closeModal('extract-modal');
+            renderTable();
+        }
+
+        function openFinalizeModal(id) { activeProjectId = id; openModal('finalize-modal'); }
+        function completeFinalization() {
+            const p = projects.find(x => x.id === activeProjectId);
+            const fileInput = document.getElementById('proof-upload');
+            p.status = 'ready';
+            p.proof = fileInput.files.length ? fileInput.files[0].name : 'Aprovado via E-mail';
+            closeModal('finalize-modal');
+            renderTable();
+        }
+        function changeStatus(id, ns) { projects.find(x => x.id === id).status = ns; renderTable(); }
+        function openModal(id) { document.getElementById(id).classList.remove('hidden'); setTimeout(() => document.getElementById(id).classList.remove('opacity-0'), 10); }
+        function closeModal(id) { document.getElementById(id).classList.add('opacity-0'); setTimeout(() => document.getElementById(id).classList.add('hidden'), 300); }
+        renderTable();
+    </script>
+</body>
+</html>
