@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>DiaCompleto__c</fullName>
+    <description>Valida se o dia está conforme, considerando que valores negativos no banco representam horas consumidas para completar a jornada.</description>
+    <externalId>false</externalId>
+    <formula>(BLANKVALUE(HorasLancadas__c, 0) + 
+ BLANKVALUE(HoraLicencaRemunerada__c, 0) + 
+ BLANKVALUE(HoraLicencaNaoRemunerada__c, 0) - 
+ MIN(0, BLANKVALUE(HoraBanco__c, 0))) &gt;= BLANKVALUE(Hora__c, 0)</formula>
+    <formulaTreatBlanksAs>BlankAsZero</formulaTreatBlanksAs>
+    <label>Dia Completo</label>
+    <trackHistory>false</trackHistory>
+    <trackTrending>false</trackTrending>
+    <type>Checkbox</type>
+</CustomField>

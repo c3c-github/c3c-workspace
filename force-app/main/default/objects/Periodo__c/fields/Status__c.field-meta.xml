@@ -12,23 +12,43 @@
             <sorted>false</sorted>
             <value>
                 <fullName>Aberto</fullName>
-                <default>false</default>
+                <default>true</default>
                 <label>Aberto</label>
             </value>
             <value>
-                <fullName>Em emissão de nota</fullName>
+                <fullName>Aguardando Aprovação Líder</fullName>
                 <default>false</default>
-                <label>Em emissão de nota</label>
+                <label>Aguardando Aprovação Líder</label>
             </value>
             <value>
-                <fullName>Em pagamento</fullName>
+                <fullName>Aguardando Aprovação RH</fullName>
                 <default>false</default>
-                <label>Em pagamento</label>
+                <label>Aguardando Aprovação RH</label>
             </value>
             <value>
-                <fullName>Pago</fullName>
+                <fullName>Liberado para Nota Fiscal</fullName>
                 <default>false</default>
-                <label>Pago</label>
+                <label>Liberado para Nota Fiscal</label>
+            </value>
+            <value>
+                <fullName>Nota em Validação</fullName>
+                <default>false</default>
+                <label>Nota em Validação</label>
+            </value>
+            <value>
+                <fullName>Pronto para Pagamento</fullName>
+                <default>false</default>
+                <label>Pronto para Pagamento</label>
+            </value>
+            <value>
+                <fullName>Pagamento Agendado</fullName>
+                <default>false</default>
+                <label>Pagamento Agendado</label>
+            </value>
+            <value>
+                <fullName>Finalizado/Pago</fullName>
+                <default>false</default>
+                <label>Finalizado/Pago</label>
             </value>
         </valueSetDefinition>
     </valueSet>
