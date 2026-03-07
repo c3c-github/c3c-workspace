@@ -401,10 +401,14 @@ exports.getDashboardMetrics = async (req, res) => {
             const resAlloc = await conn.query(qAlloc);
             
             let totalAlocado = 0;
+            let percentualTotalAlocacao = 0;
             resAlloc.records.forEach(r => {
-                const perc = (r.Percentual__c || 0) / 100;
-                totalAlocado += (diasUteis * cargaDiaria * perc);
+                percentualTotalAlocacao += (r.Percentual__c || 0);
             });
+
+            // TRAVA EM 100% DE ALOCAÇÃO: Se a soma dos percentuais passar de 100%, travamos em 100% da carga horária do período
+            const percentualEfetivo = Math.min(percentualTotalAlocacao, 100) / 100;
+            totalAlocado = (diasUteis * cargaDiaria * percentualEfetivo);
 
             // 3. Busca Lançamentos (Realizado e Status)
             const qLanc = `SELECT Status__c, Horas__c, HorasExtras__c, HorasBanco__c FROM LancamentoHora__c WHERE Pessoa__c = '${userId}' AND DiaPeriodo__r.Data__c >= ${inicio} AND DiaPeriodo__r.Data__c <= ${fim} AND ${FILTRO_HORAS}`;
@@ -423,7 +427,9 @@ exports.getDashboardMetrics = async (req, res) => {
             const resBanco = await conn.query(qBanco);
             const saldoBanco = (resBanco.records[0] && resBanco.records[0].total) ? resBanco.records[0].total : 0;
 
+            // TRAVA EFICIÊNCIA EM 100%: A eficiência/adesão não deve passar de 100%
             let efic = totalAlocado > 0 ? Math.round((totalLanc / totalAlocado) * 100) : (totalLanc > 0 ? 100 : 0);
+            if (efic > 100) efic = 100;
 
             return res.json({ 
                 totalAlocadas: totalAlocado, 
