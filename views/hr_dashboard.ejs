@@ -2,16 +2,28 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <title>Gestão de Ponto (RH) - C3C Workplace</title>
+    <title>Gestão de Ponto & Ciclo (RH) - C3C Workplace</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    <script>tailwind.config = { theme: { extend: { fontFamily: { sans: ['Montserrat', 'sans-serif'] } } } }</script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Montserrat', 'sans-serif'] },
+                    colors: { 
+                        c3c: { blue: '#2978FF', teal: '#1DDDBD', gray: '#F2F2F2', bg: '#F8FAFC' } 
+                    }
+                }
+            }
+        }
+    </script>
     <style>
         body { font-family: 'Montserrat', sans-serif; background-color: #F8FAFC; }
         .fade-in { animation: fadeIn 0.4s ease-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         .modal-backdrop { background-color: rgba(0, 0, 0, 0.5); backdrop-filter: blur(2px); }
+        .status-badge { @apply px-2 py-1 rounded-md text-[10px] font-bold uppercase border whitespace-nowrap; }
     </style>
 </head>
 <body class="h-screen flex overflow-hidden bg-[#F8FAFC]">
@@ -20,42 +32,84 @@
     <%- include('partials/sidebar') %>
 
     <main class="flex-1 flex flex-col md:ml-64 relative w-full transition-all duration-300">
+        
         <header class="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-4 md:px-8 sticky top-0 z-20">
             <div class="flex items-center gap-4">
-                <button onclick="toggleMenu()" class="md:hidden p-2 text-gray-600 hover:bg-gray-100 rounded-lg"><i data-lucide="menu" class="w-6 h-6"></i></button>
-                <h1 class="text-lg md:text-xl font-bold text-gray-800 flex items-center gap-2">Gestão de Ponto <span class="hidden md:inline-flex bg-purple-100 text-purple-700 text-xs px-2 py-1 rounded-full items-center gap-1"><i data-lucide="lock" class="w-3 h-3"></i> RH</span></h1>
+                <button onclick="toggleMenu()" class="md:hidden p-2 text-gray-600 hover:bg-gray-100 rounded-lg">
+                    <i data-lucide="menu" class="w-6 h-6"></i>
+                </button>
+                <h1 class="text-lg md:text-xl font-bold text-gray-800 flex items-center gap-2">
+                    Gestão de Ponto & Ciclo
+                    <span class="hidden md:inline-flex bg-purple-100 text-purple-700 text-xs px-2 py-1 rounded-full items-center gap-1">
+                        <i data-lucide="shield-check" class="w-3 h-3"></i> Backoffice
+                    </span>
+                </h1>
             </div>
             <div class="flex items-center gap-3">
-                <select id="period-selector" onchange="triggerDataLoad(this.value)" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2 cursor-pointer outline-none min-w-[150px]"><option>Carregando...</option></select>
-                <button onclick="triggerDataLoad(document.getElementById('period-selector').value)" class="bg-blue-600 hover:bg-blue-700 text-white p-2 rounded-lg shadow-sm transition-colors" title="Atualizar"><i data-lucide="refresh-cw" class="w-5 h-5"></i></button>
+                <select id="period-selector" onchange="triggerDataLoad(this.value)" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2 cursor-pointer outline-none min-w-[200px]">
+                    <option>Carregando ciclos...</option>
+                </select>
+                <button onclick="triggerDataLoad(document.getElementById('period-selector').value)" class="bg-blue-600 hover:bg-blue-700 text-white p-2 rounded-lg shadow-sm transition-colors" title="Atualizar">
+                    <i data-lucide="refresh-cw" class="w-5 h-5"></i>
+                </button>
             </div>
         </header>
 
         <div class="flex-1 overflow-y-auto p-4 md:p-8 fade-in">
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                <div class="bg-white p-5 rounded-xl border border-gray-200 shadow-sm flex items-center gap-4"><div class="w-12 h-12 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center"><i data-lucide="users" class="w-6 h-6"></i></div><div><p class="text-xs text-gray-500 uppercase font-bold tracking-wider">Colaboradores</p><p class="text-2xl font-bold text-gray-900" id="kpi-total">--</p></div></div>
-                <div class="bg-white p-5 rounded-xl border border-red-100 shadow-sm flex items-center gap-4"><div class="w-12 h-12 rounded-full bg-red-50 text-red-600 flex items-center justify-center"><i data-lucide="alert-triangle" class="w-6 h-6"></i></div><div><p class="text-xs text-gray-500 uppercase font-bold tracking-wider">Risco Burnout</p><p class="text-2xl font-bold text-gray-900" id="kpi-burnout">--</p></div></div>
-                <div class="bg-white p-5 rounded-xl border border-yellow-100 shadow-sm flex items-center gap-4"><div class="w-12 h-12 rounded-full bg-yellow-50 text-yellow-600 flex items-center justify-center"><i data-lucide="coffee" class="w-6 h-6"></i></div><div><p class="text-xs text-gray-500 uppercase font-bold tracking-wider">Ociosidade</p><p class="text-2xl font-bold text-gray-900" id="kpi-ociosos">--</p></div></div>
-            </div>
+            <!-- FUNIL -->
+            <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4 mb-8" id="funnel-container"></div>
 
-            <div class="bg-white rounded-xl shadow-sm border border-gray-200 flex flex-col">
-                <div class="p-6 border-b border-gray-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                    <h2 class="text-lg font-bold text-gray-900">Saúde da Alocação & Folha</h2>
-                    <div class="relative w-full sm:w-auto"><i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400"></i><input type="text" id="search-input" onkeyup="filterTable()" placeholder="Buscar colaborador..." class="pl-9 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 w-full sm:w-64"></div>
+            <div class="bg-white rounded-2xl shadow-sm border border-gray-200 flex flex-col">
+                <div class="p-6 border-b border-gray-100 flex flex-col gap-6">
+                    <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                        <div>
+                            <h2 class="text-lg font-bold text-gray-900">Saúde da Operação</h2>
+                            <p class="text-xs text-gray-400">Compliance e evolução de status.</p>
+                        </div>
+                        <div class="flex flex-col sm:flex-row items-center gap-3 w-full lg:w-auto">
+                            <div class="relative w-full sm:w-64">
+                                <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400"></i>
+                                <input type="text" id="search-input" onkeyup="filterTable()" placeholder="Buscar colaborador..." class="pl-9 pr-4 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 w-full">
+                            </div>
+                            <select id="status-periodo-filter" onchange="triggerDataLoad(document.getElementById('period-selector').value)" class="bg-gray-50 border border-gray-200 rounded-xl px-4 py-2 text-sm font-medium text-gray-600 outline-none w-full sm:w-auto">
+                                <option value="">Todos os Status</option>
+                                <option value="Aberto">Aberto</option>
+                                <option value="Aguardando Aprovação Líder">Aguardando Líder</option>
+                                <option value="Aguardando Aprovação RH">Aguardando RH</option>
+                                <option value="Liberado para Nota Fiscal">Liberado p/ NF</option>
+                                <option value="Nota em Validação">Nota em Validação</option>
+                                <option value="Pronto para Pagamento">Pronto p/ Pagamento</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- BULK ACTIONS -->
+                    <div id="bulk-actions" class="hidden flex items-center justify-between p-3 bg-purple-50 rounded-xl border border-purple-100 animate-fade-in">
+                        <div class="flex items-center gap-3 ml-2">
+                            <div class="p-1.5 bg-purple-600 text-white rounded-lg"><i data-lucide="layers" class="w-4 h-4"></i></div>
+                            <span class="text-xs font-bold text-purple-700" id="selected-count">0 selecionados</span>
+                        </div>
+                        <div class="flex gap-2">
+                            <button onclick="handleBulkRegress()" class="bg-white border border-red-200 text-red-600 px-4 py-2 rounded-lg text-xs font-bold hover:bg-red-50 transition-all flex items-center gap-2"><i data-lucide="rewind" class="w-3.5 h-3.5"></i> Recuar Etapa</button>
+                            <button onclick="handleBulkAdvance()" class="bg-purple-600 text-white px-6 py-2 rounded-lg text-xs font-bold hover:bg-purple-700 shadow-sm transition-all flex items-center gap-2"><i data-lucide="fast-forward" class="w-3.5 h-3.5"></i> Avançar Etapa</button>
+                        </div>
+                    </div>
                 </div>
+
                 <div class="overflow-x-auto">
                     <table class="w-full text-sm text-left">
-                        <thead class="bg-gray-50 text-gray-500 uppercase text-xs font-bold border-b border-gray-200">
+                        <thead class="bg-gray-50 text-gray-500 uppercase text-[10px] font-bold border-b border-gray-200">
                             <tr>
-                                <th class="px-6 py-4 whitespace-nowrap">Colaborador</th>
-                                <th class="px-6 py-4 whitespace-nowrap text-center">Projetos</th>
-                                <th class="px-6 py-4 whitespace-nowrap min-w-[200px]">Carga vs Realizado</th>
-                                <th class="px-6 py-4 whitespace-nowrap text-center">Status</th>
-                                <th class="px-6 py-4 whitespace-nowrap text-right">Ação RH</th>
+                                <th class="px-6 py-4 w-10"><input type="checkbox" id="select-all" onchange="toggleSelectAll()" class="rounded border-gray-300 text-purple-600"></th>
+                                <th class="px-6 py-4">Colaborador</th>
+                                <th class="px-6 py-4 text-center">Compliance</th>
+                                <th class="px-6 py-4">Carga vs Realizado</th>
+                                <th class="px-6 py-4 text-center">Status Período</th>
+                                <th class="px-6 py-4 text-right">Ações</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-gray-100" id="hr-table-body">
-                            <tr><td colspan="5" class="text-center py-10 text-gray-400">Carregando...</td></tr>
+                            <tr><td colspan="6" class="text-center py-10 text-gray-400 italic">Carregando dados...</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -63,305 +117,137 @@
         </div>
     </main>
 
+    <!-- MODAL LOGS -->
     <div id="logs-modal" class="fixed inset-0 modal-backdrop z-50 hidden flex items-center justify-center opacity-0 transition-opacity duration-300 p-4">
         <div class="bg-white rounded-xl shadow-2xl w-full max-w-6xl transform scale-95 transition-transform duration-300 flex flex-col max-h-[90vh]">
-            <div class="bg-gray-900 text-white rounded-t-xl shrink-0 flex flex-col">
-                <div class="p-6 pb-4 flex justify-between items-start">
-                    <div>
-                        <h3 class="text-xl font-bold" id="modal-name">Colaborador</h3>
-                        <p class="text-gray-400 text-xs mt-0.5 uppercase tracking-wider">Análise e Aprovação de Lançamentos</p>
-                    </div>
+            <div class="bg-gray-900 text-white rounded-t-xl p-6">
+                <div class="flex justify-between items-start mb-6">
+                    <div><h3 class="text-xl font-bold" id="modal-name">Colaborador</h3><p class="text-gray-400 text-[10px] uppercase font-bold tracking-wider">Análise de Lançamentos</p></div>
                     <div class="flex items-center gap-3">
-                        <button id="btn-mass-reject" onclick="openHrMassRejectModal()" class="hidden bg-red-500/20 text-red-400 border border-red-500/30 px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-red-500 hover:text-white transition-all">Reprovar Selecionados</button>
-                        <button id="btn-mass-approve" onclick="confirmHrMassApprove()" class="hidden bg-green-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-green-700 transition-all shadow-sm">Aprovar Selecionados</button>
-                        <button onclick="closeModal()" class="bg-gray-800 hover:bg-gray-700 p-2 rounded-lg text-gray-300 transition-colors ml-2"><i data-lucide="x" class="w-5 h-5"></i></button>
+                        <button id="btn-mass-reject" onclick="openHrMassRejectModal()" class="hidden bg-red-500/20 text-red-400 border border-red-500/30 px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-red-500 hover:text-white transition-all">Reprovar</button>
+                        <button id="btn-mass-approve" onclick="confirmHrMassApprove()" class="hidden bg-green-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-green-700 transition-all shadow-sm">Aprovar</button>
+                        <button onclick="closeModal()" class="bg-gray-800 hover:bg-gray-700 p-2 rounded-lg text-gray-300"><i data-lucide="x" class="w-5 h-5"></i></button>
                     </div>
                 </div>
-                <div class="px-6 pb-6 grid grid-cols-2 md:grid-cols-7 gap-4 text-center md:text-left">
-                    <div class="border-r border-gray-800 pr-2"><span class="block text-xl font-bold text-gray-300" id="modal-normal">--</span><span class="text-[10px] text-gray-500 uppercase font-bold">Normais</span></div>
-                    <div class="border-r border-gray-800 pr-2"><span class="block text-xl font-bold text-green-400" id="modal-extra">--</span><span class="text-[10px] text-gray-500 uppercase font-bold">Extra ($)</span></div>
-                    <div class="border-r border-gray-800 pr-2"><span class="block text-xl font-bold text-indigo-400" id="modal-banco">--</span><span class="text-[10px] text-gray-500 uppercase font-bold">Banco</span></div>
-                    <div class="border-r border-gray-800 pr-2"><span class="block text-xl font-bold text-orange-400" id="modal-ausencia">--</span><span class="text-[10px] text-gray-500 uppercase font-bold">Ausências</span></div>
-                    <div class="border-r border-gray-800 pr-2"><span class="block text-xl font-bold text-white" id="modal-total">--</span><span class="text-[10px] text-gray-500 uppercase font-bold">Realizado</span></div>
-                    <div class="border-r border-gray-800 pr-2"><span class="block text-xl font-bold text-blue-200" id="modal-meta">--</span><span class="text-[10px] text-blue-400 uppercase font-bold">Meta</span></div>
-                    <div><span class="block text-xl font-bold" id="modal-saldo">--</span><span class="text-[10px] text-gray-500 uppercase font-bold">Saldo</span></div>
+                <div class="grid grid-cols-2 md:grid-cols-7 gap-4 text-center text-xs">
+                    <div class="border-r border-gray-800"><span class="block text-lg font-bold text-gray-300" id="modal-normal">--</span>NORMAIS</div>
+                    <div class="border-r border-gray-800"><span class="block text-lg font-bold text-green-400" id="modal-extra">--</span>EXTRA</div>
+                    <div class="border-r border-gray-800"><span class="block text-lg font-bold text-indigo-400" id="modal-banco">--</span>BANCO</div>
+                    <div class="border-r border-gray-800"><span class="block text-lg font-bold text-orange-400" id="modal-ausencia">--</span>AUSÊNCIAS</div>
+                    <div class="border-r border-gray-800"><span class="block text-lg font-bold text-white" id="modal-total">--</span>REALIZADO</div>
+                    <div class="border-r border-gray-800"><span class="block text-lg font-bold text-blue-200" id="modal-meta">--</span>META</div>
+                    <div><span class="block text-lg font-bold" id="modal-saldo">--</span>SALDO</div>
                 </div>
             </div>
             <div class="overflow-y-auto flex-1 bg-white">
-                <table class="w-full text-sm text-left border-collapse">
-                    <thead class="bg-gray-50 text-gray-500 uppercase text-xs font-bold sticky top-0 shadow-sm z-10 border-b border-gray-100">
-                        <tr>
-                            <th class="px-6 py-3 w-10"><input type="checkbox" id="check-all-hr" onchange="toggleAllHr(this)" class="rounded border-gray-300"></th>
-                            <th class="px-6 py-3">Data</th>
-                            <th class="px-6 py-3">Serviço</th> <th class="px-6 py-3">Atividade / Justificativa</th>
-                            <th class="px-6 py-3 text-right text-blue-600 border-l border-white">Normal</th>
-                            <th class="px-6 py-3 text-right text-green-600 border-l border-white">Extra</th>
-                            <th class="px-6 py-3 text-right text-indigo-600 border-l border-white">Banco</th>
-                            <th class="px-6 py-3 text-right text-orange-600 border-l border-white">Ausência</th>
-                            <th class="px-6 py-3 text-center border-l border-white">Status</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-gray-100 bg-white" id="modal-logs-body"></tbody>
-                </table>
+                <table class="w-full text-sm text-left"><thead class="bg-gray-50 text-gray-500 uppercase text-[10px] font-bold sticky top-0 shadow-sm border-b border-gray-100"><tr><th class="px-6 py-3 w-10"><input type="checkbox" id="check-all-hr" onchange="toggleAllHr(this)" class="rounded"></th><th class="px-6 py-3">Data</th><th class="px-6 py-3">Serviço</th><th class="px-6 py-3">Atividade</th><th class="px-6 py-3 text-right">H.N</th><th class="px-6 py-3 text-right">H.E</th><th class="px-6 py-3 text-right">H.B</th><th class="px-6 py-3 text-right">H.A</th><th class="px-6 py-3 text-center">Status</th></tr></thead><tbody class="divide-y divide-gray-100" id="modal-logs-body"></tbody></table>
             </div>
-            <div class="p-4 border-t border-gray-100 bg-white rounded-b-xl flex justify-end shrink-0"><button onclick="closeModal()" class="px-4 py-2 bg-gray-100 text-gray-700 font-bold rounded-lg hover:bg-gray-200">Fechar</button></div>
+            <div class="p-4 border-t border-gray-100 bg-white flex justify-end"><button onclick="closeModal()" class="px-6 py-2 bg-gray-100 text-gray-700 font-bold rounded-xl">Fechar</button></div>
         </div>
     </div>
 
+    <!-- MODAL REPROVAÇÃO -->
     <div id="modal-reject" class="fixed inset-0 z-[60] hidden">
-        <div class="absolute inset-0 bg-black bg-opacity-40 backdrop-blur-sm flex items-center justify-center p-4">
-            <div class="bg-white rounded-lg shadow-xl w-full max-w-md p-6">
-                <h3 class="text-lg font-bold text-red-600 mb-2">Reprovar Folha</h3>
-                <p class="text-sm text-gray-600 mb-4">Motivo para <strong id="reject-person-name"></strong>:</p>
+        <div class="absolute inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4">
+            <div class="bg-white rounded-2xl shadow-xl w-full max-w-md p-8 transform animate-fade-in">
+                <h3 class="text-xl font-bold text-red-600 mb-2">Reprovar Lançamentos</h3>
+                <p class="text-sm text-gray-500 mb-6">Reprovando para: <strong id="reject-person-name"></strong></p>
                 <input type="hidden" id="reject-person-id">
-                <textarea id="reject-reason" rows="3" class="w-full border border-gray-300 rounded-lg p-3 text-sm focus:ring-2 focus:ring-red-500 outline-none mb-4" placeholder="Justificativa..."></textarea>
-                <div class="flex justify-end gap-3"><button onclick="document.getElementById('modal-reject').classList.add('hidden')" class="px-4 py-2 text-gray-500 font-bold hover:bg-gray-100 rounded">Cancelar</button><button onclick="confirmReject()" class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-bold rounded shadow-sm">Confirmar</button></div>
+                <textarea id="reject-reason" rows="4" class="w-full border border-gray-200 rounded-xl p-4 text-sm focus:ring-2 focus:ring-red-500 outline-none mb-6 resize-none" placeholder="Digite o motivo..."></textarea>
+                <div class="flex justify-end gap-3"><button onclick="document.getElementById('modal-reject').classList.add('hidden')" class="px-6 py-2 text-gray-500 font-bold">Cancelar</button><button onclick="confirmReject()" class="px-8 py-2 bg-red-600 text-white font-bold rounded-xl">Reprovar</button></div>
             </div>
         </div>
     </div>
 
     <script>
         lucide.createIcons();
-        const API_URL = '/api';
+        const API_URL = '/api'; let allEmployees = []; let currentModalPersonId = null;
+        const statusColors = { 'Aberto': 'bg-gray-100 text-gray-600 border-gray-200', 'Aguardando Aprovação Líder': 'bg-blue-50 text-blue-600 border-blue-100', 'Aguardando Aprovação RH': 'bg-orange-50 text-orange-600 border-orange-100', 'Liberado para Nota Fiscal': 'bg-teal-50 text-teal-600 border-teal-100', 'Nota em Validação': 'bg-purple-50 text-purple-600 border-purple-100', 'Pronto para Pagamento': 'bg-green-50 text-green-600 border-green-100', 'Finalizado/Pago': 'bg-indigo-50 text-indigo-600 border-indigo-100' };
 
-        document.addEventListener('DOMContentLoaded', () => { loadPeriods(); });
-        function toggleMenu() { const s=document.getElementById('sidebar'); const o=document.getElementById('mobile-overlay'); if(s.classList.contains('-translate-x-full')){s.classList.remove('-translate-x-full');o.classList.remove('hidden');setTimeout(()=>o.classList.remove('opacity-0'),10);}else{s.classList.add('-translate-x-full');o.classList.add('opacity-0');setTimeout(()=>o.classList.add('hidden'),300);} }
+        document.addEventListener('DOMContentLoaded', () => { loadAvailableCycles(); });
 
-        async function loadPeriods() {
+        async function loadAvailableCycles() {
             try {
-                const res = await fetch(`${API_URL}/periods`);
-                if(res.status===401) window.location.href='/';
-                const periods = await res.json();
-                const sel = document.getElementById('period-selector');
-                sel.innerHTML = '';
-                if(periods.length===0){ sel.innerHTML='<option>Sem contratos</option>'; return; }
-                periods.forEach((p,i) => {
-                    const opt=document.createElement('option');
-                    opt.value=JSON.stringify({start:p.DataInicio__c, end:p.DataFim__c}); opt.text=p.Name; if(i===0)opt.selected=true;
-                    sel.appendChild(opt);
-                });
-                if(sel.options.length>0) triggerDataLoad(sel.value);
+                const res = await fetch('/api/periods'); const cycles = await res.json(); const selector = document.getElementById('period-selector'); selector.innerHTML = '';
+                cycles.forEach((c, i) => { const opt = document.createElement('option'); opt.value = JSON.stringify({start: c.DataInicio__c, end: c.DataFim__c}); opt.text = c.Name; if(i === 0) opt.selected = true; selector.appendChild(opt); });
+                if(selector.options.length > 0) triggerDataLoad(selector.value);
             } catch(e) { console.error(e); }
         }
 
-        function triggerDataLoad(v) { if(!v)return; const d=JSON.parse(v); loadTableData(d.start, d.end); }
+        function triggerDataLoad(v) { if(!v) return; const d = JSON.parse(v); const st = document.getElementById('status-periodo-filter').value; loadTableData(d.start, d.end, st); }
 
-        async function loadTableData(start, end) {
-            const tbody = document.getElementById('hr-table-body');
-            tbody.innerHTML = '<tr><td colspan="5" class="text-center py-10"><div class="animate-pulse text-blue-600 font-bold">Carregando dados...</div></td></tr>';
+        async function loadTableData(start, end, stFilter = '') {
+            const tbody = document.getElementById('hr-table-body'); tbody.innerHTML = '<tr><td colspan="6" class="text-center py-10 text-blue-600 font-bold">Carregando...</td></tr>';
             try {
-                const res = await fetch(`${API_URL}/hr/employees?inicio=${start}&fim=${end}`);
-                const r = await res.json();
-                
-                if(r.kpis) {
-                    document.getElementById('kpi-total').innerText = r.kpis.total;
-                    document.getElementById('kpi-burnout').innerText = r.kpis.burnout;
-                    document.getElementById('kpi-ociosos').innerText = r.kpis.ociosos;
+                const url = `${API_URL}/hr/employees?inicio=${start}&fim=${end}${stFilter ? '&statusPeriodo='+stFilter : ''}`;
+                const res = await fetch(url); const r = await res.json(); renderFunnel(r.funnel); allEmployees = r.data; renderTable();
+            } catch(e){ console.error(e); }
+        }
+
+        function renderFunnel(data) {
+            const container = document.getElementById('funnel-container'); container.innerHTML = '';
+            const statuses = ['Aberto', 'Aguardando Aprovação Líder', 'Aguardando Aprovação RH', 'Liberado para Nota Fiscal', 'Nota em Validação', 'Pronto para Pagamento', 'Pagamento Agendado', 'Finalizado/Pago'];
+            statuses.forEach(st => { const item = data.find(d => d.Status__c === st) || { total: 0 }; container.innerHTML += `<div class="bg-white p-3 rounded-2xl border border-gray-100 text-center hover:border-purple-200 cursor-pointer min-w-[100px]" onclick="filterByStatus('${st}')"><p class="text-[8px] font-bold text-gray-400 uppercase truncate mb-1">${st}</p><p class="text-lg font-black text-gray-800">${item.total}</p></div>`; });
+        }
+
+        function renderTable() {
+            const tbody = document.getElementById('hr-table-body'); const search = document.getElementById('search-input').value.toLowerCase(); tbody.innerHTML = '';
+            allEmployees.sort((a, b) => a.name.localeCompare(b.name));
+            const filtered = allEmployees.filter(p => p.name.toLowerCase().includes(search));
+            if (filtered.length === 0) { tbody.innerHTML = '<tr><td colspan="6" class="px-6 py-10 text-center text-gray-400 italic">Nenhum registro.</td></tr>'; return; }
+            filtered.forEach(p => {
+                const pct = p.contract > 0 ? (p.total / p.contract) * 100 : 0; const barColor = pct > 110 ? 'bg-red-500' : (pct < 70 ? 'bg-yellow-500' : 'bg-green-500'); const compColor = p.incompleteDays === 0 ? 'text-green-500' : 'text-red-500';
+                let act = `<div class="flex justify-end gap-2"><button onclick="openModal('${p.id}','${p.name}')" class="p-2 text-gray-400 hover:text-blue-600 bg-gray-50 rounded-lg transition-all"><i data-lucide="eye" class="w-4 h-4"></i></button>`;
+                if (p.statusPeriodo === 'Aguardando Aprovação RH') {
+                    act += `<button onclick="performAction('${p.id}','${p.name}','approve')" class="px-3 py-1 bg-green-600 text-white text-[10px] font-bold rounded shadow-sm">Aprovar</button><button onclick="openRejectModal('${p.id}','${p.name}')" class="px-3 py-1 bg-red-50 text-red-600 border border-red-200 text-[10px] font-bold rounded">Reprovar</button>`;
+                } else {
+                    if (p.statusPeriodo !== 'Aberto') act += `<button onclick="handleRegress(['${p.periodId}'])" class="p-2 text-gray-400 hover:text-red-600 bg-gray-50 rounded-lg"><i data-lucide="arrow-left-circle" class="w-4 h-4"></i></button>`;
+                    if (!['Liberado para Nota Fiscal', 'Nota em Validação', 'Pronto para Pagamento', 'Pagamento Agendado', 'Finalizado/Pago'].includes(p.statusPeriodo)) act += `<button onclick="handleAdvance(['${p.periodId}'])" class="p-2 text-gray-400 hover:text-purple-600 bg-gray-50 rounded-lg"><i data-lucide="arrow-right-circle" class="w-4 h-4"></i></button>`;
                 }
-                const data = r.data;
-                tbody.innerHTML = '';
-                if(!data || data.length===0) { tbody.innerHTML='<tr><td colspan="5" class="text-center py-10 text-gray-400">Nenhum dado.</td></tr>'; return; }
-
-                data.forEach(p => {
-                    const pct = p.contract>0 ? (p.total/p.contract)*100 : 0;
-                    let barColor = p.statusKPI==='danger'?'bg-red-500':(p.statusKPI==='risk'?'bg-yellow-500':'bg-green-500');
-                    let stClass = 'bg-gray-100 text-gray-600';
-                    if(p.statusUI==='Pronto para Fechamento') stClass='bg-green-100 text-green-800 font-bold';
-                    else if(p.statusUI.includes('Faturado')) stClass='bg-blue-100 text-blue-800 font-bold';
-                    
-                    let actHtml = `<div class="flex items-center justify-end gap-2"><button onclick="openModal('${p.id}','${p.name}')" class="p-2 text-gray-400 hover:text-blue-600 bg-gray-50 rounded-lg"><i data-lucide="eye" class="w-4 h-4"></i></button></div>`;
-                    
-                    if(p.canAction && p.statusUI.includes('Aguardando Aprovação RH')) {
-                        // Caso: Tem itens pendentes no RH
-                        actHtml = `<div class="flex items-center justify-end gap-2">
-                            <button onclick="openModal('${p.id}','${p.name}')" class="p-2 text-gray-400 hover:text-blue-600 bg-gray-50 rounded-lg"><i data-lucide="eye" class="w-4 h-4"></i></button>
-                            <button onclick="performAction('${p.id}','${p.name}','approve')" class="px-3 py-1.5 bg-green-600 text-white text-xs font-bold rounded hover:bg-green-700">Aprovar</button>
-                            <button onclick="openRejectModal('${p.id}','${p.name}')" class="px-3 py-1.5 bg-red-50 text-red-600 border border-red-200 text-xs font-bold rounded hover:bg-red-100">Reprovar</button>
-                        </div>`;
-                    }
-
-                    tbody.innerHTML += `
-                    <tr class="hover:bg-gray-50 transition-colors border-b border-gray-50">
-                        <td class="px-6 py-4"><div class="flex items-center gap-3"><div class="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-xs font-bold text-blue-600">${p.name.charAt(0)}</div><div><p class="font-bold text-gray-900">${p.name}</p><p class="text-xs text-gray-400">${p.role}</p></div></div></td>
-                        <td class="px-6 py-4 text-center"><span class="bg-gray-100 text-gray-600 px-2 py-1 rounded text-xs font-bold">${p.projects.length} Proj.</span></td>
-                        <td class="px-6 py-4 align-middle"><div class="flex justify-between text-xs font-bold mb-1"><span class="text-gray-700">${p.total.toFixed(1)}h</span><span class="text-gray-400">Meta: ${p.contract}h</span></div><div class="w-full bg-gray-200 rounded-full h-1.5 overflow-hidden"><div class="${barColor} h-1.5 rounded-full" style="width:${Math.min(pct,100)}%"></div></div></td>
-                        <td class="px-6 py-4 text-center"><span class="px-2 py-1 rounded-full text-xs ${stClass}">${p.statusUI}</span></td>
-                        <td class="px-6 py-4 text-right">${actHtml}</td>
-                    </tr>`;
-                });
-                lucide.createIcons();
-            } catch(e){ console.error(e); tbody.innerHTML='<tr><td colspan="5" class="text-center text-red-500 py-10">Erro.</td></tr>'; }
+                act += `</div>`;
+                tbody.innerHTML += `<tr class="hover:bg-gray-50 transition-colors"><td class="px-6 py-4"><input type="checkbox" name="period-check" value="${p.periodId}" onchange="updateBulkActions()" class="rounded border-gray-300"></td><td class="px-6 py-4"><div class="flex items-center gap-3"><div class="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-[10px] font-bold text-blue-600">${p.name.charAt(0)}</div><div><p class="font-bold text-gray-900 leading-tight">${p.name}</p><p class="text-[10px] text-gray-400">${p.role}</p></div></div></td><td class="px-6 py-4 text-center"><div class="flex flex-col items-center"><i data-lucide="${p.incompleteDays === 0 ? 'check-circle' : 'alert-circle'}" class="w-4 h-4 ${compColor} mb-1"></i><span class="text-[8px] font-bold ${compColor} uppercase">${p.incompleteDays === 0 ? 'Completo' : p.incompleteDays + ' pend.'}</span></div></td><td class="px-6 py-4"><div class="flex justify-between text-[10px] font-bold mb-1"><span class="text-gray-700">${p.total.toFixed(1)}h</span><span class="text-gray-400">Meta: ${p.contract}h</span></div><div class="w-full bg-gray-100 rounded-full h-1.5 overflow-hidden"><div class="${barColor} h-1.5" style="width:${Math.min(pct, 100)}%"></div></div></td><td class="px-6 py-4 text-center"><span class="status-badge ${statusColors[p.statusPeriodo]}">${p.statusPeriodo}</span></td><td class="px-6 py-4 text-right">${act}</td></tr>`;
+            });
+            lucide.createIcons();
         }
 
-        function filterTable() {
-            const v = document.getElementById("search-input").value.toUpperCase();
-            const tr = document.getElementById("hr-table-body").getElementsByTagName("tr");
-            for(let i=0;i<tr.length;i++){ const td=tr[i].getElementsByTagName("td")[0]; if(td) tr[i].style.display=td.textContent.toUpperCase().indexOf(v)>-1?"":"none"; }
+        async function handleAdvance(ids) { if(!confirm(`Avançar ${ids.length} período(s)?`)) return; try { const res = await fetch('/api/hr/periods/advance', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ periodIds: ids }) }); const data = await res.json(); if(res.ok) { triggerDataLoad(document.getElementById('period-selector').value); document.getElementById('select-all').checked = false; updateBulkActions(); } else { alert('Erro: ' + (data.error || data.message)); } } catch(e) { alert('Erro de conexão.'); } }
+        async function handleRegress(ids) { if(!confirm(`Recuar ${ids.length} período(s)?`)) return; try { const res = await fetch('/api/hr/periods/regress', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ periodIds: ids }) }); if(res.ok) { triggerDataLoad(document.getElementById('period-selector').value); document.getElementById('select-all').checked = false; updateBulkActions(); } } catch(e) { alert('Erro de conexão.'); } }
+        async function performAction(pid, pname, type, reason=null, entryIds = null) {
+            const dates = JSON.parse(document.getElementById('period-selector').value);
+            try { const res = await fetch(`${API_URL}/hr/action`, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ personId: pid, action: type, inicio: dates.start, fim: dates.end, motivo: reason, entryIds: Array.isArray(entryIds) ? entryIds : (entryIds ? [entryIds] : null) }) }); const r = await res.json(); if(r.success) { if(entryIds && currentModalPersonId) openModal(currentModalPersonId, document.getElementById('modal-name').innerText); else triggerDataLoad(document.getElementById('period-selector').value); } else { alert('Erro: ' + r.message); } } catch(e) { alert('Erro de conexão'); }
         }
-
-        let currentModalPersonId = null;
-
+        function openRejectModal(id, name) { document.getElementById('reject-person-id').value = id; document.getElementById('reject-person-name').innerText = name; document.getElementById('reject-reason').value = ''; document.getElementById('modal-reject').classList.remove('hidden'); }
+        async function confirmReject() { const id = document.getElementById('reject-person-id').value; const reason = document.getElementById('reject-reason').value.trim(); if(!reason) return alert("Motivo obrigatório"); if(id === 'MASS') await performAction(currentModalPersonId, 'Selecionados', 'reject', reason, getHrSelectedEntryIds()); else { const isLog = id.startsWith('a1D'); await performAction(isLog ? currentModalPersonId : id, '', 'reject', reason, isLog ? [id] : null); } document.getElementById('modal-reject').classList.add('hidden'); }
+        function toggleSelectAll() { const all = document.getElementById('select-all').checked; document.querySelectorAll('input[name="period-check"]').forEach(c => c.checked = all); updateBulkActions(); }
+        function updateBulkActions() { const selected = document.querySelectorAll('input[name="period-check"]:checked'); const toolbar = document.getElementById('bulk-actions'); const countLabel = document.getElementById('selected-count'); if (selected.length > 0) { toolbar.classList.remove('hidden'); countLabel.innerText = `${selected.length} selecionados`; } else { toolbar.classList.add('hidden'); } }
+        async function handleBulkAdvance() { await handleAdvance(Array.from(document.querySelectorAll('input[name="period-check"]:checked')).map(c => c.value)); }
+        async function handleBulkRegress() { await handleRegress(Array.from(document.querySelectorAll('input[name="period-check"]:checked')).map(c => c.value)); }
         async function openModal(id, name) {
-            currentModalPersonId = id;
-            const m = document.getElementById('logs-modal');
-            const tb = document.getElementById('modal-logs-body');
-            document.getElementById('modal-name').innerText = name;
-            ['modal-normal','modal-extra','modal-banco','modal-ausencia','modal-total','modal-meta','modal-saldo'].forEach(e=>document.getElementById(e).innerText='...');
-            tb.innerHTML='<tr><td colspan="9" class="text-center py-8">Carregando...</td></tr>';
+            currentModalPersonId = id; const m = document.getElementById('logs-modal'); const tb = document.getElementById('modal-logs-body'); document.getElementById('modal-name').innerText = name;
+            ['modal-normal','modal-extra','modal-banco','modal-ausencia','modal-total','modal-meta','modal-saldo'].forEach(e => document.getElementById(e).innerText = '...');
             m.classList.remove('hidden'); setTimeout(()=>{m.classList.remove('opacity-0');m.querySelector('div').classList.remove('scale-95');},10);
-
-            // Reset Mass Actions
-            document.getElementById('check-all-hr').checked = false;
-            updateHrMassActionButtons();
-
             const dates = JSON.parse(document.getElementById('period-selector').value);
             try {
-                const res = await fetch(`${API_URL}/hr/employees/${id}/details?inicio=${dates.start}&fim=${dates.end}`);
-                const d = await res.json();
-                const s = d.summary;
-
-                document.getElementById('modal-normal').innerText = s.normal.toFixed(1)+'h';
-                document.getElementById('modal-extra').innerText = s.extra.toFixed(1)+'h';
-                const b = document.getElementById('modal-banco'); b.innerText=(s.banco>0?'+':'')+s.banco.toFixed(1)+'h';
-                b.className = s.banco>0 ? "block text-xl font-bold text-indigo-400":(s.banco<0?"block text-xl font-bold text-yellow-400":"block text-xl font-bold text-gray-500");
-                document.getElementById('modal-ausencia').innerText = s.ausencia.toFixed(1)+'h';
-                document.getElementById('modal-total').innerText = s.totalRealizado.toFixed(1)+'h';
-                document.getElementById('modal-meta').innerText = s.contract.toFixed(1)+'h';
-                
-                const saldo = s.totalRealizado - s.contract;
-                const salEl = document.getElementById('modal-saldo');
-                salEl.innerText = (saldo>0?'+':'')+saldo.toFixed(1)+'h';
-                salEl.className = saldo>0 ? "block text-xl font-bold text-green-400" : (saldo<0?"block text-xl font-bold text-red-400":"block text-xl font-bold text-gray-400");
-
-                tb.innerHTML = '';
-                if(d.logs.length===0){ tb.innerHTML='<tr><td colspan="9" class="text-center py-8 text-gray-400">Sem registros.</td></tr>'; return; }
-
-                d.logs.forEach(l => {
-                    const totalLinha = l.normal + l.extraPgto + Math.abs(l.banco) + l.ausencia;
-                    if(totalLinha === 0) return;
-
-                    const date = new Date(l.date+'T12:00:00').toLocaleDateString('pt-BR', {day:'2-digit', month:'2-digit', weekday:'short'});
-                    const just = l.justification ? `<br><span class="text-[10px] text-gray-400 italic">"${l.justification}"</span>`:'';
-                    
-                    let stBadge = `<span class="text-[10px] bg-gray-100 text-gray-500 px-2 py-0.5 rounded">${l.status}</span>`;
-                    let canSelect = false;
-
-                    if (l.status === 'Em aprovação do RH') {
-                        stBadge = `<span class="text-[10px] bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded font-bold border border-indigo-200">Pendente RH</span>`;
-                        canSelect = true;
-                    } else if (l.status === 'Aprovado') {
-                        stBadge = `<span class="text-[10px] bg-green-100 text-green-700 px-2 py-0.5 rounded font-bold">Aprovado</span>`;
-                    } else if (l.status === 'Reprovado RH') {
-                        stBadge = `<span class="text-[10px] bg-red-100 text-red-700 px-2 py-0.5 rounded font-bold">Reprovado RH</span>`;
-                    } else if (l.status === 'Reprovado serviço') {
-                        stBadge = `<span class="text-[10px] bg-orange-100 text-orange-700 px-2 py-0.5 rounded font-bold">Reprovado Serviço</span>`;
-                    } else if (l.status === 'Em aprovação do serviço') {
-                        stBadge = `<span class="text-[10px] bg-blue-100 text-blue-700 px-2 py-0.5 rounded font-bold">Em Aprovação Serviço</span>`;
-                    }
-
-                    const checkbox = canSelect 
-                        ? `<input type="checkbox" class="hr-entry-checkbox rounded border-gray-300 text-indigo-600" value="${l.id}" onchange="updateHrMassActionButtons()">`
-                        : `<div class="flex justify-center"><i data-lucide="lock" class="w-3.5 h-3.5 text-gray-300"></i></div>`;
-
-                    tb.innerHTML += `
-                    <tr class="hover:bg-gray-50 border-b border-gray-50">
-                        <td class="px-6 py-3 text-center">${checkbox}</td>
-                        <td class="px-6 py-3 text-xs text-gray-500 uppercase font-bold">${date}</td>
-                        <td class="px-6 py-3 text-xs font-bold text-blue-800">${l.project}</td> <td class="px-6 py-3 text-xs font-medium text-gray-900">${l.activity}${just}</td>
-                        <td class="px-6 py-3 text-xs text-right text-blue-600 bg-blue-50/20 font-bold">${l.normal>0?l.normal.toFixed(1):'-'}</td>
-                        <td class="px-6 py-3 text-xs text-right text-green-600 bg-green-50/20 font-bold">${l.extraPgto>0?l.extraPgto.toFixed(1):'-'}</td>
-                        <td class="px-6 py-3 text-xs text-right text-indigo-600 bg-indigo-50/20 font-bold">${l.banco!==0?l.banco.toFixed(1):'-'}</td>
-                        <td class="px-6 py-3 text-xs text-right text-orange-600 bg-orange-50/20 font-bold">${l.ausencia>0?l.ausencia.toFixed(1):'-'}</td>
-                        <td class="px-6 py-3 text-center">${stBadge}</td>
-                    </tr>`;
-                });
-                lucide.createIcons();
-            } catch(e) { console.error(e); tb.innerHTML='<tr><td colspan="9" class="text-center text-red-500 py-8">Erro.</td></tr>'; }
+                const res = await fetch(`${API_URL}/hr/employees/${id}/details?inicio=${dates.start}&fim=${dates.end}`); const d = await res.json(); const s = d.summary;
+                document.getElementById('modal-normal').innerText = s.normal.toFixed(1)+'h'; document.getElementById('modal-extra').innerText = s.extra.toFixed(1)+'h'; const b = document.getElementById('modal-banco'); b.innerText = (s.banco > 0 ? '+' : '') + s.banco.toFixed(1) + 'h'; b.className = s.banco > 0 ? "block text-lg font-bold text-indigo-400" : (s.banco < 0 ? "block text-lg font-bold text-yellow-400" : "block text-lg font-bold text-gray-500");
+                document.getElementById('modal-ausencia').innerText = s.ausencia.toFixed(1)+'h'; document.getElementById('modal-total').innerText = s.totalRealizado.toFixed(1)+'h'; document.getElementById('modal-meta').innerText = s.contract.toFixed(1)+'h';
+                const saldo = s.totalRealizado - s.contract; const salEl = document.getElementById('modal-saldo'); salEl.innerText = (saldo > 0 ? '+' : '') + saldo.toFixed(1) + 'h'; salEl.className = saldo > 0 ? "block text-lg font-bold text-green-400" : (saldo < 0 ? "block text-lg font-bold text-red-400" : "block text-lg font-bold text-gray-400");
+                tb.innerHTML = ''; d.logs.forEach(l => {
+                    const date = new Date(l.date+'T12:00:00').toLocaleDateString('pt-BR', {day:'2-digit', month:'2-digit', weekday:'short'}); const stColor = l.status === 'Aprovado' ? 'text-green-600' : (l.status.includes('Reprovado') ? 'text-red-600' : 'text-blue-600');
+                    let badge = `<span class="text-[10px] font-bold ${stColor}">${l.status}</span>`; let checkbox = `<div class="flex justify-center"><i data-lucide="lock" class="w-3 h-3 text-gray-300"></i></div>`;
+                    if (l.status === 'Em aprovação do RH') { badge = `<div class="flex gap-1"><button onclick="performAction('${id}','','approve','','${l.id}')" class="p-1 bg-green-50 text-green-600 rounded border border-green-200 hover:bg-green-600 hover:text-white transition-all"><i data-lucide="check" class="w-3 h-3"></i></button><button onclick="openRejectModal('${l.id}','Lançamento')" class="p-1 bg-red-50 text-red-600 rounded border border-red-200 hover:bg-red-600 hover:text-white transition-all"><i data-lucide="x" class="w-3 h-3"></i></button></div>`; checkbox = `<input type="checkbox" class="hr-entry-checkbox rounded border-gray-300 text-indigo-600" value="${l.id}" onchange="updateHrMassActionButtons()">`; }
+                    tb.innerHTML += `<tr class="hover:bg-gray-50 text-xs"><td class="px-6 py-3 text-center">${checkbox}</td><td class="px-6 py-3 uppercase font-bold text-gray-500">${date}</td><td class="px-6 py-3 font-bold">${l.project || '-'}</td><td class="px-6 py-3 text-gray-600">${l.activity || '-'}</td><td class="px-6 py-3 text-right font-bold text-blue-600">${l.normal?.toFixed(1) || '-'}</td><td class="px-6 py-3 text-right font-bold text-green-600">${l.extraPgto?.toFixed(1) || '-'}</td><td class="px-6 py-3 text-right font-bold text-indigo-600">${l.banco?.toFixed(1) || '-'}</td><td class="px-6 py-3 text-right font-bold text-orange-600">${l.ausencia?.toFixed(1) || '-'}</td><td class="px-6 py-3 text-center">${badge}</td></tr>`;
+                }); lucide.createIcons();
+            } catch(e) { console.error(e); }
         }
-
-        function toggleAllHr(master) {
-            const checks = document.querySelectorAll('.hr-entry-checkbox');
-            checks.forEach(c => c.checked = master.checked);
-            updateHrMassActionButtons();
-        }
-
-        function updateHrMassActionButtons() {
-            const selectedChecks = Array.from(document.querySelectorAll('.hr-entry-checkbox:checked'));
-            const selectedCount = selectedChecks.length;
-            const btnApprove = document.getElementById('btn-mass-approve');
-            const btnReject = document.getElementById('btn-mass-reject');
-            
-            if(selectedCount > 0) {
-                // Apenas exibe se os selecionados forem elegíveis (Status check já feito no render)
-                btnApprove.classList.remove('hidden');
-                btnReject.classList.remove('hidden');
-                btnApprove.innerText = `Aprovar (${selectedCount})`;
-                btnReject.innerText = `Reprovar (${selectedCount})`;
-            } else {
-                btnApprove.classList.add('hidden');
-                btnReject.classList.add('hidden');
-            }
-        }
-
-        function getHrSelectedEntryIds() {
-            return Array.from(document.querySelectorAll('.hr-entry-checkbox:checked')).map(cb => cb.value);
-        }
-
-        async function confirmHrMassApprove() {
-            const ids = getHrSelectedEntryIds();
-            if(!confirm(`Confirma a aprovação de ${ids.length} lançamento(s)?`)) return;
-            performAction(currentModalPersonId, 'Selecionados', 'approve', null, ids);
-        }
-
-        function openHrMassRejectModal() {
-            const ids = getHrSelectedEntryIds();
-            document.getElementById('reject-person-name').innerText = `${ids.length} lançamento(s) selecionado(s)`;
-            document.getElementById('reject-person-id').value = 'MASS';
-            document.getElementById('reject-reason').value = '';
-            document.getElementById('modal-reject').classList.remove('hidden');
-        }
-
+        function updateHrMassActionButtons() { const selectedCount = document.querySelectorAll('.hr-entry-checkbox:checked').length; const btnApprove = document.getElementById('btn-mass-approve'); const btnReject = document.getElementById('btn-mass-reject'); if(selectedCount > 0) { btnApprove.classList.remove('hidden'); btnReject.classList.remove('hidden'); btnApprove.innerText = `Aprovar (${selectedCount})`; btnReject.innerText = `Reprovar (${selectedCount})`; } else { btnApprove.classList.add('hidden'); btnReject.classList.add('hidden'); } }
+        function getHrSelectedEntryIds() { return Array.from(document.querySelectorAll('.hr-entry-checkbox:checked')).map(cb => cb.value); }
+        async function confirmHrMassApprove() { const ids = getHrSelectedEntryIds(); if(!confirm(`Aprovar ${ids.length} lançamento(s)?`)) return; await performAction(currentModalPersonId, 'Selecionados', 'approve', null, ids); }
+        function openHrMassRejectModal() { const ids = getHrSelectedEntryIds(); document.getElementById('reject-person-name').innerText = `${ids.length} lançamento(s)`; document.getElementById('reject-person-id').value = 'MASS'; document.getElementById('modal-reject').classList.remove('hidden'); }
         function closeModal() { const m=document.getElementById('logs-modal'); m.classList.add('opacity-0'); m.querySelector('div').classList.add('scale-95'); setTimeout(()=>m.classList.add('hidden'),300); }
-
-        function openRejectModal(id,name) { document.getElementById('reject-person-id').value=id; document.getElementById('reject-person-name').innerText=name; document.getElementById('reject-reason').value=''; document.getElementById('modal-reject').classList.remove('hidden'); }
-        
-        function confirmReject() { 
-            const id=document.getElementById('reject-person-id').value; 
-            const r=document.getElementById('reject-reason').value.trim(); 
-            if(!r){alert("Motivo obrigatório");return;} 
-            
-            if(id === 'MASS') {
-                performAction(currentModalPersonId, 'Selecionados', 'reject', r, getHrSelectedEntryIds());
-            } else {
-                performAction(id, '', 'reject', r); 
-            }
-            document.getElementById('modal-reject').classList.add('hidden'); 
-        }
-
-        async function performAction(pid, pname, type, reason=null, entryIds = null) {
-            if(type==='close' && !confirm(`Confirma o FECHAMENTO de ${pname}?`)) return;
-            const dates=JSON.parse(document.getElementById('period-selector').value);
-            try {
-                const res = await fetch(`${API_URL}/hr/action`,{
-                    method:'POST',
-                    headers:{'Content-Type':'application/json'},
-                    body:JSON.stringify({
-                        personId: pid, 
-                        action: type, 
-                        inicio: dates.start, 
-                        fim: dates.end, 
-                        motivo: reason,
-                        entryIds: entryIds
-                    })
-                });
-                const r = await res.json();
-                if(r.success) { 
-                    if(entryIds) openModal(currentModalPersonId, document.getElementById('modal-name').innerText);
-                    else alert(r.message); 
-                    loadTableData(dates.start, dates.end); 
-                } else alert('Erro: '+r.message);
-            } catch(e){ alert('Erro de conexão'); }
-        }
+        function filterByStatus(st) { document.getElementById('status-periodo-filter').value = st; triggerDataLoad(document.getElementById('period-selector').value); }
+        function filterTable() { renderTable(); }
+        function toggleMenu() { const s=document.getElementById('sidebar'); const o=document.getElementById('mobile-overlay'); if(s.classList.contains('-translate-x-full')){ s.classList.remove('-translate-x-full'); o.classList.remove('hidden'); setTimeout(()=>o.classList.remove('opacity-0'),10); } else { s.classList.add('-translate-x-full'); o.classList.add('opacity-0'); setTimeout(()=>o.classList.add('hidden'),300); } }
     </script>
 </body>
 </html>

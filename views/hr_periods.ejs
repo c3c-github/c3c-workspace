@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestão de Ciclo - C3C Workplace</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Montserrat', 'sans-serif'] },
+                    colors: { 
+                        c3c: { 
+                            blue: '#2978FF', 
+                            teal: '#1DDDBD', 
+                            gray: '#F2F2F2',
+                            bg: '#F8FAFC'
+                        } 
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .fade-in { animation: fadeIn 0.3s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+        .status-badge { @apply px-2 py-1 rounded-md text-[10px] font-bold uppercase border; }
+    </style>
+</head>
+<body class="bg-c3c-bg h-screen flex overflow-hidden">
+
+    <%- include('partials/sidebar') %>
+
+    <main class="flex-1 flex flex-col relative w-full overflow-hidden transition-all duration-300 md:ml-64">
+        
+        <!-- Header -->
+        <header class="h-20 bg-white border-b border-gray-200 flex items-center justify-between px-8 shrink-0 z-10">
+            <div class="flex items-center gap-6">
+                <h1 class="text-xl font-bold text-gray-800">Gestão de Ciclo Mensal</h1>
+                
+                <div class="flex items-center bg-gray-50 border border-gray-200 rounded-lg px-3 py-1.5 gap-2 shadow-sm">
+                    <i data-lucide="calendar" class="w-4 h-4 text-purple-500"></i>
+                    <select id="cycle-selector" onchange="loadFunnelAndList()" class="bg-transparent text-sm font-bold text-gray-700 outline-none cursor-pointer min-w-[200px]">
+                        <option value="">Carregando ciclos...</option>
+                    </select>
+                </div>
+            </div>
+            <div class="flex items-center gap-4">
+                <div class="text-right">
+                    <p class="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Módulo</p>
+                    <p class="text-sm font-bold text-purple-600">Backoffice Administrativo</p>
+                </div>
+            </div>
+        </header>
+
+        <!-- Conteúdo -->
+        <div class="flex-1 overflow-y-auto p-8 fade-in">
+            
+            <!-- Cards de Funil -->
+            <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4 mb-8" id="funnel-container">
+                <!-- JS Populates -->
+            </div>
+
+            <!-- Toolbar de Ações -->
+            <div class="mb-6 flex flex-col md:flex-row justify-between items-center gap-4 bg-white p-4 rounded-2xl border border-gray-100 shadow-sm">
+                <div class="flex items-center gap-3">
+                    <div class="relative">
+                        <i data-lucide="search" class="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2"></i>
+                        <input type="text" id="period-search" onkeyup="filterLocalList()" placeholder="Buscar colaborador..." 
+                               class="pl-10 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-purple-500 outline-none transition-all w-64">
+                    </div>
+                    <select id="status-filter" onchange="loadFunnelAndList()" class="bg-gray-50 border border-gray-200 rounded-xl px-4 py-2 text-sm font-medium text-gray-600 outline-none">
+                        <option value="">Todos os Status</option>
+                        <option value="Aberto">Aberto</option>
+                        <option value="Aguardando Aprovação Líder">Aguardando Líder</option>
+                        <option value="Aguardando Aprovação RH">Aguardando RH</option>
+                        <option value="Liberado para Nota Fiscal">Liberado p/ NF</option>
+                        <option value="Nota em Validação">Nota em Validação</option>
+                        <option value="Pronto para Pagamento">Pronto p/ Pagamento</option>
+                    </select>
+                </div>
+
+                <div id="bulk-actions" class="hidden flex items-center gap-2 animate-bounce-in">
+                    <span class="text-xs font-bold text-purple-600 mr-2" id="selected-count">0 selecionados</span>
+                    <button onclick="handleBulkStatus('Aberto')" class="bg-white border border-gray-200 text-gray-600 px-4 py-2 rounded-xl text-xs font-bold hover:bg-red-50 hover:text-red-600 transition-colors flex items-center gap-2">
+                        <i data-lucide="rotate-ccw" class="w-3 h-3"></i> Reabrir
+                    </button>
+                    <button onclick="handleBulkStatus('Aguardando Aprovação RH')" class="bg-white border border-gray-200 text-gray-600 px-4 py-2 rounded-xl text-xs font-bold hover:bg-blue-50 hover:text-blue-600 transition-colors flex items-center gap-2">
+                        <i data-lucide="fast-forward" class="w-3 h-3"></i> Pular p/ RH
+                    </button>
+                    <button onclick="handleBulkStatus('Liberado para Nota Fiscal')" class="bg-purple-600 text-white px-4 py-2 rounded-xl text-xs font-bold hover:bg-purple-700 shadow-md transition-all flex items-center gap-2">
+                        <i data-lucide="check-circle" class="w-3 h-3"></i> Aprovar Geral
+                    </button>
+                </div>
+            </div>
+
+            <!-- Tabela -->
+            <div class="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+                <table class="w-full text-sm text-left border-collapse">
+                    <thead class="bg-gray-50 text-gray-400 uppercase text-[10px] font-bold border-b border-gray-200">
+                        <tr>
+                            <th class="px-6 py-4 w-10">
+                                <input type="checkbox" id="select-all" onchange="toggleSelectAll()" class="rounded border-gray-300 text-purple-600 focus:ring-purple-500">
+                            </th>
+                            <th class="px-6 py-4">Colaborador</th>
+                            <th class="px-6 py-4 text-center">Compliance</th>
+                            <th class="px-6 py-4 text-center">Status do Período</th>
+                            <th class="px-6 py-4 text-right">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-100" id="period-table-body">
+                        <!-- JS Populates -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        lucide.createIcons();
+        let allPeriods = [];
+        const statusColors = {
+            'Aberto': 'bg-gray-100 text-gray-600 border-gray-200',
+            'Aguardando Aprovação Líder': 'bg-blue-50 text-blue-600 border-blue-100',
+            'Aguardando Aprovação RH': 'bg-orange-50 text-orange-600 border-orange-100',
+            'Liberado para Nota Fiscal': 'bg-teal-50 text-teal-600 border-teal-100',
+            'Nota em Validação': 'bg-purple-50 text-purple-600 border-purple-100',
+            'Pronto para Pagamento': 'bg-green-50 text-green-600 border-green-100',
+            'Finalizado/Pago': 'bg-indigo-50 text-indigo-600 border-indigo-100'
+        };
+
+        // --- CARREGAR CICLOS REAIS DO SALESFORCE ---
+        async function loadAvailableCycles() {
+            try {
+                const res = await fetch('/api/periods'); // Usa a rota unificada que agrupa por datas
+                const cycles = await res.json();
+                const selector = document.getElementById('cycle-selector');
+                selector.innerHTML = '';
+
+                if (cycles.length === 0) {
+                    selector.innerHTML = '<option value="">Sem ciclos disponíveis</option>';
+                    return;
+                }
+
+                cycles.forEach(c => {
+                    const option = document.createElement('option');
+                    option.value = `${c.DataInicio__c}|${c.DataFim__c}`;
+                    option.innerText = c.Name;
+                    selector.appendChild(option);
+                });
+
+                loadFunnelAndList();
+            } catch (e) { console.error('Erro ao carregar ciclos:', e); }
+        }
+
+        async function loadFunnelAndList() {
+            const cycleVal = document.getElementById('cycle-selector').value;
+            if (!cycleVal) return;
+
+            const [startDate, endDate] = cycleVal.split('|');
+            const status = document.getElementById('status-filter').value;
+
+            try {
+                // 1. Carregar Funil
+                const resFunnel = await fetch(`/api/hr/periods/funnel?startDate=${startDate}&endDate=${endDate}`);
+                const funnelData = await resFunnel.json();
+                renderFunnel(funnelData);
+
+                // 2. Carregar Lista
+                const resList = await fetch(`/api/hr/periods/list?startDate=${startDate}&endDate=${endDate}&status=${status}`);
+                allPeriods = await resList.json();
+                renderTable();
+            } catch (e) { console.error(e); }
+        }
+
+        function renderFunnel(data) {
+            const container = document.getElementById('funnel-container');
+            container.innerHTML = '';
+            
+            const possibleStatus = [
+                'Aberto', 'Aguardando Aprovação Líder', 'Aguardando Aprovação RH', 
+                'Liberado para Nota Fiscal', 'Nota em Validação', 'Pronto para Pagamento',
+                'Pagamento Agendado', 'Finalizado/Pago'
+            ];
+
+            possibleStatus.forEach(st => {
+                const item = data.find(d => d.Status__c === st) || { total: 0 };
+                container.innerHTML += `
+                    <div class="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm text-center hover:border-purple-200 transition-all cursor-pointer min-w-[120px]" onclick="filterByStatus('${st}')">
+                        <p class="text-[9px] font-bold text-gray-400 uppercase truncate mb-1" title="${st}">${st}</p>
+                        <p class="text-xl font-black text-gray-800">${item.total}</p>
+                    </div>
+                `;
+            });
+        }
+
+        function renderTable() {
+            const tbody = document.getElementById('period-table-body');
+            const search = document.getElementById('period-search').value.toLowerCase();
+            tbody.innerHTML = '';
+
+            const filtered = allPeriods.filter(p => p.employeeName.toLowerCase().includes(search));
+
+            if (filtered.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" class="px-6 py-10 text-center text-gray-400 italic">Nenhum período encontrado.</td></tr>';
+                return;
+            }
+
+            filtered.forEach(p => {
+                const colorClass = statusColors[p.status] || 'bg-gray-100 text-gray-600 border-gray-200';
+                const complianceIcon = p.incompleteDays === 0 ? 'check-circle' : 'alert-circle';
+                const complianceColor = p.incompleteDays === 0 ? 'text-green-500' : 'text-red-500';
+                const complianceLabel = p.incompleteDays === 0 ? 'Completo' : `${p.incompleteDays} dias pendentes`;
+
+                tbody.innerHTML += `
+                    <tr class="hover:bg-gray-50/50 transition-colors">
+                        <td class="px-6 py-4">
+                            <input type="checkbox" name="period-check" value="${p.id}" onchange="updateBulkActions()" class="rounded border-gray-300 text-purple-600 focus:ring-purple-500">
+                        </td>
+                        <td class="px-6 py-4 font-bold text-gray-800">${p.employeeName}</td>
+                        <td class="px-6 py-4 text-center">
+                            <div class="flex flex-col items-center">
+                                <i data-lucide="${complianceIcon}" class="w-4 h-4 ${complianceColor} mb-1"></i>
+                                <span class="text-[9px] font-bold ${complianceColor} uppercase">${complianceLabel}</span>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 text-center">
+                            <span class="status-badge ${colorClass}">${p.status}</span>
+                        </td>
+                        <td class="px-6 py-4 text-right">
+                            <div class="flex justify-end gap-2">
+                                <button onclick="changeStatus(['${p.id}'], 'Aberto')" class="p-2 text-gray-400 hover:text-red-500 transition-colors" title="Reabrir">
+                                    <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
+                                </button>
+                                <button onclick="changeStatus(['${p.id}'], 'Liberado para Nota Fiscal')" class="p-2 text-gray-400 hover:text-green-500 transition-colors" title="Aprovar">
+                                    <i data-lucide="check-circle" class="w-4 h-4"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            });
+            lucide.createIcons();
+        }
+
+        function filterByStatus(st) {
+            document.getElementById('status-filter').value = st;
+            loadFunnelAndList();
+        }
+
+        function filterLocalList() { renderTable(); }
+
+        function toggleSelectAll() {
+            const all = document.getElementById('select-all').checked;
+            document.querySelectorAll('input[name="period-check"]').forEach(c => c.checked = all);
+            updateBulkActions();
+        }
+
+        function updateBulkActions() {
+            const selected = document.querySelectorAll('input[name="period-check"]:checked');
+            const toolbar = document.getElementById('bulk-actions');
+            const countLabel = document.getElementById('selected-count');
+            
+            if (selected.length > 0) {
+                toolbar.classList.remove('hidden');
+                countLabel.innerText = `${selected.length} selecionados`;
+            } else {
+                toolbar.classList.add('hidden');
+            }
+        }
+
+        async function handleBulkStatus(newStatus) {
+            const selected = Array.from(document.querySelectorAll('input[name="period-check"]:checked')).map(c => c.value);
+            if (selected.length === 0) return;
+            
+            if (!confirm(`Deseja alterar o status de ${selected.length} períodos para "${newStatus}"?`)) return;
+            
+            await changeStatus(selected, newStatus);
+        }
+
+        async function changeStatus(periodIds, newStatus) {
+            try {
+                const res = await fetch('/api/hr/periods/status', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ periodIds, newStatus })
+                });
+                if (res.ok) {
+                    loadFunnelAndList();
+                    document.getElementById('select-all').checked = false;
+                    updateBulkActions();
+                } else {
+                    alert('Erro ao atualizar status.');
+                }
+            } catch (e) { console.error(e); }
+        }
+
+        loadAvailableCycles();
+    </script>
+</body>
+</html>

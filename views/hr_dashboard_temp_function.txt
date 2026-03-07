@@ -1,0 +1,89 @@
+        function renderTable() {
+            const tbody = document.getElementById('hr-table-body');
+            const searchInput = document.getElementById('search-input');
+            const search = searchInput ? searchInput.value.toLowerCase() : '';
+            tbody.innerHTML = '';
+
+            // Ordenação por Nome
+            allEmployees.sort((a, b) => a.name.localeCompare(b.name));
+
+            const filtered = allEmployees.filter(p => p.name.toLowerCase().includes(search));
+
+            if (filtered.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" class="px-6 py-10 text-center text-gray-400 italic">Nenhum registro encontrado.</td></tr>';
+                return;
+            }
+
+            filtered.forEach(p => {
+                const pct = p.contract > 0 ? (p.total / p.contract) * 100 : 0;
+                const barColor = pct > 110 ? 'bg-red-500' : (pct < 70 ? 'bg-yellow-500' : 'bg-green-500');
+                const complianceColor = p.incompleteDays === 0 ? 'text-green-500' : 'text-red-500';
+                
+                // --- LÓGICA DE BOTÕES ---
+                const isAberto = p.statusPeriodo === 'Aberto';
+                const isLock = ['Liberado para Nota Fiscal', 'Nota em Validação', 'Pronto para Pagamento', 'Pagamento Agendado', 'Finalizado/Pago'].includes(p.statusPeriodo);
+                const isAguardandoRH = p.statusPeriodo === 'Aguardando Aprovação RH';
+
+                let actHtml = '';
+                
+                if (isAguardandoRH) {
+                    // Decisão rápida para RH
+                    actHtml = `
+                    <div class="flex justify-end gap-2">
+                        <button onclick="openModal('${p.id}','${p.name}')" class="p-2 text-gray-400 hover:text-blue-600 bg-gray-50 rounded-lg transition-all" title="Ver Detalhes">
+                            <i data-lucide="eye" class="w-4 h-4"></i>
+                        </button>
+                        <button onclick="performAction('${p.id}','${p.name}','approve')" class="px-3 py-1 bg-green-600 text-white text-[10px] font-bold rounded hover:bg-green-700 transition-all shadow-sm">Aprovar</button>
+                        <button onclick="openRejectModal('${p.id}','${p.name}')" class="px-3 py-1 bg-red-50 text-red-600 border border-red-200 text-[10px] font-bold rounded hover:bg-red-100 transition-all">Reprovar</button>
+                    </div>`;
+                } else {
+                    // Navegação de Fluxo (Setinhas)
+                    actHtml = `
+                    <div class="flex justify-end gap-2">
+                        <button onclick="openModal('${p.id}','${p.name}')" class="p-2 text-gray-400 hover:text-blue-600 bg-gray-50 rounded-lg transition-all" title="Ver Detalhes">
+                            <i data-lucide="eye" class="w-4 h-4"></i>
+                        </button>
+                        
+                        ${!isAberto ? `
+                        <button onclick="handleRegress(['${p.periodId}'])" class="p-2 text-gray-400 hover:text-red-600 bg-gray-50 rounded-lg transition-all" title="Recuar Etapa">
+                            <i data-lucide="arrow-left-circle" class="w-4 h-4"></i>
+                        </button>` : ''}
+
+                        ${!isLock ? `
+                        <button onclick="handleAdvance(['${p.periodId}'])" class="p-2 text-gray-400 hover:text-purple-600 bg-gray-50 rounded-lg transition-all" title="Avançar Etapa">
+                            <i data-lucide="arrow-right-circle" class="w-4 h-4"></i>
+                        </button>` : ''}
+                    </div>`;
+                }
+
+                tbody.innerHTML += `
+                <tr class="hover:bg-gray-50 transition-colors">
+                    <td class="px-6 py-4">
+                        <input type="checkbox" name="period-check" value="${p.periodId}" onchange="updateBulkActions()" class="rounded border-gray-300 text-purple-600 focus:ring-purple-500">
+                    </td>
+                    <td class="px-6 py-4">
+                        <div class="flex items-center gap-3">
+                            <div class="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-[10px] font-bold text-blue-600">${p.name.charAt(0)}</div>
+                            <div><p class="font-bold text-gray-900 leading-tight">${p.name}</p><p class="text-[10px] text-gray-400">${p.role}</p></div>
+                        </div>
+                    </td>
+                    <td class="px-6 py-4 text-center">
+                        <div class="flex flex-col items-center">
+                            <i data-lucide="${p.incompleteDays === 0 ? 'check-circle' : 'alert-circle'}" class="w-4 h-4 ${complianceColor} mb-1"></i>
+                            <span class="text-[8px] font-bold ${complianceColor} uppercase">${p.incompleteDays === 0 ? 'Completo' : p.incompleteDays + ' pend.'}</span>
+                        </div>
+                    </td>
+                    <td class="px-6 py-4">
+                        <div class="flex justify-between text-[10px] font-bold mb-1"><span class="text-gray-700">${p.total.toFixed(1)}h</span><span class="text-gray-400">Meta: ${p.contract}h</span></div>
+                        <div class="w-full bg-gray-100 rounded-full h-1.5 overflow-hidden"><div class="${barColor} h-1.5" style="width:${Math.min(pct, 100)}%"></div></div>
+                    </td>
+                    <td class="px-6 py-4 text-center">
+                        <span class="status-badge ${statusColors[p.statusPeriodo]}">${p.statusPeriodo}</span>
+                    </td>
+                    <td class="px-6 py-4 text-right">
+                        ${actHtml}
+                    </td>
+                </tr>`;
+            });
+            lucide.createIcons();
+        }

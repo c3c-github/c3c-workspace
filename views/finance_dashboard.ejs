@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Cockpit Financeiro - C3C Workplace</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Montserrat', 'sans-serif'] },
+                    colors: { 
+                        c3c: { 
+                            blue: '#2978FF', 
+                            teal: '#1DDDBD', 
+                            gray: '#F2F2F2',
+                            bg: '#F8FAFC'
+                        } 
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { font-family: 'Montserrat', sans-serif; background-color: #F8FAFC; }
+        .fade-in { animation: fadeIn 0.3s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+        .status-badge { @apply px-2 py-1 rounded-md text-[10px] font-bold uppercase border whitespace-nowrap; }
+    </style>
+</head>
+<body class="h-screen flex overflow-hidden bg-[#F8FAFC]">
+
+    <div id="mobile-overlay" onclick="toggleMenu()" class="fixed inset-0 bg-black/50 z-30 hidden md:hidden transition-opacity opacity-0"></div>
+    <%- include('partials/sidebar') %>
+
+    <main class="flex-1 flex flex-col md:ml-64 relative w-full transition-all duration-300">
+        
+        <!-- HEADER -->
+        <header class="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-4 md:px-8 sticky top-0 z-20">
+            <div class="flex items-center gap-4">
+                <button onclick="toggleMenu()" class="md:hidden p-2 text-gray-600 hover:bg-gray-100 rounded-lg">
+                    <i data-lucide="menu" class="w-6 h-6"></i>
+                </button>
+                <h1 class="text-lg md:text-xl font-bold text-gray-800 flex items-center gap-2">
+                    Cockpit de Pagamentos
+                    <span class="hidden md:inline-flex bg-green-100 text-green-700 text-xs px-2 py-1 rounded-full items-center gap-1">
+                        <i data-lucide="banknote" class="w-3 h-3"></i> Financeiro
+                    </span>
+                </h1>
+            </div>
+            <div class="flex items-center gap-3">
+                <select id="period-selector" onchange="triggerDataLoad(this.value)" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2 cursor-pointer outline-none min-w-[200px]">
+                    <option>Carregando ciclos...</option>
+                </select>
+            </div>
+        </header>
+
+        <div class="flex-1 overflow-y-auto p-4 md:p-8 fade-in">
+            
+            <div class="bg-white rounded-2xl shadow-sm border border-gray-200 flex flex-col">
+                
+                <!-- Toolbar -->
+                <div class="p-6 border-b border-gray-100 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                    <div>
+                        <h2 class="text-lg font-bold text-gray-900">Fila de Desembolso</h2>
+                        <p class="text-xs text-gray-400">Gestão de notas fiscais e confirmação de pagamentos.</p>
+                    </div>
+                    
+                    <div class="flex flex-col sm:flex-row items-center gap-3 w-full lg:w-auto">
+                        <div class="relative w-full sm:w-64">
+                            <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400"></i>
+                            <input type="text" id="search-input" onkeyup="renderTable()" placeholder="Buscar colaborador..." 
+                                   class="pl-9 pr-4 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 w-full">
+                        </div>
+                        <select id="status-filter" onchange="triggerDataLoad(document.getElementById('period-selector').value)" 
+                                class="bg-gray-50 border border-gray-200 rounded-xl px-4 py-2 text-sm font-medium text-gray-600 outline-none w-full sm:w-auto">
+                            <option value="">Todos os Pendentes</option>
+                            <option value="Nota em Validação">Nota em Validação</option>
+                            <option value="Pronto para Pagamento">Pronto p/ Pagamento</option>
+                            <option value="Pagamento Agendado">Pagamento Agendado</option>
+                            <option value="Finalizado/Pago">Finalizado/Pago</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Tabela -->
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm text-left">
+                        <thead class="bg-gray-50 text-gray-500 uppercase text-[10px] font-bold border-b border-gray-200">
+                            <tr>
+                                <th class="px-6 py-4 w-10">
+                                    <input type="checkbox" id="select-all" onchange="toggleSelectAll()" class="rounded border-gray-300 text-green-600 focus:ring-green-500">
+                                </th>
+                                <th class="px-6 py-4">Colaborador</th>
+                                <th class="px-6 py-4">Ciclo</th>
+                                <th class="px-6 py-4 text-right">Valor Bruto</th>
+                                <th class="px-6 py-4 text-center">Status</th>
+                                <th class="px-6 py-4 text-right">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-100" id="finance-table-body">
+                            <tr><td colspan="6" class="text-center py-10 text-gray-400 italic">Carregando fila...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Bulk Actions -->
+                <div id="bulk-actions" class="hidden p-4 bg-green-50 border-t border-green-100 flex items-center justify-between">
+                    <span class="text-xs font-bold text-green-700 ml-4" id="selected-count">0 selecionados</span>
+                    <div class="flex gap-2">
+                        <button onclick="handleBulkStatus('Pagamento Agendado')" class="bg-white border border-green-200 text-green-700 px-6 py-2 rounded-xl text-xs font-bold hover:bg-green-100 transition-all">
+                            Marcar como Agendado
+                        </button>
+                        <button onclick="handleBulkStatus('Finalizado/Pago')" class="bg-green-600 text-white px-6 py-2 rounded-xl text-xs font-bold hover:bg-green-700 shadow-md transition-all">
+                            Confirmar Pagamento (Lote)
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        lucide.createIcons();
+        const API_URL = '/api';
+        let allPeriods = [];
+        const statusColors = {
+            'Nota em Validação': 'bg-purple-50 text-purple-600 border-purple-100',
+            'Pronto para Pagamento': 'bg-teal-50 text-teal-600 border-teal-100',
+            'Pagamento Agendado': 'bg-blue-50 text-blue-600 border-blue-100',
+            'Finalizado/Pago': 'bg-green-50 text-green-600 border-green-100'
+        };
+
+        document.addEventListener('DOMContentLoaded', () => { loadAvailableCycles(); });
+
+        async function loadAvailableCycles() {
+            try {
+                const res = await fetch('/api/periods');
+                const cycles = await res.json();
+                const selector = document.getElementById('period-selector');
+                selector.innerHTML = '';
+                cycles.forEach((c, i) => {
+                    const opt = document.createElement('option');
+                    opt.value = JSON.stringify({start: c.DataInicio__c, end: c.DataFim__c});
+                    opt.text = c.Name;
+                    if(i === 0) opt.selected = true;
+                    selector.appendChild(opt);
+                });
+                if(selector.options.length > 0) triggerDataLoad(selector.value);
+            } catch(e) { console.error(e); }
+        }
+
+        function triggerDataLoad(v) { 
+            if(!v) return; 
+            const d = JSON.parse(v); 
+            const statusFilter = document.getElementById('status-filter').value;
+            loadTableData(d.start, d.end, statusFilter); 
+        }
+
+        async function loadTableData(start, end, statusFilter = '') {
+            const tbody = document.getElementById('finance-table-body');
+            tbody.innerHTML = '<tr><td colspan="6" class="text-center py-10 text-gray-400 italic">Carregando...</td></tr>';
+            try {
+                const url = `${API_URL}/finance/periods?startDate=${start}&endDate=${end}${statusFilter ? '&status='+statusFilter : ''}`;
+                const res = await fetch(url);
+                allPeriods = await res.json();
+                renderTable();
+            } catch(e){ console.error(e); }
+        }
+
+        function renderTable() {
+            const tbody = document.getElementById('finance-table-body');
+            const search = document.getElementById('search-input').value.toLowerCase();
+            tbody.innerHTML = '';
+
+            const filtered = allPeriods.filter(p => p.employeeName.toLowerCase().includes(search));
+
+            if (filtered.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" class="px-6 py-10 text-center text-gray-400 italic">Nenhum registro pendente.</td></tr>';
+                return;
+            }
+
+            filtered.forEach(p => {
+                tbody.innerHTML += `
+                <tr class="hover:bg-gray-50 transition-colors">
+                    <td class="px-6 py-4">
+                        <input type="checkbox" name="period-check" value="${p.id}" onchange="updateBulkActions()" class="rounded border-gray-300 text-green-600">
+                    </td>
+                    <td class="px-6 py-4">
+                        <p class="font-bold text-gray-900">${p.employeeName}</p>
+                        <p class="text-[10px] text-gray-400">ID: ${p.id}</p>
+                    </td>
+                    <td class="px-6 py-4 text-xs text-gray-500">${p.name}</td>
+                    <td class="px-6 py-4 text-right font-black text-gray-900">R$ ${p.value.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</td>
+                    <td class="px-6 py-4 text-center">
+                        <span class="status-badge ${statusColors[p.status]}">${p.status}</span>
+                    </td>
+                    <td class="px-6 py-4 text-right">
+                        <div class="flex justify-end gap-2">
+                            ${p.status === 'Nota em Validação' ? `<button onclick="changeStatus(['${p.id}'], 'Pronto para Pagamento')" class="p-2 text-gray-400 hover:text-teal-600" title="Validar Nota"><i data-lucide="file-check" class="w-4 h-4"></i></button>` : ''}
+                            ${p.status === 'Pronto para Pagamento' ? `<button onclick="changeStatus(['${p.id}'], 'Pagamento Agendado')" class="p-2 text-gray-400 hover:text-blue-600" title="Agendar"><i data-lucide="calendar-check" class="w-4 h-4"></i></button>` : ''}
+                            ${p.status === 'Pagamento Agendado' ? `<button onclick="changeStatus(['${p.id}'], 'Finalizado/Pago')" class="p-2 text-gray-400 hover:text-green-600" title="Confirmar"><i data-lucide="dollar-sign" class="w-4 h-4"></i></button>` : ''}
+                        </div>
+                    </td>
+                </tr>`;
+            });
+            lucide.createIcons();
+        }
+
+        async function handleBulkStatus(newStatus) {
+            const selected = Array.from(document.querySelectorAll('input[name="period-check"]:checked')).map(c => c.value);
+            if(!confirm(`Confirmar alteração em lote para ${selected.length} períodos?`)) return;
+            await changeStatus(selected, newStatus);
+        }
+
+        async function changeStatus(periodIds, newStatus) {
+            try {
+                const res = await fetch('/api/finance/status', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ periodIds, newStatus })
+                });
+                if(res.ok) {
+                    triggerDataLoad(document.getElementById('period-selector').value);
+                    document.getElementById('select-all').checked = false;
+                    updateBulkActions();
+                }
+            } catch(e) { console.error(e); }
+        }
+
+        function toggleSelectAll() {
+            const all = document.getElementById('select-all').checked;
+            document.querySelectorAll('input[name="period-check"]').forEach(c => c.checked = all);
+            updateBulkActions();
+        }
+
+        function updateBulkActions() {
+            const selected = document.querySelectorAll('input[name="period-check"]:checked');
+            const toolbar = document.getElementById('bulk-actions');
+            const countLabel = document.getElementById('selected-count');
+            if (selected.length > 0) {
+                toolbar.classList.remove('hidden');
+                countLabel.innerText = `${selected.length} selecionados`;
+            } else {
+                toolbar.classList.add('hidden');
+            }
+        }
+
+        function toggleMenu() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('mobile-overlay');
+            if (sidebar.classList.contains('-translate-x-full')) {
+                sidebar.classList.remove('-translate-x-full');
+                overlay.classList.remove('hidden');
+                setTimeout(() => overlay.classList.remove('opacity-0'), 10);
+            } else {
+                sidebar.classList.add('-translate-x-full');
+                overlay.classList.add('opacity-0');
+                setTimeout(() => overlay.classList.add('hidden'), 300);
+            }
+        }
+    </script>
+</body>
+</html>

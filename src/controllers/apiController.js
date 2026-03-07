@@ -63,22 +63,32 @@ exports.getPeriods = async (req, res) => {
         let records = [];
 
         if (type === 'user') {
-            const query = `SELECT Id, Name, DataInicio__c, DataFim__c FROM Periodo__c WHERE ContratoPessoa__r.Pessoa__c = '${userId}' ORDER BY DataInicio__c DESC LIMIT 24`;
+            const query = `SELECT Id, Name, DataInicio__c, DataFim__c, Status__c FROM Periodo__c WHERE ContratoPessoa__r.Pessoa__c = '${userId}' ORDER BY DataInicio__c DESC LIMIT 24`;
             const result = await conn.query(query);
             records = result.records;
         } else {
-            const query = `SELECT Id, Name, DataInicio__c, DataFim__c FROM Periodo__c ORDER BY DataInicio__c DESC LIMIT 200`;
+            // Busca ciclos únicos agrupando por data, cobrindo todo o histórico
+            const query = `
+                SELECT DataInicio__c, DataFim__c 
+                FROM Periodo__c 
+                GROUP BY DataInicio__c, DataFim__c 
+                ORDER BY DataInicio__c DESC 
+                LIMIT 1000
+            `;
             const result = await conn.query(query);
-            const seen = new Set();
-            for (const p of result.records) {
-                const key = `${p.DataInicio__c}_${p.DataFim__c}`;
-                if (!seen.has(key)) {
-                    seen.add(key);
-                    let cleanName = p.Name.includes(' - ') ? p.Name.split(' - ')[0] : p.Name;
-                    records.push({ Id: p.Id, Name: cleanName, DataInicio__c: p.DataInicio__c, DataFim__c: p.DataFim__c });
-                }
-            }
-            records = records.slice(0, 24);
+            
+            records = result.records.map(p => {
+                const start = new Date(p.DataInicio__c + 'T12:00:00');
+                const monthName = start.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+                const name = monthName.charAt(0).toUpperCase() + monthName.slice(1);
+                
+                return {
+                    Id: `${p.DataInicio__c}_${p.DataFim__c}`,
+                    Name: name,
+                    DataInicio__c: p.DataInicio__c,
+                    DataFim__c: p.DataFim__c
+                };
+            });
         }
         res.json(records); 
     } catch (e) { res.status(500).json({ error: e.message }); }
@@ -320,6 +330,19 @@ exports.handleApprovalAction = async (req, res) => {
         });
         
         await conn.update('LancamentoHora__c', allUpdates);
+
+        // SE HOUVE REPROVAÇÃO, REABRE O PERÍODO
+        if (action === 'reject') {
+            const logsQuery = `SELECT Periodo__c FROM LancamentoHora__c WHERE Id IN ('${allUpdates.map(u => u.Id).join("','")}') GROUP BY Periodo__c`;
+            const logsRes = await conn.query(logsQuery);
+            const periodIds = logsRes.records.map(r => r.Periodo__c);
+            
+            if (periodIds.length > 0) {
+                const periodUpdates = periodIds.map(id => ({ Id: id, Status__c: 'Aberto' }));
+                await conn.sobject('Periodo__c').update(periodUpdates);
+            }
+        }
+
         res.json({ success: true, message: `Lançamentos processados com sucesso.` });
     } catch (e) { res.status(500).json({ success: false, error: e.message }); }
 };
@@ -334,9 +357,9 @@ exports.getDashboardMetrics = async (req, res) => {
 
         // --- MODO PESSOAL (PERFIL DE EFICIÊNCIA) ---
         if (scope === 'personal') {
-            // 1. Busca Dados do Período (Carga Horária e ID)
+            // 1. Busca Dados do Período (Carga Horária, Status e ID)
             const qPeriodo = `
-                SELECT Id, ContratoPessoa__r.Hora__c 
+                SELECT Id, Status__c, ContratoPessoa__r.Hora__c 
                 FROM Periodo__c 
                 WHERE ContratoPessoa__r.Pessoa__c = '${userId}' 
                 AND DataInicio__c <= ${fim} AND DataFim__c >= ${inicio} 
@@ -346,13 +369,31 @@ exports.getDashboardMetrics = async (req, res) => {
             const periodoRecord = resPeriodo.records[0];
             
             const cargaDiaria = (periodoRecord && periodoRecord.ContratoPessoa__r) ? periodoRecord.ContratoPessoa__r.Hora__c : 8;
+            const statusPeriodo = periodoRecord ? periodoRecord.Status__c : 'Aberto';
             
-            // 2. Conta Dias Úteis Reais (Query separada para evitar erro de relacionamento)
+            // 2. Conta Dias Úteis Totais e Dias Completos
             let diasUteis = 0;
+            let diasCompletos = 0;
             if (periodoRecord) {
-                const qDias = `SELECT COUNT(Id) total FROM DiaPeriodo__c WHERE Periodo__c = '${periodoRecord.Id}' AND Tipo__c = 'Útil'`;
-                const resDias = await conn.query(qDias);
-                diasUteis = (resDias.records[0] && resDias.records[0].total) ? resDias.records[0].total : 0;
+                const qDias = `
+                    SELECT Status__c, COUNT(Id) total 
+                    FROM DiaPeriodo__c 
+                    WHERE Periodo__c = '${periodoRecord.Id}' AND Tipo__c = 'Útil'
+                    GROUP BY Status__c
+                `; // Na verdade precisamos de DiaCompleto__c
+                
+                const qCompliance = `
+                    SELECT COUNT(Id) total, DiaCompleto__c 
+                    FROM DiaPeriodo__c 
+                    WHERE Periodo__c = '${periodoRecord.Id}' AND Tipo__c = 'Útil'
+                    GROUP BY DiaCompleto__c
+                `;
+                const resComp = await conn.query(qCompliance);
+                resComp.records.forEach(r => {
+                    const count = parseInt(r.total || r.expr0 || 0);
+                    diasUteis += count;
+                    if (r.DiaCompleto__c === true || r.DiaCompleto__c === 'true') diasCompletos += count;
+                });
             }
 
             // 3. Busca Alocações (Para calcular o previsto)
@@ -369,14 +410,11 @@ exports.getDashboardMetrics = async (req, res) => {
             const qLanc = `SELECT Status__c, Horas__c, HorasExtras__c, HorasBanco__c FROM LancamentoHora__c WHERE Pessoa__c = '${userId}' AND DiaPeriodo__r.Data__c >= ${inicio} AND DiaPeriodo__r.Data__c <= ${fim} AND ${FILTRO_HORAS}`;
             const resLanc = await conn.query(qLanc);
 
-            let totalLanc = 0, totalPend = 0, totalBancoPeriodo = 0;
-            const distProj = {};
+            let totalLanc = 0, totalPend = 0;
 
             resLanc.records.forEach(r => {
                 const h = (r.Horas__c || 0) + (r.HorasExtras__c || 0);
                 totalLanc += h;
-                totalBancoPeriodo += (r.HorasBanco__c || 0);
-
                 if (['Rascunho', 'Reprovado'].includes(r.Status__c)) totalPend += h;
             });
 
@@ -392,7 +430,12 @@ exports.getDashboardMetrics = async (req, res) => {
                 totalLancadas: totalLanc, 
                 eficiencia: efic, 
                 totalPendentes: totalPend,
-                saldoBanco: saldoBanco
+                saldoBanco: saldoBanco,
+                statusPeriodo: statusPeriodo,
+                compliance: {
+                    total: diasUteis,
+                    completed: diasCompletos
+                }
             });
         }
 

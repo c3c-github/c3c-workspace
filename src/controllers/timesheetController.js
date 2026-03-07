@@ -343,15 +343,6 @@ exports.saveEntry = async (req, res) => {
         const stats = await calculateDailyStats(conn, userId, dateStr);
         if(!stats.exists) return res.status(400).json({ success: false, message: 'Dia não encontrado no contrato.' });
 
-        // TRAVA DE PERÍODO: Apenas períodos 'Aberto' permitem lançamentos
-        const periodQuery = `SELECT Status__c FROM Periodo__c WHERE Id = '${stats.periodoId}' LIMIT 1`;
-        const periodRes = await conn.query(periodQuery);
-        const periodStatus = periodRes.records[0]?.Status__c;
-
-        if (periodStatus && periodStatus !== 'Aberto') {
-            return res.status(400).json({ success: false, message: `Este período (${periodStatus}) está bloqueado para modificações.` });
-        }
-
         // Recupera valores antigos se update
         let oldVal = {n:0, e:0};
         if(entryId) {

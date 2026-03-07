@@ -298,3 +298,46 @@ exports.saveAdjustments = async (req, res) => {
         res.status(500).json({ success: false, error: err.message });
     }
 };
+
+// --- MÓDULO FINANCEIRO (V1) ---
+
+exports.renderFinanceDashboard = (req, res) => {
+    res.render('finance_dashboard', { user: req.session.user, page: 'finance' });
+};
+
+exports.getFinancePeriods = async (req, res) => {
+    try {
+        const { startDate, endDate, status } = req.query;
+        const conn = await getSfConnection();
+
+        let filters = [`Status__c IN ('Nota em Validação', 'Pronto para Pagamento', 'Pagamento Agendado', 'Finalizado/Pago')`];
+        if (startDate && endDate) filters.push(`DataInicio__c = ${startDate} AND DataFim__c = ${endDate}`);
+        if (status) filters.push(`Status__c = '${status}'`);
+
+        const query = `
+            SELECT Id, Name, Status__c, ContratoPessoa__r.Pessoa__r.Name, ValorTotalPeriodo__c
+            FROM Periodo__c
+            WHERE ${filters.join(' AND ')}
+            ORDER BY ContratoPessoa__r.Pessoa__r.Name ASC
+        `;
+        const result = await conn.query(query);
+        
+        res.json(result.records.map(p => ({
+            id: p.Id,
+            name: p.Name,
+            status: p.Status__c,
+            employeeName: p.ContratoPessoa__r?.Pessoa__r?.Name || 'N/A',
+            value: p.ValorTotalPeriodo__c || 0
+        })));
+    } catch (e) { res.status(500).json({ error: e.message }); }
+};
+
+exports.updateFinanceStatus = async (req, res) => {
+    try {
+        const { periodIds, newStatus } = req.body;
+        const conn = await getSfConnection();
+        const updates = periodIds.map(id => ({ Id: id, Status__c: newStatus }));
+        await conn.sobject('Periodo__c').update(updates);
+        res.json({ success: true });
+    } catch (e) { res.status(500).json({ error: e.message }); }
+};
