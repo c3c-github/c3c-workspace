@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gestão de Ciclo - C3C Workplace</title>
+    <title>Ciclo Mensal - C3C Workplace</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
@@ -17,7 +17,7 @@
                             blue: '#2978FF', 
                             teal: '#1DDDBD', 
                             gray: '#F2F2F2',
-                            bg: '#F8FAFC'
+                            dark: '#000000'
                         } 
                     }
                 }
@@ -25,54 +25,60 @@
         }
     </script>
     <style>
-        .fade-in { animation: fadeIn 0.3s ease-out; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
-        .status-badge { @apply px-2 py-1 rounded-md text-[10px] font-bold uppercase border; }
+        body { font-family: 'Montserrat', sans-serif; background-color: #F8FAFC; }
+        .bg-c3c-gradient { background: transparent linear-gradient(118deg, #1DDDBD 0%, #1ED9C0 45%, #2978FF 100%) 0% 0% no-repeat padding-box; }
+        .fade-in { animation: fadeIn 0.4s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; height: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #E2E8F0; border-radius: 10px; }
+        .status-badge { @apply px-3 py-1 rounded-full text-[9px] font-black uppercase border tracking-widest text-center; }
     </style>
 </head>
-<body class="bg-c3c-bg h-screen flex overflow-hidden">
+<body class="h-screen flex overflow-hidden bg-[#F8FAFC]">
 
-    <%- include('partials/sidebar') %>
+    <%- include('partials/sidebar', { page: 'hr' }) %>
 
-    <main class="flex-1 flex flex-col relative w-full overflow-hidden transition-all duration-300 md:ml-64">
+    <main class="flex-1 flex flex-col md:ml-64 relative w-full transition-all duration-300 overflow-hidden">
         
-        <!-- Header -->
-        <header class="h-20 bg-white border-b border-gray-200 flex items-center justify-between px-8 shrink-0 z-10">
-            <div class="flex items-center gap-6">
-                <h1 class="text-xl font-bold text-gray-800">Gestão de Ciclo Mensal</h1>
-                
-                <div class="flex items-center bg-gray-50 border border-gray-200 rounded-lg px-3 py-1.5 gap-2 shadow-sm">
-                    <i data-lucide="calendar" class="w-4 h-4 text-purple-500"></i>
-                    <select id="cycle-selector" onchange="loadFunnelAndList()" class="bg-transparent text-sm font-bold text-gray-700 outline-none cursor-pointer min-w-[200px]">
-                        <option value="">Carregando ciclos...</option>
-                    </select>
+        <!-- HEADER -->
+        <header class="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-4 md:px-8 sticky top-0 z-20 shrink-0">
+            <div class="flex items-center gap-4 text-left">
+                <button onclick="document.getElementById('sidebar').classList.toggle('-translate-x-full')" class="md:hidden p-2 text-gray-600 hover:bg-gray-100 rounded-lg">
+                    <i data-lucide="menu" class="w-6 h-6"></i>
+                </button>
+                <div>
+                    <h1 class="text-lg md:text-xl font-bold text-gray-800 flex items-center gap-2 tracking-tight">Gestão de Ciclos <span class="text-c3c-blue">📅</span></h1>
+                    <p class="text-[10px] text-gray-400 font-bold uppercase tracking-widest hidden sm:block">Painel Administrativo de Períodos</p>
                 </div>
             </div>
-            <div class="flex items-center gap-4">
-                <div class="text-right">
-                    <p class="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Módulo</p>
-                    <p class="text-sm font-bold text-purple-600">Backoffice Administrativo</p>
-                </div>
+            
+            <div class="flex items-center bg-gray-50 border border-gray-200 rounded-xl px-3 py-1.5 gap-2 shadow-sm focus-within:ring-2 focus-within:ring-c3c-blue transition-all">
+                <i data-lucide="filter" class="w-4 h-4 text-c3c-blue"></i>
+                <select id="cycle-selector" onchange="loadFunnelAndList()" class="bg-transparent text-sm font-bold text-gray-700 outline-none cursor-pointer min-w-[200px]">
+                    <option value="">Carregando ciclos...</option>
+                </select>
             </div>
         </header>
 
-        <!-- Conteúdo -->
-        <div class="flex-1 overflow-y-auto p-8 fade-in">
+        <!-- CONTEÚDO -->
+        <div class="flex-1 overflow-y-auto p-4 md:p-8 fade-in custom-scrollbar text-left">
             
-            <!-- Cards de Funil -->
-            <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4 mb-8" id="funnel-container">
-                <!-- JS Populates -->
+            <!-- FUNIL DE STATUS -->
+            <div class="mb-10 overflow-x-auto pb-4 no-scrollbar">
+                <div class="flex gap-4 min-w-max" id="funnel-container">
+                    <!-- Injetado via JS -->
+                </div>
             </div>
 
-            <!-- Toolbar de Ações -->
-            <div class="mb-6 flex flex-col md:flex-row justify-between items-center gap-4 bg-white p-4 rounded-2xl border border-gray-100 shadow-sm">
-                <div class="flex items-center gap-3">
-                    <div class="relative">
-                        <i data-lucide="search" class="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2"></i>
-                        <input type="text" id="period-search" onkeyup="filterLocalList()" placeholder="Buscar colaborador..." 
-                               class="pl-10 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-purple-500 outline-none transition-all w-64">
+            <!-- TOOLBAR DE AÇÕES -->
+            <div class="mb-8 flex flex-col lg:flex-row lg:items-center justify-between gap-6 bg-white p-6 rounded-[32px] border border-gray-100 shadow-sm">
+                <div class="flex flex-wrap items-center gap-4">
+                    <div class="relative w-72 group">
+                        <i data-lucide="search" class="w-4 h-4 text-gray-300 absolute left-4 top-1/2 -translate-y-1/2 group-focus-within:text-c3c-blue transition-colors"></i>
+                        <input type="text" id="period-search" onkeyup="filterLocalList()" placeholder="Buscar colaborador..." class="w-full pl-11 pr-4 py-3 bg-gray-50 border border-gray-100 rounded-2xl text-xs font-bold focus:ring-4 focus:ring-blue-50 focus:border-c3c-blue outline-none transition-all">
                     </div>
-                    <select id="status-filter" onchange="loadFunnelAndList()" class="bg-gray-50 border border-gray-200 rounded-xl px-4 py-2 text-sm font-medium text-gray-600 outline-none">
+                    <select id="status-filter" onchange="loadFunnelAndList()" class="bg-gray-50 border border-gray-100 rounded-2xl px-5 py-3 text-xs font-black text-gray-500 uppercase tracking-widest outline-none focus:ring-4 focus:ring-blue-50 transition-all cursor-pointer">
                         <option value="">Todos os Status</option>
                         <option value="Aberto">Aberto</option>
                         <option value="Aguardando Aprovação Líder">Aguardando Líder</option>
@@ -83,38 +89,31 @@
                     </select>
                 </div>
 
-                <div id="bulk-actions" class="hidden flex items-center gap-2 animate-bounce-in">
-                    <span class="text-xs font-bold text-purple-600 mr-2" id="selected-count">0 selecionados</span>
-                    <button onclick="handleBulkStatus('Aberto')" class="bg-white border border-gray-200 text-gray-600 px-4 py-2 rounded-xl text-xs font-bold hover:bg-red-50 hover:text-red-600 transition-colors flex items-center gap-2">
-                        <i data-lucide="rotate-ccw" class="w-3 h-3"></i> Reabrir
-                    </button>
-                    <button onclick="handleBulkStatus('Aguardando Aprovação RH')" class="bg-white border border-gray-200 text-gray-600 px-4 py-2 rounded-xl text-xs font-bold hover:bg-blue-50 hover:text-blue-600 transition-colors flex items-center gap-2">
-                        <i data-lucide="fast-forward" class="w-3 h-3"></i> Pular p/ RH
-                    </button>
-                    <button onclick="handleBulkStatus('Liberado para Nota Fiscal')" class="bg-purple-600 text-white px-4 py-2 rounded-xl text-xs font-bold hover:bg-purple-700 shadow-md transition-all flex items-center gap-2">
-                        <i data-lucide="check-circle" class="w-3 h-3"></i> Aprovar Geral
-                    </button>
+                <div id="bulk-actions" class="hidden items-center gap-3 bg-blue-50 p-2 rounded-2xl border border-blue-100 fade-in">
+                    <span class="text-[9px] font-black text-c3c-blue uppercase tracking-widest px-3" id="selected-count">0 selecionados</span>
+                    <button onclick="handleBulkStatus('Aberto')" class="bg-white text-gray-600 border border-gray-200 px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-red-50 hover:text-red-600 transition-all flex items-center gap-2"><i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i> Reabrir</button>
+                    <button onclick="handleBulkStatus('Liberado para Nota Fiscal')" class="bg-c3c-gradient text-white px-6 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest shadow-lg shadow-blue-100 hover:opacity-90 transition-all flex items-center gap-2"><i data-lucide="check-circle" class="w-3.5 h-3.5"></i> Aprovar Tudo</button>
                 </div>
             </div>
 
-            <!-- Tabela -->
-            <div class="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
-                <table class="w-full text-sm text-left border-collapse">
-                    <thead class="bg-gray-50 text-gray-400 uppercase text-[10px] font-bold border-b border-gray-200">
-                        <tr>
-                            <th class="px-6 py-4 w-10">
-                                <input type="checkbox" id="select-all" onchange="toggleSelectAll()" class="rounded border-gray-300 text-purple-600 focus:ring-purple-500">
-                            </th>
-                            <th class="px-6 py-4">Colaborador</th>
-                            <th class="px-6 py-4 text-center">Compliance</th>
-                            <th class="px-6 py-4 text-center">Status do Período</th>
-                            <th class="px-6 py-4 text-right">Ações</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-gray-100" id="period-table-body">
-                        <!-- JS Populates -->
-                    </tbody>
-                </table>
+            <!-- TABELA -->
+            <div class="bg-white rounded-[40px] shadow-sm border border-gray-100 overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left">
+                        <thead class="bg-gray-50/50 border-b border-gray-100">
+                            <tr class="text-[9px] font-black text-gray-400 uppercase tracking-widest">
+                                <th class="px-8 py-5 w-10"><input type="checkbox" id="select-all" onchange="toggleSelectAll()" class="w-4 h-4 rounded border-gray-200 text-c3c-blue focus:ring-blue-100 transition-all"></th>
+                                <th class="px-6 py-5">Colaborador</th>
+                                <th class="px-6 py-5 text-center">Compliance</th>
+                                <th class="px-6 py-5 text-center">Status do Período</th>
+                                <th class="px-8 py-5 text-right">Ações Rápidas</th>
+                            </tr>
+                        </thead>
+                        <tbody id="period-table-body" class="divide-y divide-gray-50">
+                            <tr><td colspan="5" class="text-center py-20 text-gray-300 font-black uppercase text-[10px] tracking-widest animate-pulse">Carregando lista...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
     </main>
@@ -122,182 +121,74 @@
     <script>
         lucide.createIcons();
         let allPeriods = [];
-        const statusColors = {
-            'Aberto': 'bg-gray-100 text-gray-600 border-gray-200',
-            'Aguardando Aprovação Líder': 'bg-blue-50 text-blue-600 border-blue-100',
-            'Aguardando Aprovação RH': 'bg-orange-50 text-orange-600 border-orange-100',
-            'Liberado para Nota Fiscal': 'bg-teal-50 text-teal-600 border-teal-100',
-            'Nota em Validação': 'bg-purple-50 text-purple-600 border-purple-100',
-            'Pronto para Pagamento': 'bg-green-50 text-green-600 border-green-100',
-            'Finalizado/Pago': 'bg-indigo-50 text-indigo-600 border-indigo-100'
+        const statusColors = { 
+            'Aberto': 'bg-gray-100 text-gray-500 border-gray-200', 
+            'Aguardando Aprovação Líder': 'bg-blue-50 text-c3c-blue border-blue-100', 
+            'Aguardando Aprovação RH': 'bg-orange-50 text-orange-600 border-orange-100', 
+            'Liberado para Nota Fiscal': 'bg-teal-50 text-teal-600 border-teal-100', 
+            'Nota em Validação': 'bg-purple-50 text-purple-600 border-purple-100', 
+            'Pronto para Pagamento': 'bg-green-50 text-green-600 border-green-100', 
+            'Finalizado/Pago': 'bg-indigo-50 text-indigo-600 border-indigo-100' 
         };
 
-        // --- CARREGAR CICLOS REAIS DO SALESFORCE ---
         async function loadAvailableCycles() {
             try {
-                const res = await fetch('/api/periods'); // Usa a rota unificada que agrupa por datas
+                const res = await fetch('/api/periods');
                 const cycles = await res.json();
                 const selector = document.getElementById('cycle-selector');
                 selector.innerHTML = '';
-
-                if (cycles.length === 0) {
-                    selector.innerHTML = '<option value="">Sem ciclos disponíveis</option>';
-                    return;
-                }
-
-                cycles.forEach(c => {
-                    const option = document.createElement('option');
-                    option.value = `${c.DataInicio__c}|${c.DataFim__c}`;
-                    option.innerText = c.Name;
-                    selector.appendChild(option);
-                });
-
+                if (cycles.length === 0) { selector.innerHTML = '<option value="">Sem ciclos</option>'; return; }
+                cycles.forEach(c => { selector.innerHTML += `<option value="${c.DataInicio__c}|${c.DataFim__c}">${c.Name}</option>`; });
                 loadFunnelAndList();
-            } catch (e) { console.error('Erro ao carregar ciclos:', e); }
+            } catch (e) { console.error(e); }
         }
 
         async function loadFunnelAndList() {
-            const cycleVal = document.getElementById('cycle-selector').value;
-            if (!cycleVal) return;
-
-            const [startDate, endDate] = cycleVal.split('|');
-            const status = document.getElementById('status-filter').value;
-
+            const cycleVal = document.getElementById('cycle-selector').value; if (!cycleVal) return;
+            const [startDate, endDate] = cycleVal.split('|'), status = document.getElementById('status-filter').value;
             try {
-                // 1. Carregar Funil
                 const resFunnel = await fetch(`/api/hr/periods/funnel?startDate=${startDate}&endDate=${endDate}`);
-                const funnelData = await resFunnel.json();
-                renderFunnel(funnelData);
-
-                // 2. Carregar Lista
+                renderFunnel(await resFunnel.json());
                 const resList = await fetch(`/api/hr/periods/list?startDate=${startDate}&endDate=${endDate}&status=${status}`);
-                allPeriods = await resList.json();
-                renderTable();
+                allPeriods = await resList.json(); renderTable();
             } catch (e) { console.error(e); }
         }
 
         function renderFunnel(data) {
-            const container = document.getElementById('funnel-container');
-            container.innerHTML = '';
-            
-            const possibleStatus = [
-                'Aberto', 'Aguardando Aprovação Líder', 'Aguardando Aprovação RH', 
-                'Liberado para Nota Fiscal', 'Nota em Validação', 'Pronto para Pagamento',
-                'Pagamento Agendado', 'Finalizado/Pago'
-            ];
-
+            const container = document.getElementById('funnel-container'); container.innerHTML = '';
+            const possibleStatus = ['Aberto', 'Aguardando Aprovação Líder', 'Aguardando Aprovação RH', 'Liberado para Nota Fiscal', 'Nota em Validação', 'Pronto para Pagamento', 'Finalizado/Pago'];
             possibleStatus.forEach(st => {
                 const item = data.find(d => d.Status__c === st) || { total: 0 };
-                container.innerHTML += `
-                    <div class="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm text-center hover:border-purple-200 transition-all cursor-pointer min-w-[120px]" onclick="filterByStatus('${st}')">
-                        <p class="text-[9px] font-bold text-gray-400 uppercase truncate mb-1" title="${st}">${st}</p>
-                        <p class="text-xl font-black text-gray-800">${item.total}</p>
-                    </div>
-                `;
+                container.innerHTML += `<div class="bg-white p-5 rounded-3xl border border-gray-100 text-center hover:border-c3c-blue hover:shadow-lg transition-all cursor-pointer min-w-[130px] group" onclick="filterByStatus('${st}')"><p class="text-[8px] font-black text-gray-400 uppercase truncate mb-1 group-hover:text-c3c-blue transition-colors">${st}</p><p class="text-xl font-black text-gray-800">${item.total}</p></div>`;
             });
         }
 
         function renderTable() {
-            const tbody = document.getElementById('period-table-body');
-            const search = document.getElementById('period-search').value.toLowerCase();
-            tbody.innerHTML = '';
-
-            const filtered = allPeriods.filter(p => p.employeeName.toLowerCase().includes(search));
-
-            if (filtered.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="5" class="px-6 py-10 text-center text-gray-400 italic">Nenhum período encontrado.</td></tr>';
-                return;
-            }
-
+            const tbody = document.getElementById('period-table-body'), search = document.getElementById('period-search').value.toLowerCase();
+            tbody.innerHTML = ''; const filtered = allPeriods.filter(p => p.employeeName.toLowerCase().includes(search));
+            if (filtered.length === 0) { tbody.innerHTML = '<tr><td colspan="5" class="py-20 text-center text-gray-300 font-black uppercase text-[10px] tracking-widest italic">Nenhum registro</td></tr>'; return; }
             filtered.forEach(p => {
-                const colorClass = statusColors[p.status] || 'bg-gray-100 text-gray-600 border-gray-200';
-                const complianceIcon = p.incompleteDays === 0 ? 'check-circle' : 'alert-circle';
-                const complianceColor = p.incompleteDays === 0 ? 'text-green-500' : 'text-red-500';
-                const complianceLabel = p.incompleteDays === 0 ? 'Completo' : `${p.incompleteDays} dias pendentes`;
-
+                const colorClass = statusColors[p.status] || 'bg-gray-50';
+                const complianceColor = p.incompleteDays === 0 ? 'text-teal-600' : 'text-red-500';
                 tbody.innerHTML += `
                     <tr class="hover:bg-gray-50/50 transition-colors">
-                        <td class="px-6 py-4">
-                            <input type="checkbox" name="period-check" value="${p.id}" onchange="updateBulkActions()" class="rounded border-gray-300 text-purple-600 focus:ring-purple-500">
-                        </td>
-                        <td class="px-6 py-4 font-bold text-gray-800">${p.employeeName}</td>
-                        <td class="px-6 py-4 text-center">
-                            <div class="flex flex-col items-center">
-                                <i data-lucide="${complianceIcon}" class="w-4 h-4 ${complianceColor} mb-1"></i>
-                                <span class="text-[9px] font-bold ${complianceColor} uppercase">${complianceLabel}</span>
-                            </div>
-                        </td>
-                        <td class="px-6 py-4 text-center">
-                            <span class="status-badge ${colorClass}">${p.status}</span>
-                        </td>
-                        <td class="px-6 py-4 text-right">
-                            <div class="flex justify-end gap-2">
-                                <button onclick="changeStatus(['${p.id}'], 'Aberto')" class="p-2 text-gray-400 hover:text-red-500 transition-colors" title="Reabrir">
-                                    <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
-                                </button>
-                                <button onclick="changeStatus(['${p.id}'], 'Liberado para Nota Fiscal')" class="p-2 text-gray-400 hover:text-green-500 transition-colors" title="Aprovar">
-                                    <i data-lucide="check-circle" class="w-4 h-4"></i>
-                                </button>
-                            </div>
-                        </td>
-                    </tr>
-                `;
+                        <td class="px-8 py-6 text-center"><input type="checkbox" name="period-check" value="${p.id}" onchange="updateBulkActions()" class="w-4 h-4 rounded border-gray-200 text-c3c-blue focus:ring-blue-100 transition-all"></td>
+                        <td class="px-6 py-6 font-black text-gray-800 text-xs uppercase tracking-tighter">${p.employeeName}</td>
+                        <td class="px-6 py-6 text-center"><span class="text-[10px] font-black ${complianceColor} uppercase tracking-widest">${p.incompleteDays === 0 ? '✓ Completo' : p.incompleteDays + ' pend.'}</span></td>
+                        <td class="px-6 py-6 text-center"><span class="status-badge ${colorClass}">${p.status}</span></td>
+                        <td class="px-8 py-6 text-right"><div class="flex justify-end gap-2"><button onclick="changeStatus(['${p.id}'], 'Aberto')" class="p-2.5 bg-gray-50 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all shadow-sm"><i data-lucide="rotate-ccw" class="w-4 h-4"></i></button><button onclick="changeStatus(['${p.id}'], 'Liberado para Nota Fiscal')" class="p-2.5 bg-gray-50 text-gray-400 hover:text-teal-600 hover:bg-teal-50 rounded-xl transition-all shadow-sm"><i data-lucide="check-circle" class="w-4 h-4"></i></button></div></td>
+                    </tr>`;
             });
             lucide.createIcons();
         }
 
-        function filterByStatus(st) {
-            document.getElementById('status-filter').value = st;
-            loadFunnelAndList();
-        }
-
+        function filterByStatus(st) { document.getElementById('status-filter').value = st; loadFunnelAndList(); }
         function filterLocalList() { renderTable(); }
-
-        function toggleSelectAll() {
-            const all = document.getElementById('select-all').checked;
-            document.querySelectorAll('input[name="period-check"]').forEach(c => c.checked = all);
-            updateBulkActions();
-        }
-
-        function updateBulkActions() {
-            const selected = document.querySelectorAll('input[name="period-check"]:checked');
-            const toolbar = document.getElementById('bulk-actions');
-            const countLabel = document.getElementById('selected-count');
-            
-            if (selected.length > 0) {
-                toolbar.classList.remove('hidden');
-                countLabel.innerText = `${selected.length} selecionados`;
-            } else {
-                toolbar.classList.add('hidden');
-            }
-        }
-
-        async function handleBulkStatus(newStatus) {
-            const selected = Array.from(document.querySelectorAll('input[name="period-check"]:checked')).map(c => c.value);
-            if (selected.length === 0) return;
-            
-            if (!confirm(`Deseja alterar o status de ${selected.length} períodos para "${newStatus}"?`)) return;
-            
-            await changeStatus(selected, newStatus);
-        }
-
-        async function changeStatus(periodIds, newStatus) {
-            try {
-                const res = await fetch('/api/hr/periods/status', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ periodIds, newStatus })
-                });
-                if (res.ok) {
-                    loadFunnelAndList();
-                    document.getElementById('select-all').checked = false;
-                    updateBulkActions();
-                } else {
-                    alert('Erro ao atualizar status.');
-                }
-            } catch (e) { console.error(e); }
-        }
-
+        function toggleSelectAll() { const all = document.getElementById('select-all').checked; document.querySelectorAll('input[name="period-check"]').forEach(c => c.checked = all); updateBulkActions(); }
+        function updateBulkActions() { const sel = document.querySelectorAll('input[name="period-check"]:checked'), bar = document.getElementById('bulk-actions'), lbl = document.getElementById('selected-count'); lbl.innerText = sel.length; if (sel.length > 0) bar.classList.replace('hidden', 'flex'); else bar.classList.replace('flex', 'hidden'); }
+        async function handleBulkStatus(st) { const ids = Array.from(document.querySelectorAll('input[name="period-check"]:checked')).map(c => c.value); if (ids.length === 0) return; if (confirm(`Alterar ${ids.length} períodos para "${st}"?`)) await changeStatus(ids, st); }
+        async function changeStatus(ids, st) { try { const res = await fetch('/api/hr/periods/status', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ periodIds: ids, newStatus: st }) }); if (res.ok) { loadFunnelAndList(); document.getElementById('select-all').checked = false; updateBulkActions(); } } catch (e) { console.error(e); } }
+        
         loadAvailableCycles();
     </script>
 </body>
