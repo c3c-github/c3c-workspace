@@ -53,8 +53,11 @@
                 </div>
 
                 <div class="flex items-center gap-4">
-                    <button onclick="submitPeriod()" class="hidden md:flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-bold shadow-sm transition-all active:scale-95">
+                    <button id="submit-period-btn" onclick="submitPeriod()" class="hidden md:flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-bold shadow-sm transition-all active:scale-95">
                         <i data-lucide="send" class="w-4 h-4"></i> Enviar Folha Mês
+                    </button>
+                    <button id="recall-period-btn" onclick="recallPeriod()" class="hidden md:flex items-center gap-2 bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-lg text-sm font-bold shadow-sm transition-all active:scale-95">
+                        <i data-lucide="rotate-ccw" class="w-4 h-4"></i> Recall
                     </button>
                     <div class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center font-bold text-blue-600 border border-blue-200">
                         <%= user.nome ? user.nome.charAt(0) : 'U' %>
@@ -303,7 +306,7 @@
                 document.getElementById('card-contratado').innerText = '--';
                 document.getElementById('card-realizado').innerText = '--';
                 document.getElementById('card-banco').innerText = '--';
-                lbl.className = "px-3 py-1 bg-gray-100 text-gray-400 text-xs font-bold rounded-full";
+                lbl.className = "px-3 py-1 bg-gray-100 text-gray-400 text-xs font-bold rounded-full border border-gray-200 text-center";
                 lbl.innerText = "Carregando...";
                 return;
             }
@@ -323,11 +326,38 @@
 
             const st = summary.statusGeral || 'Aberto';
             lbl.innerText = st;
+
+            // Controle de visibilidade dos botões de ação
+            const submitBtn = document.getElementById('submit-period-btn');
+            const recallBtn = document.getElementById('recall-period-btn');
+
+            if (submitBtn) {
+                if (st === 'Aberto') {
+                    submitBtn.style.display = 'flex';
+                } else {
+                    submitBtn.style.display = 'none';
+                }
+            }
+
+            if (recallBtn) {
+                const isApprovalStatus = ['Em aprovação do serviço', 'Aguardando Aprovação Líder', 'Aguardando Aprovação RH'].includes(st);
+                if (isApprovalStatus) {
+                    recallBtn.style.display = 'flex';
+                } else {
+                    recallBtn.style.display = 'none';
+                }
+            }
+
             const mapClass = { 
                 'Aberto': 'blue', 
-                'Em emissão de nota': 'amber', 
-                'Em pagamento': 'orange', 
-                'Pago': 'green' 
+                'Em aprovação do serviço': 'indigo',
+                'Aguardando Aprovação Líder': 'indigo',
+                'Aguardando Aprovação RH': 'purple',
+                'Liberado para Nota Fiscal': 'teal',
+                'Nota em Validação': 'amber',
+                'Pronto para Pagamento': 'orange',
+                'Pagamento Agendado': 'sky',
+                'Finalizado/Pago': 'green'
             };
             const color = mapClass[st] || 'gray';
             lbl.className = `px-3 py-1 bg-${color}-100 text-${color}-700 text-xs font-bold rounded-full border border-${color}-200 text-center`;
@@ -449,7 +479,7 @@
                 if(isLocked) { 
                     frm.classList.add('opacity-50','pointer-events-none'); 
                     alert.classList.remove('hidden'); 
-                    document.getElementById('readonly-reason').innerText=`Período Bloqueado (${pStatus})`;
+                    document.getElementById('readonly-reason').innerText=`Adição Bloqueada (${pStatus})`;
                 } else { 
                     frm.classList.remove('opacity-50','pointer-events-none');
                     alert.classList.add('hidden');
@@ -667,6 +697,27 @@
         document.addEventListener('keydown', function(e) { if(e.key==='Escape') { const drp=document.getElementById('activity-dropdown'); if(!drp.classList.contains('hidden')) { drp.classList.add('hidden'); document.getElementById('input-activity-search').blur(); } else if(!document.getElementById('slide-overlay').classList.contains('hidden')) closeDayPanel(); } });
         function closeDayPanel() { document.getElementById('day-panel').classList.remove('open'); document.getElementById('day-panel').classList.add('closed'); const ov=document.getElementById('slide-overlay'); ov.classList.add('opacity-0'); setTimeout(()=>ov.classList.add('hidden'),300); }
         function selectProjectFromCard(id) { document.getElementById('input-project').value=id; resetActivitySearch(); }
+
+        async function recallPeriod() {
+            if(!currentPeriods[currentPeriodIndex]) return;
+            const pId = currentPeriods[currentPeriodIndex].Id;
+            if(!confirm('Deseja reabrir este período para edições? (O status voltará para Aberto e os lançamentos para Rascunho)')) return;
+
+            try {
+                const res = await fetch('/api/timesheet/recall-period', { 
+                    method: 'POST', 
+                    headers: { 'Content-Type': 'application/json' }, 
+                    body: JSON.stringify({ periodId: pId }) 
+                });
+                const data = await res.json();
+                if(res.ok) {
+                    alert('Período reaberto com sucesso!');
+                    loadCalendar(pId);
+                } else {
+                    alert('Erro: ' + data.message);
+                }
+            } catch(e) { console.error(e); alert('Erro ao processar recall.'); }
+        }
 
         // --- SUBMIT PERIOD ---
         async function submitPeriod() {

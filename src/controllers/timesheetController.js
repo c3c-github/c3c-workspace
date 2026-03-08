@@ -76,7 +76,6 @@ async function getOrCreateResponsavel(conn, atividadeId, alocacaoId) {
 async function syncDiaPeriodoTotals(conn, diaPeriodoId) {
     if (!diaPeriodoId) return;
     
-    // Consultamos TODOS os lançamentos atuais do dia para garantir a integridade
     const query = `
         SELECT Horas__c, HorasExtras__c, HorasBanco__c, HorasAusenciaRemunerada__c, HorasAusenciaNaoRemunerada__c 
         FROM LancamentoHora__c 
@@ -107,7 +106,6 @@ async function syncDiaPeriodoTotals(conn, diaPeriodoId) {
         HoraLicencaRemunerada__c: totalAusRem,
         HoraLicencaNaoRemunerada__c: totalAusNaoRem
     });
-    console.log(`✅ DiaPeriodo__c ${diaPeriodoId} sincronizado.`);
 }
 
 // ==============================================================================
@@ -147,7 +145,7 @@ exports.getCalendarData = async (req, res) => {
         if (!periodId) return res.status(400).json({ error: "PeriodId obrigatório." });
 
         const soqlDias = `SELECT Id, Name, Data__c, Tipo__c FROM DiaPeriodo__c WHERE Periodo__c = '${periodId}' ORDER BY Data__c ASC`;
-        const soqlPeriodo = `SELECT ContratoPessoa__r.Hora__c FROM Periodo__c WHERE Id = '${periodId}'`;
+        const soqlPeriodo = `SELECT Status__c, ContratoPessoa__r.Hora__c FROM Periodo__c WHERE Id = '${periodId}'`;
         
         const soqlLancamentos = `
             SELECT DiaPeriodo__r.Data__c, Status__c, Horas__c, HorasExtras__c, 
@@ -168,21 +166,21 @@ exports.getCalendarData = async (req, res) => {
         ]);
 
         let horasDiarias = 8; 
-        if (resPeriodo.totalSize > 0 && resPeriodo.records[0].ContratoPessoa__r && resPeriodo.records[0].ContratoPessoa__r.Hora__c) {
-            horasDiarias = resPeriodo.records[0].ContratoPessoa__r.Hora__c;
+        let statusGeral = 'Aberto';
+        if (resPeriodo.totalSize > 0) {
+            const pRec = resPeriodo.records[0];
+            statusGeral = pRec.Status__c || 'Aberto';
+            if (pRec.ContratoPessoa__r && pRec.ContratoPessoa__r.Hora__c) {
+                horasDiarias = pRec.ContratoPessoa__r.Hora__c;
+            }
         }
 
         const lancamentosMap = {};
         let totalLancadoNoPeriodo = 0;
         let totalBancoPeriodo = 0;
-        const allStatuses = new Set();
-        let hasEntries = false;
 
         resLancamentos.records.forEach(l => {
-            hasEntries = true;
             const st = l.Status__c;
-            if (st) allStatuses.add(st);
-
             const date = l.DiaPeriodo__r.Data__c;
             if (!lancamentosMap[date]) {
                 lancamentosMap[date] = { statuses: new Set(), entries: [] };
@@ -239,22 +237,6 @@ exports.getCalendarData = async (req, res) => {
         });
 
         const totalContratado = horasDiarias * diasUteisCount;
-
-        let statusGeral = 'Em Aberto';
-        if (hasEntries) {
-            if (allStatuses.has('Rascunho') || allStatuses.has('Reprovado')) {
-                statusGeral = 'Em Aberto';
-            } else if (allStatuses.has('Lançado') || allStatuses.has('Submetido')) {
-                statusGeral = 'Aguardando Aprovação';
-            } else if (allStatuses.has('Faturado')) {
-                statusGeral = 'Faturado';
-            } else if (allStatuses.has('Fechado')) {
-                statusGeral = 'Fechado';
-            } else if (allStatuses.has('Aprovado')) {
-                statusGeral = 'Aprovado';
-            }
-        } else { statusGeral = 'Novo'; }
-
         const saldoBancoTotal = (resSaldo.records && resSaldo.records[0] && resSaldo.records[0].total) ? resSaldo.records[0].total : 0;
 
         res.json({ periodId, grid: calendarGrid, summary: { totalContratado, totalRealizado: totalLancadoNoPeriodo, saldoBancoTotal, variacaoPeriodo: totalBancoPeriodo, statusGeral } });
@@ -278,8 +260,6 @@ exports.getDayDetails = async (req, res) => {
 
         const diaQuery = `SELECT Id, Periodo__r.Status__c, Periodo__r.ContratoPessoa__r.Hora__c FROM DiaPeriodo__c WHERE Data__c = ${dateStr} AND Periodo__r.ContratoPessoa__r.Pessoa__c = '${userId}' LIMIT 1`;
         let diaRes = await conn.query(diaQuery);
-        
-        // Se falhou sem aspas, tenta com aspas (resiliência de ambiente)
         if (diaRes.totalSize === 0) {
             diaRes = await conn.query(`SELECT Id, Periodo__r.Status__c, Periodo__r.ContratoPessoa__r.Hora__c FROM DiaPeriodo__c WHERE Data__c = '${dateStr}' AND Periodo__r.ContratoPessoa__r.Pessoa__c = '${userId}' LIMIT 1`);
         }
@@ -305,7 +285,6 @@ exports.getDayDetails = async (req, res) => {
             activities = resAct.records.map(r => ({ id: r.Id, name: r.Name, projectId: r.Servico__c }));
         }
 
-        // Bloqueia NOVOS lançamentos APENAS se o período NÃO estiver Aberto
         const pStatus = diaRes.records[0]?.Periodo__r?.Status__c || 'Aberto';
         const isLocked = pStatus !== 'Aberto';
 
@@ -320,30 +299,24 @@ exports.saveEntry = async (req, res) => {
         const conn = await getSfConnection();
         const dateStr = date.split('T')[0];
 
-        // 1. Verifica se o PERÍODO está Aberto
-        const diaQuery = `SELECT Id, Periodo__r.Status__c FROM DiaPeriodo__c WHERE Id = '${diaPeriodoId}' LIMIT 1`;
-        const diaResForStatus = await conn.query(diaQuery);
-        const periodStatus = diaResForStatus.records[0]?.Periodo__r?.Status__c;
-
-        if (periodStatus && periodStatus !== 'Aberto') {
-            return res.status(400).json({ success: false, message: `Este período está com status "${periodStatus}" e não permite mais lançamentos ou edições.` });
-        }
-
-        // Mantemos a trava de status do LANÇAMENTO apenas para segurança de fluxo (não editar o que já está em aprovação avançada)
-        if (entryId) {
-            const checkQuery = `SELECT Id, Status__c FROM LancamentoHora__c WHERE Id = '${entryId}' LIMIT 1`;
-            const checkRes = await conn.query(checkQuery);
-            const currentStatus = checkRes.records[0]?.Status__c;
-            if (currentStatus && !['Rascunho', 'Reprovado serviço', 'Reprovado RH'].includes(currentStatus)) {
-                return res.status(400).json({ success: false, message: 'Este lançamento não pode mais ser editado por estar em processo de aprovação.' });
-            }
-        }
-
-        // 2. Calcula Limites
         const stats = await calculateDailyStats(conn, userId, dateStr);
         if(!stats.exists) return res.status(400).json({ success: false, message: 'Dia não encontrado no contrato.' });
 
-        // Recupera valores antigos se update
+        // TRAVAS DE SEGURANÇA
+        if (entryId) {
+            const oldLog = await conn.sobject('LancamentoHora__c').retrieve(entryId);
+            if (!['Rascunho', 'Reprovado serviço', 'Reprovado RH'].includes(oldLog.Status__c)) {
+                return res.status(400).json({ success: false, message: `Este lançamento (${oldLog.Status__c}) não pode ser editado.` });
+            }
+        } else {
+            const pQuery = `SELECT Status__c FROM Periodo__c WHERE Id = '${stats.periodoId}' LIMIT 1`;
+            const pRes = await conn.query(pQuery);
+            const pStatus = pRes.records[0]?.Status__c;
+            if (pStatus && pStatus !== 'Aberto') {
+                return res.status(400).json({ success: false, message: `O período está ${pStatus}. Não é possível adicionar novos lançamentos.` });
+            }
+        }
+
         let oldVal = {n:0, e:0};
         if(entryId) {
             const old = await conn.sobject('LancamentoHora__c').retrieve(entryId);
@@ -401,11 +374,8 @@ exports.saveEntry = async (req, res) => {
             await conn.sobject('LancamentoHora__c').create(payload);
         }
 
-        // Sincroniza os totais no DiaPeriodo__c
         await syncDiaPeriodoTotals(conn, stats.diaPeriodoId);
-
         res.json({ success: true });
-
     } catch (e) { res.status(500).json({ success: false, message: e.message }); }
 };
 
@@ -414,36 +384,20 @@ exports.deleteEntry = async (req, res) => {
         const { id } = req.params;
         const conn = await getSfConnection();
         const userId = req.session.user.id;
-        
         const log = await conn.sobject('LancamentoHora__c').retrieve(id);
         if(log.Pessoa__c !== userId) return res.status(403).json({ success: false, message: 'Sem permissão.' });
-        
-        // Verifica se o PERÍODO está Aberto
-        const periodQuery = `SELECT Status__c FROM Periodo__c WHERE Id = '${log.Periodo__c}' LIMIT 1`;
-        const periodRes = await conn.query(periodQuery);
-        const periodStatus = periodRes.records[0]?.Status__c;
 
-        if (periodStatus && periodStatus !== 'Aberto') {
-            return res.status(400).json({ success: false, message: `Este período (${periodStatus}) não permite exclusão de lançamentos.` });
-        }
-
-        // Regra de Status para Exclusão (Lançamento)
         if(!['Rascunho', 'Reprovado serviço', 'Reprovado RH'].includes(log.Status__c)) {
-            return res.status(400).json({ success: false, message: 'Item bloqueado para exclusão.' });
+            return res.status(400).json({ success: false, message: `Lançamento (${log.Status__c}) bloqueado para exclusão.` });
         }
-
         const diaPeriodoId = log.DiaPeriodo__c;
         await conn.sobject('LancamentoHora__c').destroy(id);
-
-        // Sincroniza os totais no DiaPeriodo__c após a exclusão
         await syncDiaPeriodoTotals(conn, diaPeriodoId);
-
         res.json({ success: true });
     } catch (e) { res.status(500).json({ success: false, message: e.message }); }
 };
 
 exports.submitDay = async (req, res) => {
-    // DESATIVADO: Lançamento agora é apenas por período
     return res.status(405).json({ success: false, message: 'Envio por dia desativado. Use o envio por período.' });
 };
 
@@ -453,7 +407,7 @@ exports.submitPeriod = async (req, res) => {
         const userId = req.session.user.id;
         const conn = await getSfConnection();
 
-        // Busca todos os lançamentos que podem ser enviados
+        // 1. Busca todos os lançamentos que podem ser enviados
         const query = `
             SELECT Id 
             FROM LancamentoHora__c 
@@ -462,12 +416,54 @@ exports.submitPeriod = async (req, res) => {
             AND Status__c IN ('Rascunho', 'Reprovado serviço', 'Reprovado RH')
         `;
         const result = await conn.query(query);
+        
+        // Mesmo que não existam lançamentos para atualizar, vamos atualizar o status do período
+        // para garantir que ele mude conforme a ação do usuário.
+        
+        // 2. Atualiza Lançamentos se existirem
+        if (result.totalSize > 0) {
+            const updates = result.records.map(r => ({ Id: r.Id, Status__c: 'Em aprovação do serviço' }));
+            await conn.sobject('LancamentoHora__c').update(updates);
+        }
 
-        if (result.totalSize === 0) return res.json({ success: true, message: 'Nada para enviar.' });
+        // 3. Atualiza o Status do PERÍODO para 'Em aprovação do serviço'
+        await conn.sobject('Periodo__c').update({
+            Id: periodId,
+            Status__c: 'Em aprovação do serviço'
+        });
 
-        const updates = result.records.map(r => ({ Id: r.Id, Status__c: 'Em aprovação do serviço' }));
-        await conn.sobject('LancamentoHora__c').update(updates);
+        res.json({ success: true, message: 'Lançamentos enviados e período encaminhado para aprovação!' });
+    } catch (e) { res.status(500).json({ success: false, message: e.message }); }
+};
 
-        res.json({ success: true, message: 'Lançamentos enviados para aprovação do serviço!' });
+exports.recallPeriod = async (req, res) => {
+    try {
+        const { periodId } = req.body;
+        const userId = req.session.user.id;
+        const conn = await getSfConnection();
+
+        // 1. Busca todos os lançamentos que estão em processo de aprovação
+        const query = `
+            SELECT Id 
+            FROM LancamentoHora__c 
+            WHERE Periodo__c = '${periodId}' 
+            AND Pessoa__c = '${userId}' 
+            AND Status__c IN ('Em aprovação do serviço', 'Aguardando Aprovação Líder', 'Aguardando Aprovação RH')
+        `;
+        const result = await conn.query(query);
+        
+        // 2. Volta Lançamentos para Rascunho se existirem
+        if (result.totalSize > 0) {
+            const updates = result.records.map(r => ({ Id: r.Id, Status__c: 'Rascunho' }));
+            await conn.sobject('LancamentoHora__c').update(updates);
+        }
+
+        // 3. Volta o Status do PERÍODO para 'Aberto'
+        await conn.sobject('Periodo__c').update({
+            Id: periodId,
+            Status__c: 'Aberto'
+        });
+
+        res.json({ success: true, message: 'Período e lançamentos reabertos para edição.' });
     } catch (e) { res.status(500).json({ success: false, message: e.message }); }
 };

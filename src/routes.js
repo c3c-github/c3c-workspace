@@ -74,6 +74,7 @@ router.post('/api/timesheet/entry', requireAuth, timesheetController.saveEntry);
 router.delete('/api/timesheet/entry/:id', requireAuth, timesheetController.deleteEntry);
 router.post('/api/timesheet/submit-day', requireAuth, timesheetController.submitDay);
 router.post('/api/timesheet/submit-period', requireAuth, timesheetController.submitPeriod);
+router.post('/api/timesheet/recall-period', requireAuth, timesheetController.recallPeriod);
 
 // --- OPERAÇÕES ---
 router.get('/operations', requireAuth, requireGroup('OPERACAO'), operationsController.renderOperations);

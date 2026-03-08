@@ -1,0 +1,21 @@
+
+> c3c-workspace@1.0.0 start
+> node server.js
+
+[dotenv@17.2.3] injecting env (0) from .env -- tip: 🗂️ backup and recover secrets: https://dotenvx.com/ops
+❌ Erro crítico ao carregar a aplicação (src/app): TypeError: argument handler must be a function
+    at Route.<computed> [as get] (/Users/tuliosales/c3c-workspace/node_modules/router/lib/route.js:228:15)
+    at Router.<computed> [as get] (/Users/tuliosales/c3c-workspace/node_modules/router/index.js:448:19)
+    at Object.<anonymous> (/Users/tuliosales/c3c-workspace/src/routes.js:63:8)
+    at Module._compile (node:internal/modules/cjs/loader:1546:14)
+    at Object..js (node:internal/modules/cjs/loader:1689:10)
+    at Module.load (node:internal/modules/cjs/loader:1318:32)
+    at Function._load (node:internal/modules/cjs/loader:1128:12)
+    at TracingChannel.traceSync (node:diagnostics_channel:315:14)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:218:24)
+    at Module.require (node:internal/modules/cjs/loader:1340:12)
+npm notice
+npm notice New minor version of npm available! 11.9.0 -> 11.11.0
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v11.11.0
+npm notice To update run: npm install -g npm@11.11.0
+npm notice
