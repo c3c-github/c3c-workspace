@@ -128,22 +128,28 @@ exports.logout = (req, res) => {
 
 exports.getUsersForImpersonation = async (req, res) => {
     try {
-        const { term } = req.query;
-        if (!term || term.length < 3) return res.json([]);
-
+        const { term, offset = 0, limit = 200 } = req.query;
         const conn = await getSfConnection();
-        const safeTerm = term.replace(/'/g, "\\'");
-        
-        const query = `
-            SELECT Id, Name, Email__c 
-            FROM Pessoa__c 
-            WHERE (Name LIKE '%${safeTerm}%' OR Email__c LIKE '%${safeTerm}%') 
-            ORDER BY Name ASC
-        `;
-        
+
+        let query = `SELECT Id, Name, Email__c FROM Pessoa__c`;
+
+        if (term && term.length >= 3) {
+            const safeTerm = term.replace(/'/g, "\\'");
+            query += ` WHERE (Name LIKE '%${safeTerm}%' OR Email__c LIKE '%${safeTerm}%')`;
+        }
+
+        query += ` ORDER BY Name ASC LIMIT ${limit} OFFSET ${offset}`;
+
         const result = await conn.query(query);
-        res.json(result.records.map(r => ({ id: r.Id, name: r.Name, email: r.Email__c })));
+        const users = result.records.map(r => ({ id: r.Id, name: r.Name, email: r.Email__c }));
+
+        res.json({
+            users,
+            total: result.totalSize,
+            hasMore: (parseInt(offset) + users.length) < result.totalSize
+        });
     } catch (e) {
+        console.error("Erro getUsersForImpersonation:", e);
         res.status(500).json({ error: e.message });
     }
 };

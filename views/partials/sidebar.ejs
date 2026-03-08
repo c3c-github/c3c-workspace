@@ -1,111 +1,249 @@
 <aside id="sidebar" class="fixed inset-y-0 left-0 w-64 bg-white border-r border-gray-100 flex flex-col z-40 transform -translate-x-full md:translate-x-0 transition-transform duration-300 shadow-xl md:shadow-none">
     
-    <div class="h-16 md:h-20 flex items-center px-6 md:px-8 border-b border-gray-50 justify-between bg-white shrink-0">
-        <div class="flex items-center gap-2">
-            <div class="w-8 h-8 bg-c3c-gradient rounded-lg flex items-center justify-center text-white font-bold text-xs">C3C</div>
-            <span class="font-bold text-gray-800 tracking-wide text-lg">Workplace</span>
+    <!-- TOP LOGO CENTRALIZADO -->
+    <div class="p-8 flex flex-col items-center border-b border-gray-50">
+        <div class="flex items-center justify-center gap-4 w-full">
+            <img src="/assets/signatures/assinaturaLogo.png" alt="C3C Logo" class="h-8 object-contain">
+            <div class="h-6 w-px bg-gray-200"></div>
+            <div class="w-12 h-12 rounded-full overflow-hidden border-2 border-white shadow-md bg-white flex items-center justify-center">
+                <img src="/assets/signatures/assinaturaCapivorce.png" alt="Capivorce" class="w-full h-full object-cover hover:scale-110 transition-transform cursor-help" title="Olá! Eu sou a Capivorce.">
+            </div>
         </div>
-        <button onclick="toggleMenu()" class="md:hidden text-gray-400 hover:text-gray-600 focus:outline-none">
-            <i data-lucide="x" class="w-6 h-6"></i>
-        </button>
+        <p class="mt-4 text-[10px] font-black text-gray-300 uppercase tracking-[0.3em]">Workplace</p>
     </div>
 
-    <nav class="flex-1 py-6 space-y-1 overflow-y-auto">
-        
+    <!-- NAVEGAÇÃO -->
+    <nav class="flex-1 overflow-y-auto py-6 custom-scrollbar">
         <p class="px-6 text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Principal</p>
         
-        <a href="/dashboard" class="nav-item <%= (typeof page !== 'undefined' && page === 'home') ? 'bg-[#EEF2FF] text-[#2978FF] border-r-4 border-[#2978FF]' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900' %> flex items-center gap-3 px-6 py-3 transition-colors">
+        <a href="/dashboard" class="nav-item <%= (typeof page !== 'undefined' && page === 'dashboard') ? 'active-nav' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900' %> flex items-center gap-3 px-6 py-3 transition-all">
             <i data-lucide="layout-dashboard" class="w-5 h-5"></i>
-            <span class="font-medium text-sm">Visão Geral</span>
+            <span class="font-medium text-sm">Dashboard</span>
         </a>
 
-        <a href="/timesheet" class="nav-item <%= (typeof page !== 'undefined' && page === 'timesheet') ? 'bg-[#EEF2FF] text-[#2978FF] border-r-4 border-[#2978FF]' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900' %> flex items-center gap-3 px-6 py-3 transition-colors">
+        <a href="/timesheet" class="nav-item <%= (typeof page !== 'undefined' && page === 'timesheet') ? 'active-nav' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900' %> flex items-center gap-3 px-6 py-3 transition-all">
             <i data-lucide="clock" class="w-5 h-5"></i>
-            <span class="font-medium text-sm">Minhas Horas</span>
+            <span class="font-medium text-sm">Meus Lançamentos</span>
         </a>
-        <a href="/billing-portal" class="nav-item <%= (typeof page !== 'undefined' && page === 'billing_portal') ? 'bg-[#EEF2FF] text-[#2978FF] border-r-4 border-[#2978FF]' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900' %> flex items-center gap-3 px-6 py-3 transition-colors">
-            <i data-lucide="file-check" class="w-5 h-5"></i>
+
+        <a href="/billing-portal" class="nav-item <%= (typeof page !== 'undefined' && page === 'billing_portal') ? 'active-nav' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900' %> flex items-center gap-3 px-6 py-3 transition-all">
+            <i data-lucide="file-text" class="w-5 h-5"></i>
             <span class="font-medium text-sm">Portal de Notas</span>
         </a>
-        <p class="px-6 text-xs font-semibold text-gray-400 uppercase tracking-wider mt-8 mb-2">Utilidades</p>
-        <a href="/utilities/signature" class="nav-item <%= (typeof page !== 'undefined' && page === 'utilities_signature') ? 'bg-[#EEF2FF] text-[#2978FF] border-r-4 border-[#2978FF]' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900' %> flex items-center gap-3 px-6 py-3 transition-colors">
-            <i data-lucide="pen-tool" class="w-5 h-5"></i>
-            <span class="font-medium text-sm">Gerador de Assinatura</span>
-        </a>
-
-        <% if (user.grupos && user.grupos.includes('OPERACAO')) { %>
-            <a href="/operations" class="nav-item <%= (typeof page !== 'undefined' && page === 'operations') ? 'bg-[#EEF2FF] text-[#2978FF] border-r-4 border-[#2978FF]' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900' %> flex items-center gap-3 px-6 py-3 transition-colors">
-                <i data-lucide="headset" class="w-5 h-5"></i>
-                <span class="font-medium text-sm">Mesa de Operações</span>
-            </a>
-        <% } %>
 
         <% if (user.grupos && (user.grupos.includes('GESTOR') || user.grupos.includes('DIRETOR'))) { %>
-            <p class="px-6 text-xs font-semibold text-gray-400 uppercase tracking-wider mt-8 mb-2">Serviços</p>
-            <a href="/approvals" class="nav-item <%= (typeof page !== 'undefined' && page === 'approvals') ? 'bg-[#EEF2FF] text-[#2978FF] border-r-4 border-[#2978FF]' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900' %> flex items-center gap-3 px-6 py-3 transition-colors">
+            <p class="px-6 text-xs font-semibold text-gray-400 uppercase tracking-wider mt-8 mb-2">Gestão</p>
+            <a href="/approvals" class="nav-item <%= (typeof page !== 'undefined' && page === 'approvals') ? 'active-nav' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900' %> flex items-center gap-3 px-6 py-3 transition-all">
                 <i data-lucide="check-square" class="w-5 h-5"></i>
-                <span class="font-medium text-sm">Aprovação de Horas</span>
+                <span class="font-medium text-sm">Aprovações</span>
             </a>
-            <a href="/billing" class="nav-item <%= (typeof page !== 'undefined' && page === 'billing') ? 'bg-[#EEF2FF] text-[#2978FF] border-r-4 border-[#2978FF]' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900' %> flex items-center gap-3 px-6 py-3 transition-colors">
-                <i data-lucide="file-text" class="w-5 h-5"></i>
+            <a href="/billing" class="nav-item <%= (typeof page !== 'undefined' && page === 'billing') ? 'active-nav' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900' %> flex items-center gap-3 px-6 py-3 transition-all">
+                <i data-lucide="calculator" class="w-5 h-5"></i>
                 <span class="font-medium text-sm">Medição p/ Faturar</span>
             </a>
         <% } %>
 
         <% if (user.grupos && user.grupos.includes('GESTOR_FINANCEIRO')) { %>
             <p class="px-6 text-xs font-semibold text-gray-400 uppercase tracking-wider mt-8 mb-2">Financeiro</p>
-            <a href="/finance-dashboard" class="nav-item <%= (typeof page !== 'undefined' && page === 'finance') ? 'bg-[#EEF2FF] text-[#2978FF] border-r-4 border-[#2978FF]' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900' %> flex items-center gap-3 px-6 py-3 transition-colors">
+            <a href="/finance-dashboard" class="nav-item <%= (typeof page !== 'undefined' && page === 'finance') ? 'active-nav' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900' %> flex items-center gap-3 px-6 py-3 transition-all">
                 <i data-lucide="layout-grid" class="w-5 h-5"></i>
                 <span class="font-medium text-sm">Cockpit Financeiro</span>
             </a>
-            <a href="/services" class="nav-item <%= (typeof page !== 'undefined' && page === 'services') ? 'bg-[#EEF2FF] text-[#2978FF] border-r-4 border-[#2978FF]' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900' %> flex items-center gap-3 px-6 py-3 transition-colors">
+            <a href="/services" class="nav-item <%= (typeof page !== 'undefined' && page === 'services') ? 'active-nav' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900' %> flex items-center gap-3 px-6 py-3 transition-all">
                 <i data-lucide="briefcase" class="w-5 h-5"></i>
                 <span class="font-medium text-sm">Gestão de Serviços</span>
             </a>
         <% } %>
 
-        <% if (user.grupos && user.grupos.includes('ADMIN_RH')) { %>
-            <p class="px-6 text-xs font-semibold text-gray-400 uppercase tracking-wider mt-8 mb-2">RH & Pessoas</p>
-            <a href="/hr" class="nav-item <%= (typeof page !== 'undefined' && page === 'hr') ? 'bg-[#F3E8FF] text-purple-700 border-r-4 border-purple-600' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900' %> flex items-center gap-3 px-6 py-3 transition-colors">
-                <i data-lucide="users" class="w-5 h-5"></i>
-                <span class="font-medium text-sm">Gestão de Horas</span>
-            </a>
-        <% } %>
-
-        <% if (user.grupos && user.grupos.includes('GESTAO_SUPORTE')) { %>
-            <p class="px-6 text-xs font-semibold text-gray-400 uppercase tracking-wider mt-8 mb-2">Estratégico</p>
-            <a href="/support-management" class="nav-item <%= (typeof page !== 'undefined' && page === 'support_management') ? 'bg-[#EEF2FF] text-[#2978FF] border-r-4 border-[#2978FF]' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900' %> flex items-center gap-3 px-6 py-3 transition-colors">
-                <i data-lucide="bar-chart-2" class="w-5 h-5"></i>
-                <span class="font-medium text-sm">Gestão de Suporte</span>
-            </a>
-        <% } %>
-
+        <p class="px-6 text-xs font-semibold text-gray-400 uppercase tracking-wider mt-8 mb-2">Utilitários</p>
+        <a href="/utilities/signature" class="nav-item <%= (typeof page !== 'undefined' && page === 'utilities_signature') ? 'active-nav' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900' %> flex items-center gap-3 px-6 py-3 transition-all">
+            <i data-lucide="pen-tool" class="w-5 h-5"></i>
+            <span class="font-medium text-sm">Assinatura</span>
+        </a>
     </nav>
 
-    <div class="p-4 border-t border-gray-50 bg-gray-50/50 shrink-0">
-        <div class="flex items-center gap-3 p-2">
-            <div class="w-10 h-10 rounded-full bg-blue-100 text-blue-600 border border-blue-200 flex items-center justify-center font-bold">
-                <%= user.nome.charAt(0) %>
+    <!-- FOOTER PERFIL -->
+    <div class="p-4 border-t border-gray-100 bg-gray-50/50 flex flex-col gap-4">
+        
+        <% if (user.grupos && user.grupos.includes('LOGIN_AS')) { %>
+            <button onclick="openImpersonateModal()" class="w-full flex items-center justify-center gap-2 bg-blue-50 text-[#2978FF] text-[10px] font-black uppercase py-2.5 rounded-xl border border-blue-100 hover:bg-blue-100 transition-colors shadow-sm">
+                <i data-lucide="venetian-mask" class="w-3.5 h-3.5"></i> Simular Acesso
+            </button>
+        <% } %>
+
+        <div class="flex items-center gap-3 px-2">
+            <div class="relative shrink-0">
+                <% if (user.foto) { %>
+                    <img src="<%= user.foto %>" alt="<%= user.nome %>" class="w-10 h-10 rounded-full object-cover border-2 border-white shadow-sm">
+                <% } else { %>
+                    <div class="w-10 h-10 rounded-full bg-[#2978FF] flex items-center justify-center text-white font-bold text-sm shadow-sm">
+                        <%= user.nome.charAt(0) %>
+                    </div>
+                <% } %>
+                <% if (user.isImpersonating) { %>
+                    <div class="absolute -top-1 -right-1 w-4 h-4 bg-purple-500 border-2 border-white rounded-full flex items-center justify-center shadow-sm">
+                        <i data-lucide="eye" class="w-2 h-2 text-white"></i>
+                    </div>
+                <% } %>
             </div>
-            <div class="flex-1 min-w-0">
-                <p class="text-sm font-semibold text-gray-900 truncate"><%= user.nome %></p>
-                <p class="text-xs text-gray-500 truncate" title="<%= (user.labels_grupos && user.labels_grupos.length > 0) ? user.labels_grupos.join(', ') : 'Colaborador' %>">
-                    <% if (user.labels_grupos && user.labels_grupos.length > 0) { %>
-                        <%= user.labels_grupos.join(' & ') %>
-                    <% } else { %>
-                        Colaborador
-                    <% } %>
-                </p>
+            <div class="flex-1 min-w-0 text-left">
+                <p class="text-xs font-black text-gray-800 truncate leading-tight"><%= user.nome %></p>
+                <p class="text-[9px] font-bold text-gray-400 truncate uppercase tracking-tighter"><%= user.email %></p>
             </div>
-            <% if (user.isImpersonating) { %>
-                <a href="/auth/stop-impersonate" title="Voltar ao Admin" class="bg-purple-100 p-2 rounded-full hover:bg-purple-200 transition-colors">
-                    <i data-lucide="venetian-mask" class="w-4 h-4 text-purple-600"></i>
-                </a>
-            <% } else { %>
-                <a href="/logout" title="Sair">
-                    <i data-lucide="log-out" class="w-4 h-4 text-gray-400 cursor-pointer hover:text-red-500 transition-colors"></i>
-                </a>
-            <% } %>
+            <a href="/logout" title="Sair" class="p-2 hover:bg-red-50 rounded-lg group transition-colors">
+                <i data-lucide="log-out" class="w-4 h-4 text-gray-400 group-hover:text-red-500"></i>
+            </a>
         </div>
+
+        <% if (user.isImpersonating) { %>
+            <a href="/auth/stop-impersonate" class="flex items-center justify-center gap-2 text-red-500 hover:text-red-700 transition-colors">
+                <span class="text-[9px] font-black uppercase tracking-widest">Parar Simulação</span>
+                <i data-lucide="x-circle" class="w-3 h-3"></i>
+            </a>
+        <% } %>
     </div>
 </aside>
+
+<!-- MODAL SIMULAR ACESSO -->
+<div id="impersonate-modal" class="fixed inset-0 bg-black/60 z-[9999] hidden flex items-center justify-center p-4 backdrop-blur-md">
+    <div class="bg-white rounded-[40px] shadow-2xl w-full max-w-lg transform transition-all flex flex-col overflow-hidden max-h-[80vh]">
+        <header class="p-8 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
+            <div>
+                <h3 class="text-2xl font-black text-gray-800 flex items-center gap-3 uppercase tracking-tighter">
+                    <i data-lucide="venetian-mask" class="w-8 h-8 text-[#2978FF]"></i> Simular Acesso
+                </h3>
+                <p id="impersonate-count" class="text-xs font-bold text-gray-400 uppercase tracking-widest mt-1">Carregando time...</p>
+            </div>
+            <button onclick="closeImpersonateModal()" class="p-3 text-gray-400 hover:bg-white hover:text-red-500 rounded-full shadow-sm transition-all"><i data-lucide="x"></i></button>
+        </header>
+        
+        <div class="p-8 flex-1 overflow-y-auto custom-scrollbar">
+            <div class="relative mb-6">
+                <input type="text" id="impersonate-search" oninput="handleImpersonateFilter(this.value)" autocomplete="off" placeholder="Filtrar por nome ou e-mail..." class="w-full bg-gray-50 border-2 border-gray-100 rounded-[24px] px-6 py-5 text-sm font-black focus:ring-4 focus:ring-blue-100 focus:border-[#2978FF] outline-none transition-all placeholder:text-gray-300">
+            </div>
+
+            <div id="impersonate-results" class="space-y-3 min-h-[100px]">
+                <div class="py-12 text-center text-gray-300 font-bold uppercase text-[10px] tracking-[0.2em]">Aguardando colaboradores...</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    window.allUsersCache = [];
+    window.isLoadingUsers = false;
+
+    function openImpersonateModal() {
+        document.getElementById('impersonate-modal').classList.remove('hidden');
+        if (window.allUsersCache.length === 0 && !window.isLoadingUsers) {
+            fetchUsersInBatches();
+        } else {
+            renderImpersonateList(window.allUsersCache);
+        }
+    }
+
+    function closeImpersonateModal() {
+        document.getElementById('impersonate-modal').classList.add('hidden');
+    }
+
+    async function fetchUsersInBatches(offset = 0) {
+        window.isLoadingUsers = true;
+        const countLabel = document.getElementById('impersonate-count');
+        
+        try {
+            const res = await fetch(`/api/admin/users?limit=200&offset=${offset}`);
+            const data = await res.json();
+            
+            const newUsers = data.users || [];
+            window.allUsersCache = window.allUsersCache.concat(newUsers);
+
+            if (countLabel) countLabel.innerText = `Carregados: ${window.allUsersCache.length} de ${data.total}`;
+            
+            const currentSearch = document.getElementById('impersonate-search').value;
+            if (!currentSearch) renderImpersonateList(window.allUsersCache);
+
+            if (data.hasMore) {
+                await fetchUsersInBatches(offset + 200);
+            } else {
+                window.isLoadingUsers = false;
+                if (countLabel) countLabel.innerText = `${window.allUsersCache.length} colaboradores ativos`;
+            }
+        } catch (e) {
+            console.error("Erro busca:", e);
+            window.isLoadingUsers = false;
+        }
+    }
+
+    function handleImpersonateFilter(term) {
+        const t = term.toLowerCase().trim();
+        if (!t) {
+            renderImpersonateList(window.allUsersCache);
+            return;
+        }
+        const filtered = window.allUsersCache.filter(u => {
+            const name = u.name ? u.name.toLowerCase() : "";
+            const email = u.email ? u.email.toLowerCase() : "";
+            return name.includes(t) || email.includes(t);
+        });
+        renderImpersonateList(filtered);
+    }
+
+    function renderImpersonateList(users) {
+        const results = document.getElementById('impersonate-results');
+        if (!results) return;
+
+        if (!users || users.length === 0) {
+            results.innerHTML = '<div class="py-12 text-center text-gray-300 font-bold uppercase text-[10px]">Nenhum colaborador encontrado.</div>';
+            return;
+        }
+
+        results.innerHTML = users.map(u => {
+            const safeName = u.name ? u.name.replace(/'/g, "\\'") : "N/A";
+            return `
+                <div onclick="confirmImpersonate('${u.id}', '${safeName}')" class="flex items-center gap-4 p-5 bg-white border border-gray-100 rounded-3xl hover:border-[#2978FF] hover:shadow-xl hover:shadow-blue-100 cursor-pointer transition-all group">
+                    <div class="w-12 h-12 rounded-full bg-blue-50 flex items-center justify-center text-[#2978FF] font-black text-lg group-hover:bg-[#2978FF] group-hover:text-white transition-all">
+                        ${u.name ? u.name.charAt(0) : "?"}
+                    </div>
+                    <div class="flex-1 min-w-0 text-left">
+                        <p class="text-sm font-black text-gray-800 truncate">${u.name || 'N/A'}</p>
+                        <p class="text-[10px] font-bold text-gray-400 uppercase truncate">${u.email || 'N/A'}</p>
+                    </div>
+                    <i data-lucide="chevron-right" class="w-5 h-5 text-gray-200 group-hover:text-[#2978FF] transition-all"></i>
+                </div>
+            `;
+        }).join('');
+        
+        if (typeof lucide !== 'undefined') lucide.createIcons();
+    }
+
+    async function confirmImpersonate(id, name) {
+        if (!confirm(`Deseja simular o acesso de ${name}?`)) return;
+        try {
+            const res = await fetch('/auth/impersonate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ targetId: id })
+            });
+            if (res.ok) window.location.href = '/dashboard';
+            else alert('Erro ao simular acesso.');
+        } catch (e) { alert('Erro de conexão.'); }
+    }
+</script>
+
+<style>
+    .active-nav {
+        background: transparent linear-gradient(118deg, #1DDDBD 0%, #1ED9C0 45%, #2978FF 100%) 0% 0% no-repeat padding-box;
+        color: white !important;
+        border-radius: 100px;
+        margin: 0 0.5rem;
+        padding-left: 1rem !important;
+        padding-right: 1rem !important;
+        box-shadow: 0 4px 15px rgba(41, 120, 255, 0.2);
+    }
+    .active-nav span { font-size: 0.75rem !important; font-weight: 800 !important; }
+    .active-nav i { color: white !important; width: 1.1rem; height: 1.1rem; }
+    
+    .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+    .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background: #E2E8F0; border-radius: 10px; }
+</style>
