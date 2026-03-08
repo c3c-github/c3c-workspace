@@ -411,9 +411,10 @@ exports.getDashboardMetrics = async (req, res) => {
 
         // --- MODO PESSOAL (PERFIL DE EFICIÊNCIA) ---
         if (scope === 'personal') {
-            // 1. Busca Dados do Período (Carga Horária, Status e ID)
+            // 1. Busca Dados do Período (Carga Horária, Status e ID) + Nota Fiscal
             const qPeriodo = `
-                SELECT Id, Status__c, ContratoPessoa__r.Hora__c 
+                SELECT Id, Status__c, ContratoPessoa__r.Hora__c,
+                       (SELECT Id, Status__c, MotivoReprovacao__c FROM NotasFiscais__r WHERE Tipo__c = 'Entrada' LIMIT 1)
                 FROM Periodo__c 
                 WHERE ContratoPessoa__r.Pessoa__c = '${userId}' 
                 AND DataInicio__c <= ${fim} AND DataFim__c >= ${inicio} 
@@ -425,17 +426,12 @@ exports.getDashboardMetrics = async (req, res) => {
             const cargaDiaria = (periodoRecord && periodoRecord.ContratoPessoa__r) ? periodoRecord.ContratoPessoa__r.Hora__c : 8;
             const statusPeriodo = periodoRecord ? periodoRecord.Status__c : 'Aberto';
             
+            const nfRecord = (periodoRecord && periodoRecord.NotasFiscais__r && periodoRecord.NotasFiscais__r.records) ? periodoRecord.NotasFiscais__r.records[0] : null;
+
             // 2. Conta Dias Úteis Totais e Dias Completos
             let diasUteis = 0;
             let diasCompletos = 0;
             if (periodoRecord) {
-                const qDias = `
-                    SELECT Status__c, COUNT(Id) total 
-                    FROM DiaPeriodo__c 
-                    WHERE Periodo__c = '${periodoRecord.Id}' AND Tipo__c = 'Útil'
-                    GROUP BY Status__c
-                `; // Na verdade precisamos de DiaCompleto__c
-                
                 const qCompliance = `
                     SELECT COUNT(Id) total, DiaCompleto__c 
                     FROM DiaPeriodo__c 
@@ -454,26 +450,25 @@ exports.getDashboardMetrics = async (req, res) => {
             const qAlloc = `SELECT Percentual__c FROM Alocacao__c WHERE Pessoa__c = '${userId}' AND DataInicio__c <= ${fim} AND (DataFim__c >= ${inicio} OR DataFim__c = NULL)`;
             const resAlloc = await conn.query(qAlloc);
             
-            let totalAlocado = 0;
             let percentualTotalAlocacao = 0;
             resAlloc.records.forEach(r => {
                 percentualTotalAlocacao += (r.Percentual__c || 0);
             });
 
-            // TRAVA EM 100% DE ALOCAÇÃO: Se a soma dos percentuais passar de 100%, travamos em 100% da carga horária do período
             const percentualEfetivo = Math.min(percentualTotalAlocacao, 100) / 100;
-            totalAlocado = (diasUteis * cargaDiaria * percentualEfetivo);
+            const totalAlocado = (diasUteis * cargaDiaria * percentualEfetivo);
 
             // 3. Busca Lançamentos (Realizado e Status)
             const qLanc = `SELECT Status__c, Horas__c, HorasExtras__c, HorasBanco__c FROM LancamentoHora__c WHERE Pessoa__c = '${userId}' AND DiaPeriodo__r.Data__c >= ${inicio} AND DiaPeriodo__r.Data__c <= ${fim} AND ${FILTRO_HORAS}`;
             const resLanc = await conn.query(qLanc);
 
-            let totalLanc = 0, totalPend = 0;
+            let totalLanc = 0, totalPend = 0, totalReprovadas = 0;
 
             resLanc.records.forEach(r => {
                 const h = (r.Horas__c || 0) + (r.HorasExtras__c || 0);
                 totalLanc += h;
-                if (['Rascunho', 'Reprovado'].includes(r.Status__c)) totalPend += h;
+                if (r.Status__c === 'Rascunho') totalPend += h;
+                if (['Reprovado serviço', 'Reprovado RH'].includes(r.Status__c)) totalReprovadas += h;
             });
 
             // 4. Saldo Banco Geral (Total)
@@ -481,7 +476,6 @@ exports.getDashboardMetrics = async (req, res) => {
             const resBanco = await conn.query(qBanco);
             const saldoBanco = (resBanco.records[0] && resBanco.records[0].total) ? resBanco.records[0].total : 0;
 
-            // TRAVA EFICIÊNCIA EM 100%: A eficiência/adesão não deve passar de 100%
             let efic = totalAlocado > 0 ? Math.round((totalLanc / totalAlocado) * 100) : (totalLanc > 0 ? 100 : 0);
             if (efic > 100) efic = 100;
 
@@ -489,13 +483,19 @@ exports.getDashboardMetrics = async (req, res) => {
                 totalAlocadas: totalAlocado, 
                 totalLancadas: totalLanc, 
                 eficiencia: efic, 
-                totalPendentes: totalPend,
+                totalPendentes: totalPend + totalReprovadas,
+                totalReprovadas: totalReprovadas,
                 saldoBanco: saldoBanco,
                 statusPeriodo: statusPeriodo,
                 compliance: {
                     total: diasUteis,
                     completed: diasCompletos
-                }
+                },
+                nf: nfRecord ? {
+                    id: nfRecord.Id,
+                    status: nfRecord.Status__c,
+                    motivo: nfRecord.MotivoReprovacao__c
+                } : null
             });
         }
 

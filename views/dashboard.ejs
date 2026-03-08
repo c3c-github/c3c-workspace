@@ -66,6 +66,23 @@
             <!-- STEPPER: MEU CICLO FINANCEIRO -->
             <div class="mb-8 bg-white p-6 rounded-2xl border border-gray-100 shadow-sm relative overflow-hidden">
                 <div class="absolute top-0 left-0 w-1 h-full bg-blue-600"></div>
+                
+                <!-- CARD DE AÇÃO NF (DENTRO DO CICLO) -->
+                <div id="nf-action-card" class="hidden mb-6 p-4 rounded-xl border flex flex-col md:flex-row items-center justify-between gap-4 animate-bounce">
+                    <div class="flex items-center gap-3">
+                        <div id="nf-action-icon-bg" class="p-2 rounded-lg">
+                            <i id="nf-action-icon" data-lucide="info" class="w-5 h-5"></i>
+                        </div>
+                        <div>
+                            <p id="nf-action-title" class="text-sm font-bold text-gray-800"></p>
+                            <p id="nf-action-desc" class="text-xs text-gray-500"></p>
+                        </div>
+                    </div>
+                    <a href="/billing-portal" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold px-4 py-2 rounded-lg shadow-md transition-all whitespace-nowrap">
+                        Acessar Portal de Notas
+                    </a>
+                </div>
+
                 <div class="flex flex-col md:flex-row md:items-center justify-between gap-6">
                     <div>
                         <h2 class="text-sm font-black text-gray-400 uppercase tracking-widest mb-1">Meu Ciclo Financeiro</h2>
@@ -306,7 +323,7 @@
                     document.getElementById('kpi-banco').innerText = data.saldoBanco.toFixed(2);
 
                     // --- STEPPER ---
-                    updateCicloStepper(data.statusPeriodo, data.compliance);
+                    updateCicloStepper(data.statusPeriodo, data.compliance, data.nf, data.totalReprovadas);
 
                     // Cores dinâmicas para Eficiência
                     const elEfic = document.getElementById('kpi-eficiencia');
@@ -319,7 +336,7 @@
                     if(data.saldoBanco < 0) elBanco.className = "text-4xl font-extrabold text-red-500";
                     else elBanco.className = "text-4xl font-extrabold text-teal-500";
 
-                    // Card de Alerta
+                    // Card de Alerta Pendências Horas
                     const actionCard = document.getElementById('action-card');
                     if(data.totalPendentes > 0) {
                         actionCard.classList.remove('hidden');
@@ -328,6 +345,32 @@
                         actionCard.classList.add('hidden');
                     }
 
+                    // Card de Alerta NF
+                    const nfCard = document.getElementById('nf-action-card');
+                    const nfIcon = document.getElementById('nf-action-icon');
+                    const nfIconBg = document.getElementById('nf-action-icon-bg');
+                    const nfTitle = document.getElementById('nf-action-title');
+                    const nfDesc = document.getElementById('nf-action-desc');
+
+                    if (data.nf && data.nf.status === 'Reprovada') {
+                        nfCard.className = "mb-6 p-4 rounded-xl border border-red-100 bg-red-50 flex flex-col md:flex-row items-center justify-between gap-4";
+                        nfIconBg.className = "p-2 rounded-lg bg-red-100 text-red-600";
+                        nfIcon.setAttribute('data-lucide', 'x-circle');
+                        nfTitle.innerText = "Nota Fiscal Reprovada";
+                        nfDesc.innerText = `Motivo: ${data.nf.motivo || 'Ver detalhes no portal'}`;
+                        nfCard.classList.remove('hidden');
+                    } else if (data.statusPeriodo === 'Liberado para Nota Fiscal') {
+                        nfCard.className = "mb-6 p-4 rounded-xl border border-blue-100 bg-blue-50 flex flex-col md:flex-row items-center justify-between gap-4 animate-pulse";
+                        nfIconBg.className = "p-2 rounded-lg bg-blue-100 text-blue-600";
+                        nfIcon.setAttribute('data-lucide', 'upload-cloud');
+                        nfTitle.innerText = "Emita sua Nota Fiscal!";
+                        nfDesc.innerText = "Seu ciclo foi aprovado. Envie sua NF agora para processarmos seu pagamento.";
+                        nfCard.classList.remove('hidden');
+                    } else {
+                        nfCard.classList.add('hidden');
+                    }
+                    lucide.createIcons();
+
                 } else {
                     els.forEach(el => el.innerText = "-");
                 }
@@ -335,18 +378,29 @@
             finally { els.forEach(el => el.classList.remove('animate-pulse')); }
         }
 
-        function updateCicloStepper(status, compliance) {
+        function updateCicloStepper(status, compliance, nf, totalReprovadas = 0) {
             const desc = document.getElementById('ciclo-status-desc');
             const compBadge = document.getElementById('ciclo-compliance-badge');
             const compText = document.getElementById('ciclo-compliance-text');
             
-            // Reset
+            // Reset Total
             for(let i=1; i<=4; i++) {
                 const circle = document.getElementById(`step-${i}-circle`);
+                if (!circle) continue;
+                
                 circle.className = "w-10 h-10 rounded-full border-2 border-gray-200 bg-white flex items-center justify-center transition-all z-10 text-gray-300";
+                
+                // Reset Icon
+                const defaultIcons = { 1: 'edit-3', 2: 'check-square', 3: 'file-text', 4: 'banknote' };
+                circle.innerHTML = `<i data-lucide="${defaultIcons[i]}" class="w-5 h-5"></i>`;
+
                 const title = document.querySelector(`#step-${i} div.mt-2`);
                 if(title) title.className = "mt-2 text-[10px] font-bold text-gray-400 uppercase";
-                if(i<4) document.getElementById(`step-${i}-line`).style.width = "0%";
+                
+                if(i<4) {
+                    const line = document.getElementById(`step-${i}-line`);
+                    if(line) line.style.width = "0%";
+                }
             }
 
             let activeStep = 1;
@@ -354,41 +408,75 @@
 
             if (status === 'Aberto') {
                 activeStep = 1;
-                statusText = "Período aberto. Complete seus lançamentos diários.";
-                compBadge.classList.remove('hidden');
-                compBadge.classList.add('flex');
-                compText.innerText = `${compliance.completed}/${compliance.total} dias úteis preenchidos`;
+                statusText = totalReprovadas > 0 
+                    ? `Atenção: Você possui ${totalReprovadas.toFixed(1)}h reprovadas. Corrija-as no timesheet.`
+                    : "Período aberto. Complete seus lançamentos diários.";
+                
+                if(compBadge) { compBadge.classList.remove('hidden'); compBadge.classList.add('flex'); }
+                if(compText) compText.innerText = `${compliance.completed}/${compliance.total} dias úteis preenchidos`;
             } else if (status === 'Em aprovação do serviço' || status === 'Aguardando Aprovação Líder' || status === 'Aguardando Aprovação RH') {
                 activeStep = 2;
                 statusText = "Lançamentos concluídos! Aguardando aprovação do Líder/RH.";
-                compBadge.classList.add('hidden');
+                if(compBadge) compBadge.classList.add('hidden');
             } else if (status === 'Liberado para Nota Fiscal') {
                 activeStep = 3;
                 statusText = "Tudo aprovado! Já pode emitir e subir sua Nota Fiscal.";
-                compBadge.classList.add('hidden');
+                if(compBadge) compBadge.classList.add('hidden');
             } else if (status === 'Nota em Validação' || status === 'Pronto para Pagamento' || status === 'Pagamento Agendado' || status === 'Finalizado/Pago') {
                 activeStep = 4;
                 statusText = status === 'Finalizado/Pago' ? "Pagamento confirmado! Ciclo concluído com sucesso." : "Nota recebida. Seu pagamento está sendo processado.";
-                compBadge.classList.add('hidden');
+                if(compBadge) compBadge.classList.add('hidden');
             }
 
-            desc.innerText = statusText;
+            if(desc) desc.innerText = statusText;
 
             // Apply styles to steps
             for(let i=1; i<=activeStep; i++) {
                 const circle = document.getElementById(`step-${i}-circle`);
                 const title = document.querySelector(`#step-${i} div.mt-2`);
-                
-                // Se o ciclo está finalizado e estamos na etapa 4, mostramos como concluído (preenchido)
+                if(!circle) continue;
+
                 const isFinalStepCompleted = (i === 4 && status === 'Finalizado/Pago');
 
                 if (i < activeStep || isFinalStepCompleted) {
                     circle.className = "w-10 h-10 rounded-full bg-blue-600 border-2 border-blue-600 flex items-center justify-center transition-all z-10 text-white shadow-sm";
                     if(title) title.className = "mt-2 text-[10px] font-bold text-blue-600 uppercase";
-                    if(i < 4) document.getElementById(`step-${i}-line`).style.width = "100%";
+                    const line = document.getElementById(`step-${i}-line`);
+                    if(i < 4 && line) line.style.width = "100%";
                 } else {
                     circle.className = "w-10 h-10 rounded-full border-2 border-blue-600 bg-white flex items-center justify-center transition-all z-10 text-blue-600 ring-4 ring-blue-50";
                     if(title) title.className = "mt-2 text-[10px] font-bold text-blue-600 uppercase";
+                }
+            }
+
+            // --- CUSTOMIZAÇÕES DE ERRO ---
+
+            // 1. Reprovação de Horas (Step 1)
+            if (totalReprovadas > 0) {
+                const s1Circle = document.getElementById('step-1-circle');
+                const s1Title = document.querySelector('#step-1 div.mt-2');
+                if (s1Circle) {
+                    s1Circle.className = "w-10 h-10 rounded-full bg-red-100 border-2 border-red-500 flex items-center justify-center transition-all z-10 text-red-600 shadow-sm animate-pulse";
+                    s1Circle.innerHTML = `<i data-lucide="alert-circle" class="w-5 h-5"></i>`;
+                    if(s1Title) s1Title.className = "mt-2 text-[10px] font-bold text-red-600 uppercase";
+                }
+            }
+
+            // 2. Customização do Step 3 (Nota Fiscal)
+            if (nf) {
+                const s3Circle = document.getElementById('step-3-circle');
+                const s3Title = document.querySelector('#step-3 div.mt-2');
+
+                if (s3Circle) {
+                    if (nf.status === 'Reprovada') {
+                        s3Circle.className = "w-10 h-10 rounded-full bg-red-100 border-2 border-red-500 flex items-center justify-center transition-all z-10 text-red-600 shadow-sm animate-pulse";
+                        s3Circle.innerHTML = `<i data-lucide="alert-circle" class="w-5 h-5"></i>`;
+                        if(s3Title) s3Title.className = "mt-2 text-[10px] font-bold text-red-600 uppercase";
+                    } else if (nf.status === 'Aprovada' || status === 'Pronto para Pagamento' || status === 'Pagamento Agendado' || status === 'Finalizado/Pago') {
+                        s3Circle.className = "w-10 h-10 rounded-full bg-green-600 border-2 border-green-600 flex items-center justify-center transition-all z-10 text-white shadow-sm";
+                        s3Circle.innerHTML = `<i data-lucide="check" class="w-5 h-5"></i>`;
+                        if(s3Title) s3Title.className = "mt-2 text-[10px] font-bold text-green-600 uppercase";
+                    }
                 }
             }
             lucide.createIcons();
