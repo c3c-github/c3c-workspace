@@ -31,16 +31,41 @@
             <span class="font-medium text-sm">Portal de Notas</span>
         </a>
 
-        <% if (user.grupos && (user.grupos.includes('GESTOR') || user.grupos.includes('DIRETOR'))) { %>
+        <% if (user.grupos && user.grupos.includes('OPERACAO')) { %>
+            <p class="px-6 text-xs font-semibold text-gray-400 uppercase tracking-wider mt-8 mb-2">Operações</p>
+            <a href="/operations" class="nav-item <%= (typeof page !== 'undefined' && page === 'operations') ? 'active-nav' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900' %> flex items-center gap-3 px-6 py-3 transition-all">
+                <i data-lucide="terminal" class="w-5 h-5"></i>
+                <span class="font-medium text-sm">Mesa de Ops</span>
+            </a>
+        <% } %>
+
+        <% if (user.grupos && (user.grupos.includes('GESTOR') || user.grupos.includes('DIRETOR') || user.grupos.includes('GESTAO_SUPORTE') || user.grupos.includes('ADMIN_RH'))) { %>
             <p class="px-6 text-xs font-semibold text-gray-400 uppercase tracking-wider mt-8 mb-2">Gestão</p>
-            <a href="/approvals" class="nav-item <%= (typeof page !== 'undefined' && page === 'approvals') ? 'active-nav' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900' %> flex items-center gap-3 px-6 py-3 transition-all">
-                <i data-lucide="check-square" class="w-5 h-5"></i>
-                <span class="font-medium text-sm">Aprovações</span>
-            </a>
-            <a href="/billing" class="nav-item <%= (typeof page !== 'undefined' && page === 'billing') ? 'active-nav' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900' %> flex items-center gap-3 px-6 py-3 transition-all">
-                <i data-lucide="calculator" class="w-5 h-5"></i>
-                <span class="font-medium text-sm">Medição p/ Faturar</span>
-            </a>
+            
+            <% if (user.grupos.includes('GESTOR') || user.grupos.includes('DIRETOR')) { %>
+                <a href="/approvals" class="nav-item <%= (typeof page !== 'undefined' && page === 'approvals') ? 'active-nav' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900' %> flex items-center gap-3 px-6 py-3 transition-all">
+                    <i data-lucide="check-square" class="w-5 h-5"></i>
+                    <span class="font-medium text-sm">Aprovações</span>
+                </a>
+                <a href="/billing" class="nav-item <%= (typeof page !== 'undefined' && page === 'billing') ? 'active-nav' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900' %> flex items-center gap-3 px-6 py-3 transition-all">
+                    <i data-lucide="calculator" class="w-5 h-5"></i>
+                    <span class="font-medium text-sm">Medição p/ Faturar</span>
+                </a>
+            <% } %>
+
+            <% if (user.grupos.includes('GESTAO_SUPORTE')) { %>
+                <a href="/support-management" class="nav-item <%= (typeof page !== 'undefined' && page === 'support_management') ? 'active-nav' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900' %> flex items-center gap-3 px-6 py-3 transition-all">
+                    <i data-lucide="monitor" class="w-5 h-5"></i>
+                    <span class="font-medium text-sm">Gestão de Suporte</span>
+                </a>
+            <% } %>
+
+            <% if (user.grupos.includes('ADMIN_RH')) { %>
+                <a href="/hr" class="nav-item <%= (typeof page !== 'undefined' && page === 'hr') ? 'active-nav' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900' %> flex items-center gap-3 px-6 py-3 transition-all">
+                    <i data-lucide="users" class="w-5 h-5"></i>
+                    <span class="font-medium text-sm">Gestão de Pessoas</span>
+                </a>
+            <% } %>
         <% } %>
 
         <% if (user.grupos && user.grupos.includes('GESTOR_FINANCEIRO')) { %>

@@ -13,7 +13,12 @@
                 extend: {
                     fontFamily: { sans: ['Montserrat', 'sans-serif'] },
                     colors: { 
-                        c3c: { blue: '#2978FF', bg: '#F8FAFC' } 
+                        c3c: { 
+                            blue: '#2978FF', 
+                            teal: '#1DDDBD', 
+                            gray: '#F2F2F2',
+                            dark: '#000000'
+                        } 
                     }
                 }
             }
@@ -21,105 +26,152 @@
     </script>
     <style>
         body { font-family: 'Montserrat', sans-serif; background-color: #F8FAFC; }
+        .bg-c3c-gradient { background: transparent linear-gradient(118deg, #1DDDBD 0%, #1ED9C0 45%, #2978FF 100%) 0% 0% no-repeat padding-box; }
         .fade-in { animation: fadeIn 0.4s ease-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #E2E8F0; border-radius: 10px; }
     </style>
 </head>
 <body class="h-screen flex overflow-hidden bg-[#F8FAFC]">
 
-    <%- include('partials/sidebar') %>
+    <%- include('partials/sidebar', { page: 'billing_portal' }) %>
 
-    <main class="flex-1 flex flex-col md:ml-64 relative w-full transition-all duration-300">
+    <main class="flex-1 flex flex-col md:ml-64 relative w-full transition-all duration-300 overflow-hidden">
         
-        <header class="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-4 md:px-8 sticky top-0 z-20">
-            <div class="flex items-center gap-4">
+        <!-- HEADER -->
+        <header class="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-4 md:px-8 sticky top-0 z-20 shrink-0">
+            <div class="flex items-center gap-4 text-left">
                 <button onclick="document.getElementById('sidebar').classList.toggle('-translate-x-full')" class="md:hidden p-2 text-gray-600 hover:bg-gray-100 rounded-lg">
-                    <i data-lucide="menu"></i>
+                    <i data-lucide="menu" class="w-6 h-6"></i>
                 </button>
-                <h1 class="text-lg md:text-xl font-bold text-gray-800 flex items-center gap-2">
-                    Portal de Notas <span class="bg-blue-100 text-blue-700 text-xs px-2 py-1 rounded-full border border-blue-200 font-medium">Autoatendimento</span>
-                </h1>
+                <div>
+                    <h1 class="text-lg md:text-xl font-bold text-gray-800 flex items-center gap-2 tracking-tight">Portal de Notas <span class="text-c3c-blue">📄</span></h1>
+                    <p class="text-[10px] text-gray-400 font-bold uppercase tracking-widest hidden sm:block">Gerencie seus faturamentos e Notas Fiscais</p>
+                </div>
             </div>
         </header>
 
-        <div class="flex-1 overflow-y-auto p-4 md:p-8 fade-in">
-            <div class="mb-8">
-                <h2 class="text-2xl font-black text-gray-900">Seus Ciclos de Faturamento</h2>
-                <p class="text-gray-500">Acompanhe a liberação e o envio das suas Notas Fiscais.</p>
+        <!-- CONTEÚDO -->
+        <div class="flex-1 overflow-y-auto p-4 md:p-8 fade-in custom-scrollbar text-left">
+            
+            <div class="mb-10">
+                <h2 class="text-2xl font-black text-gray-800 tracking-tighter uppercase leading-tight">Ciclos de Faturamento</h2>
+                <p class="text-xs font-bold text-gray-400 uppercase tracking-widest mt-1">Acompanhe a liberação e realize o envio das suas Notas Fiscais</p>
             </div>
 
-            <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+            <!-- TABELA -->
+            <div class="bg-white rounded-[32px] shadow-sm border border-gray-100 overflow-hidden">
                 <div class="overflow-x-auto">
-                    <table class="w-full text-left text-sm">
-                        <thead class="bg-gray-50 border-b border-gray-200">
-                            <tr class="text-xs font-bold text-gray-400 uppercase tracking-wider">
-                                <th class="px-6 py-4">Ciclo</th>
-                                <th class="px-6 py-4">Status Ciclo</th>
-                                <th class="px-6 py-4 text-right">Valor do Ciclo</th>
-                                <th class="px-6 py-4 text-center">Status Nota</th>
-                                <th class="px-6 py-4 text-center">Arquivo</th>
-                                <th class="px-6 py-4 text-right">Ações</th>
+                    <table class="w-full text-left">
+                        <thead class="bg-gray-50/50 border-b border-gray-100">
+                            <tr class="text-[10px] font-black text-gray-400 uppercase tracking-widest">
+                                <th class="px-8 py-5">Ciclo / Referência</th>
+                                <th class="px-8 py-5">Status do Ciclo</th>
+                                <th class="px-8 py-5 text-right">Valor Líquido</th>
+                                <th class="px-8 py-5 text-center">Status da Nota</th>
+                                <th class="px-8 py-5 text-center">Arquivo</th>
+                                <th class="px-8 py-5 text-right">Ações</th>
                             </tr>
                         </thead>
-                        <tbody id="period-table-body" class="divide-y divide-gray-100">
-                            <tr><td colspan="6" class="text-center py-10 text-gray-400"><i data-lucide="loader-2" class="w-6 h-6 animate-spin inline mr-2"></i> Carregando seus ciclos...</td></tr>
+                        <tbody id="period-table-body" class="divide-y divide-gray-50">
+                            <tr><td colspan="6" class="text-center py-20 text-gray-300 font-bold uppercase text-[10px] tracking-widest"><i data-lucide="loader-2" class="w-6 h-6 animate-spin inline-block mb-2"></i><br>Carregando seus ciclos...</td></tr>
                         </tbody>
                     </table>
+                </div>
+            </div>
+
+            <!-- INSTRUÇÕES / AJUDA -->
+            <div class="mt-12 bg-blue-50/50 rounded-[32px] p-8 border border-blue-100/50 flex flex-col md:flex-row items-center gap-8">
+                <div class="w-20 h-20 rounded-full overflow-hidden border-4 border-white shadow-lg shrink-0">
+                    <img src="/assets/signatures/assinaturaCapivorce.png" alt="Capivorce" class="w-full h-full object-cover">
+                </div>
+                <div class="text-left">
+                    <h4 class="text-sm font-black text-c3c-blue uppercase tracking-widest mb-2">Dica da Capivorce 💡</h4>
+                    <p class="text-xs font-bold text-gray-500 leading-relaxed max-w-2xl uppercase">
+                        Sua nota fiscal só pode ser enviada quando o ciclo estiver com o status <span class="text-c3c-blue">"Liberado para Nota Fiscal"</span>. 
+                        Nossa IA analisará o arquivo automaticamente para agilizar seu processo!
+                    </p>
                 </div>
             </div>
         </div>
     </main>
 
-    <!-- MODAL UPLOAD -->
-    <div id="modal-upload" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8 transform scale-95 transition-all">
-            <h3 class="text-xl font-bold text-gray-900 mb-2">Enviar Nota Fiscal</h3>
-            <p class="text-sm text-gray-500 mb-6" id="modal-period-name">Ciclo...</p>
+    <!-- MODAL UPLOAD PREMIUM -->
+    <div id="modal-upload" class="fixed inset-0 bg-black/60 backdrop-blur-md z-[60] hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-[40px] shadow-2xl w-full max-w-lg overflow-hidden transform scale-95 transition-all flex flex-col max-h-[90vh]">
             
-            <input type="hidden" id="upload-period-id">
+            <header class="p-8 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
+                <div>
+                    <h3 class="text-2xl font-black text-gray-800 tracking-tighter uppercase leading-tight">Enviar Nota Fiscal</h3>
+                    <p id="modal-period-name" class="text-[10px] font-black text-c3c-blue uppercase tracking-[0.2em] mt-1 italic">Ciclo...</p>
+                </div>
+                <button onclick="closeUploadModal()" class="p-3 text-gray-400 hover:bg-white hover:text-red-500 rounded-full shadow-sm transition-all"><i data-lucide="x"></i></button>
+            </header>
             
-            <div class="space-y-4">
-                <div>
-                    <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Arquivo (PDF, JPG ou PNG)</label>
-                    <input type="file" id="nf-file" accept=".pdf, .jpg, .jpeg, .png" onchange="analyzeFile(this)" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
-                    <div id="analyze-loader" class="hidden mt-2 text-[10px] text-blue-600 font-bold items-center gap-1">
-                        <i data-lucide="sparkles" class="w-3 h-3 animate-pulse"></i> Inteligência Artificial analisando o arquivo...
+            <div class="p-8 overflow-y-auto custom-scrollbar flex-1">
+                <input type="hidden" id="upload-period-id">
+                
+                <div class="space-y-6">
+                    <!-- DROPZONE STYLE FILE INPUT -->
+                    <div class="relative group">
+                        <label class="block text-[10px] font-black text-gray-400 uppercase mb-3 tracking-widest">Arquivo da Nota (PDF ou Imagem)</label>
+                        <div class="relative border-2 border-dashed border-gray-200 rounded-[24px] p-8 text-center hover:border-c3c-blue transition-all bg-gray-50/50 group-hover:bg-white">
+                            <input type="file" id="nf-file" accept=".pdf, .jpg, .jpeg, .png" onchange="analyzeFile(this)" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10">
+                            <div id="file-placeholder" class="space-y-2">
+                                <div class="w-12 h-12 rounded-2xl bg-blue-100 text-c3c-blue flex items-center justify-center mx-auto mb-4"><i data-lucide="upload-cloud"></i></div>
+                                <p class="text-xs font-black text-gray-800 uppercase tracking-tighter">Clique para selecionar</p>
+                                <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">PDF, JPG ou PNG até 10MB</p>
+                            </div>
+                            <div id="analyze-loader" class="hidden absolute inset-0 bg-white/90 backdrop-blur-sm rounded-[24px] flex flex-col items-center justify-center z-20">
+                                <div class="w-12 h-12 rounded-full border-4 border-blue-100 border-t-c3c-blue animate-spin mb-4"></div>
+                                <p class="text-xs font-black text-c3c-blue uppercase tracking-widest animate-pulse">Inteligência Artificial analisando...</p>
+                            </div>
+                        </div>
                     </div>
-                </div>
-                <div class="grid grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Número da Nota</label>
-                        <input type="text" id="nf-numero" disabled placeholder="..." oninput="validateForm()" class="w-full px-4 py-2 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none disabled:bg-gray-50 disabled:text-gray-400">
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="text-left">
+                            <label class="block text-[10px] font-black text-gray-400 uppercase mb-2 tracking-widest px-2">Número da Nota</label>
+                            <input type="text" id="nf-numero" disabled placeholder="..." oninput="validateForm()" class="w-full bg-gray-50 border-2 border-gray-100 rounded-2xl px-5 py-3 text-sm font-bold focus:ring-4 focus:ring-blue-100 focus:border-c3c-blue outline-none transition-all disabled:text-gray-400">
+                        </div>
+                        <div class="text-left">
+                            <label class="block text-[10px] font-black text-gray-400 uppercase mb-2 tracking-widest px-2">Data Emissão</label>
+                            <input type="date" id="nf-data-emissao" disabled oninput="validateForm()" class="w-full bg-gray-50 border-2 border-gray-100 rounded-2xl px-5 py-3 text-sm font-bold focus:ring-4 focus:ring-blue-100 focus:border-c3c-blue outline-none transition-all disabled:text-gray-400">
+                        </div>
                     </div>
-                    <div>
-                        <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Data de Emissão</label>
-                        <input type="date" id="nf-data-emissao" disabled oninput="validateForm()" class="w-full px-4 py-2 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none disabled:bg-gray-50 disabled:text-gray-400">
+
+                    <div class="text-left">
+                        <label class="block text-[10px] font-black text-gray-400 uppercase mb-2 tracking-widest px-2">Sua Empresa (Emitente)</label>
+                        <input type="text" id="nf-emitente" disabled placeholder="..." oninput="validateForm()" class="w-full bg-gray-50 border-2 border-gray-100 rounded-2xl px-5 py-3 text-sm font-bold focus:ring-4 focus:ring-blue-100 focus:border-c3c-blue outline-none transition-all disabled:text-gray-400">
                     </div>
-                </div>
-                <div>
-                    <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Nome do Emitente (Sua Empresa)</label>
-                    <input type="text" id="nf-emitente" disabled placeholder="..." oninput="validateForm()" class="w-full px-4 py-2 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none disabled:bg-gray-50 disabled:text-gray-400">
-                </div>
-                <div class="grid grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-xs font-bold text-gray-400 uppercase mb-1">CNPJ Emissor</label>
-                        <input type="text" id="cnpj-emissor" disabled placeholder="..." oninput="validateForm()" class="w-full px-4 py-2 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none disabled:bg-gray-50 disabled:text-gray-400">
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="text-left">
+                            <label class="block text-[10px] font-black text-gray-400 uppercase mb-2 tracking-widest px-2">CNPJ Emitente</label>
+                            <input type="text" id="cnpj-emissor" disabled placeholder="..." oninput="validateForm()" class="w-full bg-gray-50 border-2 border-gray-100 rounded-2xl px-5 py-3 text-sm font-bold focus:ring-4 focus:ring-blue-100 focus:border-c3c-blue outline-none transition-all disabled:text-gray-400">
+                        </div>
+                        <div class="text-left">
+                            <label class="block text-[10px] font-black text-gray-400 uppercase mb-2 tracking-widest px-2">CNPJ Receptor</label>
+                            <input type="text" id="cnpj-receptor" disabled placeholder="..." oninput="validateForm()" class="w-full bg-gray-50 border-2 border-gray-100 rounded-2xl px-5 py-3 text-sm font-bold focus:ring-4 focus:ring-blue-100 focus:border-c3c-blue outline-none transition-all disabled:text-gray-400">
+                        </div>
                     </div>
-                    <div>
-                        <label class="block text-xs font-bold text-gray-400 uppercase mb-1">CNPJ Receptor</label>
-                        <input type="text" id="cnpj-receptor" disabled placeholder="..." oninput="validateForm()" class="w-full px-4 py-2 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none disabled:bg-gray-50 disabled:text-gray-400">
+
+                    <div class="text-left">
+                        <label class="block text-[10px] font-black text-gray-400 uppercase mb-2 tracking-widest px-2">Valor da Nota</label>
+                        <div class="relative">
+                            <span class="absolute left-5 top-1/2 -translate-y-1/2 text-sm font-black text-c3c-blue">R$</span>
+                            <input type="number" id="nf-valor" step="0.01" disabled oninput="validateForm()" class="w-full bg-blue-50 border-2 border-blue-100 rounded-2xl px-12 py-4 text-xl font-black text-c3c-blue focus:ring-4 focus:ring-blue-100 outline-none transition-all disabled:opacity-80">
+                        </div>
                     </div>
-                </div>
-                <div>
-                    <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Valor da Nota</label>
-                    <input type="number" id="nf-valor" step="0.01" disabled oninput="validateForm()" class="w-full px-4 py-2 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none font-bold text-blue-600 disabled:bg-gray-50 disabled:text-blue-200">
                 </div>
             </div>
 
-            <div class="flex justify-end gap-3 mt-8">
-                <button onclick="closeUploadModal()" class="px-6 py-2 text-gray-500 font-bold">Cancelar</button>
-                <button id="btn-process-upload" onclick="processUpload()" disabled class="px-8 py-2 bg-blue-600 text-white font-bold rounded-xl shadow-lg hover:bg-blue-700 transition-all disabled:bg-gray-200 disabled:text-gray-400 disabled:shadow-none">Enviar Nota</button>
-            </div>
+            <footer class="p-8 border-t border-gray-100 bg-gray-50/50 flex justify-end gap-4 shrink-0">
+                <button onclick="closeUploadModal()" class="px-6 py-3 text-gray-400 font-black uppercase text-[10px] hover:text-gray-600 transition-colors tracking-widest">Cancelar</button>
+                <button id="btn-process-upload" onclick="processUpload()" disabled class="px-10 py-4 bg-c3c-gradient text-white font-black uppercase text-xs tracking-widest rounded-2xl shadow-xl hover:opacity-90 active:scale-95 transition-all disabled:bg-gray-200 disabled:text-gray-400 disabled:shadow-none disabled:bg-none">Enviar Nota Fiscal</button>
+            </footer>
         </div>
     </div>
 
@@ -141,68 +193,69 @@
             tbody.innerHTML = '';
 
             if (periods.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="6" class="text-center py-10 text-gray-400 italic">Nenhum ciclo liberado para nota fiscal no momento.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="6" class="text-center py-20 text-gray-300 font-bold uppercase text-[10px] tracking-widest italic">Nenhum ciclo pendente no momento.</td></tr>';
                 return;
             }
 
             periods.forEach(p => {
                 const vHoras = (p.valorHoras || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
                 
-                let nfStatusBadge = '-';
+                let nfStatusBadge = '<span class="text-gray-300">-</span>';
                 if(p.hasNF) {
-                    const colors = { 'Rascunho': 'bg-gray-100 text-gray-600', 'Em Revisão': 'bg-blue-50 text-blue-600', 'Aprovada': 'bg-green-50 text-green-600', 'Reprovada': 'bg-red-50 text-red-600' };
-                    nfStatusBadge = `<span class="px-2 py-1 rounded-md text-[10px] font-bold uppercase border ${colors[p.nfStatus] || 'bg-gray-50'}" title="${p.nfMotivo || ''}">${p.nfStatus}</span>`;
+                    const colors = { 
+                        'Rascunho': 'bg-gray-50 text-gray-400 border-gray-100', 
+                        'Em Revisão': 'bg-blue-50 text-c3c-blue border-blue-100', 
+                        'Aprovada': 'bg-teal-50 text-teal-600 border-teal-100', 
+                        'Reprovada': 'bg-red-50 text-red-600 border-red-100' 
+                    };
+                    nfStatusBadge = `<span class="px-3 py-1 rounded-full text-[9px] font-black uppercase border ${colors[p.nfStatus] || 'bg-gray-50'}" title="${p.nfMotivo || ''}">${p.nfStatus}</span>`;
                 }
 
                 let actions = '';
                 if (p.statusPeriodo === 'Liberado para Nota Fiscal' || p.nfStatus === 'Reprovada') {
-                    actions = `<button onclick="openUploadModal('${p.id}', '${p.name}', ${p.valorHoras})" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-1.5 rounded-lg text-xs font-bold shadow-sm flex items-center gap-1"><i data-lucide="upload-cloud" class="w-3.5 h-3.5"></i> Enviar Nota</button>`;
+                    actions = `<button onclick="openUploadModal('${p.id}', '${p.name}', ${p.valorHoras})" class="bg-c3c-gradient hover:opacity-90 text-white px-5 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-blue-100 flex items-center gap-2 transition-all active:scale-95"><i data-lucide="upload-cloud" class="w-3.5 h-3.5"></i> Enviar Nota</button>`;
                 } else if (p.hasNF) {
-                    actions = `<span class="text-xs text-gray-400 flex items-center justify-end gap-1"><i data-lucide="clock" class="w-3.5 h-3.5"></i> Em processamento</span>`;
+                    actions = `<div class="flex items-center justify-end gap-2 text-[10px] font-black text-gray-400 uppercase tracking-widest"><i data-lucide="clock" class="w-3.5 h-3.5 text-c3c-blue animate-pulse"></i> Em validação</div>`;
                 }
 
-                const nfFile = (p.hasNF && p.nfDocumentoId) ? `<div class="flex justify-center"><a href="/api/billing/download/${p.nfDocumentoId}"><i data-lucide="download" class="w-5 h-5 text-blue-500 cursor-pointer" title="Baixar nota"></i></a></div>` : '-';
+                const nfFile = (p.hasNF && p.nfDocumentoId) ? `<div class="flex justify-center"><a href="/api/billing/download/${p.nfDocumentoId}" class="p-2 hover:bg-blue-50 rounded-lg transition-colors text-c3c-blue"><i data-lucide="download" class="w-5 h-5"></i></a></div>` : '<span class="text-gray-300">-</span>';
 
-                const motivoHTML = p.nfStatus === 'Reprovada' && p.nfMotivo ? `<p class="text-[10px] text-red-500 italic mt-1 font-medium">Motivo: ${p.nfMotivo}</p>` : '';
+                const motivoHTML = p.nfStatus === 'Reprovada' && p.nfMotivo ? `<div class="flex items-start gap-1 mt-2 text-red-500 bg-red-50 p-2 rounded-lg border border-red-100"><i data-lucide="alert-circle" class="w-3 h-3 shrink-0 mt-0.5"></i><p class="text-[9px] font-bold uppercase tracking-tight leading-tight">${p.nfMotivo}</p></div>` : '';
 
                 tbody.innerHTML += `
-                    <tr class="hover:bg-gray-50/50 transition-colors">
-                        <td class="px-6 py-4">
-                            <p class="font-bold text-gray-900">${p.name}</p>
-                            <p class="text-[10px] text-gray-400">Ref: ${p.inicio} até ${p.fim}</p>
+                    <tr class="hover:bg-gray-50/50 transition-colors group">
+                        <td class="px-8 py-6">
+                            <p class="font-black text-gray-800 uppercase text-xs tracking-tighter">${p.name}</p>
+                            <p class="text-[9px] font-bold text-gray-400 uppercase tracking-widest mt-1">Ref: ${p.inicio} — ${p.fim}</p>
                             ${motivoHTML}
                         </td>
-                        <td class="px-6 py-4">
-                            <span class="text-xs font-medium text-gray-600">${p.statusPeriodo}</span>
+                        <td class="px-8 py-6">
+                            <span class="text-[10px] font-black text-gray-500 uppercase tracking-widest">${p.statusPeriodo}</span>
                         </td>
-                        <td class="px-6 py-4 text-right font-bold text-gray-900 text-sm">${vHoras}</td>
-                        <td class="px-6 py-4 text-center">${nfStatusBadge}</td>
-                        <td class="px-6 py-4 text-center">${nfFile}</td>
-                        <td class="px-6 py-4 text-right">${actions}</td>
+                        <td class="px-8 py-6 text-right font-black text-gray-800 text-sm tracking-tighter">${vHoras}</td>
+                        <td class="px-8 py-6 text-center">${nfStatusBadge}</td>
+                        <td class="px-8 py-6 text-center">${nfFile}</td>
+                        <td class="px-8 py-6 text-right">${actions}</td>
                     </tr>
                 `;
             });
             lucide.createIcons();
         }
 
-                function openUploadModal(id, name, val) {
+        function openUploadModal(id, name, val) {
             document.getElementById('upload-period-id').value = id;
             document.getElementById('modal-period-name').innerText = name;
             
-            // Limpa campos anteriores, exceto o de arquivo
             const fields = ['nf-numero', 'nf-data-emissao', 'nf-emitente', 'cnpj-emissor', 'cnpj-receptor'];
             fields.forEach(f => {
                 const el = document.getElementById(f);
-                el.value = '';
-                el.disabled = true;
-                el.classList.remove('ring-2', 'ring-green-100', 'border-green-200');
+                el.value = ''; el.disabled = true;
+                el.classList.remove('border-teal-500', 'bg-teal-50/30');
             });
 
-            // O valor da nota começa com o valor previsto do período e desabilitado
             const vField = document.getElementById('nf-valor');
-            vField.value = val;
-            vField.disabled = true;
-            vField.classList.remove('ring-2', 'ring-green-100', 'border-green-200');
+            vField.value = val; vField.disabled = true;
+            vField.classList.remove('border-teal-500', 'bg-teal-50/30');
 
             document.getElementById('nf-file').value = '';
             document.getElementById('analyze-loader').classList.add('hidden');
@@ -213,8 +266,8 @@
         }
 
         function closeUploadModal() {
-            document.getElementById('modal-upload').classList.add('hidden');
             document.getElementById('modal-upload').querySelector('div').classList.add('scale-95');
+            setTimeout(() => document.getElementById('modal-upload').classList.add('hidden'), 200);
         }
 
         function validateForm() {
@@ -225,7 +278,6 @@
             const cnpjR = document.getElementById('cnpj-receptor').value;
             const valor = document.getElementById('nf-valor').value;
             const file = document.getElementById('nf-file').files[0];
-
             const isValid = numero && data && emitente && cnpjE && cnpjR && valor && parseFloat(valor) > 0 && file;
             document.getElementById('btn-process-upload').disabled = !isValid;
         }
@@ -234,124 +286,58 @@
 
         async function analyzeFile(input) {
             if (!input.files[0]) return;
-            
             const loader = document.getElementById('analyze-loader');
             loader.classList.remove('hidden');
-            loader.classList.add('flex');
             isManualFill = false;
-
             const formData = new FormData();
             formData.append('file', input.files[0]);
-
             try {
-                const res = await fetch('/api/billing/analyze', {
-                    method: 'POST',
-                    body: formData
-                });
+                const res = await fetch('/api/billing/analyze', { method: 'POST', body: formData });
                 const result = await res.json();
-
                 if (result.success && result.data) {
                     const d = result.data;
-                    const mapping = {
-                        'nf-numero': d.numeroNota,
-                        'nf-data-emissao': d.dataEmissao,
-                        'nf-emitente': d.nomeEmitente,
-                        'cnpj-emissor': d.cnpjEmissor,
-                        'cnpj-receptor': d.cnpjReceptor,
-                        'nf-valor': d.valorTotal
-                    };
-
+                    const mapping = { 'nf-numero': d.numeroNota, 'nf-data-emissao': d.dataEmissao, 'nf-emitente': d.nomeEmitente, 'cnpj-emissor': d.cnpjEmissor, 'cnpj-receptor': d.cnpjReceptor, 'nf-valor': d.valorTotal };
                     Object.keys(mapping).forEach(id => {
                         const el = document.getElementById(id);
                         let val = mapping[id];
-                        
-                        // Normaliza valores inválidos (incluindo 0 para o campo de valor)
-                        const isInvalid = val === null || 
-                                         val === undefined || 
-                                         (typeof val === 'string' && (val.toLowerCase() === 'n/a' || val.toLowerCase() === 'null' || val.trim() === '')) ||
-                                         (id === 'nf-valor' && (parseFloat(val) <= 0 || isNaN(parseFloat(val))));
-
+                        const isInvalid = !val || (typeof val === 'string' && (val.toLowerCase() === 'n/a' || val.trim() === '')) || (id === 'nf-valor' && (parseFloat(val) <= 0 || isNaN(parseFloat(val))));
                         if (!isInvalid) {
-                            el.value = val;
-                            el.disabled = true;
-                            el.classList.add('ring-2', 'ring-green-100', 'border-green-200');
-                            setTimeout(() => el.classList.remove('ring-2', 'ring-green-100', 'border-green-200'), 2000);
+                            el.value = val; el.disabled = true;
+                            el.classList.add('border-teal-500', 'bg-teal-50/30');
                         } else {
-                            // Se for o campo de valor e a IA falhou, mantemos o valor previsto mas habilitamos a edição
                             if (id !== 'nf-valor') el.value = '';
-                            el.disabled = false;
-                            isManualFill = true; 
-                            el.placeholder = "Não identificado, preencha manualmente";
+                            el.disabled = false; isManualFill = true; 
+                            el.placeholder = "Preencha manualmente";
                         }
                     });
-                } else {
-                    throw new Error("Serviço de IA retornou erro.");
-                }
+                } else { throw new Error("IA falhou"); }
             } catch (e) {
-                console.error("Erro na análise via IA:", e);
                 isManualFill = true;
-                const fields = ['nf-numero', 'nf-data-emissao', 'nf-emitente', 'cnpj-emissor', 'cnpj-receptor', 'nf-valor'];
-                fields.forEach(f => {
+                ['nf-numero', 'nf-data-emissao', 'nf-emitente', 'cnpj-emissor', 'cnpj-receptor', 'nf-valor'].forEach(f => {
                     const el = document.getElementById(f);
-                    el.disabled = false;
-                    el.placeholder = "Erro na IA, preencha manualmente";
+                    el.disabled = false; el.placeholder = "Preencha manualmente";
                 });
-                alert("Não foi possível analisar o arquivo automaticamente. Por favor, preencha os campos manualmente.");
-            } finally {
-                loader.classList.add('hidden');
-                loader.classList.remove('flex');
-                validateForm();
-            }
+            } finally { loader.classList.add('hidden'); validateForm(); }
         }
 
         async function processUpload() {
-            const periodId = document.getElementById('upload-period-id').value;
-            const fileInput = document.getElementById('nf-file');
-            const valor = document.getElementById('nf-valor').value;
-            const cnpjE = document.getElementById('cnpj-emissor').value;
-            const cnpjR = document.getElementById('cnpj-receptor').value;
-            const numero = document.getElementById('nf-numero').value;
-            const dataEmissao = document.getElementById('nf-data-emissao').value;
-            const emitente = document.getElementById('nf-emitente').value;
-
-            const formData = new FormData();
-            formData.append('file', fileInput.files[0]);
-            formData.append('periodId', periodId);
-            formData.append('valor', valor);
-            formData.append('cnpjEmissor', cnpjE);
-            formData.append('cnpjReceptor', cnpjR);
-            formData.append('numeroNota', numero);
-            formData.append('dataEmissao', dataEmissao);
-            formData.append('nomeEmitente', emitente);
-            formData.append('preenchimento', isManualFill ? 'Manual' : 'Automático');
-
             const btn = document.getElementById('btn-process-upload');
-            const oldText = btn.innerText;
-            btn.innerText = 'Enviando...';
-            btn.disabled = true;
-
+            const oldText = btn.innerText; btn.innerText = 'Enviando...'; btn.disabled = true;
             try {
-                const res = await fetch('/api/billing/upload', {
-                    method: 'POST',
-                    body: formData
-                });
+                const formData = new FormData();
+                formData.append('file', document.getElementById('nf-file').files[0]);
+                formData.append('periodId', document.getElementById('upload-period-id').value);
+                formData.append('valor', document.getElementById('nf-valor').value);
+                formData.append('cnpjEmissor', document.getElementById('cnpj-emissor').value);
+                formData.append('cnpjReceptor', document.getElementById('cnpj-receptor').value);
+                formData.append('numeroNota', document.getElementById('nf-numero').value);
+                formData.append('dataEmissao', document.getElementById('nf-data-emissao').value);
+                formData.append('nomeEmitente', document.getElementById('nf-emitente').value);
+                formData.append('preenchimento', isManualFill ? 'Manual' : 'Automático');
+                const res = await fetch('/api/billing/upload', { method: 'POST', body: formData });
                 const result = await res.json();
-                
-                if (result.success) {
-                    alert(result.message);
-                    closeUploadModal();
-                    loadPeriods(); 
-                } else {
-                    alert('Erro: ' + result.error);
-                }
-            } catch(e) { 
-                console.error(e); 
-                alert('Erro ao processar upload.');
-            } finally {
-                btn.innerText = oldText;
-                btn.disabled = false;
-                validateForm();
-            }
+                if (result.success) { closeUploadModal(); loadPeriods(); } else { alert('Erro: ' + result.error); }
+            } catch(e) { console.error(e); } finally { btn.innerText = oldText; btn.disabled = false; validateForm(); }
         }
     </script>
 </body>
