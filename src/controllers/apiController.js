@@ -75,18 +75,29 @@ exports.getPeriods = async (req, res) => {
                 ORDER BY DataInicio__c DESC 
                 LIMIT 1000
             `;
-            const result = await conn.query(query);
             
+            // Busca o ciclo padrão sugerido (o mais antigo com pendência)
+            const qDefault = `SELECT DataInicio__c, DataFim__c FROM Periodo__c WHERE Status__c != 'Finalizado/Pago' ORDER BY DataInicio__c ASC LIMIT 1`;
+            
+            const [result, resDefault] = await Promise.all([
+                conn.query(query),
+                conn.query(qDefault)
+            ]);
+            
+            const suggestedDefault = resDefault.records[0] ? `${resDefault.records[0].DataInicio__c}_${resDefault.records[0].DataFim__c}` : null;
+
             records = result.records.map(p => {
                 const start = new Date(p.DataInicio__c + 'T12:00:00');
                 const monthName = start.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
                 const name = monthName.charAt(0).toUpperCase() + monthName.slice(1);
+                const id = `${p.DataInicio__c}_${p.DataFim__c}`;
                 
                 return {
-                    Id: `${p.DataInicio__c}_${p.DataFim__c}`,
+                    Id: id,
                     Name: name,
                     DataInicio__c: p.DataInicio__c,
-                    DataFim__c: p.DataFim__c
+                    DataFim__c: p.DataFim__c,
+                    isSuggestedDefault: (id === suggestedDefault)
                 };
             });
         }

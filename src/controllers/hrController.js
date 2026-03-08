@@ -22,6 +22,7 @@ exports.getHrEmployees = async (req, res) => {
         const soqlPeriodos = `
             SELECT Id, Name, Status__c, ContratoPessoa__r.Pessoa__c, ContratoPessoa__r.Pessoa__r.Name, 
                    ContratoPessoa__r.Cargo__c, QuantidadeDiasUteis__c, ContratoPessoa__r.Hora__c,
+                   ValorTotalHoras__c, ValorTotalBeneficios__c, ValorTotalPeriodo__c, ValorHora__c, TotalHoras__c,
                    (SELECT Id FROM DiasPeriodo__r WHERE Tipo__c = 'Útil' AND DiaCompleto__c = false)
             FROM Periodo__c
             ${wherePeriodo}
@@ -70,7 +71,12 @@ exports.getHrEmployees = async (req, res) => {
                 contract: contractHours,
                 statusPeriodo: per.Status__c,
                 incompleteDays: incompleteDays,
-                hasLogsPendingRH: data ? data.pendingRH > 0 : false
+                hasLogsPendingRH: data ? data.pendingRH > 0 : false,
+                valorHora: per.ValorHora__c || 0,
+                totalHorasFinanceiro: per.TotalHoras__c || 0,
+                valorTotalHoras: per.ValorTotalHoras__c || 0,
+                valorTotalBeneficios: per.ValorTotalBeneficios__c || 0,
+                valorTotalPeriodo: per.ValorTotalPeriodo__c || 0
             };
         });
 
@@ -78,83 +84,6 @@ exports.getHrEmployees = async (req, res) => {
         const resFunnel = await conn.query(funnelQuery);
 
         res.json({ funnel: resFunnel.records, data: tableData });
-    } catch (e) { res.status(500).json({ error: e.message }); }
-};
-
-exports.advancePeriodStatus = async (req, res) => {
-    try {
-        const { periodIds } = req.body;
-        const conn = await getSfConnection();
-        const periods = await conn.query(`SELECT Id, Status__c FROM Periodo__c WHERE Id IN ('${periodIds.join("','")}')`);
-        const periodUpdates = [];
-        const logUpdates = [];
-
-        for (const p of periods.records) {
-            // VALIDAÇÃO: Não permite avançar se houver lançamentos reprovados
-            const rejectedLogs = await conn.query(`SELECT Id FROM LancamentoHora__c WHERE Periodo__c = '${p.Id}' AND (Status__c = 'Reprovado serviço' OR Status__c = 'Reprovado RH') LIMIT 1`);
-            if (rejectedLogs.totalSize > 0) {
-                return res.status(400).json({ success: false, error: `O período de um ou mais colaboradores possui lançamentos reprovados e não pode avançar.` });
-            }
-
-            let nextStatus = '';
-            let nextLogStatus = '';
-            if (p.Status__c === 'Aberto') {
-                nextStatus = 'Aguardando Aprovação Líder';
-                nextLogStatus = 'Em aprovação do serviço';
-            } else if (p.Status__c === 'Aguardando Aprovação Líder') {
-                nextStatus = 'Aguardando Aprovação RH';
-                nextLogStatus = 'Em aprovação do RH';
-            } else if (p.Status__c === 'Aguardando Aprovação RH') {
-                nextStatus = 'Liberado para Nota Fiscal';
-                nextLogStatus = 'Aprovado';
-            }
-
-            if (nextStatus) {
-                periodUpdates.push({ Id: p.Id, Status__c: nextStatus });
-                const logsRes = await conn.query(`SELECT Id FROM LancamentoHora__c WHERE Periodo__c = '${p.Id}' AND Status__c != '${nextLogStatus}'`);
-                logsRes.records.forEach(l => logUpdates.push({ Id: l.Id, Status__c: nextLogStatus }));
-            }
-        }
-
-        if (periodUpdates.length > 0) await conn.sobject('Periodo__c').update(periodUpdates);
-        if (logUpdates.length > 0) {
-            for (let i = 0; i < logUpdates.length; i += 200) {
-                await conn.sobject('LancamentoHora__c').update(logUpdates.slice(i, i + 200));
-            }
-        }
-        res.json({ success: true });
-    } catch (e) { res.status(500).json({ error: e.message }); }
-};
-
-exports.regressPeriodStatus = async (req, res) => {
-    try {
-        const { periodIds } = req.body;
-        const conn = await getSfConnection();
-        const periods = await conn.query(`SELECT Id, Status__c FROM Periodo__c WHERE Id IN ('${periodIds.join("','")}')`);
-        const periodUpdates = [];
-        const logUpdates = [];
-
-        for (const p of periods.records) {
-            let prevStatus = '';
-            let prevLogStatus = '';
-            if (p.Status__c === 'Aguardando Aprovação Líder') { prevStatus = 'Aberto'; prevLogStatus = 'Rascunho'; }
-            else if (p.Status__c === 'Aguardando Aprovação RH') { prevStatus = 'Aguardando Aprovação Líder'; prevLogStatus = 'Em aprovação do serviço'; }
-            else if (p.Status__c === 'Liberado para Nota Fiscal') { prevStatus = 'Aguardando Aprovação RH'; prevLogStatus = 'Em aprovação do RH'; }
-
-            if (prevStatus) {
-                periodUpdates.push({ Id: p.Id, Status__c: prevStatus });
-                const logs = await conn.query(`SELECT Id FROM LancamentoHora__c WHERE Periodo__c = '${p.Id}' AND Status__c != '${prevLogStatus}'`);
-                logs.records.forEach(l => logUpdates.push({ Id: l.Id, Status__c: prevLogStatus }));
-            }
-        }
-
-        if (periodUpdates.length > 0) await conn.sobject('Periodo__c').update(periodUpdates);
-        if (logUpdates.length > 0) {
-            for (let i = 0; i < logUpdates.length; i += 200) {
-                await conn.sobject('LancamentoHora__c').update(logUpdates.slice(i, i + 200));
-            }
-        }
-        res.json({ success: true });
     } catch (e) { res.status(500).json({ error: e.message }); }
 };
 
@@ -201,11 +130,17 @@ exports.handleHrAction = async (req, res) => {
         let affectedPeriodIds = new Set();
 
         if (entryIds && Array.isArray(entryIds) && entryIds.length > 0) {
-            // AÇÃO EM LOGS ESPECÍFICOS
-            updates = entryIds.map(id => ({ Id: id, Status__c: novoStatus, MotivoReprovacao__c: action === 'reject' ? motivo : null }));
-            // Busca os períodos destes logs (usando ambos os caminhos por segurança)
-            const logsInfo = await conn.query(`SELECT Periodo__c, DiaPeriodo__r.Periodo__c FROM LancamentoHora__c WHERE Id IN ('${entryIds.join("','")}')`);
-            logsInfo.records.forEach(r => { 
+            // AÇÃO EM LOGS ESPECÍFICOS - Valida se ainda estão pendentes de RH
+            const idsList = entryIds.map(id => `'${id}'`).join(',');
+            const logsCheck = await conn.query(`SELECT Id, Periodo__c, DiaPeriodo__r.Periodo__c FROM LancamentoHora__c WHERE Id IN (${idsList}) AND Status__c = 'Em aprovação do RH'`);
+            
+            updates = logsCheck.records.map(r => ({ 
+                Id: r.Id, 
+                Status__c: novoStatus, 
+                MotivoReprovacao__c: action === 'reject' ? motivo : null 
+            }));
+
+            logsCheck.records.forEach(r => { 
                 const pId = r.Periodo__c || r.DiaPeriodo__r?.Periodo__c;
                 if(pId) affectedPeriodIds.add(pId); 
             });
@@ -222,22 +157,34 @@ exports.handleHrAction = async (req, res) => {
 
         if (updates.length > 0) {
             await conn.sobject('LancamentoHora__c').update(updates);
-            
-            // LOGICA DE EVOLUÇÃO / RETROCESSO DO PERÍODO
-            if (action === 'reject' && affectedPeriodIds.size > 0) {
-                // REABRE SE REPROVAR
-                const periodUpdates = Array.from(affectedPeriodIds).map(id => ({ Id: id, Status__c: 'Aberto' }));
-                await conn.sobject('Periodo__c').update(periodUpdates);
-            } else if (action === 'approve' && affectedPeriodIds.size > 0) {
-                // VERIFICA SE PODE LIBERAR P/ NF SE APROVAR
-                for (const periodId of affectedPeriodIds) {
-                    const checkPending = await conn.query(`SELECT Id FROM LancamentoHora__c WHERE Periodo__c = '${periodId}' AND Status__c != 'Aprovado' LIMIT 1`);
-                    if (checkPending.totalSize === 0) {
-                        await conn.sobject('Periodo__c').update({ Id: periodId, Status__c: 'Liberado para Nota Fiscal' });
+
+            // --- LOGICA DE TRANSIÇÃO DO STATUS DO PERÍODO ---
+            if (affectedPeriodIds.size > 0) {
+                if (action === 'reject') {
+                    // REPROVAÇÃO: Sempre volta o período para 'Aberto'
+                    const periodUpdates = Array.from(affectedPeriodIds).map(id => ({ Id: id, Status__c: 'Aberto' }));
+                    await conn.sobject('Periodo__c').update(periodUpdates);
+                } else {
+                    // APROVAÇÃO: Verifica se o período PODE avançar para 'Liberado para Nota Fiscal'
+                    for (const pId of affectedPeriodIds) {
+                        const pendingQuery = `
+                            SELECT COUNT(Id) total 
+                            FROM LancamentoHora__c 
+                            WHERE Periodo__c = '${pId}' 
+                            AND Status__c != 'Aprovado'
+                        `;
+                        const pendingRes = await conn.query(pendingQuery);
+                        const totalPending = parseInt(pendingRes.records[0].total || pendingRes.records[0].expr0 || 0);
+
+                        // Se TUDO do período está aprovado (independente de serviço), ele avança
+                        if (totalPending === 0) {
+                            await conn.sobject('Periodo__c').update({ Id: pId, Status__c: 'Liberado para Nota Fiscal' });
+                        }
                     }
                 }
             }
-        } else if (action === 'reject' && personId !== 'MASS') {
+        }
+ else if (action === 'reject' && personId !== 'MASS') {
             // FALLBACK: Se não encontrou logs pendentes mas o RH clicou em reprovar na linha,
             // força a reabertura do período atual daquela pessoa.
             const periodRes = await conn.query(`SELECT Id FROM Periodo__c WHERE ContratoPessoa__r.Pessoa__c = '${personId}' AND DataInicio__c = ${inicio} AND DataFim__c = ${fim} LIMIT 1`);
