@@ -77,8 +77,23 @@ exports.getLimits = async (req, res) => {
         if (!date) return res.status(400).json({ error: 'Data obrigatória.' });
         const conn = await getSfConnection();
         const stats = await calculateDailyStats(conn, userId, date);
-        // isLocked agora é sempre false para NOVOS lançamentos (apenas o período importa)
-        res.json({ success: true, exists: stats.exists, limit: stats.limiteDia, usedNormal: stats.usedNormal, usedExtra: stats.usedExtra, remainingNormal: stats.saldoNormalDia, isLocked: false });
+        
+        // Verifica se o período está Aberto
+        const periodQuery = `SELECT Status__c FROM Periodo__c WHERE Id = '${stats.periodoId}' LIMIT 1`;
+        const periodRes = await conn.query(periodQuery);
+        const periodStatus = periodRes.records[0]?.Status__c;
+        const isLocked = periodStatus && periodStatus !== 'Aberto';
+
+        res.json({ 
+            success: true, 
+            exists: stats.exists, 
+            limit: stats.limiteDia, 
+            usedNormal: stats.usedNormal, 
+            usedExtra: stats.usedExtra, 
+            remainingNormal: stats.saldoNormalDia, 
+            isLocked: isLocked,
+            periodStatus: periodStatus
+        });
     } catch (err) { res.status(500).json({ success: false, error: err.message }); }
 };
 
@@ -292,13 +307,14 @@ exports.saveLog = async (req, res) => {
         const stats = await calculateDailyStats(conn, userId, targetDate);
         if (!stats.exists) return res.status(400).json({ error: `Sem dia de ponto gerado para ${targetDate}.` });
 
-        // --- NOVA VALIDAÇÃO: STATUS DO PERÍODO ---
-        const periodQuery = `SELECT Status__c FROM Periodo__c WHERE Id = '${stats.periodoId}' LIMIT 1`;
-        const periodRes = await conn.query(periodQuery);
-        const periodStatus = periodRes.records[0]?.Status__c;
-
-        if (periodStatus && periodStatus !== 'Aberto') {
-            return res.status(400).json({ error: `Este período (${periodStatus}) não permite mais inclusão ou edição de horas.` });
+        // Validação de CRIAÇÃO (Novo Lançamento)
+        if (!logId) {
+            const periodQuery = `SELECT Status__c FROM Periodo__c WHERE Id = '${stats.periodoId}' LIMIT 1`;
+            const periodRes = await conn.query(periodQuery);
+            const periodStatus = periodRes.records[0]?.Status__c;
+            if (periodStatus && periodStatus !== 'Aberto') {
+                return res.status(400).json({ error: `O período está ${periodStatus}. Não é possível adicionar novos lançamentos.` });
+            }
         }
 
         let hNorm = hoursNormal ? parseFloat(hoursNormal.toString().replace(',', '.')) : 0;
@@ -397,18 +413,9 @@ exports.deleteLog = async (req, res) => {
         const log = await conn.sobject('LancamentoHora__c').retrieve(logId);
         if (!areIdsEqual(log.Pessoa__c, userId)) return res.status(403).json({ error: 'Acesso negado.' });
         
-        // --- NOVA VALIDAÇÃO: STATUS DO PERÍODO ---
-        const periodQuery = `SELECT Status__c FROM Periodo__c WHERE Id = '${log.Periodo__c}' LIMIT 1`;
-        const periodRes = await conn.query(periodQuery);
-        const periodStatus = periodRes.records[0]?.Status__c;
-
-        if (periodStatus && periodStatus !== 'Aberto') {
-            return res.status(400).json({ error: `Este período (${periodStatus}) não permite a exclusão de lançamentos.` });
-        }
-
         // Regra de Status para Exclusão (Lançamento)
         if (!['Rascunho', 'Reprovado serviço', 'Reprovado RH'].includes(log.Status__c)) {
-            return res.status(400).json({ error: 'Este lançamento não permite exclusão.' });
+            return res.status(400).json({ error: `Este lançamento (${log.Status__c}) não permite exclusão.` });
         }
 
         const ret = await conn.sobject('LancamentoHora__c').destroy(logId);

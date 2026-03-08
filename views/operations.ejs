@@ -441,15 +441,23 @@
                 const r = await fetch(`/api/ops/limits?date=${d}`); const j = await r.json(); 
                 if(!j.success) { currentDayLimit=0; currentDayUsed=0; currentDayUsedExtra=0; return; } 
                 
-                // Se dia bloqueado (isLocked), desabilita tudo
-                const locked = j.isLocked;
-                document.getElementById('modal-hours-normal').disabled = locked;
-                document.getElementById('modal-hours-extra').disabled = locked;
-                document.getElementById('modal-desc').disabled = locked;
-                document.getElementById('btn-save-log').disabled = locked;
-                document.getElementById('lock-warning').classList.toggle('hidden', !locked);
-                if(locked) document.getElementById('btn-save-log').classList.add('bg-gray-400');
-                else document.getElementById('btn-save-log').classList.remove('bg-gray-400');
+                const logId = document.getElementById('modal-log-id').value;
+                // Se dia bloqueado (isLocked) E for NOVO lançamento, desabilita tudo
+                const shouldLockNewEntry = j.isLocked && !logId;
+                
+                document.getElementById('modal-hours-normal').disabled = shouldLockNewEntry;
+                document.getElementById('modal-hours-extra').disabled = shouldLockNewEntry;
+                document.getElementById('modal-desc').disabled = shouldLockNewEntry;
+                document.getElementById('btn-save-log').disabled = shouldLockNewEntry;
+                
+                // Exibe aviso apenas se estiver bloqueando a criação
+                document.getElementById('lock-warning').classList.toggle('hidden', !shouldLockNewEntry);
+                if (shouldLockNewEntry) {
+                    document.getElementById('lock-warning').innerText = `Adição Bloqueada (${j.periodStatus || 'Fechado'})`;
+                    document.getElementById('btn-save-log').classList.add('bg-gray-400');
+                } else {
+                    document.getElementById('btn-save-log').classList.remove('bg-gray-400');
+                }
 
                 currentDayLimit = j.limit; currentDayUsed = j.usedNormal; currentDayUsedExtra = j.usedExtra; 
                 checkLocks(); 
