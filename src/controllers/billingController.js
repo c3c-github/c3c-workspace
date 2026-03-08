@@ -1,7 +1,174 @@
 const { getSfConnection } = require('../config/salesforce');
+const fs = require('fs');
+const extractionService = require('../services/extractionService');
 
 /**
- * Controller para Gestão de Medição e Faturamento de Horas
+ * ============================================================================
+ * PORTAL DO COLABORADOR (NOTAS FISCAIS)
+ * ============================================================================
+ */
+
+exports.renderBillingPortal = (req, res) => {
+    res.render('billing_portal', { user: req.session.user, page: 'billing_portal' });
+};
+
+exports.getColaboradorPeriods = async (req, res) => {
+    try {
+        const conn = await getSfConnection();
+        const userId = req.session.user.id;
+
+        // 1. Buscar os Períodos do Colaborador
+        const query = `
+            SELECT Id, Name, DataInicio__c, DataFim__c, Status__c, 
+                   ValorTotalHoras__c, ValorTotalBeneficios__c, ValorTotalPeriodo__c
+            FROM Periodo__c
+            WHERE ContratoPessoa__r.Pessoa__c = '${userId}'
+            AND (Status__c = 'Liberado para Nota Fiscal' OR Status__c = 'Nota em Validação' OR Status__c = 'Pronto para Pagamento' OR Status__c = 'Pagamento Agendado' OR Status__c = 'Finalizado/Pago')
+            ORDER BY DataInicio__c DESC
+        `;
+        
+        const result = await conn.query(query);
+        const periods = result.records;
+
+        if (periods.length === 0) return res.json([]);
+
+        // 2. Buscar as Notas Fiscais separadamente para evitar erro de relacionamento (Relationship Name)
+        const periodIds = periods.map(p => p.Id);
+        const nfQuery = `
+            SELECT Id, Periodo__c, Status__c, Valor__c, DocumentoId__c, MotivoReprovacao__c 
+            FROM NotaFiscal__c 
+            WHERE Periodo__c IN ('${periodIds.join("','")}') 
+            AND Tipo__c = 'Entrada'
+        `;
+        const nfResult = await conn.query(nfQuery);
+        const nfs = nfResult.records;
+        
+        // 3. Cruzar os dados
+        const data = periods.map(p => {
+            const nf = nfs.find(n => n.Periodo__c === p.Id);
+            return {
+                id: p.Id,
+                name: p.Name,
+                inicio: p.DataInicio__c,
+                fim: p.DataFim__c,
+                statusPeriodo: p.Status__c,
+                valorHoras: p.ValorTotalHoras__c || 0,
+                valorTotal: p.ValorTotalPeriodo__c || 0,
+                hasNF: !!nf,
+                nfStatus: nf ? nf.Status__c : null,
+                nfDocumentoId: nf ? nf.DocumentoId__c : null,
+                nfMotivo: nf ? nf.MotivoReprovacao__c : null
+            };
+        });
+
+        res.json(data);
+    } catch (e) {
+        console.error("❌ Erro em getColaboradorPeriods:", e.message);
+        res.status(500).json({ error: e.message });
+    }
+};
+
+exports.uploadNotaFiscal = async (req, res) => {
+    let tempPath = req.file ? req.file.path : null;
+    try {
+        if (!req.file) return res.status(400).json({ error: 'Arquivo não enviado.' });
+        
+        const { periodId, valor, cnpjEmissor, cnpjReceptor, numeroNota, dataEmissao, nomeEmitente } = req.body;
+        const conn = await getSfConnection();
+        const userId = req.session.user.id;
+        const fileContent = fs.readFileSync(tempPath).toString('base64');
+
+        // 1. Criar ContentVersion no Salesforce
+        const cv = await conn.sobject('ContentVersion').create({
+            Title: `NF_Entrada_${periodId}`,
+            PathOnClient: req.file.originalname,
+            VersionData: fileContent,
+            IsMajorVersion: true
+        });
+
+        // 2. Recuperar ContentDocumentId
+        const cvFull = await conn.sobject('ContentVersion').retrieve(cv.id);
+        const docId = cvFull.ContentDocumentId;
+
+        // 3. Verificar se já existe Nota Fiscal para este período
+        const nfExistente = await conn.query(`SELECT Id FROM NotaFiscal__c WHERE Periodo__c = '${periodId}' AND Tipo__c = 'Entrada' LIMIT 1`);
+        
+        const payloadNF = {
+            Periodo__c: periodId,
+            Tipo__c: 'Entrada',
+            Status__c: 'Em Revisão',
+            Valor__c: parseFloat(valor),
+            CNPJ_Emissor__c: cnpjEmissor,
+            CNPJ_Receptor__c: cnpjReceptor,
+            NumeroNota__c: numeroNota,
+            DataEmissao__c: dataEmissao,
+            NomeEmitente__c: nomeEmitente,
+            DocumentoId__c: docId,
+            MotivoReprovacao__c: null 
+        };
+
+        let nfId;
+        if (nfExistente.totalSize > 0) {
+            nfId = nfExistente.records[0].Id;
+            payloadNF.Id = nfId;
+            await conn.sobject('NotaFiscal__c').update(payloadNF);
+        } else {
+            const resultNF = await conn.sobject('NotaFiscal__c').create(payloadNF);
+            nfId = resultNF.id;
+        }
+
+        // 4. Criar o vínculo do documento (ContentDocumentLink)
+        await conn.sobject('ContentDocumentLink').create({
+            ContentDocumentId: docId,
+            LinkedEntityId: nfId,
+            ShareType: 'V', // Viewer
+            Visibility: 'AllUsers'
+        });
+
+        // 5. Atualizar Status do Período
+        await conn.sobject('Periodo__c').update({
+            Id: periodId,
+            Status__c: 'Nota em Validação'
+        });
+
+        // Limpa arquivo temporário
+        if (tempPath && fs.existsSync(tempPath)) fs.unlinkSync(tempPath);
+
+        res.json({ success: true, message: 'Nota Fiscal enviada com sucesso!' });
+
+    } catch (e) {
+        console.error("❌ Erro upload NF:", e);
+        if (tempPath && fs.existsSync(tempPath)) fs.unlinkSync(tempPath);
+        res.status(500).json({ error: e.message });
+    }
+};
+
+exports.analyzeNotaFiscal = async (req, res) => {
+    let tempPath = req.file ? req.file.path : null;
+    try {
+        if (!req.file) return res.status(400).json({ error: 'Arquivo não enviado.' });
+        
+        const fileContent = fs.readFileSync(tempPath).toString('base64');
+        const mimeType = req.file.mimetype;
+
+        const extraido = await extractionService.extrairDadosNota(fileContent, mimeType);
+
+        // Limpa arquivo temporário
+        if (tempPath && fs.existsSync(tempPath)) fs.unlinkSync(tempPath);
+
+        res.json({ success: true, data: extraido });
+
+    } catch (e) {
+        console.error("❌ Erro análise NF:", e);
+        if (tempPath && fs.existsSync(tempPath)) fs.unlinkSync(tempPath);
+        res.status(500).json({ error: e.message });
+    }
+};
+
+/**
+ * ============================================================================
+ * MEDIÇÃO E FATURAMENTO (GESTOR / DIRETOR)
+ * ============================================================================
  */
 
 exports.renderBilling = (req, res) => {
@@ -299,7 +466,11 @@ exports.saveAdjustments = async (req, res) => {
     }
 };
 
-// --- MÓDULO FINANCEIRO (V1) ---
+/**
+ * ============================================================================
+ * COCKPIT FINANCEIRO (V1)
+ * ============================================================================
+ */
 
 exports.renderFinanceDashboard = (req, res) => {
     res.render('finance_dashboard', { user: req.session.user, page: 'finance' });

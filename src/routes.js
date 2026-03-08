@@ -120,7 +120,13 @@ router.post('/api/hr/action', requireAuth, requireGroup('ADMIN_RH'), hrControlle
 router.get('/utilities/signature', requireAuth, utilityController.renderSignaturePage);
 router.post('/api/utility/upload-photo', requireAuth, upload.single('file'), utilityController.uploadPhoto);
 
-// --- MEDIÇÃO E FATURAMENTO ---
+// --- FATURAMENTO / NOTAS FISCAIS ---
+router.get('/billing-portal', requireAuth, billingController.renderBillingPortal);
+router.get('/api/billing/periods', requireAuth, billingController.getColaboradorPeriods);
+router.post('/api/billing/upload', requireAuth, upload.single('file'), billingController.uploadNotaFiscal);
+router.post('/api/billing/analyze', requireAuth, upload.single('file'), billingController.analyzeNotaFiscal);
+
+// --- MEDIÇÃO E FATURAMENTO (GESTOR) ---
 const canAccessBilling = (req, res, next) => {
     const user = req.session.user;
     if (user && user.grupos && (user.grupos.includes('GESTOR') || user.grupos.includes('DIRETOR'))) {

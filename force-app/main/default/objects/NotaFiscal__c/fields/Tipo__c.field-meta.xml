@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Tipo__c</fullName>
+    <description>Indica se a nota é de entrada (recebida de colaborador) ou saída (emitida pela empresa).</description>
+    <externalId>false</externalId>
+    <label>Tipo</label>
+    <required>true</required>
+    <trackHistory>false</trackHistory>
+    <trackTrending>false</trackTrending>
+    <type>Picklist</type>
+    <valueSet>
+        <restricted>true</required>
+        <valueSetDefinition>
+            <sorted>false</sorted>
+            <value>
+                <fullName>Entrada</fullName>
+                <default>true</default>
+                <label>Entrada</label>
+            </value>
+            <value>
+                <fullName>Saída</fullName>
+                <default>false</default>
+                <label>Saída</label>
+            </value>
+        </valueSetDefinition>
+    </valueSet>
+</CustomField>

@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portal de Notas - C3C Workplace</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Montserrat', 'sans-serif'] },
+                    colors: { 
+                        c3c: { blue: '#2978FF', bg: '#F8FAFC' } 
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { font-family: 'Montserrat', sans-serif; background-color: #F8FAFC; }
+        .fade-in { animation: fadeIn 0.4s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body class="h-screen flex overflow-hidden bg-[#F8FAFC]">
+
+    <%- include('partials/sidebar') %>
+
+    <main class="flex-1 flex flex-col md:ml-64 relative w-full transition-all duration-300">
+        
+        <header class="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-4 md:px-8 sticky top-0 z-20">
+            <div class="flex items-center gap-4">
+                <button onclick="document.getElementById('sidebar').classList.toggle('-translate-x-full')" class="md:hidden p-2 text-gray-600 hover:bg-gray-100 rounded-lg">
+                    <i data-lucide="menu"></i>
+                </button>
+                <h1 class="text-lg md:text-xl font-bold text-gray-800 flex items-center gap-2">
+                    Portal de Notas <span class="bg-blue-100 text-blue-700 text-xs px-2 py-1 rounded-full border border-blue-200 font-medium">Autoatendimento</span>
+                </h1>
+            </div>
+        </header>
+
+        <div class="flex-1 overflow-y-auto p-4 md:p-8 fade-in">
+            <div class="mb-8">
+                <h2 class="text-2xl font-black text-gray-900">Seus Ciclos de Faturamento</h2>
+                <p class="text-gray-500">Acompanhe a liberação e o envio das suas Notas Fiscais.</p>
+            </div>
+
+            <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-sm">
+                        <thead class="bg-gray-50 border-b border-gray-200">
+                            <tr class="text-xs font-bold text-gray-400 uppercase tracking-wider">
+                                <th class="px-6 py-4">Ciclo</th>
+                                <th class="px-6 py-4">Status Ciclo</th>
+                                <th class="px-6 py-4 text-right">Valor do Ciclo</th>
+                                <th class="px-6 py-4 text-center">Status Nota</th>
+                                <th class="px-6 py-4 text-center">Arquivo</th>
+                                <th class="px-6 py-4 text-right">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="period-table-body" class="divide-y divide-gray-100">
+                            <tr><td colspan="6" class="text-center py-10 text-gray-400"><i data-lucide="loader-2" class="w-6 h-6 animate-spin inline mr-2"></i> Carregando seus ciclos...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- MODAL UPLOAD -->
+    <div id="modal-upload" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8 transform scale-95 transition-all">
+            <h3 class="text-xl font-bold text-gray-900 mb-2">Enviar Nota Fiscal</h3>
+            <p class="text-sm text-gray-500 mb-6" id="modal-period-name">Ciclo...</p>
+            
+            <input type="hidden" id="upload-period-id">
+            
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Arquivo (PDF, JPG ou PNG)</label>
+                    <input type="file" id="nf-file" accept=".pdf, .jpg, .jpeg, .png" onchange="analyzeFile(this)" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
+                    <div id="analyze-loader" class="hidden mt-2 text-[10px] text-blue-600 font-bold items-center gap-1">
+                        <i data-lucide="sparkles" class="w-3 h-3 animate-pulse"></i> Inteligência Artificial analisando o arquivo...
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Número da Nota</label>
+                        <input type="text" id="nf-numero" disabled placeholder="..." oninput="validateForm()" class="w-full px-4 py-2 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none disabled:bg-gray-50 disabled:text-gray-400">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Data de Emissão</label>
+                        <input type="date" id="nf-data-emissao" disabled oninput="validateForm()" class="w-full px-4 py-2 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none disabled:bg-gray-50 disabled:text-gray-400">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Nome do Emitente (Sua Empresa)</label>
+                    <input type="text" id="nf-emitente" disabled placeholder="..." oninput="validateForm()" class="w-full px-4 py-2 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none disabled:bg-gray-50 disabled:text-gray-400">
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-400 uppercase mb-1">CNPJ Emissor</label>
+                        <input type="text" id="cnpj-emissor" disabled placeholder="..." oninput="validateForm()" class="w-full px-4 py-2 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none disabled:bg-gray-50 disabled:text-gray-400">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-400 uppercase mb-1">CNPJ Receptor</label>
+                        <input type="text" id="cnpj-receptor" disabled placeholder="..." oninput="validateForm()" class="w-full px-4 py-2 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none disabled:bg-gray-50 disabled:text-gray-400">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Valor da Nota</label>
+                    <input type="number" id="nf-valor" step="0.01" disabled oninput="validateForm()" class="w-full px-4 py-2 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none font-bold text-blue-600 disabled:bg-gray-50 disabled:text-blue-200">
+                </div>
+            </div>
+
+            <div class="flex justify-end gap-3 mt-8">
+                <button onclick="closeUploadModal()" class="px-6 py-2 text-gray-500 font-bold">Cancelar</button>
+                <button id="btn-process-upload" onclick="processUpload()" disabled class="px-8 py-2 bg-blue-600 text-white font-bold rounded-xl shadow-lg hover:bg-blue-700 transition-all disabled:bg-gray-200 disabled:text-gray-400 disabled:shadow-none">Enviar Nota</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        lucide.createIcons();
+        
+        document.addEventListener('DOMContentLoaded', loadPeriods);
+
+        async function loadPeriods() {
+            try {
+                const res = await fetch('/api/billing/periods');
+                const data = await res.json();
+                renderTable(data);
+            } catch(e) { console.error(e); }
+        }
+
+        function renderTable(periods) {
+            const tbody = document.getElementById('period-table-body');
+            tbody.innerHTML = '';
+
+            if (periods.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" class="text-center py-10 text-gray-400 italic">Nenhum ciclo liberado para nota fiscal no momento.</td></tr>';
+                return;
+            }
+
+            periods.forEach(p => {
+                const vHoras = (p.valorHoras || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+                
+                let nfStatusBadge = '-';
+                if(p.hasNF) {
+                    const colors = { 'Rascunho': 'bg-gray-100 text-gray-600', 'Em Revisão': 'bg-blue-50 text-blue-600', 'Aprovada': 'bg-green-50 text-green-600', 'Reprovada': 'bg-red-50 text-red-600' };
+                    nfStatusBadge = `<span class="px-2 py-1 rounded-md text-[10px] font-bold uppercase border ${colors[p.nfStatus] || 'bg-gray-50'}">${p.nfStatus}</span>`;
+                }
+
+                let actions = '';
+                if (p.statusPeriodo === 'Liberado para Nota Fiscal' || p.nfStatus === 'Reprovada') {
+                    actions = `<button onclick="openUploadModal('${p.id}', '${p.name}', ${p.valorHoras})" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-1.5 rounded-lg text-xs font-bold shadow-sm flex items-center gap-1"><i data-lucide="upload-cloud" class="w-3.5 h-3.5"></i> Enviar Nota</button>`;
+                } else if (p.hasNF) {
+                    actions = `<span class="text-xs text-gray-400 flex items-center justify-end gap-1"><i data-lucide="clock" class="w-3.5 h-3.5"></i> Em processamento</span>`;
+                }
+
+                const nfFile = p.hasNF ? `<div class="flex justify-center"><i data-lucide="file-text" class="w-5 h-5 text-blue-500 cursor-pointer" title="Ver arquivo"></i></div>` : '-';
+
+                tbody.innerHTML += `
+                    <tr class="hover:bg-gray-50/50 transition-colors">
+                        <td class="px-6 py-4">
+                            <p class="font-bold text-gray-900">${p.name}</p>
+                            <p class="text-[10px] text-gray-400">Ref: ${p.inicio} até ${p.fim}</p>
+                        </td>
+                        <td class="px-6 py-4">
+                            <span class="text-xs font-medium text-gray-600">${p.statusPeriodo}</span>
+                        </td>
+                        <td class="px-6 py-4 text-right font-bold text-gray-900 text-sm">${vHoras}</td>
+                        <td class="px-6 py-4 text-center">${nfStatusBadge}</td>
+                        <td class="px-6 py-4 text-center">${nfFile}</td>
+                        <td class="px-6 py-4 text-right">${actions}</td>
+                    </tr>
+                `;
+            });
+            lucide.createIcons();
+        }
+
+                function openUploadModal(id, name, val) {
+            document.getElementById('upload-period-id').value = id;
+            document.getElementById('modal-period-name').innerText = name;
+            document.getElementById('nf-valor').value = val;
+            
+            // Limpa campos anteriores
+            const fields = ['nf-file', 'nf-numero', 'nf-data-emissao', 'nf-emitente', 'cnpj-emissor', 'cnpj-receptor', 'nf-valor'];
+            fields.forEach(f => {
+                const el = document.getElementById(f);
+                if(f !== 'nf-file') el.value = '';
+                if(f !== 'nf-file') el.disabled = true;
+                el.classList.remove('ring-2', 'ring-green-100', 'border-green-200');
+            });
+
+            document.getElementById('analyze-loader').classList.add('hidden');
+            document.getElementById('btn-process-upload').disabled = true;
+
+            document.getElementById('modal-upload').classList.remove('hidden');
+            setTimeout(() => document.getElementById('modal-upload').querySelector('div').classList.remove('scale-95'), 10);
+        }
+
+        function closeUploadModal() {
+            document.getElementById('modal-upload').classList.add('hidden');
+            document.getElementById('modal-upload').querySelector('div').classList.add('scale-95');
+        }
+
+        function validateForm() {
+            const numero = document.getElementById('nf-numero').value;
+            const data = document.getElementById('nf-data-emissao').value;
+            const emitente = document.getElementById('nf-emitente').value;
+            const cnpjE = document.getElementById('cnpj-emissor').value;
+            const cnpjR = document.getElementById('cnpj-receptor').value;
+            const valor = document.getElementById('nf-valor').value;
+            const file = document.getElementById('nf-file').files[0];
+
+            const isValid = numero && data && emitente && cnpjE && cnpjR && valor && file;
+            document.getElementById('btn-process-upload').disabled = !isValid;
+        }
+
+        async function analyzeFile(input) {
+            if (!input.files[0]) return;
+            
+            const loader = document.getElementById('analyze-loader');
+            loader.classList.remove('hidden');
+            loader.classList.add('flex');
+
+            const formData = new FormData();
+            formData.append('file', input.files[0]);
+
+            try {
+                const res = await fetch('/api/billing/analyze', {
+                    method: 'POST',
+                    body: formData
+                });
+                const result = await res.json();
+
+                if (result.success && result.data) {
+                    const d = result.data;
+                    const mapping = {
+                        'nf-numero': d.numeroNota,
+                        'nf-data-emissao': d.dataEmissao,
+                        'nf-emitente': d.nomeEmitente,
+                        'cnpj-emissor': d.cnpjEmissor,
+                        'cnpj-receptor': d.cnpjReceptor,
+                        'nf-valor': d.valorTotal
+                    };
+
+                    Object.keys(mapping).forEach(id => {
+                        const el = document.getElementById(id);
+                        const val = mapping[id];
+                        if (val) {
+                            el.value = val;
+                            el.disabled = true; // Trava se a IA encontrou
+                            el.classList.add('ring-2', 'ring-green-100', 'border-green-200');
+                            setTimeout(() => el.classList.remove('ring-2', 'ring-green-100', 'border-green-200'), 2000);
+                        } else {
+                            el.disabled = false; // Habilita se a IA falhou neste campo
+                            el.placeholder = "Não identificado, preencha manualmente";
+                        }
+                    });
+                } else {
+                    throw new Error("Serviço de IA retornou erro.");
+                }
+            } catch (e) {
+                console.error("Erro na análise via IA:", e);
+                // Se der erro geral (serviço fora ou erro na API), habilita tudo para preenchimento manual
+                const fields = ['nf-numero', 'nf-data-emissao', 'nf-emitente', 'cnpj-emissor', 'cnpj-receptor', 'nf-valor'];
+                fields.forEach(f => {
+                    const el = document.getElementById(f);
+                    el.disabled = false;
+                    el.placeholder = "Erro na IA, preencha manualmente";
+                });
+                alert("Não foi possível analisar o arquivo automaticamente. Por favor, preencha os campos manualmente.");
+            } finally {
+                loader.classList.add('hidden');
+                loader.classList.remove('flex');
+                validateForm();
+            }
+        }
+
+        async function processUpload() {
+            const periodId = document.getElementById('upload-period-id').value;
+            const fileInput = document.getElementById('nf-file');
+            const valor = document.getElementById('nf-valor').value;
+            const cnpjE = document.getElementById('cnpj-emissor').value;
+            const cnpjR = document.getElementById('cnpj-receptor').value;
+            const numero = document.getElementById('nf-numero').value;
+            const dataEmissao = document.getElementById('nf-data-emissao').value;
+            const emitente = document.getElementById('nf-emitente').value;
+
+            const formData = new FormData();
+            formData.append('file', fileInput.files[0]);
+            formData.append('periodId', periodId);
+            formData.append('valor', valor);
+            formData.append('cnpjEmissor', cnpjE);
+            formData.append('cnpjReceptor', cnpjR);
+            formData.append('numeroNota', numero);
+            formData.append('dataEmissao', dataEmissao);
+            formData.append('nomeEmitente', emitente);
+
+            const btn = document.getElementById('btn-process-upload');
+            const oldText = btn.innerText;
+            btn.innerText = 'Enviando...';
+            btn.disabled = true;
+
+            try {
+                const res = await fetch('/api/billing/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+                const result = await res.json();
+                
+                if (result.success) {
+                    alert(result.message);
+                    closeUploadModal();
+                    loadPeriods(); 
+                } else {
+                    alert('Erro: ' + result.error);
+                }
+            } catch(e) { 
+                console.error(e); 
+                alert('Erro ao processar upload.');
+            } finally {
+                btn.innerText = oldText;
+                btn.disabled = false;
+                validateForm();
+            }
+        }
+    </script>
+</body>
+</html>
