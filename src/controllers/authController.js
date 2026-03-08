@@ -56,7 +56,7 @@ exports.azureCallback = async (req, res) => {
         const soqlPessoa = `
             SELECT Id, Name, Email__c, URL_Foto__c,
                    (SELECT Name FROM ContratosPessoa__r WHERE Status__c = 'Ativo' LIMIT 1),
-                   (SELECT Grupo__r.Codigo__c FROM GruposDePermissao__r)
+                   (SELECT Grupo__r.Codigo__c, Grupo__r.Name FROM GruposDePermissao__r)
             FROM Pessoa__c 
             WHERE Email__c = '${userEmail}' 
             LIMIT 1
@@ -74,12 +74,23 @@ exports.azureCallback = async (req, res) => {
                          : null;
 
         // 1. Grupos explícitos (Via MembroGrupo__c)
-        let grupos = (pessoa.GruposDePermissao__r && pessoa.GruposDePermissao__r.records)
-            ? pessoa.GruposDePermissao__r.records.map(m => m.Grupo__r.Codigo__c)
-            : [];
+        let grupos = [];
+        let labels_grupos = [];
+
+        if (pessoa.GruposDePermissao__r && pessoa.GruposDePermissao__r.records) {
+            pessoa.GruposDePermissao__r.records.forEach(m => {
+                if (m.Grupo__r) {
+                    grupos.push(m.Grupo__r.Codigo__c);
+                    labels_grupos.push(m.Grupo__r.Name);
+                }
+            });
+        }
 
         // Garante grupo mínimo
-        if (grupos.length === 0) grupos.push('USER');
+        if (grupos.length === 0) {
+            grupos.push('USER');
+            labels_grupos.push('Colaborador');
+        }
             
         console.log(`✅ Login: ${pessoa.Name} | Grupos: ${grupos.join(', ')}`);
 
@@ -91,6 +102,7 @@ exports.azureCallback = async (req, res) => {
             funcao: grupos, 
             contrato: contrato, 
             grupos: grupos,
+            labels_grupos: labels_grupos,
             foto: pessoa.URL_Foto__c      
         };
 

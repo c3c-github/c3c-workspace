@@ -65,7 +65,7 @@
 
         <div class="flex-1 overflow-y-auto p-4 md:p-8 fade-in">
             <div class="flex justify-between items-center mb-6">
-                <p class="text-gray-500 text-sm">Analise os apontamentos por projeto.</p>
+                <p class="text-gray-500 text-sm">Analise os apontamentos por serviço.</p>
                 <button onclick="loadProjects(availablePeriods[currentPeriodIndex].DataInicio__c, availablePeriods[currentPeriodIndex].DataFim__c)" class="text-xs font-bold text-blue-600 hover:underline flex items-center gap-1">
                     <i data-lucide="refresh-cw" class="w-3 h-3"></i> Atualizar
                 </button>
@@ -83,10 +83,43 @@
                 
                 <div class="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-white shrink-0">
                     <div>
-                        <span class="text-xs font-bold text-gray-400 uppercase">Projeto</span>
+                        <span class="text-xs font-bold text-gray-400 uppercase">Serviço</span>
                         <h3 class="text-xl font-bold text-gray-900" id="modal-title">...</h3>
                     </div>
                     <button onclick="closeModal()" class="p-2 hover:bg-gray-100 rounded-full transition-colors"><i data-lucide="x" class="w-6 h-6 text-gray-400"></i></button>
+                </div>
+                
+                <!-- TOTALIZADORES CONSOLIDADOS DO SERVIÇO -->
+                <div class="px-6 py-3 bg-gray-50 border-b border-gray-200 flex flex-wrap gap-8 items-center" id="modal-service-summary">
+                    <div class="flex flex-col">
+                        <span class="text-[10px] font-bold text-gray-400 uppercase">Previsto Total</span>
+                        <span class="text-sm font-bold text-gray-700" id="sum-prev">-</span>
+                    </div>
+                    <div class="flex flex-col">
+                        <span class="text-[10px] font-bold text-gray-400 uppercase text-blue-600 flex items-center gap-1">Realizado Total <i data-lucide="info" class="w-2.5 h-2.5" title="Soma ponderada: Normal + (Extra Pago x 2)"></i></span>
+                        <span class="text-sm font-bold text-blue-600" id="sum-real">-</span>
+                    </div>
+                    <div class="flex flex-col">
+                        <span class="text-[10px] font-bold text-gray-400 uppercase text-red-500">Extras Total (x2)</span>
+                        <span class="text-sm font-bold text-red-500" id="sum-ext">-</span>
+                    </div>
+                    <div class="flex flex-col">
+                        <span class="text-[10px] font-bold text-gray-400 uppercase">Conformidade Total</span>
+                        <div class="flex items-center gap-2">
+                            <span class="text-sm font-bold" id="sum-conf">-</span>
+                            <div class="w-20 h-1.5 bg-gray-200 rounded-full overflow-hidden">
+                                <div id="sum-bar" class="h-full bg-green-500" style="width: 0%"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- NOTA EXPLICATIVA FIXA -->
+                    <div class="ml-auto bg-blue-50 border border-blue-100 rounded-lg px-3 py-1.5 flex items-center gap-2">
+                        <i data-lucide="info" class="w-4 h-4 text-blue-600"></i>
+                        <p class="text-[10px] text-blue-700 leading-tight">
+                            <span class="font-bold">Nota:</span> Total Realizado = Horas Normais + (Extras Pagas x 2).<br>
+                            Horas extras são evidenciadas com multiplicador para fins financeiros.
+                        </p>
+                    </div>
                 </div>
                 
                 <div class="overflow-x-auto p-0 flex-1 overflow-y-auto bg-white">
@@ -96,7 +129,7 @@
                                 <th class="py-3 pl-6">Recurso</th>
                                 <th class="py-3 text-right" title="Previsto conforme contrato e alocação">Alocado (Prev)</th>
                                 <th class="py-3 text-center bg-blue-50 text-blue-700 border-l border-white">Norm</th>
-                                <th class="py-3 text-center bg-green-50 text-green-700 border-l border-white">Ex.Pg</th>
+                                <th class="py-3 text-center bg-green-50 text-green-700 border-l border-white" title="Horas Extras para Pagamento (Peso x2 no Total)">Extras <span class="text-[8px] opacity-70">(x2)</span></th>
                                 <th class="py-3 text-center bg-teal-50 text-teal-700 border-l border-white">Ex.Bc</th>
                                 <th class="py-3 text-center bg-orange-50 text-orange-700 border-l border-white">Au.Bc</th>
                                 <th class="py-3 text-center bg-red-50 text-red-700 border-l border-white">Au.Ou</th>
@@ -106,6 +139,7 @@
                             </tr>
                         </thead>
                         <tbody id="modal-table-body" class="divide-y divide-gray-100 text-gray-700"></tbody>
+                        <tfoot id="modal-table-footer" class="bg-gray-50 border-t-2 border-gray-200 sticky bottom-0 z-10 font-bold"></tfoot>
                     </table>
                 </div>
                 
@@ -175,6 +209,7 @@
         
         let availablePeriods = [];
         let currentPeriodIndex = 0;
+        let currentProjectItem = null;
 
         document.addEventListener('DOMContentLoaded', loadPeriods);
         
@@ -266,11 +301,11 @@
                                 <p class="text-sm font-bold text-gray-800">${item.metrics.alocado.toFixed(0)}h</p>
                             </div>
                             <div class="text-center border-r border-gray-200 last:border-0">
-                                <p class="text-[10px] text-gray-400 font-bold uppercase">Realizado</p>
+                                <p class="text-[10px] text-gray-400 font-bold uppercase flex items-center justify-center gap-1">Realizado <i data-lucide="info" class="w-2.5 h-2.5" title="Cálculo: Horas Normais + (Horas Extras Pagas x 2)"></i></p>
                                 <p class="text-sm font-bold text-blue-600">${item.metrics.ponderado.toFixed(0)}h</p>
                             </div>
                             <div class="text-center border-r border-gray-200 last:border-0">
-                                <p class="text-[10px] text-gray-400 font-bold uppercase">Extra</p>
+                                <p class="text-[10px] text-gray-400 font-bold uppercase flex items-center justify-center gap-1">Extra <span class="text-[8px] text-red-400">(x2)</span></p>
                                 <p class="text-sm font-bold ${item.metrics.extra > 0 ? 'text-red-500' : 'text-gray-400'}">${item.metrics.extra.toFixed(0)}h</p>
                             </div>
                             <div class="text-center relative">
@@ -284,7 +319,7 @@
                         
                         <div class="mt-auto flex items-center justify-between pt-2 border-t border-gray-50">
                             <span class="text-xs text-gray-400 font-medium flex items-center gap-1"><i data-lucide="users" class="w-3 h-3"></i> ${item.teamSize} Recurso(s)</span>
-                            <button onclick="openModal('${item.serviceId}', '${item.serviceName}')" class="px-4 py-1.5 bg-white border border-blue-200 text-blue-600 font-bold rounded-lg text-xs hover:bg-blue-50 transition-colors shadow-sm">Analisar</button>
+                            <button onclick='openModal(${JSON.stringify(item)})' class="px-4 py-1.5 bg-white border border-blue-200 text-blue-600 font-bold rounded-lg text-xs hover:bg-blue-50 transition-colors shadow-sm">Analisar</button>
                         </div>
                     </div>`;
                     container.innerHTML += card;
@@ -294,11 +329,30 @@
         }
 
         // --- 3. MODAL DE DETALHES (TABELA) ---
-        async function openModal(serviceId, serviceName) {
+        async function openModal(item) {
+            currentProjectItem = item;
+            const { serviceId, serviceName, metrics, percentual } = item;
             const modal = document.getElementById('modal-approval');
             const tbody = document.getElementById('modal-table-body');
             document.getElementById('modal-title').innerText = serviceName;
             
+            // Atualiza Resumo Consolidado
+            document.getElementById('sum-prev').innerText = metrics.alocado.toFixed(0) + 'h';
+            document.getElementById('sum-real').innerText = metrics.ponderado.toFixed(0) + 'h';
+            document.getElementById('sum-ext').innerText = metrics.extra.toFixed(0) + 'h';
+            
+            const confEl = document.getElementById('sum-conf');
+            confEl.innerText = percentual + '%';
+            
+            // Cor da conformidade no resumo
+            let confColor = 'text-green-600', barColor = 'bg-green-500';
+            if(percentual > 105) { confColor = 'text-red-600'; barColor = 'bg-red-500'; }
+            else if(percentual < 95) { confColor = 'text-yellow-600'; barColor = 'bg-yellow-500'; }
+            
+            confEl.className = 'text-sm font-bold ' + confColor;
+            document.getElementById('sum-bar').className = 'h-full ' + barColor;
+            document.getElementById('sum-bar').style.width = Math.min(percentual, 100) + '%';
+
             // Estado de Loading
             tbody.innerHTML = '<tr><td colspan="10" class="text-center py-10 text-gray-400"><i data-lucide="loader-2" class="w-6 h-6 animate-spin inline mr-2"></i> Carregando recursos...</td></tr>';
             lucide.createIcons();
@@ -316,13 +370,13 @@
                     return; 
                 }
 
-                // Ordenação: Pendentes primeiro, depois quem fez mais horas
-                resources.sort((a, b) => {
-                    if (b.countPending !== a.countPending) return b.countPending - a.countPending;
-                    return b.totalRealizado - a.totalRealizado;
-                });
+                let tAloc=0, tNorm=0, tExPg=0, tExBc=0, tAuBc=0, tAuOu=0, tReal=0;
 
                 resources.forEach(r => {
+                    tAloc += r.alocado; tNorm += r.horasNormais; tExPg += r.horasExtrasPgto;
+                    tExBc += r.horasExtrasBanco; tAuBc += r.horasAusenciaBanco;
+                    tAuOu += r.horasAusenciaOutras; tReal += r.totalRealizado;
+
                     // Formatação das células (Hífens para zeros)
                     const fmt = (val, colorClass) => val > 0 ? `<span class="font-bold ${colorClass}">${val.toFixed(1)}</span>` : '<span class="text-gray-300">-</span>';
                     
@@ -334,7 +388,10 @@
 
                     // Lógica de Ações
                     let actions = '';
-                    if(r.countPending > 0) {
+                    // SÓ EXIBE BOTÕES SE: 
+                    // 1. O período estiver em fase de aprovação de serviço
+                    // 2. EXISTIREM lançamentos pendentes deste serviço especificamente (countPending > 0)
+                    if(r.periodStatus === 'Em aprovação do serviço' && r.countPending > 0) {
                         actions = `
                             <div class="flex justify-center gap-1 items-center">
                                 <button onclick="openActivityModal('${serviceId}', '${r.id}')" class="p-1.5 text-gray-400 hover:text-blue-600 rounded hover:bg-gray-100 mr-1" title="Ver Extrato"><i data-lucide="list-collapse" class="w-4 h-4"></i></button>
@@ -342,15 +399,28 @@
                                 <button onclick="approveAction('${serviceId}', '${r.id}', 'approve')" class="p-1.5 text-white bg-green-500 hover:bg-green-600 rounded shadow-sm transition-colors ml-1" title="Aprovar Tudo"><i data-lucide="check" class="w-4 h-4"></i></button>
                             </div>`;
                     } else {
-                        // Label estático se não tem pendência
-                        let label = '-';
-                        let badgeClass = 'text-gray-300';
+                        // Label baseado no status do período e pendências do serviço
+                        let label = r.periodStatus || 'Aberto';
+                        let badgeClass = 'text-gray-400 bg-gray-50 px-2 py-0.5 rounded border border-gray-100';
                         
-                        if (r.countRejected > 0) { label = 'Reprovado'; badgeClass = 'text-red-500 font-bold bg-red-50 px-2 py-0.5 rounded'; }
-                        else if (r.countApproved > 0) { label = 'Aprovado'; badgeClass = 'text-green-600 font-bold bg-green-50 px-2 py-0.5 rounded'; }
-                        else if (r.totalRealizado > 0) { label = 'Sem Ação'; badgeClass = 'text-gray-500 text-[10px]'; } // Caso raro: horas lançadas mas já fechadas/faturadas fora do fluxo
+                        if (r.periodStatus === 'Aberto') { 
+                            label = 'Aberto (Rascunho)'; 
+                            badgeClass = 'text-blue-600 font-bold bg-blue-50 px-2 py-0.5 rounded border border-blue-100'; 
+                        }
+                        else if (r.periodStatus === 'Em aprovação do serviço' && r.countPending === 0) {
+                            label = 'Aprovado (Serviço)'; 
+                            badgeClass = 'text-green-600 font-bold bg-green-50 px-2 py-0.5 rounded border border-green-100';
+                        }
+                        else if (r.periodStatus === 'Aguardando Aprovação RH' || r.periodStatus === 'Em aprovação do RH') { 
+                            label = 'Pendente RH'; 
+                            badgeClass = 'text-indigo-600 font-bold bg-indigo-50 px-2 py-0.5 rounded border border-indigo-100'; 
+                        }
+                        else if (['Liberado para Nota Fiscal', 'Nota em Validação', 'Pronto para Pagamento', 'Pagamento Agendado', 'Finalizado/Pago'].includes(r.periodStatus)) { 
+                            label = 'Concluído'; 
+                            badgeClass = 'text-green-600 font-bold bg-green-50 px-2 py-0.5 rounded border border-green-100'; 
+                        }
 
-                        actions = `<div class="flex justify-center items-center gap-2"><button onclick="openActivityModal('${serviceId}', '${r.id}')" class="text-gray-400 hover:text-blue-600"><i data-lucide="eye" class="w-4 h-4"></i></button><span class="text-xs ${badgeClass}">${label}</span></div>`;
+                        actions = `<div class="flex justify-center items-center gap-2"><button onclick="openActivityModal('${serviceId}', '${r.id}')" class="text-gray-400 hover:text-blue-600"><i data-lucide="eye" class="w-4 h-4"></i></button><span class="text-[10px] uppercase ${badgeClass}">${label}</span></div>`;
                     }
 
                     // Indicador Visual para Sem Contrato (r.noContract setado no controller)
@@ -381,6 +451,30 @@
                             <td class="py-3 text-center px-4">${actions}</td>
                         </tr>`;
                 });
+
+                // Renderiza Rodapé (Totais)
+                const footer = document.getElementById('modal-table-footer');
+                
+                // REGRA: O Previsto Total do Serviço não é a soma das alocações individuais (em Suporte é a franquia)
+                // Usamos o valor que veio do card original (metrics.alocado)
+                const realServiceAloc = metrics.alocado;
+                const tConf = realServiceAloc > 0 ? Math.round((tReal / realServiceAloc) * 100) : (tReal > 0 ? 100 : 0);
+                
+                footer.innerHTML = `
+                    <tr class="bg-gray-50 border-t-2 border-gray-200">
+                        <td class="py-4 pl-6 text-gray-900 uppercase text-[10px]">Total Consolidado</td>
+                        <td class="py-4 text-right text-gray-900 font-mono text-sm">${realServiceAloc.toFixed(0)}h</td>
+                        <td class="py-4 text-center text-blue-700 border-l border-white">${tNorm.toFixed(1)}h</td>
+                        <td class="py-4 text-center text-green-700 border-l border-white">${tExPg.toFixed(1)}h</td>
+                        <td class="py-4 text-center text-teal-700 border-l border-white">${tExBc.toFixed(1)}h</td>
+                        <td class="py-4 text-center text-orange-700 border-l border-white">${tAuBc.toFixed(1)}h</td>
+                        <td class="py-4 text-center text-red-700 border-l border-white">${tAuOu.toFixed(1)}h</td>
+                        <td class="py-4 text-right text-blue-800 font-extrabold pr-4 border-l border-gray-100 bg-gray-100/50">${tReal.toFixed(1)}h</td>
+                        <td class="py-4 text-center text-gray-900">${tConf}%</td>
+                        <td class="py-4 text-center px-4">-</td>
+                    </tr>
+                `;
+
                 lucide.createIcons();
             } catch(e) { console.error(e); tbody.innerHTML = '<tr><td colspan="10" class="text-center text-red-500 py-4">Erro ao carregar dados.</td></tr>'; }
         }
@@ -408,7 +502,10 @@
                 const activities = await res.json();
                 tbody.innerHTML = '';
                 
-                if(activities.length === 0) { tbody.innerHTML = '<tr><td colspan="8" class="text-center p-4 text-gray-400">Nenhum registro detalhado encontrado.</td></tr>'; return; }
+                if(!Array.isArray(activities) || activities.length === 0) { 
+                    tbody.innerHTML = '<tr><td colspan="8" class="text-center p-4 text-gray-400">Nenhum registro detalhado encontrado.</td></tr>'; 
+                    return; 
+                }
                 
                 activities.forEach(a => {
                     const justificativa = a.justificativa ? `<br><span class="text-[10px] text-gray-400 italic">"${a.justificativa}"</span>` : '';
@@ -483,18 +580,22 @@
             const ids = getSelectedEntryIds();
             if(!confirm(`Confirma a aprovação de ${ids.length} lançamento(s)?`)) return;
             
+            const p = availablePeriods[currentPeriodIndex];
             try {
                 const res = await fetch(`${API_URL}/approvals/action`, {
                     method: 'POST', headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ entryIds: ids, action: 'approve' })
+                    body: JSON.stringify({ entryIds: ids, action: 'approve', inicio: p.DataInicio__c, fim: p.DataFim__c })
                 });
                 const result = await res.json();
                 if (result.success) {
-                    await openActivityModal(currentModalServiceId, currentModalPersonId);
-                    await openModal(currentModalServiceId, document.getElementById('modal-title').innerText);
+                    if (currentModalServiceId && currentModalPersonId) {
+                        await openActivityModal(currentModalServiceId, currentModalPersonId);
+                    }
+                    await openModal(currentProjectItem);
                     const dates = availablePeriods[currentPeriodIndex];
                     loadProjects(dates.DataInicio__c, dates.DataFim__c); // Feedback na lista principal
-                } else { alert(result.message); }
+                }
+ else { alert(result.message); }
             } catch (e) { alert('Erro na aprovação.'); }
         }
 
@@ -521,15 +622,13 @@
             const reason = document.getElementById('reject-reason').value.trim();
             if(!reason) { alert("Motivo obrigatório."); return; }
 
-            const payload = { action: 'reject', motivo: reason };
+            const p = availablePeriods[currentPeriodIndex];
+            const payload = { action: 'reject', motivo: reason, inicio: p.DataInicio__c, fim: p.DataFim__c };
             if (isMass) {
                 payload.entryIds = getSelectedEntryIds();
             } else {
                 payload.serviceId = document.getElementById('reject-service-id').value;
                 payload.personId = document.getElementById('reject-person-id').value;
-                const p = availablePeriods[currentPeriodIndex];
-                payload.inicio = p.DataInicio__c;
-                payload.fim = p.DataFim__c;
             }
 
             try {
@@ -540,11 +639,14 @@
                 const result = await res.json();
                 if (result.success) {
                     document.getElementById('modal-reject').classList.add('hidden');
-                    await openActivityModal(currentModalServiceId, currentModalPersonId);
-                    await openModal(currentModalServiceId, document.getElementById('modal-title').innerText);
-                    const dates = availablePeriods[currentPeriodIndex];
-                    loadProjects(dates.DataInicio__c, dates.DataFim__c);
-                } else { alert(result.message); }
+                    // Só recarrega o extrato se ele estiver aberto (tiver IDs definidos)
+                    if (currentModalServiceId && currentModalPersonId && currentModalServiceId !== 'MASS') {
+                        await openActivityModal(currentModalServiceId, currentModalPersonId);
+                    }
+                    await openModal(currentProjectItem);
+                    loadProjects(p.DataInicio__c, p.DataFim__c);
+                }
+ else { alert(result.message); }
             } catch (e) { alert('Erro na reprovação.'); }
         }
 
@@ -563,8 +665,10 @@
                     const checkAll = document.getElementById('check-all-entries');
                     if(checkAll) checkAll.checked = false;
                     updateMassActionButtons();
-                    openModal(serviceId, document.getElementById('modal-title').innerText); 
-                } else { alert('Erro: ' + result.message); }
+                    openModal(currentProjectItem); 
+                    loadProjects(p.DataInicio__c, p.DataFim__c);
+                }
+ else { alert('Erro: ' + result.message); }
             } catch (err) { alert('Erro de comunicação.'); }
         }
 

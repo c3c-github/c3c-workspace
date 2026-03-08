@@ -165,7 +165,7 @@ exports.getProjects = async (req, res) => {
             const ext = row.HorasExtras__c || 0;
             p.metrics.normal += norm;
             p.metrics.extra += ext;
-            p.metrics.ponderado += (norm + ext);
+            p.metrics.ponderado += (norm + (ext * 2));
             
             if (['Em aprovação do serviço', 'Rascunho', 'Reprovado serviço', 'Reprovado RH'].includes(row.Status__c)) {
                 p.statusUI = 'Aberto';
@@ -178,8 +178,8 @@ exports.getProjects = async (req, res) => {
             return { ...p, percentual: percent };
         });
         
-        // Ordenação por horas previstas (alocado) decrescente
-        result.sort((a, b) => b.metrics.alocado - a.metrics.alocado);
+        // Ordenação por Nome (serviceName) ASC
+        result.sort((a, b) => a.serviceName.localeCompare(b.serviceName));
 
         res.json(result);
     } catch (e) { res.status(500).json({ error: e.message }); }
@@ -193,15 +193,20 @@ exports.getProjectResources = async (req, res) => {
         const emailLider = req.session.user.email;
 
         const qAlloc = `SELECT Pessoa__c, Pessoa__r.Name, Percentual__c FROM Alocacao__c WHERE Servico__c = '${serviceId}' AND Servico__r.Lider__r.Email__c = '${emailLider}' AND DataInicio__c <= ${fim} AND (DataFim__c >= ${inicio} OR DataFim__c = NULL)`;
-        const qPeriodos = `SELECT ContratoPessoa__r.Pessoa__c, ContratoPessoa__r.Hora__c FROM Periodo__c WHERE DataInicio__c <= ${fim} AND DataFim__c >= ${inicio}`;
+        const qPeriodos = `SELECT ContratoPessoa__r.Pessoa__c, ContratoPessoa__r.Hora__c, Status__c FROM Periodo__c WHERE DataInicio__c <= ${fim} AND DataFim__c >= ${inicio}`;
         const qLanc = `SELECT Pessoa__c, Pessoa__r.Name, Status__c, Horas__c, HorasExtras__c, HorasBanco__c, HorasAusenciaRemunerada__c, HorasAusenciaNaoRemunerada__c FROM LancamentoHora__c WHERE Servico__c = '${serviceId}' AND DiaPeriodo__r.Data__c >= ${inicio} AND DiaPeriodo__r.Data__c <= ${fim} AND ${FILTRO_HORAS}`;
 
         const [resAlloc, resPeriodos, resLanc] = await Promise.all([conn.query(qAlloc), conn.query(qPeriodos), conn.query(qLanc)]);
 
-        const mapCargaHoraria = {};
+        const mapPeriodoInfo = {};
         resPeriodos.records.forEach(p => {
             const pId = p.ContratoPessoa__r ? p.ContratoPessoa__r.Pessoa__c : null;
-            if(pId) mapCargaHoraria[safeId(pId)] = p.ContratoPessoa__r ? p.ContratoPessoa__r.Hora__c : 8;
+            if(pId) {
+                mapPeriodoInfo[safeId(pId)] = {
+                    carga: p.ContratoPessoa__r ? p.ContratoPessoa__r.Hora__c : 8,
+                    status: p.Status__c || 'Aberto'
+                };
+            }
         });
 
         const diasUteis = getBusinessDays(inicio, fim);
@@ -209,10 +214,11 @@ exports.getProjectResources = async (req, res) => {
 
         resAlloc.records.forEach(row => {
             const pId = safeId(row.Pessoa__c);
-            const cargaDiaria = mapCargaHoraria[pId] || 8;
+            const info = mapPeriodoInfo[pId] || { carga: 8, status: 'Aberto' };
             const percent = (row.Percentual__c || 0) / 100;
             resourcesMap[pId] = {
-                id: row.Pessoa__c, name: row.Name || row.Pessoa__r.Name, alocado: (diasUteis * cargaDiaria * percent),
+                id: row.Pessoa__c, name: row.Name || row.Pessoa__r.Name, alocado: (diasUteis * info.carga * percent),
+                periodStatus: info.status,
                 totalRealizado: 0, horasNormais: 0, horasExtrasPgto: 0, horasExtrasBanco: 0, horasAusenciaBanco: 0, horasAusenciaOutras: 0,
                 countPending: 0, countApproved: 0, countRejected: 0
             };
@@ -221,8 +227,10 @@ exports.getProjectResources = async (req, res) => {
         resLanc.records.forEach(row => {
             const pId = safeId(row.Pessoa__c);
             if (!resourcesMap[pId] && row.Pessoa__c) {
+                const info = mapPeriodoInfo[pId] || { carga: 8, status: 'Aberto' };
                 resourcesMap[pId] = {
                     id: row.Pessoa__c, name: row.Pessoa__r ? row.Pessoa__r.Name : 'Colaborador', alocado: 0,
+                    periodStatus: info.status,
                     totalRealizado: 0, horasNormais: 0, horasExtrasPgto: 0, horasExtrasBanco: 0, horasAusenciaBanco: 0, horasAusenciaOutras: 0,
                     countPending: 0, countApproved: 0, countRejected: 0
                 };
@@ -239,12 +247,16 @@ exports.getProjectResources = async (req, res) => {
                 r.horasExtrasPgto += hExt;
                 if (hBanco > 0) r.horasExtrasBanco += hBanco; else r.horasAusenciaBanco += Math.abs(hBanco);
                 r.horasAusenciaOutras += (hAusRem + hAusNao);
-                r.totalRealizado += (hNorm + hExt); 
+                
+                // CÁLCULO TOTAL: Normal + (Extra Pago * 2)
+                r.totalRealizado += (hNorm + (hExt * 2)); 
 
                 const st = row.Status__c;
-                if (['Em aprovação do serviço', 'Rascunho', 'Reprovado serviço', 'Reprovado RH'].includes(st)) r.countPending++;
-                else if (['Em aprovação do RH', 'Aprovado', 'Faturado', 'Fechado'].includes(st)) r.countApproved++;
-                else if (['Reprovado serviço'].includes(st)) r.countRejected++;
+                // PENDÊNCIA REAL DE SERVIÇO: Itens que o gestor precisa agir AGORA
+                if (st === 'Em aprovação do serviço') r.countPending++;
+                
+                if (['Em aprovação do RH', 'Aprovado', 'Faturado', 'Fechado'].includes(st)) r.countApproved++;
+                else if (['Reprovado serviço', 'Reprovado RH'].includes(st)) r.countRejected++;
             }
         });
 
@@ -255,7 +267,10 @@ exports.getProjectResources = async (req, res) => {
             if (r.alocado === 0 && r.totalRealizado > 0) r.noContract = true;
             return { ...r, percentual: percent };
         });
-        result.sort((a, b) => b.countPending - a.countPending);
+
+        // Ordenação por Nome (name) ASC
+        result.sort((a, b) => a.name.localeCompare(b.name));
+
         res.json(result);
     } catch (e) { res.status(500).json({ error: e.message }); }
 };
@@ -265,6 +280,10 @@ exports.getResourceActivities = async (req, res) => {
         const conn = await getSfConnection();
         const { serviceId, personId } = req.params;
         const { inicio, fim } = req.query;
+
+        if (!serviceId || serviceId === 'null' || !personId || personId === 'null') {
+            return res.status(400).json({ error: 'Identificadores de serviço ou pessoa inválidos.' });
+        }
 
         // FILTRO APLICADO CONFORME SOLICITADO
         const soql = `
@@ -331,20 +350,44 @@ exports.handleApprovalAction = async (req, res) => {
         
         await conn.update('LancamentoHora__c', allUpdates);
 
-        // SE HOUVE REPROVAÇÃO, REABRE O PERÍODO
-        if (action === 'reject') {
-            const logsQuery = `SELECT Periodo__c FROM LancamentoHora__c WHERE Id IN ('${allUpdates.map(u => u.Id).join("','")}') GROUP BY Periodo__c`;
-            const logsRes = await conn.query(logsQuery);
-            const periodIds = logsRes.records.map(r => r.Periodo__c);
-            
-            if (periodIds.length > 0) {
+        // --- LÓGICA DE TRANSIÇÃO DO STATUS DO PERÍODO ---
+        
+        // 1. Coleta os IDs dos Períodos afetados pelos lançamentos que acabamos de atualizar
+        const updatesIds = allUpdates.map(u => `'${u.Id}'`).join(',');
+        const logsQuery = `SELECT Periodo__c FROM LancamentoHora__c WHERE Id IN (${updatesIds}) GROUP BY Periodo__c`;
+        const logsRes = await conn.query(logsQuery);
+        const periodIds = [...new Set(logsRes.records.map(r => r.Periodo__c))];
+
+        if (periodIds.length > 0) {
+            if (action === 'reject') {
+                // REPROVAÇÃO: Sempre volta o período para 'Aberto'
                 const periodUpdates = periodIds.map(id => ({ Id: id, Status__c: 'Aberto' }));
                 await conn.sobject('Periodo__c').update(periodUpdates);
+            } else {
+                // APROVAÇÃO: Verifica se o período PODE avançar para 'Aguardando Aprovação RH'
+                for (const pId of periodIds) {
+                    const pendingQuery = `
+                        SELECT COUNT(Id) total 
+                        FROM LancamentoHora__c 
+                        WHERE Periodo__c = '${pId}' 
+                        AND Status__c IN ('Rascunho', 'Reprovado serviço', 'Reprovado RH', 'Em aprovação do serviço')
+                    `;
+                    const pendingRes = await conn.query(pendingQuery);
+                    const totalPending = parseInt(pendingRes.records[0].total || pendingRes.records[0].expr0 || 0);
+
+                    // Se não há mais NADA pendente no período, ele avança
+                    if (totalPending === 0) {
+                        await conn.sobject('Periodo__c').update({ Id: pId, Status__c: 'Aguardando Aprovação RH' });
+                    }
+                }
             }
         }
 
         res.json({ success: true, message: `Lançamentos processados com sucesso.` });
-    } catch (e) { res.status(500).json({ success: false, error: e.message }); }
+    } catch (e) { 
+        console.error("Erro handleApprovalAction:", e);
+        res.status(500).json({ success: false, message: e.message }); 
+    }
 };
 
 exports.getDashboardMetrics = async (req, res) => {

@@ -82,17 +82,9 @@
             </div>
             <div class="flex-1 min-w-0">
                 <p class="text-sm font-semibold text-gray-900 truncate"><%= user.nome %></p>
-                <p class="text-xs text-gray-500 truncate" title="<%= user.grupos ? user.grupos.join(', ') : 'Colaborador' %>">
-                    <% if (user.grupos && user.grupos.length > 0) { %>
-                        <% 
-                           const nomes = user.grupos.map(g => {
-                               if(g === 'ADMIN_RH') return 'RH';
-                               if(g === 'GESTOR') return 'Gestão';
-                               if(g === 'OPERACAO') return 'N2';
-                               return g;
-                           });
-                        %>
-                        <%= nomes.join(' & ') %>
+                <p class="text-xs text-gray-500 truncate" title="<%= (user.labels_grupos && user.labels_grupos.length > 0) ? user.labels_grupos.join(', ') : 'Colaborador' %>">
+                    <% if (user.labels_grupos && user.labels_grupos.length > 0) { %>
+                        <%= user.labels_grupos.join(' & ') %>
                     <% } else { %>
                         Colaborador
                     <% } %>
