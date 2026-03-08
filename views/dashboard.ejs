@@ -358,7 +358,7 @@
                 compBadge.classList.remove('hidden');
                 compBadge.classList.add('flex');
                 compText.innerText = `${compliance.completed}/${compliance.total} dias úteis preenchidos`;
-            } else if (status === 'Aguardando Aprovação Líder' || status === 'Aguardando Aprovação RH') {
+            } else if (status === 'Em aprovação do serviço' || status === 'Aguardando Aprovação Líder' || status === 'Aguardando Aprovação RH') {
                 activeStep = 2;
                 statusText = "Lançamentos concluídos! Aguardando aprovação do Líder/RH.";
                 compBadge.classList.add('hidden');
@@ -378,7 +378,11 @@
             for(let i=1; i<=activeStep; i++) {
                 const circle = document.getElementById(`step-${i}-circle`);
                 const title = document.querySelector(`#step-${i} div.mt-2`);
-                if (i < activeStep) {
+                
+                // Se o ciclo está finalizado e estamos na etapa 4, mostramos como concluído (preenchido)
+                const isFinalStepCompleted = (i === 4 && status === 'Finalizado/Pago');
+
+                if (i < activeStep || isFinalStepCompleted) {
                     circle.className = "w-10 h-10 rounded-full bg-blue-600 border-2 border-blue-600 flex items-center justify-center transition-all z-10 text-white shadow-sm";
                     if(title) title.className = "mt-2 text-[10px] font-bold text-blue-600 uppercase";
                     if(i < 4) document.getElementById(`step-${i}-line`).style.width = "100%";
