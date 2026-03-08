@@ -2,6 +2,7 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Cockpit Financeiro - C3C Workplace</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
@@ -12,12 +13,7 @@
                 extend: {
                     fontFamily: { sans: ['Montserrat', 'sans-serif'] },
                     colors: { 
-                        c3c: { 
-                            blue: '#2978FF', 
-                            teal: '#1DDDBD', 
-                            gray: '#F2F2F2',
-                            bg: '#F8FAFC'
-                        } 
+                        c3c: { blue: '#2978FF', bg: '#F8FAFC' } 
                     }
                 }
             }
@@ -25,241 +21,337 @@
     </script>
     <style>
         body { font-family: 'Montserrat', sans-serif; background-color: #F8FAFC; }
-        .fade-in { animation: fadeIn 0.3s ease-out; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
-        .status-badge { @apply px-2 py-1 rounded-md text-[10px] font-bold uppercase border whitespace-nowrap; }
+        .fade-in { animation: fadeIn 0.4s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        td { vertical-align: middle !important; }
     </style>
 </head>
 <body class="h-screen flex overflow-hidden bg-[#F8FAFC]">
 
-    <div id="mobile-overlay" onclick="toggleMenu()" class="fixed inset-0 bg-black/50 z-30 hidden md:hidden transition-opacity opacity-0"></div>
     <%- include('partials/sidebar') %>
 
     <main class="flex-1 flex flex-col md:ml-64 relative w-full transition-all duration-300">
         
-        <!-- HEADER -->
         <header class="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-4 md:px-8 sticky top-0 z-20">
             <div class="flex items-center gap-4">
-                <button onclick="toggleMenu()" class="md:hidden p-2 text-gray-600 hover:bg-gray-100 rounded-lg">
-                    <i data-lucide="menu" class="w-6 h-6"></i>
+                <button onclick="document.getElementById('sidebar').classList.toggle('-translate-x-full')" class="md:hidden p-2 text-gray-600 hover:bg-gray-100 rounded-lg">
+                    <i data-lucide="menu"></i>
                 </button>
                 <h1 class="text-lg md:text-xl font-bold text-gray-800 flex items-center gap-2">
-                    Cockpit de Pagamentos
-                    <span class="hidden md:inline-flex bg-green-100 text-green-700 text-xs px-2 py-1 rounded-full items-center gap-1">
-                        <i data-lucide="banknote" class="w-3 h-3"></i> Financeiro
-                    </span>
+                    Cockpit Financeiro <span class="bg-blue-100 text-blue-700 text-xs px-2 py-1 rounded-full border border-blue-200 font-medium">Gestão de Pagamentos</span>
                 </h1>
-            </div>
-            <div class="flex items-center gap-3">
-                <select id="period-selector" onchange="triggerDataLoad(this.value)" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2 cursor-pointer outline-none min-w-[200px]">
-                    <option>Carregando ciclos...</option>
-                </select>
             </div>
         </header>
 
         <div class="flex-1 overflow-y-auto p-4 md:p-8 fade-in">
-            
-            <div class="bg-white rounded-2xl shadow-sm border border-gray-200 flex flex-col">
-                
-                <!-- Toolbar -->
-                <div class="p-6 border-b border-gray-100 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-                    <div>
-                        <h2 class="text-lg font-bold text-gray-900">Fila de Desembolso</h2>
-                        <p class="text-xs text-gray-400">Gestão de notas fiscais e confirmação de pagamentos.</p>
-                    </div>
-                    
-                    <div class="flex flex-col sm:flex-row items-center gap-3 w-full lg:w-auto">
-                        <div class="relative w-full sm:w-64">
-                            <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400"></i>
-                            <input type="text" id="search-input" onkeyup="renderTable()" placeholder="Buscar colaborador..." 
-                                   class="pl-9 pr-4 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 w-full">
-                        </div>
-                        <select id="status-filter" onchange="triggerDataLoad(document.getElementById('period-selector').value)" 
-                                class="bg-gray-50 border border-gray-200 rounded-xl px-4 py-2 text-sm font-medium text-gray-600 outline-none w-full sm:w-auto">
-                            <option value="">Todos os Pendentes</option>
-                            <option value="Nota em Validação">Nota em Validação</option>
-                            <option value="Pronto para Pagamento">Pronto p/ Pagamento</option>
+            <!-- FILTROS E AÇÕES EM MASSA -->
+            <div class="mb-8 flex flex-wrap items-center justify-between gap-4">
+                <div class="flex flex-wrap items-center gap-3">
+                    <div class="bg-white px-4 py-2 rounded-xl border border-gray-200 shadow-sm flex items-center gap-2">
+                        <span class="text-xs font-bold text-gray-400 uppercase">Status</span>
+                        <select id="filter-status" onchange="loadFinancePeriods()" class="text-sm font-bold text-gray-700 outline-none bg-transparent">
+                            <option value="Nota em Validação" selected>Nota em Validação</option>
+                            <option value="Liberado para Nota Fiscal">Reprovadas / Pendentes</option>
+                            <option value="Pronto para Pagamento">Pronto para Pagamento</option>
                             <option value="Pagamento Agendado">Pagamento Agendado</option>
                             <option value="Finalizado/Pago">Finalizado/Pago</option>
+                            <option value="">Todos os Status</option>
                         </select>
+                    </div>
+
+                    <div class="bg-white px-4 py-2 rounded-xl border border-gray-200 shadow-sm flex items-center gap-2 w-64">
+                        <i data-lucide="search" class="w-4 h-4 text-gray-400"></i>
+                        <input type="text" id="search-input" oninput="filterLocalData()" placeholder="Buscar colaborador..." class="text-sm font-medium text-gray-700 outline-none bg-transparent w-full">
                     </div>
                 </div>
 
-                <!-- Tabela -->
+                <div id="bulk-actions" class="hidden flex items-center gap-2 bg-blue-50 p-2 rounded-xl border border-blue-100 animate-pulse">
+                    <span class="text-xs font-bold text-blue-700 px-2"><span id="selected-count">0</span> selecionados:</span>
+                    <button onclick="updateBulkStatus('Pagamento Agendado')" class="bg-white text-blue-600 px-4 py-1.5 rounded-lg text-xs font-bold shadow-sm hover:bg-blue-50">Marcar como Agendado</button>
+                    <button onclick="updateBulkStatus('Finalizado/Pago')" class="bg-blue-600 text-white px-4 py-1.5 rounded-lg text-xs font-bold shadow-sm hover:bg-blue-700">Confirmar Pagamento</button>
+                </div>
+            </div>
+
+            <!-- TABELA ENRIQUECIDA -->
+            <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
                 <div class="overflow-x-auto">
-                    <table class="w-full text-sm text-left">
-                        <thead class="bg-gray-50 text-gray-500 uppercase text-[10px] font-bold border-b border-gray-200">
-                            <tr>
+                    <table class="w-full text-left text-sm">
+                        <thead class="bg-gray-50 border-b border-gray-200">
+                            <tr class="text-xs font-bold text-gray-400 uppercase tracking-wider">
                                 <th class="px-6 py-4 w-10">
-                                    <input type="checkbox" id="select-all" onchange="toggleSelectAll()" class="rounded border-gray-300 text-green-600 focus:ring-green-500">
+                                    <input type="checkbox" id="select-all" onclick="toggleSelectAll(this)" class="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500">
                                 </th>
-                                <th class="px-6 py-4">Colaborador</th>
-                                <th class="px-6 py-4">Ciclo</th>
-                                <th class="px-6 py-4 text-right">Valor Bruto</th>
-                                <th class="px-6 py-4 text-center">Status</th>
+                                <th class="px-6 py-4">Colaborador / Ciclo</th>
+                                <th class="px-6 py-4">Dados da Nota</th>
+                                <th class="px-6 py-4">Status</th>
+                                <th class="px-6 py-4 text-right">Valor Nota</th>
+                                <th class="px-6 py-4 text-center">Validações</th>
                                 <th class="px-6 py-4 text-right">Ações</th>
                             </tr>
                         </thead>
-                        <tbody class="divide-y divide-gray-100" id="finance-table-body">
-                            <tr><td colspan="6" class="text-center py-10 text-gray-400 italic">Carregando fila...</td></tr>
+                        <tbody id="finance-table-body" class="divide-y divide-gray-100">
+                            <tr><td colspan="7" class="text-center py-10 text-gray-400"><i data-lucide="loader-2" class="w-6 h-6 animate-spin inline mr-2"></i> Carregando cockpit...</td></tr>
                         </tbody>
                     </table>
-                </div>
-
-                <!-- Bulk Actions -->
-                <div id="bulk-actions" class="hidden p-4 bg-green-50 border-t border-green-100 flex items-center justify-between">
-                    <span class="text-xs font-bold text-green-700 ml-4" id="selected-count">0 selecionados</span>
-                    <div class="flex gap-2">
-                        <button onclick="handleBulkStatus('Pagamento Agendado')" class="bg-white border border-green-200 text-green-700 px-6 py-2 rounded-xl text-xs font-bold hover:bg-green-100 transition-all">
-                            Marcar como Agendado
-                        </button>
-                        <button onclick="handleBulkStatus('Finalizado/Pago')" class="bg-green-600 text-white px-6 py-2 rounded-xl text-xs font-bold hover:bg-green-700 shadow-md transition-all">
-                            Confirmar Pagamento (Lote)
-                        </button>
-                    </div>
                 </div>
             </div>
         </div>
     </main>
 
+    <!-- MODAL REPROVAÇÃO -->
+    <div id="modal-reprove" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8 transform scale-95 transition-all">
+            <h3 class="text-xl font-bold text-gray-900 mb-2">Reprovar Nota Fiscal</h3>
+            <p class="text-sm text-gray-500 mb-6">Informe o motivo da reprovação para o colaborador.</p>
+            
+            <input type="hidden" id="reprove-period-id">
+            <input type="hidden" id="reprove-nf-id">
+            
+            <textarea id="reprove-motivo" rows="4" placeholder="Ex: Valor da nota não condiz com o aprovado no sistema." class="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-red-500 outline-none resize-none"></textarea>
+
+            <div class="flex justify-end gap-3 mt-8">
+                <button onclick="closeReproveModal()" class="px-6 py-2 text-gray-500 font-bold">Cancelar</button>
+                <button onclick="confirmReprove()" class="px-8 py-2 bg-red-600 text-white font-bold rounded-xl shadow-lg hover:bg-red-700 transition-all">Confirmar Reprovação</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         lucide.createIcons();
-        const API_URL = '/api';
-        let allPeriods = [];
-        const statusColors = {
-            'Nota em Validação': 'bg-purple-50 text-purple-600 border-purple-100',
-            'Pronto para Pagamento': 'bg-teal-50 text-teal-600 border-teal-100',
-            'Pagamento Agendado': 'bg-blue-50 text-blue-600 border-blue-100',
-            'Finalizado/Pago': 'bg-green-50 text-green-600 border-green-100'
-        };
+        document.addEventListener('DOMContentLoaded', loadFinancePeriods);
 
-        document.addEventListener('DOMContentLoaded', () => { loadAvailableCycles(); });
+        let currentData = [];
 
-        async function loadAvailableCycles() {
+        async function loadFinancePeriods() {
+            const status = document.getElementById('filter-status').value;
+            const url = `/api/finance/periods?status=${status}`;
+            
             try {
-                const res = await fetch('/api/periods');
-                const cycles = await res.json();
-                const selector = document.getElementById('period-selector');
-                selector.innerHTML = '';
-                cycles.forEach((c, i) => {
-                    const opt = document.createElement('option');
-                    opt.value = JSON.stringify({start: c.DataInicio__c, end: c.DataFim__c});
-                    opt.text = c.Name;
-                    if(i === 0) opt.selected = true;
-                    selector.appendChild(opt);
-                });
-                if(selector.options.length > 0) triggerDataLoad(selector.value);
+                const res = await fetch(url);
+                currentData = await res.json();
+                filterLocalData();
             } catch(e) { console.error(e); }
         }
 
-        function triggerDataLoad(v) { 
-            if(!v) return; 
-            const d = JSON.parse(v); 
-            const statusFilter = document.getElementById('status-filter').value;
-            loadTableData(d.start, d.end, statusFilter); 
-        }
-
-        async function loadTableData(start, end, statusFilter = '') {
-            const tbody = document.getElementById('finance-table-body');
-            tbody.innerHTML = '<tr><td colspan="6" class="text-center py-10 text-gray-400 italic">Carregando...</td></tr>';
-            try {
-                const url = `${API_URL}/finance/periods?startDate=${start}&endDate=${end}${statusFilter ? '&status='+statusFilter : ''}`;
-                const res = await fetch(url);
-                allPeriods = await res.json();
-                renderTable();
-            } catch(e){ console.error(e); }
-        }
-
-        function renderTable() {
-            const tbody = document.getElementById('finance-table-body');
-            const search = document.getElementById('search-input').value.toLowerCase();
-            tbody.innerHTML = '';
-
-            const filtered = allPeriods.filter(p => p.employeeName.toLowerCase().includes(search));
-
-            if (filtered.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="6" class="px-6 py-10 text-center text-gray-400 italic">Nenhum registro pendente.</td></tr>';
+        function filterLocalData() {
+            const term = document.getElementById('search-input').value.toLowerCase();
+            if (!term) {
+                renderTable(currentData);
                 return;
             }
 
-            filtered.forEach(p => {
-                tbody.innerHTML += `
-                <tr class="hover:bg-gray-50 transition-colors">
-                    <td class="px-6 py-4">
-                        <input type="checkbox" name="period-check" value="${p.id}" onchange="updateBulkActions()" class="rounded border-gray-300 text-green-600">
-                    </td>
-                    <td class="px-6 py-4">
-                        <p class="font-bold text-gray-900">${p.employeeName}</p>
-                        <p class="text-[10px] text-gray-400">ID: ${p.id}</p>
-                    </td>
-                    <td class="px-6 py-4 text-xs text-gray-500">${p.name}</td>
-                    <td class="px-6 py-4 text-right font-black text-gray-900">R$ ${p.value.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</td>
-                    <td class="px-6 py-4 text-center">
-                        <span class="status-badge ${statusColors[p.status]}">${p.status}</span>
-                    </td>
-                    <td class="px-6 py-4 text-right">
-                        <div class="flex justify-end gap-2">
-                            ${p.status === 'Nota em Validação' ? `<button onclick="changeStatus(['${p.id}'], 'Pronto para Pagamento')" class="p-2 text-gray-400 hover:text-teal-600" title="Validar Nota"><i data-lucide="file-check" class="w-4 h-4"></i></button>` : ''}
-                            ${p.status === 'Pronto para Pagamento' ? `<button onclick="changeStatus(['${p.id}'], 'Pagamento Agendado')" class="p-2 text-gray-400 hover:text-blue-600" title="Agendar"><i data-lucide="calendar-check" class="w-4 h-4"></i></button>` : ''}
-                            ${p.status === 'Pagamento Agendado' ? `<button onclick="changeStatus(['${p.id}'], 'Finalizado/Pago')" class="p-2 text-gray-400 hover:text-green-600" title="Confirmar"><i data-lucide="dollar-sign" class="w-4 h-4"></i></button>` : ''}
+            const filtered = currentData.filter(p => {
+                return p.employeeName.toLowerCase().includes(term) || 
+                       p.name.toLowerCase().includes(term) ||
+                       (p.nf && p.nf.nomeEmitente && p.nf.nomeEmitente.toLowerCase().includes(term));
+            });
+            renderTable(filtered);
+        }
+
+        function renderTable(periods) {
+            const tbody = document.getElementById('finance-table-body');
+            tbody.innerHTML = '';
+
+            if (periods.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" class="text-center py-10 text-gray-400 italic">Nenhum período encontrado.</td></tr>';
+                return;
+            }
+
+            periods.forEach(p => {
+                const vHoras = p.valueHoras || 0;
+                const vNF = p.nf ? (p.nf.valor || 0) : 0;
+                const diff = Math.abs(vHoras - vNF);
+                const hasDiscrepancy = diff > 0.05; 
+
+                const c3cCNPJ = "34268618000159";
+                const nfReceptorRaw = p.nf && p.nf.cnpjReceptor ? p.nf.cnpjReceptor.replace(/\D/g, '') : '';
+                const isC3C = nfReceptorRaw === c3cCNPJ;
+
+                const statusColors = { 
+                    'Nota em Validação': 'bg-orange-50 text-orange-600 border-orange-100', 
+                    'Pronto para Pagamento': 'bg-blue-50 text-blue-600 border-blue-100', 
+                    'Pagamento Agendado': 'bg-purple-50 text-purple-600 border-purple-100', 
+                    'Finalizado/Pago': 'bg-green-50 text-green-600 border-green-100',
+                    'Liberado para Nota Fiscal': 'bg-gray-50 text-gray-500 border-gray-100'
+                };
+
+                let statusLabel = p.status;
+                let statusColor = statusColors[p.status] || 'bg-gray-50';
+
+                if(p.status === 'Liberado para Nota Fiscal') {
+                    if(p.nf && p.nf.status === 'Reprovada') {
+                        statusLabel = 'Nota Reprovada';
+                        statusColor = 'bg-red-50 text-red-600 border-red-100';
+                    } else {
+                        statusLabel = 'Aguardando Nota';
+                    }
+                }
+
+                let nfDownloadBtn = '';
+                if(p.nf && p.nf.docId) {
+                    nfDownloadBtn = `<a href="/api/billing/download/${p.nf.docId}" class="p-2 text-blue-500 hover:bg-blue-50 rounded-lg transition-all" title="Baixar Arquivo">
+                                        <i data-lucide="download-cloud" class="w-5 h-5"></i>
+                                     </a>`;
+                }
+
+                let actionBtn = '';
+                if(p.status === 'Nota em Validação') {
+                    actionBtn = `
+                        <div class="flex items-center justify-end gap-1">
+                            <button onclick="openReproveModal('${p.id}', '${p.nf.id}')" class="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all" title="Reprovar">
+                                <i data-lucide="x-circle" class="w-5 h-5"></i>
+                            </button>
+                            <button onclick="updateStatus('${p.id}', 'Pronto para Pagamento')" class="bg-blue-600 text-white px-3 py-1.5 rounded-lg text-[10px] font-bold shadow-sm hover:bg-blue-700 flex items-center gap-1">
+                                <i data-lucide="check-circle" class="w-3.5 h-3.5"></i> Aprovar
+                            </button>
                         </div>
-                    </td>
-                </tr>`;
+                    `;
+                }
+
+                const alertIcon = hasDiscrepancy && p.status === 'Nota em Validação' ? `<i data-lucide="alert-triangle" class="w-3.5 h-3.5 text-red-500 animate-bounce" title="Vlr. Horas: ${vHoras.toLocaleString('pt-BR', {style:'currency', currency:'BRL'})}"></i>` : '';
+
+                const receptorBadge = p.nf ? (isC3C 
+                    ? `<span class="bg-green-50 text-green-600 text-[9px] px-1.5 py-0.5 rounded border border-green-100 font-bold uppercase">C3C OK</span>` 
+                    : `<span class="bg-red-50 text-red-600 text-[9px] px-1.5 py-0.5 rounded border border-red-100 font-bold uppercase flex items-center gap-1 justify-center">Receptor Inválido <i data-lucide="shield-alert" class="w-2 h-2"></i></span>`) : '';
+
+                const iaBadge = p.nf ? (p.nf.preenchimento === 'Automático' 
+                    ? `<span class="bg-blue-50 text-blue-600 text-[9px] px-1.5 py-0.5 rounded border border-blue-100 font-bold uppercase flex items-center gap-1"><i data-lucide="sparkles" class="w-2 h-2"></i> IA</span>` 
+                    : `<span class="bg-gray-50 text-gray-500 text-[9px] px-1.5 py-0.5 rounded border border-gray-100 font-bold uppercase flex items-center gap-1"><i data-lucide="user" class="w-2 h-2"></i> Manual</span>`) : '';
+
+                const dataEmissao = p.nf && p.nf.dataEmissao ? new Date(p.nf.dataEmissao + 'T12:00:00').toLocaleDateString('pt-BR') : '-';
+
+                const invoiceDetails = p.nf ? `
+                    <div class="leading-tight">
+                        <p class="font-bold text-gray-800 text-xs truncate w-48" title="${p.nf.nomeEmitente}">${p.nf.nomeEmitente || 'N/A'}</p>
+                        <p class="text-[10px] text-gray-400">CNPJ: ${p.nf.cnpjEmissor || 'N/A'}</p>
+                        <p class="text-[10px] text-gray-400">NF: ${p.nf.numeroNota || 'N/A'} • Emissão: ${dataEmissao}</p>
+                    </div>
+                ` : '<span class="text-gray-300 italic text-xs">Sem dados</span>';
+
+                tbody.innerHTML += `
+                    <tr class="hover:bg-gray-50/50 transition-colors h-24">
+                        <td class="px-6 py-4">
+                            <input type="checkbox" value="${p.id}" onchange="updateSelection()" class="period-checkbox w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                        </td>
+                        <td class="px-6 py-4">
+                            <p class="font-bold text-gray-900">${p.employeeName}</p>
+                            <p class="text-[10px] text-gray-400 uppercase font-medium truncate w-40">${p.name}</p>
+                        </td>
+                        <td class="px-6 py-4">
+                            ${invoiceDetails}
+                        </td>
+                        <td class="px-6 py-4">
+                            <span class="px-2 py-1 rounded-md text-[10px] font-bold uppercase border ${statusColor}">${statusLabel}</span>
+                        </td>
+                        <td class="px-6 py-4 text-right font-bold ${hasDiscrepancy && p.status === 'Nota em Validação' ? 'text-red-600' : 'text-blue-600'} text-sm">
+                            <div class="flex items-center justify-end gap-1">
+                                ${alertIcon} ${vNF.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                            </div>
+                            <p class="text-[9px] text-gray-400 font-medium">Prev: ${vHoras.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
+                        </td>
+                        <td class="px-6 py-4">
+                            <div class="flex flex-col items-center gap-1.5">
+                                ${receptorBadge}
+                                ${iaBadge}
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 text-right">
+                            <div class="flex items-center justify-end gap-1">
+                                ${nfDownloadBtn}
+                                ${actionBtn}
+                            </div>
+                        </td>
+                    </tr>
+                `;
             });
             lucide.createIcons();
+            updateSelection();
         }
 
-        async function handleBulkStatus(newStatus) {
-            const selected = Array.from(document.querySelectorAll('input[name="period-check"]:checked')).map(c => c.value);
-            if(!confirm(`Confirmar alteração em lote para ${selected.length} períodos?`)) return;
-            await changeStatus(selected, newStatus);
+        function toggleSelectAll(master) {
+            const checkboxes = document.querySelectorAll('.period-checkbox');
+            checkboxes.forEach(cb => cb.checked = master.checked);
+            updateSelection();
         }
 
-        async function changeStatus(periodIds, newStatus) {
+        function updateSelection() {
+            const selected = document.querySelectorAll('.period-checkbox:checked');
+            const count = selected.length;
+            const bulkActions = document.getElementById('bulk-actions');
+            
+            document.getElementById('selected-count').innerText = count;
+            
+            if(count > 0) {
+                bulkActions.classList.remove('hidden');
+                bulkActions.classList.add('flex');
+            } else {
+                bulkActions.classList.add('hidden');
+                bulkActions.classList.remove('flex');
+                document.getElementById('select-all').checked = false;
+            }
+        }
+
+        async function updateStatus(id, newStatus) {
+            if(!confirm(`Mudar status para "${newStatus}"?`)) return;
+            await callUpdateStatus([id], newStatus);
+        }
+
+        async function updateBulkStatus(newStatus) {
+            const selected = Array.from(document.querySelectorAll('.period-checkbox:checked')).map(cb => cb.value);
+            if(!confirm(`Mudar status de ${selected.length} períodos para "${newStatus}"?`)) return;
+            await callUpdateStatus(selected, newStatus);
+        }
+
+        async function callUpdateStatus(ids, newStatus) {
             try {
-                const res = await fetch('/api/finance/status', {
+                const res = await fetch('/api/finance/update-status', {
                     method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ periodIds, newStatus })
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ periodIds: ids, newStatus: newStatus })
                 });
-                if(res.ok) {
-                    triggerDataLoad(document.getElementById('period-selector').value);
-                    document.getElementById('select-all').checked = false;
-                    updateBulkActions();
+                const result = await res.json();
+                if(result.success) {
+                    loadFinancePeriods();
+                } else {
+                    alert('Erro ao atualizar: ' + result.error);
                 }
             } catch(e) { console.error(e); }
         }
 
-        function toggleSelectAll() {
-            const all = document.getElementById('select-all').checked;
-            document.querySelectorAll('input[name="period-check"]').forEach(c => c.checked = all);
-            updateBulkActions();
+        function openReproveModal(periodId, nfId) {
+            document.getElementById('reprove-period-id').value = periodId;
+            document.getElementById('reprove-nf-id').value = nfId;
+            document.getElementById('reprove-motivo').value = '';
+            document.getElementById('modal-reprove').classList.remove('hidden');
+            setTimeout(() => document.getElementById('modal-reprove').querySelector('div').classList.remove('scale-95'), 10);
         }
 
-        function updateBulkActions() {
-            const selected = document.querySelectorAll('input[name="period-check"]:checked');
-            const toolbar = document.getElementById('bulk-actions');
-            const countLabel = document.getElementById('selected-count');
-            if (selected.length > 0) {
-                toolbar.classList.remove('hidden');
-                countLabel.innerText = `${selected.length} selecionados`;
-            } else {
-                toolbar.classList.add('hidden');
-            }
+        function closeReproveModal() {
+            document.getElementById('modal-reprove').classList.add('hidden');
+            document.getElementById('modal-reprove').querySelector('div').classList.add('scale-95');
         }
 
-        function toggleMenu() {
-            const sidebar = document.getElementById('sidebar');
-            const overlay = document.getElementById('mobile-overlay');
-            if (sidebar.classList.contains('-translate-x-full')) {
-                sidebar.classList.remove('-translate-x-full');
-                overlay.classList.remove('hidden');
-                setTimeout(() => overlay.classList.remove('opacity-0'), 10);
-            } else {
-                sidebar.classList.add('-translate-x-full');
-                overlay.classList.add('opacity-0');
-                setTimeout(() => overlay.classList.add('hidden'), 300);
-            }
+        async function confirmReprove() {
+            const periodId = document.getElementById('reprove-period-id').value;
+            const nfId = document.getElementById('reprove-nf-id').value;
+            const motivo = document.getElementById('reprove-motivo').value;
+
+            if(!motivo) return alert("Informe o motivo da reprovação.");
+
+            try {
+                const res = await fetch('/api/finance/reprove-nf', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ periodId, nfId, motivo })
+                });
+                const result = await res.json();
+                if(result.success) {
+                    closeReproveModal();
+                    loadFinancePeriods();
+                } else {
+                    alert('Erro ao reprovar: ' + result.error);
+                }
+            } catch(e) { console.error(e); }
         }
     </script>
 </body>

@@ -73,7 +73,7 @@ exports.uploadNotaFiscal = async (req, res) => {
     try {
         if (!req.file) return res.status(400).json({ error: 'Arquivo não enviado.' });
         
-        const { periodId, valor, cnpjEmissor, cnpjReceptor, numeroNota, dataEmissao, nomeEmitente } = req.body;
+        const { periodId, valor, cnpjEmissor, cnpjReceptor, numeroNota, dataEmissao, nomeEmitente, preenchimento } = req.body;
         const conn = await getSfConnection();
         const userId = req.session.user.id;
         const fileContent = fs.readFileSync(tempPath).toString('base64');
@@ -104,6 +104,7 @@ exports.uploadNotaFiscal = async (req, res) => {
             DataEmissao__c: dataEmissao,
             NomeEmitente__c: nomeEmitente,
             DocumentoId__c: docId,
+            Preenchimento__c: preenchimento || 'Manual',
             MotivoReprovacao__c: null 
         };
 
@@ -481,26 +482,103 @@ exports.getFinancePeriods = async (req, res) => {
         const { startDate, endDate, status } = req.query;
         const conn = await getSfConnection();
 
-        let filters = [`Status__c IN ('Nota em Validação', 'Pronto para Pagamento', 'Pagamento Agendado', 'Finalizado/Pago')`];
-        if (startDate && endDate) filters.push(`DataInicio__c = ${startDate} AND DataFim__c = ${endDate}`);
+        let filters = [`Status__c IN ('Liberado para Nota Fiscal', 'Nota em Validação', 'Pronto para Pagamento', 'Pagamento Agendado', 'Finalizado/Pago')`];
+        if (startDate) filters.push(`DataInicio__c >= ${startDate}`);
+        if (endDate) filters.push(`DataFim__c <= ${endDate}`);
         if (status) filters.push(`Status__c = '${status}'`);
 
         const query = `
-            SELECT Id, Name, Status__c, ContratoPessoa__r.Pessoa__r.Name, ValorTotalPeriodo__c
+            SELECT Id, Name, Status__c, ContratoPessoa__r.Pessoa__r.Name, 
+                   ValorTotalHoras__c, ValorTotalBeneficios__c, ValorTotalPeriodo__c,
+                   (SELECT Id, Status__c, Valor__c, DocumentoId__c, CNPJ_Emissor__c, CNPJ_Receptor__c, NomeEmitente__c, NumeroNota__c, Preenchimento__c, DataEmissao__c FROM NotasFiscais__r WHERE Tipo__c = 'Entrada' LIMIT 1)
             FROM Periodo__c
             WHERE ${filters.join(' AND ')}
             ORDER BY ContratoPessoa__r.Pessoa__r.Name ASC
         `;
         const result = await conn.query(query);
         
-        res.json(result.records.map(p => ({
-            id: p.Id,
-            name: p.Name,
-            status: p.Status__c,
-            employeeName: p.ContratoPessoa__r?.Pessoa__r?.Name || 'N/A',
-            value: p.ValorTotalPeriodo__c || 0
-        })));
-    } catch (e) { res.status(500).json({ error: e.message }); }
+        res.json(result.records.map(p => {
+            const nf = (p.NotasFiscais__r && p.NotasFiscais__r.records) ? p.NotasFiscais__r.records[0] : null;
+            return {
+                id: p.Id,
+                name: p.Name,
+                status: p.Status__c,
+                employeeName: p.ContratoPessoa__r?.Pessoa__r?.Name || 'N/A',
+                valueHoras: p.ValorTotalHoras__c || 0,
+                valueBeneficios: p.ValorTotalBeneficios__c || 0,
+                valueTotal: p.ValorTotalPeriodo__c || 0,
+                nf: nf ? {
+                    id: nf.Id,
+                    status: nf.Status__c,
+                    valor: nf.Valor__c,
+                    docId: nf.DocumentoId__c,
+                    cnpjEmissor: nf.CNPJ_Emissor__c,
+                    cnpjReceptor: nf.CNPJ_Receptor__c,
+                    nomeEmitente: nf.NomeEmitente__c,
+                    numeroNota: nf.NumeroNota__c,
+                    preenchimento: nf.Preenchimento__c,
+                    dataEmissao: nf.DataEmissao__c
+                } : null
+            };
+        }));
+    } catch (e) { 
+        console.error("❌ Erro em getFinancePeriods:", e.message);
+        res.status(500).json({ error: e.message }); 
+    }
+};
+
+exports.reproveNotaFiscal = async (req, res) => {
+    try {
+        const { periodId, nfId, motivo } = req.body;
+        const conn = await getSfConnection();
+
+        // 1. Atualizar Nota Fiscal
+        await conn.sobject('NotaFiscal__c').update({
+            Id: nfId,
+            Status__c: 'Reprovada',
+            MotivoReprovacao__c: motivo
+        });
+
+        // 2. Voltar Período para "Liberado para Nota Fiscal"
+        await conn.sobject('Periodo__c').update({
+            Id: periodId,
+            Status__c: 'Liberado para Nota Fiscal'
+        });
+
+        res.json({ success: true });
+    } catch (e) {
+        console.error("❌ Erro ao reprovar NF:", e);
+        res.status(500).json({ error: e.message });
+    }
+};
+
+exports.downloadDocument = async (req, res) => {
+    try {
+        const { docId } = req.params;
+        const conn = await getSfConnection();
+
+        const cv = await conn.sobject('ContentVersion')
+            .find({ ContentDocumentId: docId, IsLatest: true })
+            .limit(1)
+            .execute();
+
+        if (cv.length === 0) return res.status(404).send('Documento não encontrado.');
+
+        const record = cv[0];
+        const title = record.Title;
+        const extension = record.FileExtension;
+        
+        res.setHeader('Content-Disposition', `attachment; filename="${title}.${extension}"`);
+        res.setHeader('Content-Type', 'application/octet-stream');
+        
+        // Uso de stream direto para evitar arquivos em branco
+        const stream = conn.sobject('ContentVersion').record(record.Id).blob('VersionData');
+        stream.pipe(res);
+
+    } catch (e) {
+        console.error("❌ Erro download documento:", e);
+        res.status(500).send('Erro ao baixar arquivo.');
+    }
 };
 
 exports.updateFinanceStatus = async (req, res) => {

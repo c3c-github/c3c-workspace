@@ -151,7 +151,7 @@
                 let nfStatusBadge = '-';
                 if(p.hasNF) {
                     const colors = { 'Rascunho': 'bg-gray-100 text-gray-600', 'Em Revisão': 'bg-blue-50 text-blue-600', 'Aprovada': 'bg-green-50 text-green-600', 'Reprovada': 'bg-red-50 text-red-600' };
-                    nfStatusBadge = `<span class="px-2 py-1 rounded-md text-[10px] font-bold uppercase border ${colors[p.nfStatus] || 'bg-gray-50'}">${p.nfStatus}</span>`;
+                    nfStatusBadge = `<span class="px-2 py-1 rounded-md text-[10px] font-bold uppercase border ${colors[p.nfStatus] || 'bg-gray-50'}" title="${p.nfMotivo || ''}">${p.nfStatus}</span>`;
                 }
 
                 let actions = '';
@@ -161,13 +161,16 @@
                     actions = `<span class="text-xs text-gray-400 flex items-center justify-end gap-1"><i data-lucide="clock" class="w-3.5 h-3.5"></i> Em processamento</span>`;
                 }
 
-                const nfFile = p.hasNF ? `<div class="flex justify-center"><i data-lucide="file-text" class="w-5 h-5 text-blue-500 cursor-pointer" title="Ver arquivo"></i></div>` : '-';
+                const nfFile = (p.hasNF && p.nfDocumentoId) ? `<div class="flex justify-center"><a href="/api/billing/download/${p.nfDocumentoId}"><i data-lucide="download" class="w-5 h-5 text-blue-500 cursor-pointer" title="Baixar nota"></i></a></div>` : '-';
+
+                const motivoHTML = p.nfStatus === 'Reprovada' && p.nfMotivo ? `<p class="text-[10px] text-red-500 italic mt-1 font-medium">Motivo: ${p.nfMotivo}</p>` : '';
 
                 tbody.innerHTML += `
                     <tr class="hover:bg-gray-50/50 transition-colors">
                         <td class="px-6 py-4">
                             <p class="font-bold text-gray-900">${p.name}</p>
                             <p class="text-[10px] text-gray-400">Ref: ${p.inicio} até ${p.fim}</p>
+                            ${motivoHTML}
                         </td>
                         <td class="px-6 py-4">
                             <span class="text-xs font-medium text-gray-600">${p.statusPeriodo}</span>
@@ -185,17 +188,23 @@
                 function openUploadModal(id, name, val) {
             document.getElementById('upload-period-id').value = id;
             document.getElementById('modal-period-name').innerText = name;
-            document.getElementById('nf-valor').value = val;
             
-            // Limpa campos anteriores
-            const fields = ['nf-file', 'nf-numero', 'nf-data-emissao', 'nf-emitente', 'cnpj-emissor', 'cnpj-receptor', 'nf-valor'];
+            // Limpa campos anteriores, exceto o de arquivo
+            const fields = ['nf-numero', 'nf-data-emissao', 'nf-emitente', 'cnpj-emissor', 'cnpj-receptor'];
             fields.forEach(f => {
                 const el = document.getElementById(f);
-                if(f !== 'nf-file') el.value = '';
-                if(f !== 'nf-file') el.disabled = true;
+                el.value = '';
+                el.disabled = true;
                 el.classList.remove('ring-2', 'ring-green-100', 'border-green-200');
             });
 
+            // O valor da nota começa com o valor previsto do período e desabilitado
+            const vField = document.getElementById('nf-valor');
+            vField.value = val;
+            vField.disabled = true;
+            vField.classList.remove('ring-2', 'ring-green-100', 'border-green-200');
+
+            document.getElementById('nf-file').value = '';
             document.getElementById('analyze-loader').classList.add('hidden');
             document.getElementById('btn-process-upload').disabled = true;
 
@@ -217,9 +226,11 @@
             const valor = document.getElementById('nf-valor').value;
             const file = document.getElementById('nf-file').files[0];
 
-            const isValid = numero && data && emitente && cnpjE && cnpjR && valor && file;
+            const isValid = numero && data && emitente && cnpjE && cnpjR && valor && parseFloat(valor) > 0 && file;
             document.getElementById('btn-process-upload').disabled = !isValid;
         }
+
+        let isManualFill = false;
 
         async function analyzeFile(input) {
             if (!input.files[0]) return;
@@ -227,6 +238,7 @@
             const loader = document.getElementById('analyze-loader');
             loader.classList.remove('hidden');
             loader.classList.add('flex');
+            isManualFill = false;
 
             const formData = new FormData();
             formData.append('file', input.files[0]);
@@ -251,14 +263,24 @@
 
                     Object.keys(mapping).forEach(id => {
                         const el = document.getElementById(id);
-                        const val = mapping[id];
-                        if (val) {
+                        let val = mapping[id];
+                        
+                        // Normaliza valores inválidos (incluindo 0 para o campo de valor)
+                        const isInvalid = val === null || 
+                                         val === undefined || 
+                                         (typeof val === 'string' && (val.toLowerCase() === 'n/a' || val.toLowerCase() === 'null' || val.trim() === '')) ||
+                                         (id === 'nf-valor' && (parseFloat(val) <= 0 || isNaN(parseFloat(val))));
+
+                        if (!isInvalid) {
                             el.value = val;
-                            el.disabled = true; // Trava se a IA encontrou
+                            el.disabled = true;
                             el.classList.add('ring-2', 'ring-green-100', 'border-green-200');
                             setTimeout(() => el.classList.remove('ring-2', 'ring-green-100', 'border-green-200'), 2000);
                         } else {
-                            el.disabled = false; // Habilita se a IA falhou neste campo
+                            // Se for o campo de valor e a IA falhou, mantemos o valor previsto mas habilitamos a edição
+                            if (id !== 'nf-valor') el.value = '';
+                            el.disabled = false;
+                            isManualFill = true; 
                             el.placeholder = "Não identificado, preencha manualmente";
                         }
                     });
@@ -267,7 +289,7 @@
                 }
             } catch (e) {
                 console.error("Erro na análise via IA:", e);
-                // Se der erro geral (serviço fora ou erro na API), habilita tudo para preenchimento manual
+                isManualFill = true;
                 const fields = ['nf-numero', 'nf-data-emissao', 'nf-emitente', 'cnpj-emissor', 'cnpj-receptor', 'nf-valor'];
                 fields.forEach(f => {
                     const el = document.getElementById(f);
@@ -301,6 +323,7 @@
             formData.append('numeroNota', numero);
             formData.append('dataEmissao', dataEmissao);
             formData.append('nomeEmitente', emitente);
+            formData.append('preenchimento', isManualFill ? 'Manual' : 'Automático');
 
             const btn = document.getElementById('btn-process-upload');
             const oldText = btn.innerText;

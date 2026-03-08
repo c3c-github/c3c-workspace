@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Preenchimento__c</fullName>
+    <description>Indica se os dados da nota foram extraídos automaticamente via IA ou preenchidos manualmente pelo usuário.</description>
+    <externalId>false</externalId>
+    <label>Preenchimento</label>
+    <required>false</required>
+    <trackHistory>false</trackHistory>
+    <trackTrending>false</trackTrending>
+    <type>Picklist</type>
+    <valueSet>
+        <restricted>true</required>
+        <valueSetDefinition>
+            <sorted>false</sorted>
+            <value>
+                <fullName>Automático</fullName>
+                <default>true</default>
+                <label>Automático</label>
+            </value>
+            <value>
+                <fullName>Manual</fullName>
+                <default>false</default>
+                <label>Manual</label>
+            </value>
+        </valueSetDefinition>
+    </valueSet>
+</CustomField>

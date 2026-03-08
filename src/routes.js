@@ -126,6 +126,13 @@ router.get('/api/billing/periods', requireAuth, billingController.getColaborador
 router.post('/api/billing/upload', requireAuth, upload.single('file'), billingController.uploadNotaFiscal);
 router.post('/api/billing/analyze', requireAuth, upload.single('file'), billingController.analyzeNotaFiscal);
 
+// --- COCKPIT FINANCEIRO (V1) ---
+router.get('/finance-dashboard', requireAuth, requireGroup('GESTOR_FINANCEIRO'), billingController.renderFinanceDashboard);
+router.get('/api/finance/periods', requireAuth, requireGroup('GESTOR_FINANCEIRO'), billingController.getFinancePeriods);
+router.post('/api/finance/update-status', requireAuth, requireGroup('GESTOR_FINANCEIRO'), billingController.updateFinanceStatus);
+router.post('/api/finance/reprove-nf', requireAuth, requireGroup('GESTOR_FINANCEIRO'), billingController.reproveNotaFiscal);
+router.get('/api/billing/download/:docId', requireAuth, billingController.downloadDocument);
+
 // --- MEDIÇÃO E FATURAMENTO (GESTOR) ---
 const canAccessBilling = (req, res, next) => {
     const user = req.session.user;

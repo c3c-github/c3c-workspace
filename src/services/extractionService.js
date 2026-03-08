@@ -49,14 +49,14 @@ class ExtractionService {
         const payload = {
             base64: base64,
             mimeType: mimeType,
-            contexto: "Extraia os dados desta nota fiscal de serviço (entrada). Foque em identificar os dados do prestador e valores totais.",
+            contexto: "Você é um especialista em extração de dados fiscais. REGRAS CRÍTICAS: 1. Se um campo NÃO for encontrado, retorne o valor null (literal, não string). 2. NÃO invente dados nem use termos como 'N/A' ou 'Não encontrado'. 3. Datas devem ser AAAA-MM-DD. 4. Valores numéricos decimais com ponto.",
             contrato: [
-                { nomeCampo: "numeroNota", tipo: "texto", contexto: "Número da nota fiscal ou número do documento" },
-                { nomeCampo: "valorTotal", tipo: "númerico", contexto: "Valor líquido ou total da nota para pagamento" },
-                { nomeCampo: "dataEmissao", tipo: "texto", contexto: "Data de emissão no formato AAAA-MM-DD" },
-                { nomeCampo: "cnpjEmissor", tipo: "texto", contexto: "CNPJ do prestador de serviço (emitente)" },
-                { nomeCampo: "cnpjReceptor", tipo: "texto", contexto: "CNPJ do tomador de serviço (quem recebe a nota, geralmente a C3C)" },
-                { nomeCampo: "nomeEmitente", tipo: "texto", contexto: "Razão social ou Nome Fantasia do prestador" }
+                { nomeCampo: "numeroNota", tipo: "texto", contexto: "Número da nota fiscal ou documento. Se não encontrar, retorne null." },
+                { nomeCampo: "valorTotal", tipo: "númerico", contexto: "Valor líquido/total da nota. Se não encontrar, retorne null." },
+                { nomeCampo: "dataEmissao", tipo: "texto", contexto: "Data de emissão (AAAA-MM-DD). Se não encontrar, retorne null." },
+                { nomeCampo: "cnpjEmissor", tipo: "texto", contexto: "CNPJ do prestador (emitente). Se não encontrar, retorne null." },
+                { nomeCampo: "cnpjReceptor", tipo: "texto", contexto: "CNPJ do tomador (quem recebe, ex: C3C). Se não encontrar, retorne null." },
+                { nomeCampo: "nomeEmitente", tipo: "texto", contexto: "Razão social do prestador. Se não encontrar, retorne null." }
             ]
         };
 
