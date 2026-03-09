@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gerador de Assinaturas - C3C</title>
+    <title>Assinatura - C3C Workplace</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
@@ -12,152 +12,167 @@
             theme: {
                 extend: {
                     fontFamily: { sans: ['Montserrat', 'sans-serif'] },
-                    colors: { c3c: { blue: '#2978FF', teal: '#1DDDBD', gray: '#F2F2F2' } }
+                    colors: { 
+                        c3c: { 
+                            blue: '#2978FF', 
+                            teal: '#1DDDBD', 
+                            gray: '#F2F2F2',
+                            dark: '#000000'
+                        } 
+                    }
                 }
             }
         }
     </script>
     <style>
         body { font-family: 'Montserrat', sans-serif; background-color: #F8FAFC; }
-        .bg-c3c-gradient { background: linear-gradient(135deg, #2978FF 0%, #1DDDBD 100%); }
+        .bg-c3c-gradient { background: transparent linear-gradient(118deg, #1DDDBD 0%, #1ED9C0 45%, #2978FF 100%) 0% 0% no-repeat padding-box; }
         .fade-in { animation: fadeIn 0.4s ease-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        .signature-preview-box { background: #ffffff; border: 1px solid #e2e8f0; }
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; height: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #E2E8F0; border-radius: 10px; }
     </style>
 </head>
 <body class="h-screen flex overflow-hidden bg-[#F8FAFC]">
 
-    <div id="mobile-overlay" onclick="toggleMenu()" class="fixed inset-0 bg-black/50 z-30 hidden md:hidden transition-opacity opacity-0"></div>
+    <div id="mobile-overlay" onclick="toggleMenu()" class="fixed inset-0 bg-black/50 z-30 hidden md:hidden transition-opacity opacity-0 backdrop-blur-sm"></div>
 
     <%- include('partials/sidebar', { page: 'utilities_signature' }) %>
 
-    <main class="flex-1 flex flex-col md:ml-64 relative w-full transition-all duration-300">
+    <main class="flex-1 flex flex-col md:ml-64 relative w-full transition-all duration-300 overflow-hidden">
         
         <!-- HEADER -->
-        <header class="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-4 md:px-8 sticky top-0 z-20">
-            <div class="flex items-center gap-4">
+        <header class="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-4 md:px-8 sticky top-0 z-20 shrink-0">
+            <div class="flex items-center gap-4 text-left">
                 <button onclick="toggleMenu()" class="md:hidden p-2 text-gray-600 hover:bg-gray-100 rounded-lg">
                     <i data-lucide="menu" class="w-6 h-6"></i>
                 </button>
                 <div>
-                    <h1 class="text-lg md:text-xl font-bold text-gray-800">Gerador de Assinaturas 🎨</h1>
-                    <p class="text-xs text-gray-400 hidden sm:block">Padronize sua comunicação oficial</p>
+                    <h1 class="text-lg md:text-xl font-bold text-gray-800 flex items-center gap-2 tracking-tight">Assinatura Corporativa <span class="text-c3c-blue">🎨</span></h1>
+                    <p class="text-[10px] text-gray-400 font-bold uppercase tracking-widest hidden sm:block">Padronize sua identidade oficial C3C</p>
                 </div>
             </div>
         </header>
 
         <!-- CONTEÚDO -->
-        <div class="flex-1 overflow-y-auto p-4 md:p-8 fade-in">
+        <div class="flex-1 overflow-y-auto p-4 md:p-8 fade-in custom-scrollbar">
             
             <div class="grid grid-cols-1 xl:grid-cols-12 gap-8 items-start">
                 
                 <!-- FORMULÁRIO -->
-                <div class="xl:col-span-4 bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-                    <h2 class="text-sm font-bold text-gray-400 uppercase tracking-widest mb-6 flex items-center gap-2">
-                        <i data-lucide="user-edit" class="w-4 h-4"></i> Seus Dados
+                <div class="xl:col-span-4 bg-white p-8 rounded-[32px] shadow-sm border border-gray-100 text-left">
+                    <h2 class="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-8 flex items-center gap-2">
+                        <i data-lucide="user-plus" class="w-4 h-4 text-c3c-blue"></i> Configurações
                     </h2>
                     
-                    <div class="space-y-4">
+                    <div class="space-y-6">
                         <div>
-                            <label class="block text-xs font-bold text-gray-500 mb-1.5 uppercase">Nome Completo</label>
-                            <input type="text" id="input-name" value="<%= user.nome %>" class="w-full px-4 py-2 text-sm border border-gray-200 rounded-xl outline-none focus:border-blue-500 bg-gray-50/50">
+                            <label class="block text-[10px] font-black text-gray-400 uppercase mb-2 tracking-widest px-2">Seu Nome</label>
+                            <input type="text" id="input-name" value="<%= user.nome %>" class="w-full px-5 py-3 text-sm font-bold border border-gray-100 rounded-2xl outline-none focus:ring-4 focus:ring-blue-50 focus:border-c3c-blue bg-gray-50/50 transition-all">
                         </div>
                         <div>
-                            <label class="block text-xs font-bold text-gray-500 mb-1.5 uppercase">Cargo / Função</label>
-                            <input type="text" id="input-role" placeholder="Ex: Consultor Salesforce" class="w-full px-4 py-2 text-sm border border-gray-200 rounded-xl outline-none focus:border-blue-500 bg-gray-50/50">
+                            <label class="block text-[10px] font-black text-gray-400 uppercase mb-2 tracking-widest px-2">Cargo Oficial</label>
+                            <input type="text" id="input-role" placeholder="Ex: Arquiteto de Soluções" class="w-full px-5 py-3 text-sm font-bold border border-gray-100 rounded-2xl outline-none focus:ring-4 focus:ring-blue-50 focus:border-c3c-blue bg-gray-50/50 transition-all">
                         </div>
                         <div>
-                            <label class="block text-xs font-bold text-gray-500 mb-1.5 uppercase">WhatsApp (Opcional)</label>
-                            <input type="text" id="input-phone" maxlength="15" placeholder="(11) 98765-4321" class="w-full px-4 py-2 text-sm border border-gray-200 rounded-xl outline-none focus:border-blue-500 bg-gray-50/50">
+                            <label class="block text-[10px] font-black text-gray-400 uppercase mb-2 tracking-widest px-2">WhatsApp</label>
+                            <input type="text" id="input-phone" maxlength="15" placeholder="(00) 00000-0000" class="w-full px-5 py-3 text-sm font-bold border border-gray-100 rounded-2xl outline-none focus:ring-4 focus:ring-blue-50 focus:border-c3c-blue bg-gray-50/50 transition-all">
                         </div>
                         <div>
-                            <label class="block text-xs font-bold text-gray-500 mb-1.5 uppercase">E-mail Corporativo</label>
-                            <input type="email" id="input-email" value="<%= user.email %>" class="w-full px-4 py-2 text-sm border border-gray-200 rounded-xl outline-none focus:border-blue-500 bg-gray-50/50">
+                            <label class="block text-[10px] font-black text-gray-400 uppercase mb-2 tracking-widest px-2">E-mail</label>
+                            <input type="email" id="input-email" value="<%= user.email %>" class="w-full px-5 py-3 text-sm font-bold border border-gray-100 rounded-2xl outline-none focus:ring-4 focus:ring-blue-50 focus:border-c3c-blue bg-gray-50/50 transition-all">
                         </div>
                         
-                        <div class="pt-4 border-t border-gray-100">
-                            <label class="block text-xs font-bold text-gray-500 mb-2 uppercase flex justify-between">
+                        <div class="pt-6 border-t border-gray-50">
+                            <label class="block text-[10px] font-black text-gray-400 uppercase mb-3 tracking-widest px-2 flex justify-between items-center">
                                 Foto de Perfil
-                                <span id="upload-status" class="text-[10px] lowercase font-medium text-gray-400"></span>
+                                <span id="upload-status" class="text-[8px] lowercase font-bold text-teal-600 bg-teal-50 px-2 py-0.5 rounded-full hidden"></span>
                             </label>
                             
                             <div class="relative group">
                                 <input type="file" id="input-file" accept="image/*" class="hidden">
-                                <label for="input-file" class="w-full flex items-center gap-3 px-4 py-3 border-2 border-dashed border-gray-200 rounded-xl cursor-pointer hover:border-blue-400 hover:bg-blue-50/30 transition-all group">
-                                    <div class="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center text-gray-400 group-hover:bg-blue-100 group-hover:text-blue-500 transition-colors">
-                                        <i data-lucide="upload-cloud" class="w-6 h-6"></i>
+                                <label for="input-file" class="w-full flex items-center gap-4 px-5 py-4 border-2 border-dashed border-gray-100 rounded-[24px] cursor-pointer hover:border-c3c-blue hover:bg-blue-50/30 transition-all group">
+                                    <div class="w-12 h-12 bg-gray-50 rounded-2xl flex items-center justify-center text-gray-300 group-hover:bg-white group-hover:text-c3c-blue transition-all shadow-sm">
+                                        <i data-lucide="camera" class="w-6 h-6"></i>
                                     </div>
                                     <div class="flex-1 min-w-0">
-                                        <p class="text-xs font-bold text-gray-600 truncate">Clique para fazer upload</p>
-                                        <p class="text-[10px] text-gray-400">JPG, PNG ou GIF (Máx 2MB)</p>
+                                        <p class="text-xs font-black text-gray-600 uppercase tracking-tighter truncate">Alterar Imagem</p>
+                                        <p class="text-[9px] font-bold text-gray-400 uppercase tracking-widest">JPG/PNG até 2MB</p>
                                     </div>
                                 </label>
                             </div>
 
-                            <!-- Barra de Progresso (Oculta por padrão) -->
-                            <div id="progress-container" class="mt-3 hidden">
+                            <div id="progress-container" class="mt-4 hidden">
                                 <div class="w-full bg-gray-100 rounded-full h-1.5 overflow-hidden">
-                                    <div id="progress-bar" class="bg-blue-600 h-full transition-all duration-300" style="width: 0%"></div>
+                                    <div id="progress-bar" class="bg-c3c-blue h-full transition-all duration-300" style="width: 0%"></div>
                                 </div>
                             </div>
                             
                             <input type="hidden" id="input-photo" value="<%= user.foto || '' %>">
                             
-                            <div class="mt-4 bg-blue-50/50 p-4 rounded-xl border border-blue-100">
-                                <label class="block text-[10px] font-bold text-blue-600 uppercase mb-2">Seu Mascote:</label>
-                                <select id="select-mascot" class="w-full px-3 py-2 bg-white border border-blue-200 rounded-lg outline-none text-xs text-gray-700 cursor-pointer">
-                                    <option value="capivorce">Capivorce</option>
-                                    <option value="mestrecoala">Mestre Coala</option>
-                                    <option value="salesmelo">Salesmelo</option>
-                                </select>
+                            <div class="mt-6 bg-blue-50/50 p-5 rounded-3xl border border-blue-100">
+                                <label class="block text-[9px] font-black text-c3c-blue uppercase mb-3 tracking-[0.2em] px-1">Escolha seu Mascote:</label>
+                                <div class="grid grid-cols-3 gap-3">
+                                    <button onclick="setMascot('capivorce')" class="mascot-btn p-2 bg-white rounded-2xl border border-blue-100 hover:shadow-md transition-all active:scale-95 group" id="btn-mascot-capivorce">
+                                        <img src="/assets/signatures/assinaturaCapivorce.png" class="w-10 h-10 rounded-full mx-auto group-hover:scale-110 transition-transform">
+                                    </button>
+                                    <button onclick="setMascot('mestrecoala')" class="mascot-btn p-2 bg-white rounded-2xl border border-transparent hover:shadow-md transition-all active:scale-95 group opacity-40" id="btn-mascot-mestrecoala">
+                                        <img src="/assets/signatures/assinaturaMestreCoala.png" class="w-10 h-10 rounded-full mx-auto group-hover:scale-110 transition-transform">
+                                    </button>
+                                    <button onclick="setMascot('salesmelo')" class="mascot-btn p-2 bg-white rounded-2xl border border-transparent hover:shadow-md transition-all active:scale-95 group opacity-40" id="btn-mascot-salesmelo">
+                                        <img src="/assets/signatures/assinaturaSalesmelo.png" class="w-10 h-10 rounded-full mx-auto group-hover:scale-110 transition-transform">
+                                    </button>
+                                </div>
+                                <input type="hidden" id="select-mascot" value="capivorce">
                             </div>
                         </div>
                     </div>
                 </div>
 
                 <!-- PREVIEW -->
-                <div class="xl:col-span-8">
-                    <h2 class="text-sm font-bold text-gray-400 uppercase tracking-widest mb-6 flex items-center gap-2">
-                        <i data-lucide="eye" class="w-4 h-4"></i> Visualização
+                <div class="xl:col-span-8 flex flex-col items-center">
+                    <h2 class="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-8 flex items-center gap-2 self-start px-2">
+                        <i data-lucide="monitor" class="w-4 h-4"></i> Preview da Assinatura
                     </h2>
                     
-                    <div class="bg-white p-4 md:p-12 rounded-3xl shadow-sm border border-gray-100 overflow-x-auto flex flex-col items-center">
-                        <div id="signature-container" class="bg-white">
+                    <div class="w-full bg-white p-12 md:p-20 rounded-[48px] shadow-sm border border-gray-100 overflow-x-auto flex flex-col items-center">
+                        <div id="signature-container" class="bg-white p-1">
                             <!-- TABELA DE ASSINATURA -->
                             <table id="signature-table" border="0" cellpadding="0" cellspacing="0" style="width: 560px; min-width: 560px; border-collapse: collapse; font-family: 'Montserrat', Helvetica, Arial, sans-serif; background-color: #ffffff;">
                                 <tr>
-                                    <td style="padding-bottom: 10px;">
+                                    <td style="padding-bottom: 12px;">
                                         <table border="0" cellpadding="0" cellspacing="0" width="100%">
                                             <tr>
                                                 <!-- Foto de Perfil -->
-                                                <td width="80" valign="middle" style="padding-right: 15px;">
-                                                    <img id="view-photo" src="" alt="Perfil" width="80" height="80" style="width: 80px; height: 80px; min-width: 80px; min-height: 80px; border-radius: 40px; object-fit: contain; display: block; border: 1px solid #f1f5f9; background-color: #ffffff;">
+                                                <td width="80" valign="middle" style="padding-right: 20px;">
+                                                    <img id="view-photo" src="" alt="Perfil" width="80" height="80" style="width: 80px; height: 80px; min-width: 80px; min-height: 80px; border-radius: 40px; object-fit: cover; display: block; background-color: #f8fafc;">
                                                 </td>
                                                 
                                                 <!-- Divisor Azul -->
                                                 <td width="2" style="background-color: #2978FF; font-size: 1px; line-height: 1px;">&nbsp;</td>
                                                 
                                                 <!-- Dados -->
-                                                <td valign="middle" style="padding: 0 20px;">
-                                                    <h3 id="view-name" style="margin: 0; font-size: 18px; font-weight: 700; color: #0f172a; line-height: 1.2;">Nome do Colaborador</h3>
-                                                    <p id="view-role" style="margin: 2px 0 10px 0; font-size: 11px; font-weight: 600; color: #2978FF; text-transform: uppercase; display: block;">Cargo na Empresa</p>
+                                                <td valign="middle" style="padding: 0 25px;">
+                                                    <h3 id="view-name" style="margin: 0; font-size: 20px; font-weight: 800; color: #0f172a; line-height: 1.1; letter-spacing: -0.02em;">Nome do Colaborador</h3>
+                                                    <p id="view-role" style="margin: 4px 0 12px 0; font-size: 10px; font-weight: 700; color: #2978FF; text-transform: uppercase; letter-spacing: 0.1em; display: block;">Cargo na Empresa</p>
                                                     
                                                     <table border="0" cellpadding="0" cellspacing="0">
                                                         <tr id="view-phone-row">
-                                                            <td width="16"><img src="https://img.icons8.com/ios-filled/32/2978FF/whatsapp.png" width="12" alt="WA"></td>
-                                                            <td style="font-size: 11px; color: #64748b; font-weight: 600; padding-left: 5px;">
+                                                            <td width="16" valign="middle"><img src="https://img.icons8.com/ios-filled/32/2978FF/whatsapp.png" width="12" alt="WA"></td>
+                                                            <td style="font-size: 11px; color: #64748b; font-weight: 600; padding-left: 6px;" valign="middle">
                                                                 <a id="view-wa-link" href="#" style="color: #64748b; text-decoration: none;"><span id="view-phone-text"></span></a>
                                                             </td>
                                                         </tr>
                                                         <tr id="view-email-row">
-                                                            <td width="16" style="padding-top: 4px;"><img src="https://img.icons8.com/ios-filled/32/2978FF/mail.png" width="12" alt="MAIL"></td>
-                                                            <td style="font-size: 11px; color: #64748b; font-weight: 600; padding-left: 5px; padding-top: 4px;">
+                                                            <td width="16" style="padding-top: 6px;" valign="middle"><img src="https://img.icons8.com/ios-filled/32/2978FF/mail.png" width="12" alt="MAIL"></td>
+                                                            <td style="font-size: 11px; color: #64748b; font-weight: 600; padding-left: 6px; padding-top: 6px;" valign="middle">
                                                                 <a id="view-email-link" href="#" style="color: #64748b; text-decoration: none;"><span id="view-email-text"></span></a>
                                                             </td>
                                                         </tr>
                                                         <tr>
-                                                            <td width="16" style="padding-top: 4px;"><img src="https://img.icons8.com/ios-filled/32/2978FF/globe.png" width="12" alt="W"></td>
-                                                            <td style="font-size: 11px; color: #64748b; font-weight: 600; padding-left: 5px; padding-top: 4px;">
+                                                            <td width="16" style="padding-top: 6px;" valign="middle"><img src="https://img.icons8.com/ios-filled/32/2978FF/globe.png" width="12" alt="W"></td>
+                                                            <td style="font-size: 11px; color: #64748b; font-weight: 600; padding-left: 6px; padding-top: 6px;" valign="middle">
                                                                 <a href="https://c3csoftware.com.br" style="color: #64748b; text-decoration: none;">c3csoftware.com.br</a>
                                                             </td>
                                                         </tr>
@@ -166,13 +181,13 @@
         
                                                 <!-- Mascote -->
                                                 <td width="65" valign="middle" align="right" style="padding-right: 15px;">
-                                                    <img id="view-mascot-img" src="" alt="Mascote" width="65" height="65" style="width: 65px; height: 65px; min-width: 65px; min-height: 65px; border-radius: 50%; object-fit: cover; display: block; background-color: #f1f5f9;">
+                                                    <img id="view-mascot-img" src="" alt="Mascote" width="65" height="65" style="width: 65px; height: 65px; min-width: 65px; min-height: 65px; border-radius: 33px; object-fit: cover; display: block; background-color: #f8fafc;">
                                                 </td>
         
                                                 <!-- Salesforce Partner -->
                                                 <td width="65" valign="middle" align="right">
                                                     <a href="https://appexchange.salesforce.com/appxConsultingListingDetail?listingId=a0N3u00000MRhO8EAL&legacy=true" target="_blank" style="text-decoration: none; display: block;">
-                                                        <img src="https://www.simantel.com/wp-content/uploads/2020/02/Salesforce-Partner-Logo.png" alt="Salesforce Partner" width="65" height="65" style="width: 65px; height: 65px; min-width: 65px; min-height: 65px; border-radius: 33px; object-fit: cover; display: block; background-color: #ffffff;">
+                                                        <img src="https://www.simantel.com/wp-content/uploads/2020/02/Salesforce-Partner-Logo.png" alt="Salesforce Partner" width="65" height="65" style="width: 65px; height: 65px; min-width: 65px; min-height: 65px; border-radius: 33px; object-fit: contain; display: block; background-color: #ffffff;">
                                                     </a>
                                                 </td>
                                             </tr>
@@ -185,17 +200,17 @@
                                 </tr>
         
                                 <tr>
-                                    <td style="padding-top: 15px;">
+                                    <td style="padding-top: 18px;">
                                         <table width="100%" border="0" cellpadding="0" cellspacing="0">
                                             <tr>
                                                 <td valign="middle">
                                                     <table border="0" cellpadding="0" cellspacing="0">
                                                         <tr>
                                                             <td id="footer-logo-td" valign="middle">
-                                                                <img src="<%= baseUrl %>/assets/signatures/assinaturaLogo.png" alt="C3C" height="24" style="height: 24px; display: block;">
+                                                                <img src="<%= baseUrl %>/assets/signatures/assinaturaLogo.png" alt="C3C" height="22" style="height: 22px; display: block;">
                                                             </td>                                                            
-                                                            <td id="footer-text-td" valign="middle" style="padding-left: 6px; font-size: 14px; font-weight: 700; color: #0f172a; font-family: 'Montserrat', sans-serif; line-height: 24px;">
-                                                                C3C<span style="color: #1DDDBD; font-weight: bold;">.</span>Software
+                                                            <td id="footer-text-td" valign="middle" style="padding-left: 8px; font-size: 14px; font-weight: 800; color: #0f172a; font-family: 'Montserrat', sans-serif; line-height: 22px; text-transform: uppercase; letter-spacing: 0.05em;">
+                                                                C3C<span style="color: #1DDDBD;">.</span>Software
                                                             </td>
                                                         </tr>
                                                     </table>
@@ -203,14 +218,14 @@
                                                 <td align="right" valign="middle">
                                                     <table border="0" cellpadding="0" cellspacing="0">
                                                         <tr>
-                                                            <td style="padding-left: 12px;">
+                                                            <td style="padding-left: 15px;">
                                                                 <a href="https://www.linkedin.com/company/c3c-software" target="_blank">
-                                                                    <img src="https://img.icons8.com/ios-filled/50/2978FF/linkedin-circled--v1.png" width="24" alt="LinkedIn">
+                                                                    <img src="https://img.icons8.com/ios-filled/50/2978FF/linkedin-circled--v1.png" width="22" alt="LinkedIn">
                                                                 </a>
                                                             </td>
-                                                            <td style="padding-left: 12px;">
+                                                            <td style="padding-left: 15px;">
                                                                 <a href="https://www.instagram.com/c3csoftware/" target="_blank">
-                                                                    <img src="https://img.icons8.com/ios-filled/50/2978FF/instagram-new.png" width="24" alt="Instagram">
+                                                                    <img src="https://img.icons8.com/ios-filled/50/2978FF/instagram-new.png" width="22" alt="Instagram">
                                                                 </a>
                                                             </td>
                                                         </tr>
@@ -223,58 +238,41 @@
                             </table>
                         </div>
 
-                        <!-- Ações e Guia de Configuração -->
-                        <div class="mt-8 w-full max-w-5xl space-y-8">
-                            
-                            <!-- LINHA 1: BOTÕES DE AÇÃO -->
-                            <div class="bg-gray-50 p-6 rounded-3xl border border-gray-100 flex flex-col sm:flex-row gap-4 items-center justify-center">
-                                <div class="w-full sm:w-64">
-                                    <button id="btn-copy" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-2xl shadow-lg transition-all flex items-center justify-center gap-3 transform active:scale-95">
-                                        <i data-lucide="copy" class="w-5 h-5"></i> Copiar Assinatura
-                                    </button>
-                                </div>
-                                <div class="w-full sm:w-48">
-                                    <button id="btn-download" class="w-full bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 font-bold py-4 rounded-2xl transition-all flex items-center justify-center gap-2">
-                                        <i data-lucide="download" class="w-5 h-5"></i> Baixar HTML
-                                    </button>
-                                </div>
-                                <p id="copy-message" class="hidden text-xs font-bold text-teal-600 animate-pulse sm:ml-4">✓ Copiado com sucesso!</p>
-                            </div>
+                        <!-- AÇÕES -->
+                        <div class="mt-12 w-full max-w-2xl flex flex-col sm:flex-row gap-4 justify-center items-center">
+                            <button id="btn-copy" class="w-full sm:w-64 bg-c3c-gradient text-white font-black uppercase text-xs tracking-widest py-5 rounded-2xl shadow-xl shadow-blue-100 hover:opacity-90 active:scale-95 transition-all flex items-center justify-center gap-3">
+                                <i data-lucide="copy" class="w-5 h-5"></i> Copiar Assinatura
+                            </button>
+                            <button id="btn-download" class="w-full sm:w-48 bg-white border-2 border-gray-100 text-gray-400 font-black uppercase text-xs tracking-widest py-5 rounded-2xl hover:bg-gray-50 transition-all flex items-center justify-center gap-2">
+                                <i data-lucide="download" class="w-5 h-5"></i> Baixar HTML
+                            </button>
+                        </div>
+                        <p id="copy-message" class="hidden text-[10px] font-black text-teal-600 uppercase tracking-widest mt-4 animate-bounce">✓ Pronta para colar no Outlook!</p>
+                    </div>
 
-                            <!-- LINHA 2: GUIA OUTLOOK -->
-                            <div class="bg-blue-600 rounded-3xl p-8 text-white shadow-xl shadow-blue-100 relative overflow-hidden">
-                                <!-- Decoração -->
-                                <div class="absolute -right-10 -top-10 w-40 h-40 bg-white/10 rounded-full blur-3xl"></div>
-                                
-                                <div class="relative z-10">
-                                    <h3 class="text-xl font-bold mb-8 flex items-center gap-3">
-                                        <i data-lucide="mail" class="w-6 h-6"></i> Passo a Passo: Configurar no Outlook
-                                    </h3>
-                                    
-                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                        <div class="flex gap-4 items-start bg-white/10 p-4 rounded-2xl">
-                                            <div class="w-8 h-8 rounded-full bg-white text-blue-600 flex items-center justify-center text-sm font-bold shrink-0">1</div>
-                                            <p class="text-sm leading-relaxed">Abra o <b>Outlook</b> e clique no ícone de <b>Configurações</b> (engrenagem no topo).</p>
-                                        </div>
-                                        <div class="flex gap-4 items-start bg-white/10 p-4 rounded-2xl">
-                                            <div class="w-8 h-8 rounded-full bg-white text-blue-600 flex items-center justify-center text-sm font-bold shrink-0">2</div>
-                                            <p class="text-sm leading-relaxed">Busque por <b>"Assinatura"</b> na barra de busca e selecione <b>Assinatura de e-mail</b>.</p>
-                                        </div>
-                                        <div class="flex gap-4 items-start bg-white/10 p-4 rounded-2xl">
-                                            <div class="w-8 h-8 rounded-full bg-white text-blue-600 flex items-center justify-center text-sm font-bold shrink-0">3</div>
-                                            <p class="text-sm leading-relaxed">Clique em <b>+ Adicionar assinatura</b>, dê um nome e no campo de texto dê um <b>Ctrl + V</b>.</p>
-                                        </div>
-                                        <div class="flex gap-4 items-start bg-white/10 p-4 rounded-2xl">
-                                            <div class="w-8 h-8 rounded-full bg-white text-blue-600 flex items-center justify-center text-sm font-bold shrink-0">4</div>
-                                            <div class="text-sm leading-relaxed">
-                                                Marque os flags <b>"Padrão para novas mensagens"</b> e <b>"Respostas/encaminhamentos"</b>.
-                                            </div>
-                                        </div>
-                                        <div class="flex gap-4 items-start bg-white/10 p-4 rounded-2xl md:col-span-2 lg:col-span-1">
-                                            <div class="w-8 h-8 rounded-full bg-white text-blue-600 flex items-center justify-center text-sm font-bold shrink-0">5</div>
-                                            <p class="text-sm leading-relaxed">Clique em <b>Salvar</b> no final da página. Sua assinatura oficial está pronta! 🚀</p>
-                                        </div>
-                                    </div>
+                    <!-- GUIA OUTLOOK -->
+                    <div class="mt-12 w-full max-w-4xl bg-blue-600 rounded-[40px] p-10 text-white shadow-2xl shadow-blue-200 relative overflow-hidden text-left">
+                        <div class="absolute -right-20 -top-20 w-64 h-64 bg-white/10 rounded-full blur-3xl"></div>
+                        <div class="relative z-10">
+                            <h3 class="text-2xl font-black mb-8 flex items-center gap-4 tracking-tighter uppercase">
+                                <i data-lucide="help-circle" class="w-8 h-8 text-blue-200"></i> Como configurar no Outlook?
+                            </h3>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                <div class="flex gap-5 items-start bg-white/10 p-6 rounded-3xl backdrop-blur-sm border border-white/10">
+                                    <div class="w-10 h-10 rounded-2xl bg-white text-blue-600 flex items-center justify-center text-lg font-black shrink-0 shadow-sm">1</div>
+                                    <p class="text-sm font-bold leading-relaxed uppercase tracking-tight">No Outlook, vá em <b>Configurações</b> (ícone da engrenagem no topo à direita).</p>
+                                </div>
+                                <div class="flex gap-5 items-start bg-white/10 p-6 rounded-3xl backdrop-blur-sm border border-white/10">
+                                    <div class="w-10 h-10 rounded-2xl bg-white text-blue-600 flex items-center justify-center text-lg font-black shrink-0 shadow-sm">2</div>
+                                    <p class="text-sm font-bold leading-relaxed uppercase tracking-tight">Busque por <b>"Assinatura"</b> e selecione <b>Assinatura de e-mail</b>.</p>
+                                </div>
+                                <div class="flex gap-5 items-start bg-white/10 p-6 rounded-3xl backdrop-blur-sm border border-white/10">
+                                    <div class="w-10 h-10 rounded-2xl bg-white text-blue-600 flex items-center justify-center text-lg font-black shrink-0 shadow-sm">3</div>
+                                    <p class="text-sm font-bold leading-relaxed uppercase tracking-tight">Clique em <b>+ Nova</b> e no campo de edição dê um <b>Ctrl + V</b>.</p>
+                                </div>
+                                <div class="flex gap-5 items-start bg-white/10 p-6 rounded-3xl backdrop-blur-sm border border-white/10">
+                                    <div class="w-10 h-10 rounded-2xl bg-white text-blue-600 flex items-center justify-center text-lg font-black shrink-0 shadow-sm">4</div>
+                                    <p class="text-sm font-bold leading-relaxed uppercase tracking-tight">Marque as opções <b>"Padrão para Novas Mensagens"</b> e clique em <b>Salvar</b>. 🚀</p>
                                 </div>
                             </div>
                         </div>
@@ -289,17 +287,9 @@
         lucide.createIcons();
 
         function toggleMenu() {
-            const sidebar = document.getElementById('sidebar');
-            const overlay = document.getElementById('mobile-overlay');
-            if (sidebar.classList.contains('-translate-x-full')) {
-                sidebar.classList.remove('-translate-x-full');
-                overlay.classList.remove('hidden');
-                setTimeout(() => overlay.classList.remove('opacity-0'), 10);
-            } else {
-                sidebar.classList.add('-translate-x-full');
-                overlay.classList.add('opacity-0');
-                setTimeout(() => overlay.classList.add('hidden'), 300);
-            }
+            const s=document.getElementById('sidebar'), o=document.getElementById('mobile-overlay');
+            s.classList.toggle('-translate-x-full'); o.classList.toggle('hidden');
+            setTimeout(() => o.classList.toggle('opacity-0'), 10);
         }
 
         const logoUrl = "<%= baseUrl %>/assets/signatures/assinaturaLogo.png";
@@ -333,158 +323,81 @@
             footerTextTd: document.getElementById('footer-text-td')
         };
 
-        function phoneMask(value) {
-            if (!value) return "";
-            value = value.replace(/\D/g, "");
-            value = value.replace(/^(\d{2})(\d)/g, "($1) $2");
-            value = value.replace(/(\d)(\d{4})$/, "$1-$2");
-            return value;
+        function setMascot(slug) {
+            inputs.mascot.value = slug;
+            document.querySelectorAll('.mascot-btn').forEach(btn => {
+                btn.classList.add('opacity-40', 'border-transparent');
+                btn.classList.remove('border-blue-100');
+            });
+            const activeBtn = document.getElementById(`btn-mascot-${slug}`);
+            activeBtn.classList.remove('opacity-40', 'border-transparent');
+            activeBtn.classList.add('border-blue-100');
+            updatePreview();
+        }
+
+        function phoneMask(v) {
+            v = v.replace(/\D/g, "");
+            v = v.replace(/^(\d{2})(\d)/g, "($1) $2");
+            v = v.replace(/(\d)(\d{4})$/, "$1-$2");
+            return v;
         }
 
         function updatePreview() {
-            view.name.innerText = inputs.name.value || 'Nome do Colaborador';
+            view.name.innerText = inputs.name.value || 'Seu Nome';
+            const r = inputs.role.value.trim();
+            view.role.innerText = r || 'Seu Cargo';
+            view.role.style.display = r ? 'block' : 'block';
             
-            const rawRole = inputs.role.value.trim();
-            if (rawRole === "") {
-                view.role.style.display = 'none';
-            } else {
-                view.role.style.display = 'block';
-                view.role.innerText = rawRole;
-            }
-            
-            const rawPhone = inputs.phone.value.trim();
-            if (rawPhone === "") {
-                view.phoneRow.style.display = 'none';
-            } else {
-                view.phoneRow.style.display = 'table-row';
-                const cleanPhone = rawPhone.replace(/\D/g, ''); 
-                view.phoneText.innerText = rawPhone;
-                view.waLink.href = cleanPhone ? `https://wa.me/55${cleanPhone}` : "#";
-            }
+            const p = inputs.phone.value.trim();
+            if (p === "") view.phoneRow.style.display = 'none';
+            else { view.phoneRow.style.display = 'table-row'; view.phoneText.innerText = p; view.waLink.href = `https://wa.me/55${p.replace(/\D/g, '')}`; }
 
-            const rawEmail = inputs.email.value.trim();
-            if (rawEmail === "") {
-                view.emailRow.style.display = 'none';
-            } else {
-                view.emailRow.style.display = 'table-row';
-                view.emailText.innerText = rawEmail;
-                view.emailLink.href = `mailto:${rawEmail}`;
-            }
+            const e = inputs.email.value.trim();
+            if (e === "") view.emailRow.style.display = 'none';
+            else { view.emailRow.style.display = 'table-row'; view.emailText.innerText = e; view.emailLink.href = `mailto:${e}`; }
 
-            const photoUrl = inputs.photo.value.trim();
-            if (photoUrl === "") {
-                view.photo.src = logoUrl; 
-                view.photo.style.objectFit = "contain";
-                view.footerLogoTd.style.display = 'none';
-                view.footerTextTd.style.paddingLeft = '0px';
-            } else {
-                view.photo.src = photoUrl;
-                view.photo.style.objectFit = "cover";
-                view.footerLogoTd.style.display = 'table-cell';
-                view.footerTextTd.style.paddingLeft = '6px';
-            }
+            const ph = inputs.photo.value.trim();
+            if (ph === "") { view.photo.src = logoUrl; view.photo.style.objectFit = "contain"; view.footerLogoTd.style.display = 'none'; view.footerTextTd.style.paddingLeft = '0px'; }
+            else { view.photo.src = ph; view.photo.style.objectFit = "cover"; view.footerLogoTd.style.display = 'table-cell'; view.footerTextTd.style.paddingLeft = '8px'; }
 
             view.mascotImg.src = officialMascots[inputs.mascot.value];
         }
 
-        inputs.phone.addEventListener('input', (e) => {
-            e.target.value = phoneMask(e.target.value);
-            updatePreview();
-        });
+        inputs.phone.addEventListener('input', (e) => { e.target.value = phoneMask(e.target.value); updatePreview(); });
+        ['name', 'role', 'email'].forEach(k => inputs[k].addEventListener('input', updatePreview));
 
-        ['name', 'role', 'email', 'mascot'].forEach(key => {
-            inputs[key].addEventListener('input', updatePreview);
-        });
-
-        const fileInput = document.getElementById('input-file');
-        const progressContainer = document.getElementById('progress-container');
-        const progressBar = document.getElementById('progress-bar');
-        const uploadStatus = document.getElementById('upload-status');
-
-        fileInput.addEventListener('change', async (e) => {
-            const file = e.target.files[0];
-            if (!file) return;
-
-            // Validação simples
-            if (file.size > 2 * 1024 * 1024) { alert('Arquivo muito grande! Máximo 2MB.'); return; }
-
-            const formData = new FormData();
-            formData.append('file', file);
-
-            progressContainer.classList.remove('hidden');
-            progressBar.style.width = '0%';
-            uploadStatus.innerText = 'Subindo...';
-
-            const xhr = new XMLHttpRequest();
-            xhr.open('POST', '/api/utility/upload-photo', true);
-
-            xhr.upload.onprogress = (e) => {
-                if (e.lengthComputable) {
-                    const percent = Math.round((e.loaded / e.total) * 100);
-                    progressBar.style.width = percent + '%';
-                }
-            };
-
+        document.getElementById('input-file').addEventListener('change', async (e) => {
+            const f = e.target.files[0]; if (!f) return;
+            if (f.size > 2 * 1024 * 1024) return alert('Máximo 2MB.');
+            const fd = new FormData(); fd.append('file', f);
+            const pc = document.getElementById('progress-container'), pb = document.getElementById('progress-bar'), us = document.getElementById('upload-status');
+            pc.classList.remove('hidden'); pb.style.width = '0%'; us.innerText = 'subindo...'; us.classList.remove('hidden');
+            const xhr = new XMLHttpRequest(); xhr.open('POST', '/api/utility/upload-photo', true);
+            xhr.upload.onprogress = (ev) => { if (ev.lengthComputable) pb.style.width = Math.round((ev.loaded / ev.total) * 100) + '%'; };
             xhr.onload = function() {
-                if (xhr.status === 200) {
-                    const res = JSON.parse(xhr.responseText);
-                    inputs.photo.value = res.url;
-                    updatePreview();
-                    uploadStatus.innerText = '✓ Sucesso';
-                    setTimeout(() => {
-                        progressContainer.classList.add('hidden');
-                        uploadStatus.innerText = '';
-                    }, 3000);
-                } else {
-                    alert('Erro no upload. Tente novamente.');
-                    progressContainer.classList.add('hidden');
-                }
+                if (xhr.status === 200) { inputs.photo.value = JSON.parse(xhr.responseText).url; updatePreview(); us.innerText = '✓ sucesso'; setTimeout(() => { pc.classList.add('hidden'); us.classList.add('hidden'); }, 2000); }
+                else { alert('Erro no upload.'); pc.classList.add('hidden'); }
             };
-
-            xhr.send(formData);
+            xhr.send(fd);
         });
 
         document.getElementById('btn-copy').addEventListener('click', function() {
-            const table = document.getElementById('signature-table');
-            const range = document.createRange();
-            range.selectNode(table);
-            window.getSelection().removeAllRanges();
-            window.getSelection().addRange(range);
-            
+            const t = document.getElementById('signature-table'), r = document.createRange();
+            r.selectNode(t); window.getSelection().removeAllRanges(); window.getSelection().addRange(r);
             try {
                 document.execCommand('copy');
-                const btn = document.getElementById('btn-copy');
-                const originalHtml = btn.innerHTML;
-                btn.innerHTML = '<i data-lucide="check" class="w-5 h-5"></i> Copiado!';
-                btn.classList.replace('bg-blue-600', 'bg-teal-600');
-                lucide.createIcons();
-
-                const msg = document.getElementById('copy-message');
-                msg.classList.remove('hidden');
-                
-                setTimeout(() => {
-                    btn.innerHTML = originalHtml;
-                    btn.classList.replace('bg-teal-600', 'bg-blue-600');
-                    msg.classList.add('hidden');
-                    lucide.createIcons();
-                }, 3000);
-            } catch (err) {
-                console.error('Falha ao copiar');
-            }
+                const b = document.getElementById('btn-copy'), old = b.innerHTML;
+                b.innerHTML = '<i data-lucide="check" class="w-5 h-5"></i> Copiado!';
+                b.classList.replace('bg-c3c-gradient', 'bg-teal-600'); lucide.createIcons();
+                document.getElementById('copy-message').classList.remove('hidden');
+                setTimeout(() => { b.innerHTML = old; b.classList.replace('bg-teal-600', 'bg-c3c-gradient'); document.getElementById('copy-message').classList.add('hidden'); lucide.createIcons(); }, 3000);
+            } catch (err) {}
             window.getSelection().removeAllRanges();
         });
 
         document.getElementById('btn-download').addEventListener('click', function() {
-            const html = document.getElementById('signature-container').innerHTML;
-            const blob = new Blob([html], { type: 'text/html' });
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `assinatura_${inputs.name.value.replace(/\s+/g, '_').toLowerCase()}.html`;
-            document.body.appendChild(a);
-            a.click();
-            window.URL.revokeObjectURL(url);
-            document.body.removeChild(a);
+            const h = document.getElementById('signature-container').innerHTML, b = new Blob([h], { type: 'text/html' }), u = window.URL.createObjectURL(b), a = document.createElement('a');
+            a.href = u; a.download = `assinatura_c3c.html`; document.body.appendChild(a); a.click(); window.URL.revokeObjectURL(u); document.body.removeChild(a);
         });
 
         updatePreview();
