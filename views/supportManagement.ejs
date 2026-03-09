@@ -4,91 +4,70 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gestão de Suporte - C3C Workplace</title>
-    
-    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Ícones Lucide -->
     <script src="https://unpkg.com/lucide@latest"></script>
-    <!-- Fonte Montserrat -->
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-
     <script>
         tailwind.config = {
             theme: {
                 extend: {
-                    fontFamily: {
-                        sans: ['Montserrat', 'sans-serif'],
-                    },
-                    colors: {
-                        c3c: {
-                            blue: '#2978FF',
-                            teal: '#1DDDBD',
-                            dark: '#1a1a1a',
-                            bg: '#F8FAFC'
-                        }
+                    fontFamily: { sans: ['Montserrat', 'sans-serif'] },
+                    colors: { 
+                        c3c: { 
+                            blue: '#2978FF', 
+                            teal: '#1DDDBD', 
+                            gray: '#F2F2F2',
+                            dark: '#000000'
+                        } 
                     }
                 }
             }
         }
     </script>
-
     <style>
         body { font-family: 'Montserrat', sans-serif; background-color: #F8FAFC; }
+        .bg-c3c-gradient { background: transparent linear-gradient(118deg, #1DDDBD 0%, #1ED9C0 45%, #2978FF 100%) 0% 0% no-repeat padding-box; }
         .fade-in { animation: fadeIn 0.4s ease-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        
-        .modal-backdrop { background-color: rgba(0, 0, 0, 0.5); backdrop-filter: blur(2px); }
-        html { scroll-behavior: smooth; }
-
-        /* Estilos Específicos */
-        .progress-bar-bg { background-color: #E2E8F0; border-radius: 4px; height: 6px; overflow: hidden; }
-        .progress-bar-fill { height: 100%; transition: width 1s ease-in-out; }
-        
-        /* Barra Segmentada de Alocação */
-        .alloc-bar-container { display: flex; height: 8px; width: 100%; background-color: #F1F5F9; border-radius: 4px; overflow: hidden; }
-        .alloc-segment { height: 100%; transition: width 0.3s ease; position: relative; }
-        .alloc-segment:hover { opacity: 0.8; }
-        
-        /* Links Laterais Internos (Sub-navegação) */
-        .sub-nav-link.active { background-color: white; color: #2978FF; border-bottom: 2px solid #2978FF; font-weight: 600; }
-        .sub-nav-link.inactive { color: #6B7280; }
-        .sub-nav-link.inactive:hover { color: #374151; background-color: #F3F4F6; }
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; height: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #E2E8F0; border-radius: 10px; }
+        .sub-nav-link.active { color: #2978FF; border-bottom: 3px solid #2978FF; font-weight: 800; }
+        .progress-bar-bg { background-color: #F1F5F9; border-radius: 100px; height: 8px; overflow: hidden; }
+        select { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/xml' fill='none' viewBox='0 0 24 24' stroke='%232978FF'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 0.75rem center; background-size: 1rem; }
     </style>
 </head>
-<body class="h-screen flex overflow-hidden bg-c3c-bg">
+<body class="h-screen flex overflow-hidden bg-[#F8FAFC]">
 
-    <!-- 1. SIDEBAR (SISTEMA) -->
     <%- include('partials/sidebar', { page: 'support_management' }) %>
 
-    <!-- 2. MAIN CONTENT -->
-    <main class="flex-1 flex flex-col md:ml-64 relative w-full overflow-hidden transition-all duration-300">
+    <main class="flex-1 flex flex-col md:ml-64 relative w-full transition-all duration-300 overflow-hidden">
         
-        <!-- Header Mobile -->
-        <div class="md:hidden h-16 bg-white border-b border-gray-200 flex items-center justify-between px-4 shrink-0">
-            <span class="font-bold text-gray-800">Gestão de Suporte</span>
-            <button onclick="toggleMenu()" class="text-gray-600 focus:outline-none">
-                <i data-lucide="menu" class="w-6 h-6"></i>
-            </button>
-        </div>
-
-        <!-- Header Desktop/Page -->
-        <header class="h-20 bg-white border-b border-gray-200 flex items-center justify-between px-8 shrink-0 z-10 hidden md:flex">
+        <!-- HEADER -->
+        <header class="h-20 bg-white border-b border-gray-200 flex items-center justify-between px-4 md:px-8 sticky top-0 z-20 shrink-0 text-left">
             <div class="flex items-center gap-6">
-                <h1 class="text-xl font-bold text-gray-800">Command Center - Suporte</h1>
+                <div class="flex items-center gap-4">
+                    <button onclick="document.getElementById('sidebar').classList.toggle('-translate-x-full')" class="md:hidden p-2 text-gray-600 hover:bg-gray-100 rounded-lg">
+                        <i data-lucide="menu" class="w-6 h-6"></i>
+                    </button>
+                    <div>
+                        <h1 class="text-lg md:text-xl font-bold text-gray-800 flex items-center gap-2 tracking-tight">Command Center Suporte <span class="text-c3c-blue">📡</span></h1>
+                        <p class="text-[10px] text-gray-400 font-bold uppercase tracking-widest hidden sm:block">Monitoramento e Gestão de Contratos</p>
+                    </div>
+                </div>
                 
-                <!-- Sub-navegação Interna -->
-                <nav class="flex space-x-4 ml-8">
-                    <a href="#dashboard-top" class="sub-nav-link active px-3 py-4 text-sm transition-colors" onclick="setActiveLink(this)">Visão Geral</a>
-                    <a href="#contracts-section" class="sub-nav-link inactive px-3 py-4 text-sm transition-colors" onclick="setActiveLink(this)">Contratos & Ops</a>
-                    <a href="#team-section" class="sub-nav-link inactive px-3 py-4 text-sm transition-colors" onclick="setActiveLink(this)">Equipe</a>
-                    <a href="#allocation-section" class="sub-nav-link inactive px-3 py-4 text-sm transition-colors" onclick="setActiveLink(this)">Alocação</a>
+                <nav class="hidden lg:flex space-x-8 ml-8">
+                    <a href="#dashboard-top" class="sub-nav-link active py-7 text-[10px] font-black uppercase tracking-widest transition-all" onclick="setActiveLink(this)">Geral</a>
+                    <a href="#contracts-section" class="sub-nav-link text-gray-400 py-7 text-[10px] font-black uppercase tracking-widest transition-all hover:text-gray-600" onclick="setActiveLink(this)">Contratos</a>
+                    <a href="#team-section" class="sub-nav-link text-gray-400 py-7 text-[10px] font-black uppercase tracking-widest transition-all hover:text-gray-600" onclick="setActiveLink(this)">Equipe</a>
+                    <a href="#allocation-section" class="sub-nav-link text-gray-400 py-7 text-[10px] font-black uppercase tracking-widest transition-all hover:text-gray-600" onclick="setActiveLink(this)">Alocação</a>
                 </nav>
             </div>
 
-            <div class="flex items-center gap-4">
-                <div class="flex items-center bg-white border border-gray-300 rounded-lg px-3 py-2 gap-2 shadow-sm">
-                    <i data-lucide="calendar" class="w-4 h-4 text-gray-500"></i>
-                    <select onchange="onDateChange(this)" class="text-sm font-bold text-gray-700 bg-transparent outline-none cursor-pointer">
+            <div class="flex items-center gap-3">
+                <div class="flex items-center bg-gray-50 border border-gray-200 rounded-xl px-3 py-1.5 gap-2 shadow-sm focus-within:ring-2 focus-within:ring-c3c-blue transition-all">
+                    <i data-lucide="calendar" class="w-4 h-4 text-c3c-blue"></i>
+                    <select onchange="onDateChange(this)" class="bg-transparent text-sm font-bold text-gray-700 outline-none cursor-pointer min-w-[180px] pr-8">
                         <% periods.forEach(p => { %>
                             <option value='<%= JSON.stringify(p.value) %>'><%= p.label %></option>
                         <% }); %>
@@ -97,864 +76,299 @@
             </div>
         </header>
 
-        <!-- Content Scrollable -->
-        <div class="flex-1 overflow-y-auto p-4 md:p-8 fade-in relative" id="dashboard-top">
+        <!-- CONTEÚDO -->
+        <div class="flex-1 overflow-y-auto p-4 md:p-8 fade-in custom-scrollbar text-left" id="dashboard-top">
             
-            <!-- KPIS GLOBAIS -->
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-12">
-                <!-- Financeiro -->
-                <div class="bg-white p-5 rounded-xl border border-gray-200 shadow-sm relative overflow-hidden">
-                    <div class="flex justify-between items-start z-10 relative">
-                        <p class="text-xs font-bold text-gray-400 uppercase">Saúde Contratos</p>
-                        <i data-lucide="pie-chart" class="w-5 h-5 text-blue-500"></i>
+            <!-- KPIS -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+                <div class="bg-white p-6 rounded-[32px] shadow-sm border border-gray-100 relative overflow-hidden group hover:shadow-md transition-all">
+                    <div class="flex justify-between items-start mb-4">
+                        <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Saúde Contratos</p>
+                        <div class="p-2 bg-blue-50 text-c3c-blue rounded-xl shadow-sm"><i data-lucide="pie-chart" class="w-4 h-4"></i></div>
                     </div>
-                    <div class="mt-2 z-10 relative">
-                        <span class="text-2xl font-extrabold text-gray-900">75%</span>
-                        <span class="text-xs text-gray-500">consumido</span>
+                    <div class="flex items-baseline gap-1">
+                        <span class="text-3xl font-black text-gray-800 tracking-tighter" id="kpi-health">--</span>
+                        <span class="text-xs text-gray-400 font-bold uppercase">Consumo</span>
                     </div>
-                    <div class="absolute bottom-0 left-0 w-full h-1 bg-blue-100"><div class="bg-blue-500 h-1" style="width: 75%"></div></div>
+                    <div class="mt-4 progress-bar-bg"><div class="h-full bg-c3c-blue rounded-full transition-all duration-1000" id="kpi-health-bar" style="width: 0%"></div></div>
                 </div>
 
-                <!-- SLA Operacional -->
-                <div class="bg-white p-5 rounded-xl border border-gray-200 shadow-sm">
-                    <div class="flex justify-between items-start">
-                        <p class="text-xs font-bold text-gray-400 uppercase">SLA Estourado</p>
-                        <i data-lucide="alert-octagon" class="w-5 h-5 text-red-500"></i>
+                <div class="bg-white p-6 rounded-[32px] shadow-sm border border-gray-100 relative overflow-hidden group hover:shadow-md transition-all">
+                    <div class="flex justify-between items-start mb-4">
+                        <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest">SLA Crítico</p>
+                        <div class="p-2 bg-red-50 text-red-500 rounded-xl shadow-sm"><i data-lucide="alert-octagon" class="w-4 h-4"></i></div>
                     </div>
-                    <div class="mt-2">
-                        <span class="text-2xl font-extrabold text-red-600">8</span>
-                        <span class="text-xs text-gray-500">Chamados críticos</span>
-                    </div>
-                </div>
-
-                <!-- Estagnação -->
-                <div class="bg-white p-5 rounded-xl border border-gray-200 shadow-sm">
-                    <div class="flex justify-between items-start">
-                        <p class="text-xs font-bold text-gray-400 uppercase">Estagnados > 3 dias</p>
-                        <i data-lucide="clock" class="w-5 h-5 text-orange-500"></i>
-                    </div>
-                    <div class="mt-2">
-                        <span class="text-2xl font-extrabold text-orange-600">5</span>
-                        <span class="text-xs text-gray-500">Sem interação recente</span>
+                    <div class="flex items-baseline gap-1">
+                        <span class="text-3xl font-black text-red-600 tracking-tighter" id="kpi-sla">--</span>
+                        <span class="text-xs text-gray-400 font-bold uppercase">Chamados</span>
                     </div>
                 </div>
 
-                <!-- CSAT -->
-                <div class="bg-white p-5 rounded-xl border border-teal-50 shadow-sm">
-                    <div class="flex justify-between items-start">
-                        <p class="text-xs font-bold text-teal-600 uppercase">CSAT Médio</p>
-                        <i data-lucide="smile" class="w-5 h-5 text-teal-500"></i>
+                <div class="bg-white p-6 rounded-[32px] shadow-sm border border-gray-100 relative overflow-hidden group hover:shadow-md transition-all">
+                    <div class="flex justify-between items-start mb-4">
+                        <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Estagnados</p>
+                        <div class="p-2 bg-orange-50 text-orange-500 rounded-xl shadow-sm"><i data-lucide="clock" class="w-4 h-4"></i></div>
                     </div>
-                    <div class="mt-2">
-                        <span class="text-2xl font-extrabold text-teal-700">4.8</span>
-                        <span class="text-xs text-teal-600">/ 5.0</span>
+                    <div class="flex items-baseline gap-1">
+                        <span class="text-3xl font-black text-orange-600 tracking-tighter" id="kpi-idle">--</span>
+                        <span class="text-xs text-gray-400 font-bold uppercase">> 3 dias</span>
+                    </div>
+                </div>
+
+                <div class="bg-white p-6 rounded-[32px] shadow-sm border border-teal-50 relative overflow-hidden group hover:shadow-md transition-all">
+                    <div class="flex justify-between items-start mb-4">
+                        <p class="text-[10px] font-black text-teal-600 uppercase tracking-widest">CSAT Médio</p>
+                        <div class="p-2 bg-teal-50 text-teal-500 rounded-xl shadow-sm"><i data-lucide="smile" class="w-4 h-4"></i></div>
+                    </div>
+                    <div class="flex items-baseline gap-1">
+                        <span class="text-3xl font-black text-teal-700 tracking-tighter" id="kpi-csat">--</span>
+                        <span class="text-xs text-teal-400 font-bold uppercase">/ 5.0</span>
                     </div>
                 </div>
             </div>
 
-            <!-- SEÇÃO 1: CONTRATOS & OPERAÇÃO -->
-            <div id="contracts-section" class="mb-12 scroll-mt-24">
-                <div class="flex justify-between items-center mb-4">
-                    <h2 class="text-lg font-bold text-gray-800 flex items-center gap-2">
-                        <i data-lucide="briefcase" class="w-5 h-5 text-blue-600"></i> Performance de Contratos & Operação
-                    </h2>
-                </div>
-                
-                <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-x-auto">
-                    <table class="w-full text-sm text-left">
-                        <thead class="bg-gray-50 text-gray-500 uppercase text-[10px] font-bold border-b border-gray-200">
-                            <tr>
-                                <th class="px-6 py-4 min-w-[200px]">Cliente / Serviço</th>
-                                <th class="px-4 py-4 min-w-[120px]">Horas (Uso)</th>
-                                <!-- Fila Detalhada -->
-                                <th class="px-2 py-4 text-center w-12 bg-blue-50/50 text-blue-600 border-l border-white" title="Abertos">Ab.</th>
-                                <th class="px-2 py-4 text-center w-12 bg-blue-50/50 text-blue-600 border-l border-white" title="Execução">Exe.</th>
-                                <th class="px-2 py-4 text-center w-12 bg-yellow-50/50 text-yellow-600 border-l border-white" title="Pausa">Pau.</th>
-                                <th class="px-2 py-4 text-center w-12 bg-yellow-50/50 text-yellow-600 border-l border-white" title="Aguardando">Ag.</th>
-                                <th class="px-2 py-4 text-center w-12 bg-gray-50 text-gray-400 border-l border-white" title="Fechados">Fec.</th>
-                                
-                                <!-- Métricas de Qualidade -->
-                                <th class="px-4 py-4 text-center border-l border-gray-100 text-red-600" title="SLA Estourado">SLA KO</th>
-                                <th class="px-4 py-4 text-center text-orange-500" title="Tempo sem interação">Estag.</th>
-                                <th class="px-4 py-4 text-center text-teal-600">CSAT</th>
-
-                                <th class="px-4 py-4 text-center border-l border-gray-100">Time</th>
-                                <th class="px-4 py-4 text-right">Ação</th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-gray-100" id="contracts-table">
-                            <!-- JS Populates -->
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-            <!-- SEÇÃO 2: EQUIPE -->
-            <div id="team-section" class="mb-12 scroll-mt-24">
-                <div class="flex justify-between items-center mb-4">
-                    <h2 class="text-lg font-bold text-gray-800 flex items-center gap-2">
-                        <i data-lucide="users" class="w-5 h-5 text-indigo-600"></i> Monitoramento da Equipe
-                    </h2>
-                    
-                    <div class="flex gap-3 bg-white px-3 py-1.5 rounded-lg border border-gray-200 text-[10px] font-medium shadow-sm">
-                        <span class="flex items-center gap-1"><div class="w-2 h-2 rounded-full bg-red-500"></div> Atrasado (>1 dia)</span>
-                        <span class="flex items-center gap-1"><div class="w-2 h-2 rounded-full bg-yellow-400"></div> Pendente Hoje</span>
-                        <span class="flex items-center gap-1"><div class="w-2 h-2 rounded-full bg-green-500"></div> Em Dia</span>
+            <!-- CONTRATOS -->
+            <section id="contracts-section" class="mb-16">
+                <div class="flex justify-between items-end mb-6 px-2">
+                    <div class="text-left">
+                        <h3 class="text-[10px] font-black text-gray-800 uppercase tracking-[0.2em] mb-1 flex items-center gap-2"><i data-lucide="file-text" class="w-4 h-4 text-c3c-blue"></i> Saúde de Contratos</h3>
+                        <p class="text-xs text-gray-400 font-bold uppercase">Visão por franquia e volumetria operacional</p>
                     </div>
                 </div>
-
-                <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-                    <table class="w-full text-sm text-left">
-                        <thead class="bg-gray-50 text-gray-500 uppercase text-xs font-bold border-b border-gray-200">
-                            <tr>
-                                <th class="px-6 py-4 w-64">Colaborador</th>
-                                <th class="px-6 py-4 text-center">Projetos</th>
-                                <th class="px-6 py-4 text-center">Apontado Hoje</th>
-                                <th class="px-6 py-4">Carga Mensal (Realizado vs Previsto)</th>
-                                <th class="px-6 py-4 text-center">Status</th>
-                                <th class="px-6 py-4 text-right">Detalhes</th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-gray-100" id="team-table-body">
-                            <!-- JS Populates -->
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-            <!-- SEÇÃO 3: GERENCIAMENTO DE ALOCAÇÃO -->
-            <div id="allocation-section" class="mb-8 scroll-mt-24">
-                <div class="flex justify-between items-center mb-4">
-                    <div class="flex flex-col">
-                        <h2 class="text-lg font-bold text-gray-800 flex items-center gap-2">
-                            <i data-lucide="sliders" class="w-5 h-5 text-gray-600"></i> Distribuição de Capacidade
-                        </h2>
-                        <p class="text-xs text-gray-500">Visão percentual por recurso</p>
+                <div class="bg-white rounded-[32px] shadow-sm border border-gray-100 overflow-hidden">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left">
+                            <thead class="bg-gray-50/50 border-b border-gray-100">
+                                <tr class="text-[9px] font-black text-gray-400 uppercase tracking-widest">
+                                    <th class="px-8 py-5">Serviço / Cliente</th>
+                                    <th class="px-4 py-5 w-48 text-center">Consumo Franquia</th>
+                                    <th class="px-2 py-5 text-center bg-blue-50/30">Nov</th>
+                                    <th class="px-2 py-5 text-center bg-blue-50/30">And</th>
+                                    <th class="px-2 py-5 text-center bg-orange-50/30">Pau</th>
+                                    <th class="px-2 py-5 text-center bg-orange-50/30">Agu</th>
+                                    <th class="px-2 py-5 text-center bg-gray-50/30">Fec</th>
+                                    <th class="px-4 py-5 text-center text-red-500">SLA</th>
+                                    <th class="px-4 py-5 text-center text-orange-500">Idle</th>
+                                    <th class="px-4 py-5 text-center text-teal-600">CSAT</th>
+                                    <th class="px-4 py-5 text-center">Time</th>
+                                    <th class="px-8 py-5 text-right">Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="contracts-table" class="divide-y divide-gray-50">
+                                <!-- Injetado via JS -->
+                            </tbody>
+                        </table>
                     </div>
                 </div>
+            </section>
 
-                <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-                    <table class="w-full text-sm text-left">
-                        <thead class="bg-gray-50 text-gray-500 uppercase text-xs font-bold border-b border-gray-200">
-                            <tr>
-                                <th class="px-6 py-4 w-64">Colaborador</th>
-                                <th class="px-6 py-4 text-center">Projetos</th>
-                                <th class="px-6 py-4 text-center w-32">Total Alocado</th>
-                                <th class="px-6 py-4 text-right">Ações</th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-gray-100" id="allocation-table-body">
-                            <!-- JS Populates -->
-                        </tbody>
-                    </table>
+            <!-- EQUIPE -->
+            <section id="team-section" class="mb-16">
+                <div class="flex justify-between items-end mb-6 px-2">
+                    <div class="text-left">
+                        <h3 class="text-[10px] font-black text-gray-800 uppercase tracking-[0.2em] mb-1 flex items-center gap-2"><i data-lucide="users" class="w-4 h-4 text-c3c-blue"></i> Squad Suporte</h3>
+                        <p class="text-xs text-gray-400 font-bold uppercase">Desempenho e conformidade de apontamentos</p>
+                    </div>
                 </div>
-            </div>
+                <div class="bg-white rounded-[32px] shadow-sm border border-gray-100 overflow-hidden">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left">
+                            <thead class="bg-gray-50/50 border-b border-gray-100">
+                                <tr class="text-[9px] font-black text-gray-400 uppercase tracking-widest">
+                                    <th class="px-8 py-5">Profissional</th>
+                                    <th class="px-4 py-5 text-center">Foco</th>
+                                    <th class="px-4 py-5 text-center">Hoje</th>
+                                    <th class="px-8 py-5">Consumo Mês (vs Meta)</th>
+                                    <th class="px-4 py-5 text-center">Status</th>
+                                    <th class="px-8 py-5 text-right">Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="team-table-body" class="divide-y divide-gray-50"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
 
+            <!-- ALOCAÇÃO -->
+            <section id="allocation-section" class="mb-16">
+                <div class="flex justify-between items-end mb-6 px-2">
+                    <div class="text-left">
+                        <h3 class="text-[10px] font-black text-gray-800 uppercase tracking-[0.2em] mb-1 flex items-center gap-2"><i data-lucide="layout-grid" class="w-4 h-4 text-c3c-blue"></i> Distribuição de Carga</h3>
+                        <p class="text-xs text-gray-400 font-bold uppercase">Gerencie a ocupação dos recursos entre projetos</p>
+                    </div>
+                </div>
+                <div class="bg-white rounded-[32px] shadow-sm border border-gray-100 overflow-hidden">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left">
+                            <thead class="bg-gray-50/50 border-b border-gray-100">
+                                <tr class="text-[9px] font-black text-gray-400 uppercase tracking-widest">
+                                    <th class="px-8 py-5">Recurso</th>
+                                    <th class="px-4 py-5 text-center">Alocações</th>
+                                    <th class="px-4 py-5 text-center">Total Ocupado</th>
+                                    <th class="px-8 py-5 text-right">Gestão</th>
+                                </tr>
+                            </thead>
+                            <tbody id="allocation-table-body" class="divide-y divide-gray-50"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
         </div>
     </main>
 
     <!-- MODAIS -->
-
-    <!-- 1. Modal Extrato do Contrato -->
-    <div id="extract-modal" class="fixed inset-0 modal-backdrop z-50 hidden flex items-center justify-center opacity-0 transition-opacity duration-300 p-4">
-        <div class="bg-white rounded-xl shadow-2xl w-full max-w-5xl h-[80vh] flex flex-col transform scale-95 transition-transform duration-300">
-            <div class="p-6 border-b border-gray-100 flex justify-between items-start bg-gray-50 rounded-t-xl">
-                <div>
-                    <h3 class="text-xl font-bold text-gray-900" id="modal-title">Detalhe do Lançamento</h3>
-                    <p class="text-sm text-gray-500" id="modal-subtitle">Histórico de Atividades</p>
-                </div>
-                <button onclick="closeModal('extract-modal')" class="bg-white hover:bg-gray-100 p-2 rounded-lg text-gray-500 border border-gray-200 transition-colors"><i data-lucide="x" class="w-5 h-5"></i></button>
-            </div>
-            <div class="flex-1 overflow-y-auto p-6 bg-gray-50">
-                <div class="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
-                    <table class="w-full text-xs text-left">
-                        <thead class="bg-gray-50 text-gray-500 font-bold border-b border-gray-200 uppercase">
-                            <tr>
-                                <th class="px-4 py-3 w-32">Data</th>
-                                <th class="px-4 py-3 w-48">Cliente</th>
-                                <th class="px-4 py-3 w-48">Serviço</th>
-                                <th class="px-4 py-3">Atividade / Descrição</th>
-                                <th class="px-4 py-3 text-right w-24">Horas</th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-gray-100" id="modal-rows"></tbody>
-                    </table>
-                </div>
+    <div id="extract-modal" class="fixed inset-0 bg-black/60 backdrop-blur-md hidden z-[100] flex items-center justify-center p-4">
+        <div class="bg-white rounded-[40px] shadow-2xl w-full max-w-6xl overflow-hidden transform scale-95 transition-all flex flex-col max-h-[90vh]">
+            <header class="p-8 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center shrink-0">
+                <div class="text-left"><h3 id="modal-title" class="text-2xl font-black text-gray-800 tracking-tighter uppercase">Extrato</h3><p id="modal-subtitle" class="text-[10px] font-black text-c3c-blue uppercase tracking-widest mt-1">Histórico Detalhado</p></div>
+                <button onclick="closeModal('extract-modal')" class="p-3 text-gray-400 hover:bg-white hover:text-red-500 rounded-full shadow-sm transition-all"><i data-lucide="x"></i></button>
+            </header>
+            <div class="flex-1 overflow-y-auto custom-scrollbar p-8 bg-white text-left">
+                <table class="w-full text-left border-collapse">
+                    <thead><tr class="text-[9px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-100"></tr></thead>
+                    <tbody id="modal-rows" class="divide-y divide-gray-50 text-sm"></tbody>
+                </table>
             </div>
         </div>
     </div>
 
-    <!-- 2. Modal de Edição de Alocação -->
-    <div id="allocation-modal" class="fixed inset-0 modal-backdrop z-50 hidden flex items-center justify-center opacity-0 transition-opacity duration-300 p-4">
-        <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg transform scale-95 transition-transform duration-300">
-            <div class="p-5 border-b border-gray-100 flex justify-between items-center bg-gray-50 rounded-t-xl">
-                <div>
-                    <h3 class="font-bold text-gray-900 text-lg">Editar Alocações</h3>
-                    <p class="text-xs text-gray-500" id="alloc-modal-name">Nome do Recurso</p>
-                </div>
-                <button onclick="closeModal('allocation-modal')" class="text-gray-400 hover:text-gray-600"><i data-lucide="x" class="w-5 h-5"></i></button>
-            </div>
-            <div class="p-6 overflow-y-auto max-h-[60vh]">
-                <div class="mb-4 flex justify-between items-center bg-blue-50 p-3 rounded-lg border border-blue-100">
-                    <span class="text-xs font-bold text-blue-700 uppercase">Total Alocado:</span>
-                    <span class="text-lg font-bold text-blue-700" id="alloc-total-display">100%</span>
-                </div>
-                <div id="alloc-inputs-container" class="space-y-4"></div>
-                
-                <!-- Botão Adicionar Projeto -->
-                <button onclick="addAllocationRow()" class="mt-4 w-full py-2 border-2 border-dashed border-gray-300 text-gray-500 rounded-lg text-xs font-bold hover:border-blue-400 hover:text-blue-600 hover:bg-blue-50 transition-colors flex items-center justify-center gap-2">
-                    <i data-lucide="plus" class="w-4 h-4"></i> Adicionar novo projeto
-                </button>
-            </div>
-            <div class="p-5 border-t border-gray-100 bg-gray-50 rounded-b-xl flex justify-end gap-2">
-                <button onclick="closeModal('allocation-modal')" class="px-4 py-2 bg-white border border-gray-300 text-gray-700 text-sm font-bold rounded-lg hover:bg-gray-100">Cancelar</button>
-                <button onclick="saveAllocations()" class="px-4 py-2 bg-blue-600 text-white text-sm font-bold rounded-lg hover:bg-blue-700 shadow-md">Salvar Alterações</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- 3. Modal Lista de Projetos -->
-    <div id="projects-list-modal" class="fixed inset-0 modal-backdrop z-50 hidden flex items-center justify-center opacity-0 transition-opacity duration-300 p-4">
-        <div class="bg-white rounded-xl shadow-xl w-full max-w-sm p-6 transform scale-95 transition-transform duration-300">
-            <h3 class="font-bold text-gray-800 mb-4">Projetos Ativos</h3>
-            <ul class="space-y-2 text-sm text-gray-600" id="projects-list-content"></ul>
-            <div class="mt-6 text-right"><button onclick="closeModal('projects-list-modal')" class="text-sm font-bold text-gray-500 hover:text-gray-800">Fechar</button></div>
-        </div>
-    </div>
-
-    <!-- 4. Modal Equipe do Contrato -->
-    <div id="contract-team-modal" class="fixed inset-0 modal-backdrop z-50 hidden flex items-center justify-center opacity-0 transition-opacity duration-300 p-4">
-        <div class="bg-white rounded-xl shadow-xl w-full max-w-md p-6 transform scale-95 transition-transform duration-300">
-            <div class="flex justify-between items-center mb-4">
-                <h3 class="font-bold text-gray-800">Equipe Alocada</h3>
-                <button onclick="closeModal('contract-team-modal')" class="text-gray-400 hover:text-gray-600"><i data-lucide="x" class="w-5 h-5"></i></button>
-            </div>
-            <p class="text-xs text-gray-500 mb-4" id="contract-team-title">Contrato X</p>
-            <div id="contract-team-list" class="space-y-3">
-                <!-- JS Populates -->
-            </div>
+    <!-- MODAL ALOCAÇÃO -->
+    <div id="allocation-modal" class="fixed inset-0 bg-black/60 backdrop-blur-md hidden z-[100] flex items-center justify-center p-4">
+        <div class="bg-white rounded-[40px] shadow-2xl w-full max-w-2xl overflow-hidden transform scale-95 transition-all flex flex-col max-h-[90vh]">
+            <header class="p-8 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center shrink-0">
+                <div class="text-left"><h3 class="text-2xl font-black text-gray-800 tracking-tighter uppercase leading-tight">Ajustar Alocação</h3><p id="alloc-modal-name" class="text-[10px] font-black text-c3c-blue uppercase tracking-widest mt-1">Pessoa...</p></div>
+                <button onclick="closeModal('allocation-modal')" class="p-3 text-gray-400 hover:bg-white hover:text-red-500 rounded-full shadow-sm transition-all"><i data-lucide="x"></i></button>
+            </header>
+            <div class="p-8 overflow-y-auto custom-scrollbar flex-1 bg-white space-y-6" id="alloc-inputs-container"></div>
+            <footer class="p-8 border-t border-gray-100 bg-gray-50/50 flex justify-between items-center shrink-0">
+                <div class="flex flex-col text-left"><span class="text-[9px] font-black text-gray-400 uppercase tracking-widest">Ocupação Total</span><span id="alloc-total-display" class="text-xl font-black text-gray-800">0%</span></div>
+                <div class="flex gap-4"><button onclick="addAllocationRow()" class="px-6 py-3 text-c3c-blue font-black uppercase text-[10px] tracking-widest hover:underline">+ Novo Projeto</button><button onclick="saveAllocations()" class="px-10 py-4 bg-c3c-gradient text-white font-black uppercase text-xs tracking-widest rounded-2xl shadow-xl hover:opacity-90 transition-all active:scale-95">Salvar Alterações</button></div>
+            </footer>
         </div>
     </div>
 
     <script>
         lucide.createIcons();
-        const API_URL = '/api/support';
+        const API_URL = '/api/support-management';
+        let currentMonth = <%= currentMonth %>, currentYear = <%= currentYear %>, teamData = [], contractsData = [], myServices = [];
 
-        // --- MENU MOBILE ---
-        function toggleMenu() {
-            const sidebar = document.getElementById('sidebar');
-            if(sidebar) sidebar.classList.toggle('-translate-x-full');
-        }
-
-        // --- ESTADO GLOBAL ---
-        let currentMonth = <%= periods[0].value.month %>;
-        let currentYear = <%= periods[0].value.year %>;
-        let contractsData = []; // Inicializado como array vazio
-        let teamData = [];      // Inicializado como array vazio
-
-        let myServices = [];
-
-        async function loadMyServices() {
-            try {
-                const res = await fetch(`${API_URL}/my-services`);
-                myServices = await res.json();
-            } catch(e) { console.error("Services", e); }
-        }
-
-
-
-        function onDateChange(select) {
-            const val = JSON.parse(select.value);
-            currentMonth = val.month;
-            currentYear = val.year;
-            loadDashboard();
-        }
+        async function loadMyServices() { try { const res = await fetch(`${API_URL}/my-services`); myServices = await res.json(); } catch(e) { console.error(e); } }
+        function onDateChange(sel) { const v = JSON.parse(sel.value); currentMonth = v.month; currentYear = v.year; loadDashboard(); }
 
         async function loadDashboard() {
-            // Mostra Loading nos containers principais
-            document.getElementById('contracts-table').innerHTML = '<tr><td colspan="12" class="text-center py-8 text-gray-400">Carregando...</td></tr>';
-            document.getElementById('team-table-body').innerHTML = '<tr><td colspan="6" class="text-center py-8 text-gray-400">Carregando...</td></tr>';
-            document.getElementById('allocation-table-body').innerHTML = '<tr><td colspan="4" class="text-center py-8 text-gray-400">Carregando...</td></tr>';
-
-            await Promise.all([
-                loadGlobalMetrics(),
-                loadContracts(),
-                loadTeam()
-            ]);
-            
-            lucide.createIcons();
+            document.getElementById('contracts-table').innerHTML = '<tr><td colspan="12" class="py-20 text-center text-gray-300 font-black uppercase text-[10px] tracking-widest italic animate-pulse">Sincronizando contratos...</td></tr>';
+            await Promise.all([loadGlobalMetrics(), loadContracts(), loadTeam()]); lucide.createIcons();
         }
 
-        // --- 1. MÉTRICAS GLOBAIS ---
         async function loadGlobalMetrics() {
             try {
                 const res = await fetch(`${API_URL}/metrics?month=${currentMonth}&year=${currentYear}`);
-                const data = await res.json();
-                
-                // Atualiza Cards (assumindo IDs fixos no HTML ou classes específicas)
-                // Como o HTML original não tinha IDs nos spans, vamos buscar por contexto ou assumir a ordem
-                // Melhor prática: Adicionar IDs no HTML. Vou injetar IDs via JS na renderização se não existirem ou usar querySelector
-                
-                // NOTA: Para funcionar 100%, adicionei IDs no HTML via script abaixo ou ajuste manual
-                const kpis = document.querySelectorAll('.grid-cols-1 > div');
-                if(kpis.length >= 4) {
-                    kpis[0].querySelector('.text-2xl').innerText = data.saudeContratos + '%';
-                    kpis[1].querySelector('.text-2xl').innerText = data.slaEstourado;
-                    kpis[2].querySelector('.text-2xl').innerText = data.estagnados;
-                    kpis[3].querySelector('.text-2xl').innerText = data.csat;
-                }
-            } catch (e) { console.error("Erro Metrics", e); }
+                const d = await res.json();
+                document.getElementById('kpi-health').innerText = d.saudeContratos + '%';
+                document.getElementById('kpi-health-bar').style.width = d.saudeContratos + '%';
+                document.getElementById('kpi-sla').innerText = d.slaEstourado;
+                document.getElementById('kpi-idle').innerText = d.estagnados;
+                document.getElementById('kpi-csat').innerText = d.csat;
+            } catch(e) { console.error(e); }
         }
 
-        // --- 2. CONTRATOS ---
         async function loadContracts() {
             try {
                 const res = await fetch(`${API_URL}/contracts?month=${currentMonth}&year=${currentYear}`);
-                if (!res.ok) throw new Error('API Error');
-                contractsData = await res.json();
-                // Garante que é array
-                if (!Array.isArray(contractsData)) contractsData = [];
-                renderContracts(contractsData);
-            } catch (e) { 
-                console.error("Erro Contracts", e); 
-                contractsData = []; // Fallback
-                document.getElementById('contracts-table').innerHTML = '<tr><td colspan="12" class="text-center text-red-500">Erro ao carregar contratos.</td></tr>';
-            }
+                contractsData = await res.json(); renderContracts(contractsData);
+            } catch(e) { console.error(e); }
         }
 
         function renderContracts(data) {
-            // Proteção extra
-            if (!data || !Array.isArray(data)) data = [];
-
-            const tbody = document.getElementById('contracts-table');
-            tbody.innerHTML = '';
-            
-            if(data.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="12" class="text-center py-8 text-gray-400">Nenhum contrato encontrado.</td></tr>';
-                return;
-            }
-
+            const tb = document.getElementById('contracts-table'); tb.innerHTML = '';
+            if(!data || data.length === 0) { tb.innerHTML = '<tr><td colspan="12" class="py-10 text-center text-gray-300 font-black uppercase text-[10px]">Sem dados</td></tr>'; return; }
             data.forEach(c => {
-                const percent = c.total > 0 ? (c.used / c.total) * 100 : 0;
-                let barColor = percent > 90 ? 'bg-red-500' : (percent > 75 ? 'bg-yellow-500' : 'bg-blue-500');
-                
-                let slaColor = c.sla > 0 ? 'text-red-600 font-bold' : 'text-gray-400';
-                
-                // Estagnados (Vem da API agora)
-                let idleVal = c.estagnados || 0;
-                let idleColor = idleVal > 0 ? 'text-orange-600 font-bold' : 'text-gray-400';
-                
-                let csatVal = c.csat || 0;
-                let csatColor = csatVal >= 4.5 ? 'text-teal-600 font-bold' : (csatVal > 0 && csatVal < 4.0 ? 'text-red-600 font-bold' : 'text-yellow-600');
-
-                tbody.innerHTML += `
-                <tr class="hover:bg-gray-50 transition-colors group border-b border-gray-100">
-                    <td class="px-6 py-4">
-                        <p class="font-bold text-gray-800 text-sm truncate w-48" title="${c.name}">${c.name}</p>
-                        <p class="text-xs text-gray-500 truncate w-48" title="${c.client}">${c.client}</p>
-                    </td>
-                    <td class="px-4 py-4 align-middle">
-                        <div class="flex justify-between text-xs mb-1 font-medium"><span>${c.used.toFixed(0)}h</span><span class="text-gray-400">de ${c.total.toFixed(0)}h</span></div>
-                        <div class="progress-bar-bg"><div class="progress-bar-fill ${barColor}" style="width: ${Math.min(percent, 100)}%"></div></div>
-                    </td>
-                    <td class="px-2 py-4 text-center text-xs font-bold text-blue-600 bg-blue-50/30 border-r border-white">${c.open}</td>
-                    <td class="px-2 py-4 text-center text-xs font-medium text-blue-600 bg-blue-50/30 border-r border-white">${c.inProg}</td>
-                    <td class="px-2 py-4 text-center text-xs font-medium text-yellow-600 bg-yellow-50/30 border-r border-white">${c.pause}</td>
-                    <td class="px-2 py-4 text-center text-xs font-bold text-yellow-600 bg-yellow-50/30 border-r border-white">${c.waiting}</td>
-                    <td class="px-2 py-4 text-center text-xs text-gray-400 bg-gray-50/30">${c.closed}</td>
-                    
-                    <td class="px-4 py-4 text-center ${slaColor}">${c.sla}</td>
-                    <td class="px-4 py-4 text-center text-xs ${idleColor}">${idleVal}</td>
-                    <td class="px-4 py-4 text-center text-sm ${csatColor}">${c.csat || '-'}</td>
-
-                    <td class="px-4 py-4 text-center">
-                        <button onclick="openContractTeam('${c.id}', '${c.name}')" class="text-xs font-bold text-blue-600 hover:underline bg-blue-50 px-2 py-1 rounded border border-blue-100">
-                            ${c.teamCount} Pessoas
-                        </button>
-                    </td>
-                    <td class="px-4 py-4 text-right"><button onclick="openExtract('${c.name}')" class="text-xs font-bold text-indigo-600 hover:underline">Extrato</button></td>
-                </tr>`;
+                const pct = c.total > 0 ? (c.used / c.total) * 100 : 0;
+                let bCls = pct > 90 ? 'bg-red-500' : (pct > 75 ? 'bg-orange-500' : 'bg-c3c-blue');
+                tb.innerHTML += `<tr class="hover:bg-gray-50/50 transition-colors border-b border-gray-50"><td class="px-8 py-5 text-left"><p class="font-black text-gray-800 text-xs uppercase tracking-tighter mb-1">${c.name}</p><p class="text-[9px] font-bold text-gray-400 uppercase tracking-widest truncate w-40" title="${c.client}">${c.client}</p></td><td class="px-4 py-5"><div class="flex justify-between text-[9px] font-black uppercase mb-1"><span>${c.used.toFixed(0)}h</span><span class="text-gray-300">/ ${c.total.toFixed(0)}h</span></div><div class="progress-bar-bg"><div class="h-full rounded-full ${bCls} transition-all duration-700" style="width: ${Math.min(pct, 100)}%"></div></div></td><td class="px-2 py-5 text-center text-xs font-black text-c3c-blue bg-blue-50/20">${c.open}</td><td class="px-2 py-5 text-center text-xs font-black text-c3c-blue bg-blue-50/20">${c.inProg}</td><td class="px-2 py-5 text-center text-xs font-black text-orange-500 bg-orange-50/20">${c.pause}</td><td class="px-2 py-5 text-center text-xs font-black text-orange-500 bg-orange-50/20">${c.waiting}</td><td class="px-2 py-5 text-center text-xs text-gray-300">${c.closed}</td><td class="px-4 py-5 text-center font-black ${c.sla > 0 ? 'text-red-500' : 'text-gray-200'}">${c.sla}</td><td class="px-4 py-5 text-center font-black ${c.estagnados > 0 ? 'text-orange-500' : 'text-gray-200'}">${c.estagnados || 0}</td><td class="px-4 py-5 text-center font-black text-xs text-teal-600">${c.csat || '-'}</td><td class="px-4 py-5 text-center"><button onclick="openContractTeam('${c.id}', '${c.name}')" class="text-[9px] font-black text-c3c-blue hover:underline bg-blue-50 px-3 py-1.5 rounded-xl border border-blue-100 uppercase tracking-widest">${c.teamCount} Recursos</button></td><td class="px-8 py-5 text-right"><button onclick="openExtract('${c.name}')" class="text-[10px] font-black text-indigo-600 uppercase tracking-widest hover:underline">Extrato</button></td></tr>`;
             });
         }
 
-        // --- 3. EQUIPE ---
-        async function loadTeam() {
-            try {
-                const res = await fetch(`${API_URL}/team?month=${currentMonth}&year=${currentYear}`);
-                if (!res.ok) throw new Error('API Error');
-                teamData = await res.json();
-                if (!Array.isArray(teamData)) teamData = [];
-                renderTeam(teamData);
-                renderScale(teamData); 
-            } catch (e) {
-                console.error("Erro Team", e);
-                teamData = []; // Garante array vazio em caso de erro
-                document.getElementById('team-table-body').innerHTML = '<tr><td colspan="6" class="text-center text-red-500">Erro ao carregar equipe.</td></tr>';
-            }
-        }
-
+        async function loadTeam() { try { const res = await fetch(`${API_URL}/team?month=${currentMonth}&year=${currentYear}`); teamData = await res.json(); renderTeam(teamData); renderScale(teamData); } catch(e) { console.error(e); } }
         function renderTeam(data) {
-            // Proteção extra
-            if (!data || !Array.isArray(data)) {
-                data = [];
-            }
-
-            const tbody = document.getElementById('team-table-body');
-            tbody.innerHTML = '';
-            
-            if(data.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="6" class="text-center py-8 text-gray-400">Nenhuma pessoa encontrada.</td></tr>';
-                return;
-            }
-
+            const tb = document.getElementById('team-table-body'); tb.innerHTML = '';
+            if(!data || data.length === 0) { tb.innerHTML = '<tr><td colspan="6" class="py-10 text-center text-gray-300 font-black uppercase text-[10px]">Sem equipe</td></tr>'; return; }
             data.forEach(r => {
-                const projectsLink = `<button onclick="openProjectsList('${r.name}', '${r.id}')" class="text-blue-600 font-bold hover:underline text-xs bg-blue-50 px-2 py-1 rounded border border-blue-100 shadow-sm">${r.allocations.length} Projetos</button>`;
-                
-                let today = r.hoursToday === 0 ? `<span class="flex items-center justify-center gap-1 text-xs text-red-500 font-bold bg-red-50 px-2 py-1 rounded">Pendente</span>` : 
-                            (r.hoursToday < 8 ? `<span class="flex items-center justify-center gap-1 text-xs text-yellow-600 font-bold">${r.hoursToday.toFixed(1)}h</span>` : `<span class="flex items-center justify-center gap-1 text-xs text-green-600 font-bold">${r.hoursToday.toFixed(1)}h</span>`);
-
-                // Cálculo de porcentagem baseado no TOTAL PREVISTO DA ALOCAÇÃO (não contrato cheio)
-                const totalPrevisto = r.expectedMonthTotal || 1; 
-                const monthPercent = Math.min((r.hoursMonth / totalPrevisto) * 100, 100);
-                const metaPercent = (r.expectedToDate / totalPrevisto) * 100;
-                
-                let statusColor = 'bg-green-500'; 
-                let statusText = r.status || 'Em Dia';
-                
-                if (statusText === 'Atrasado') statusColor = 'bg-red-500';
-                else if (statusText === 'Pendente Hoje') statusColor = 'bg-yellow-400';
-
-                tbody.innerHTML += `
-                <tr class="hover:bg-gray-50 transition-colors border-b border-gray-100">
-                    <td class="px-6 py-4">
-                        <div class="flex items-center gap-3">
-                            <div class="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center text-xs font-bold text-gray-600 border border-gray-300">${r.name.charAt(0)}</div>
-                            <div><p class="font-bold text-gray-900 text-sm">${r.name}</p><p class="text-xs text-gray-500">${r.role}</p></div>
-                        </div>
-                    </td>
-                    <td class="px-6 py-4 text-center">${projectsLink}</td>
-                    <td class="px-6 py-4 text-center">${today}</td>
-                    <td class="px-6 py-4 align-middle">
-                        <div class="flex justify-between text-xs mb-1 font-medium">
-                            <span class="${statusColor.replace('bg-','text-')} font-bold" title="Realizado">${r.hoursMonth.toFixed(1)}h</span>
-                            <div class="flex gap-2 text-[10px] text-gray-400">
-                                <span title="Meta até hoje">Meta: ${r.expectedToDate.toFixed(0)}h</span>
-                                <span title="Total Previsto Mês">Total: ${r.expectedMonthTotal.toFixed(0)}h</span>
-                            </div>
-                        </div>
-                        <div class="progress-bar-bg relative bg-gray-200 h-2 rounded-full overflow-hidden">
-                            <!-- Marcador de Meta -->
-                            <div class="absolute top-0 bottom-0 w-0.5 bg-black z-10 opacity-30" style="left: ${Math.min(metaPercent, 100)}%" title="Meta Hoje"></div>
-                            <!-- Barra de Progresso -->
-                            <div class="h-full ${statusColor}" style="width: ${monthPercent}%"></div>
-                        </div>
-                    </td>
-                    <td class="px-6 py-4 text-center">
-                        <span class="inline-flex items-center gap-1 text-[10px] uppercase font-bold text-gray-600 bg-gray-100 px-2 py-1 rounded">
-                            <div class="w-2 h-2 rounded-full ${statusColor}"></div> ${statusText}
-                        </span>
-                    </td>
-                    <td class="px-6 py-4 text-right"><button onclick="openExtract('${r.name} - Detalhes', '${r.id}')" class="text-xs font-bold text-indigo-600 hover:underline">Ver Detalhes</button></td>
-                </tr>`;
+                const pct = Math.min((r.hoursMonth / (r.expectedMonthTotal || 1)) * 100, 100), mPct = (r.expectedToDate / (r.expectedMonthTotal || 1)) * 100;
+                let sCls = r.status === 'Atrasado' ? 'bg-red-500' : (r.status === 'Pendente Hoje' ? 'bg-orange-500' : 'bg-teal-500');
+                tb.innerHTML += `<tr class="hover:bg-gray-50/50 transition-colors border-b border-gray-50"><td class="px-8 py-5 text-left"><div class="flex items-center gap-4"><div class="w-10 h-10 rounded-2xl bg-blue-50 flex items-center justify-center text-c3c-blue font-black uppercase shadow-sm border border-blue-100">${r.name.charAt(0)}</div><div><p class="font-black text-gray-800 text-xs uppercase tracking-tighter">${r.name}</p><p class="text-[9px] font-bold text-gray-400 uppercase tracking-widest">${r.role}</p></div></div></td><td class="px-4 py-5 text-center"><button onclick="openProjectsList('${r.name}', '${r.id}')" class="text-[9px] font-black text-c3c-blue bg-blue-50 px-3 py-1.5 rounded-xl border border-blue-100 uppercase tracking-widest">${r.allocations.length} Projetos</button></td><td class="px-4 py-5 text-center font-black ${r.hoursToday < 8 ? 'text-orange-500' : 'text-teal-600'} text-sm">${r.hoursToday.toFixed(1)}h</td><td class="px-8 py-5"><div class="flex justify-between text-[9px] font-black uppercase mb-1"><span class="${sCls.replace('bg-','text-')}">${r.hoursMonth.toFixed(1)}h Realizado</span><span class="text-gray-300">Meta: ${r.expectedToDate.toFixed(0)}h</span></div><div class="progress-bar-bg relative"><div class="absolute top-0 bottom-0 w-0.5 bg-gray-800/20 z-10" style="left: ${Math.min(mPct, 100)}%"></div><div class="h-full rounded-full ${sCls} transition-all duration-1000" style="width: ${pct}%"></div></div></td><td class="px-4 py-5 text-center"><span class="inline-flex items-center gap-2 text-[8px] font-black uppercase text-gray-500 bg-gray-50 px-3 py-1 rounded-full border border-gray-100 tracking-widest"><div class="w-2 h-2 rounded-full ${sCls}"></div> ${r.status}</span></td><td class="px-8 py-5 text-right"><button onclick="openExtract('${r.name}', '${r.id}')" class="text-[10px] font-black text-indigo-600 uppercase tracking-widest hover:underline">Ver Detalhes</button></td></tr>`;
             });
         }
 
-        // --- 4. ALOCAÇÃO (ESCALA) ---
         function renderScale(data) {
-            if (!data || !Array.isArray(data)) data = []; 
-
-            const tbody = document.getElementById('allocation-table-body');
-            tbody.innerHTML = '';
-            
-            if(data.length === 0) {
-                 tbody.innerHTML = '<tr><td colspan="4" class="text-center py-8 text-gray-400">Nenhum dado para alocação.</td></tr>';
-                 return;
-            }
-
+            const tb = document.getElementById('allocation-table-body'); tb.innerHTML = '';
+            if(!data || data.length === 0) return;
             data.forEach(r => {
-                let totalAlloc = 0;
-                
-                // Calcula total
-                r.allocations.forEach(a => {
-                    totalAlloc += (a.Percentual__c || 0);
-                });
-
-                let totalColor = totalAlloc > 100 ? 'text-red-600' : (totalAlloc < 80 ? 'text-yellow-600' : 'text-green-600');
-                
-                // Botão de Projetos (abre o mesmo modal de Gerenciar)
-                const count = r.allocations.length;
-                const projectsBadge = `
-                    <button onclick="openAllocationModal('${r.id}', '${r.name}')" class="text-blue-600 font-bold hover:underline text-xs bg-blue-50 px-3 py-1.5 rounded border border-blue-100 shadow-sm transition-all hover:bg-blue-100">
-                        ${count} ${count === 1 ? 'Projeto' : 'Projetos'}
-                    </button>
-                `;
-
-                tbody.innerHTML += `
-                <tr class="hover:bg-gray-50 border-b border-gray-100">
-                    <td class="px-6 py-4 align-middle">
-                        <div class="flex items-center gap-3">
-                            <div class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-xs font-bold text-gray-600">${r.name.charAt(0)}</div>
-                            <div><p class="font-bold text-gray-900 text-sm">${r.name}</p><p class="text-xs text-gray-500">${r.role}</p></div>
-                        </div>
-                    </td>
-                    <td class="px-6 py-4 align-middle text-center">
-                        ${projectsBadge}
-                    </td>
-                    <td class="px-6 py-4 align-middle text-center"><span class="text-sm font-bold ${totalColor}">${totalAlloc}%</span></td>
-                    <td class="px-6 py-4 align-middle text-right">
-                        <button onclick="openAllocationModal('${r.id}', '${r.name}')" class="text-xs bg-white border border-gray-300 text-gray-700 px-3 py-1.5 rounded hover:bg-gray-50 shadow-sm font-bold transition-colors">Gerenciar</button>
-                    </td>
-                </tr>`;
+                let t = 0; r.allocations.forEach(a => t += (a.Percentual__c || 0));
+                let c = t > 100 ? 'text-red-500' : (t < 80 ? 'text-orange-500' : 'text-teal-600');
+                tb.innerHTML += `<tr class="hover:bg-gray-50/50 transition-colors border-b border-gray-50"><td class="px-8 py-5 text-left"><div class="flex items-center gap-4"><div class="w-10 h-10 rounded-2xl bg-gray-50 flex items-center justify-center text-gray-400 font-black uppercase shadow-inner border border-gray-100">${r.name.charAt(0)}</div><div><p class="font-black text-gray-800 text-xs uppercase tracking-tighter">${r.name}</p><p class="text-[9px] font-bold text-gray-400 uppercase tracking-widest">${r.role}</p></div></div></td><td class="px-4 py-5 text-center"><button onclick="openAllocationModal('${r.id}', '${r.name}')" class="text-[9px] font-black text-c3c-blue bg-blue-50 px-4 py-2 rounded-xl border border-blue-100 uppercase tracking-widest shadow-sm hover:bg-blue-100 transition-all">${r.allocations.length} Ativas</button></td><td class="px-4 py-5 text-center"><span class="text-lg font-black ${c} tracking-tighter">${t}%</span></td><td class="px-8 py-5 text-right"><button onclick="openAllocationModal('${r.id}', '${r.name}')" class="bg-white border-2 border-gray-50 text-gray-400 px-6 py-2.5 rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-sm hover:bg-gray-50 transition-all">Gerenciar</button></td></tr>`;
             });
         }
 
-        // --- MODAIS E AÇÕES ---
-        
         async function openExtract(title, personId = null) {
-            document.getElementById('modal-title').innerText = title;
-            document.getElementById('modal-subtitle').innerText = "Histórico Detalhado";
-            
-            // HEADERS ATUALIZADOS COM H. EXTRA
-            const thead = document.querySelector('#extract-modal thead tr');
-            thead.innerHTML = `
-                <th class="px-4 py-3 w-32">Data</th>
-                <th class="px-4 py-3 w-48">Cliente</th>
-                <th class="px-4 py-3 w-48">Serviço</th>
-                <th class="px-4 py-3">Atividade / Descrição</th>
-                <th class="px-4 py-3 text-right w-24">H. Normais</th>
-                <th class="px-4 py-3 text-right w-24 text-red-500">H. Extras</th>
-            `;
-
-            const tbody = document.getElementById('modal-rows');
-            tbody.innerHTML = '<tr><td colspan="6" class="text-center py-4">Carregando...</td></tr>';
+            document.getElementById('modal-title').innerText = title; const tr = document.querySelector('#extract-modal thead tr');
+            tr.innerHTML = `<th class="px-8 py-5 w-32">Data</th><th class="px-4 py-5">Cliente / Serviço</th><th class="px-4 py-5">Atividade</th><th class="px-4 py-5 text-right w-24">Normais</th><th class="px-8 py-5 text-right w-24 text-red-500">Extras</th>`;
+            const tb = document.getElementById('modal-rows'); tb.innerHTML = '<tr><td colspan="5" class="py-20 text-center"><div class="w-8 h-8 border-4 border-blue-50 border-t-c3c-blue rounded-full animate-spin mx-auto"></div></td></tr>';
             openModal('extract-modal');
-            
             try {
-                // Passa o Nome do Serviço ou Pessoa (Título) para o backend buscar
-                // Se personId for passado, envia na query
                 let url = `${API_URL}/extract?serviceName=${encodeURIComponent(title)}&month=${currentMonth}&year=${currentYear}`;
                 if (personId) url += `&personId=${personId}`;
-
-                const res = await fetch(url);
-                const data = await res.json();
-                
-                tbody.innerHTML = '';
-                if(data.length === 0) {
-                     tbody.innerHTML = '<tr><td colspan="6" class="text-center py-4 text-gray-400">Nenhum registro encontrado.</td></tr>';
-                     return;
-                }
-
-                let sumNorm = 0;
-                let sumExtra = 0;
-
-                data.forEach(Row => {
-                    sumNorm += Row.horasNormais;
-                    sumExtra += Row.horasExtras;
-
-                    const dateFmt = Row.data ? Row.data.split('-').reverse().join('/') : '-';
-                    
-                    tbody.innerHTML += `
-                        <tr class="border-b border-gray-50">
-                            <td class="px-4 py-3 text-gray-500">${dateFmt}</td>
-                            <td class="px-4 py-3 font-bold text-gray-700">${Row.cliente || '-'}</td>
-                            <td class="px-4 py-3 text-gray-600">${Row.servico || '-'}</td>
-                            <td class="px-4 py-3 text-gray-800">${Row.atividade || 'Sem descrição'}</td>
-                            <td class="px-4 py-3 text-right font-mono font-bold text-blue-600">${Row.horasNormais.toFixed(1)}h</td>
-                            <td class="px-4 py-3 text-right font-mono font-bold text-red-500">${Row.horasExtras.toFixed(1)}h</td>
-                        </tr>
-                    `;
+                const res = await fetch(url); const data = await res.json(); tb.innerHTML = '';
+                if(data.length === 0) { tb.innerHTML = '<tr><td colspan="5" class="py-10 text-center text-gray-300 font-black uppercase text-[10px]">Sem lançamentos</td></tr>'; return; }
+                let sN=0, sE=0; data.forEach(r => {
+                    sN += r.horasNormais; sE += r.horasExtras;
+                    tb.innerHTML += `<tr class="border-b border-gray-50 hover:bg-gray-50/30 transition-colors"><td class="px-8 py-4 text-[10px] font-black text-gray-400 uppercase">${r.data.split('-').reverse().join('/')}</td><td class="px-4 py-4 text-xs font-black text-gray-700 uppercase tracking-tighter">${r.cliente || '-'} <br><span class="text-[9px] text-gray-400 font-bold">${r.servico || '-'}</span></td><td class="px-4 py-4 text-xs text-gray-600 font-medium leading-tight">${r.atividade || '-'}</td><td class="px-4 py-4 text-right font-black text-c3c-blue text-sm">${r.horasNormais.toFixed(1)}h</td><td class="px-8 py-4 text-right font-black text-red-500 text-sm">${r.horasExtras.toFixed(1)}h</td></tr>`;
                 });
-
-                // TOTALIZADOR
-                tbody.innerHTML += `
-                    <tr class="bg-gray-100 font-bold border-t-2 border-gray-200">
-                        <td colspan="4" class="px-4 py-3 text-right text-gray-600 uppercase text-xs">Total do Período</td>
-                        <td class="px-4 py-3 text-right text-blue-700">${sumNorm.toFixed(1)}h</td>
-                        <td class="px-4 py-3 text-right text-red-700">${sumExtra.toFixed(1)}h</td>
-                    </tr>
-                `;
-
+                tb.innerHTML += `<tr class="bg-gray-50/50 font-black border-t-2 border-gray-100"><td colspan="3" class="px-8 py-6 text-right uppercase text-[10px] text-gray-400 tracking-widest">Total</td><td class="px-4 py-6 text-right text-c3c-blue text-lg tracking-tighter">${sN.toFixed(1)}h</td><td class="px-8 py-6 text-right text-red-600 text-lg tracking-tighter">${sE.toFixed(1)}h</td></tr>`;
             } catch(e) { console.error(e); }
         }
 
         function openContractTeam(id, name) {
-            document.getElementById('contract-team-title').innerText = name;
-            const list = document.getElementById('contract-team-list');
-            list.innerHTML = '';
-            
-            if (!teamData) {
-                list.innerHTML = '<p class="text-sm text-red-500">Dados da equipe não carregados.</p>';
-                openModal('contract-team-modal');
-                return;
-            }
-
-            // Comparação robusta de ID (15 chars)
-            const id15 = id.substring(0, 15);
-            const members = teamData.filter(r => r.allocations && r.allocations.some(a => a.Servico__c.substring(0, 15) === id15));
-            
-            if(members.length === 0) list.innerHTML = '<p class="text-sm text-gray-400">Ninguém alocado.</p>';
-            
-            members.forEach(m => {
-                const alloc = m.allocations.find(a => a.Servico__c.substring(0, 15) === id15);
-                list.innerHTML += `
-                <div class="flex items-center justify-between p-3 bg-gray-50 rounded border border-gray-100">
-                    <div class="flex items-center gap-3">
-                        <div class="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center text-xs font-bold text-indigo-700">${m.name.charAt(0)}</div>
-                        <div><p class="text-sm font-bold text-gray-800">${m.name}</p><p class="text-[10px] text-gray-500">${m.role}</p></div>
-                    </div>
-                    <span class="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded">${alloc ? alloc.Percentual__c : '?'}%</span>
-                </div>`;
-            });
-            openModal('contract-team-modal');
+            document.getElementById('modal-title').innerText = "Recursos Alocados"; document.getElementById('modal-subtitle').innerText = name;
+            const tr = document.querySelector('#extract-modal thead tr'); tr.innerHTML = `<th class="px-8 py-5">Recurso</th><th class="px-8 py-5 text-right">Percentual</th>`;
+            const tb = document.getElementById('modal-rows'); tb.innerHTML = '';
+            const id15 = id.substring(0, 15); const members = teamData.filter(r => r.allocations && r.allocations.some(a => a.Servico__c.substring(0, 15) === id15));
+            members.forEach(m => { const a = m.allocations.find(x => x.Servico__c.substring(0, 15) === id15); tb.innerHTML += `<tr class="border-b border-gray-50"><td class="px-8 py-5 font-black text-gray-800 uppercase text-xs tracking-tighter">${m.name}</td><td class="px-8 py-5 text-right text-c3c-blue font-black">${a ? a.Percentual__c : '?'}%</td></tr>`; });
+            openModal('extract-modal');
         }
 
         function openProjectsList(name, id) {
-            const res = teamData.find(r => r.id === id);
-            const list = document.getElementById('projects-list-content');
-            list.innerHTML = '';
-            
-            if (res && res.allocations) {
-                res.allocations.forEach(a => {
-                    const servName = (a.Servico__r && a.Servico__r.Name) ? a.Servico__r.Name : 'Projeto Desconhecido';
-                    list.innerHTML += `<li class="flex justify-between items-center bg-gray-50 p-2 rounded border border-gray-100"><span>${servName}</span><span class="font-bold text-blue-600">${a.Percentual__c}%</span></li>`;
-                });
-            }
-            openModal('projects-list-modal');
+            const res = teamData.find(r => r.id === id); document.getElementById('modal-title').innerText = name; document.getElementById('modal-subtitle').innerText = "Projetos Ativos";
+            const tr = document.querySelector('#extract-modal thead tr'); tr.innerHTML = `<th class="px-8 py-5">Projeto</th><th class="px-8 py-5 text-right">Alocação</th>`;
+            const tb = document.getElementById('modal-rows'); tb.innerHTML = '';
+            if (res && res.allocations) res.allocations.forEach(a => { tb.innerHTML += `<tr class="border-b border-gray-50"><td class="px-8 py-5 font-black text-gray-800 uppercase text-xs tracking-tighter">${a.Servico__r ? a.Servico__r.Name : 'Projeto'}</td><td class="px-8 py-5 text-right text-c3c-blue font-black">${a.Percentual__c}%</td></tr>`; });
+            openModal('extract-modal');
         }
-
-        // --- MANAGE ALLOCATION ---
-        let currentEditingPersonId = null;
-        let deletedAllocations = [];
 
         function openAllocationModal(id, name) {
-            currentEditingPersonId = id;
-            deletedAllocations = []; 
-            const res = teamData.find(r => r.id === id);
-            document.getElementById('alloc-modal-name').innerText = name;
-            const container = document.getElementById('alloc-inputs-container');
-            container.innerHTML = '';
-            
-            let totalPct = 0;
-
-            if (res && res.allocations) {
-                res.allocations.forEach(a => {
-                    const servId = a.Servico__c;
-                    const servName = (a.Servico__r && a.Servico__r.Name) ? a.Servico__r.Name : 'Serviço';
-                    const pct = a.Percentual__c || 0;
-                    totalPct += pct;
-                    
-                    const isManaged = a.isManaged || myServices.some(s => s.id === servId);
-                    
-                    if(isManaged) {
-                        container.innerHTML += createAllocRow(a.Id, servId, pct, a.DataInicio__c, a.DataFim__c, a.DataFimOriginal__c);
-                    } else {
-                        // Read-only row
-                        container.innerHTML += `
-                        <div class="flex flex-col bg-gray-50 p-3 rounded border border-gray-200 opacity-70 gap-2">
-                            <div class="flex justify-between items-center">
-                                <div class="flex-1">
-                                    <p class="text-[10px] font-bold text-gray-400 uppercase">Outro Gestor (Apenas Leitura)</p>
-                                    <p class="text-sm font-bold text-gray-600">${servName}</p>
-                                </div>
-                                <div class="w-20 text-right">
-                                    <span class="font-bold text-gray-600 text-sm">${pct}%</span>
-                                </div>
-                            </div>
-                            <div class="flex gap-4 text-[10px] text-gray-400">
-                                <span>Início: ${a.DataInicio__c ? a.DataInicio__c.split('-').reverse().join('/') : '-'}</span>
-                                <span>Fim: ${a.DataFim__c ? a.DataFim__c.split('-').reverse().join('/') : '-'}</span>
-                            </div>
-                        </div>`;
-                    }
-                });
-            }
-            
-            updateTotalDisplay();
-            lucide.createIcons();
-            openModal('allocation-modal');
-        }
-
-        function createAllocRow(allocId, serviceId, percent, start = '', end = '', originalEnd = '') {
-            let options = myServices.map(s => `<option value="${s.id}" ${s.id === serviceId ? 'selected' : ''}>${s.name}</option>`).join('');
-            
-            const today = new Date().toISOString().split('T')[0];
-            const isFuture = start > today;
-            const disabledAttr = isFuture ? 'disabled title="Data Início futura: Edição bloqueada"' : '';
-            const bgClass = isFuture ? 'bg-gray-100 text-gray-400' : 'text-gray-600';
-
-            return `
-            <div class="bg-white p-3 rounded border border-gray-200 shadow-sm alloc-row space-y-3" data-alloc-id="${allocId || ''}">
-                <div class="flex items-center gap-3">
-                    <div class="flex-1">
-                        <p class="text-[10px] font-bold text-gray-500 uppercase mb-1">Projeto</p>
-                        <select class="w-full text-sm border border-gray-300 rounded p-1.5 bg-white focus:ring-2 focus:ring-blue-500 service-select font-medium text-gray-700">
-                            ${options}
-                        </select>
-                    </div>
-                    <div class="w-24">
-                        <p class="text-[10px] font-bold text-gray-500 uppercase mb-1">Percentual</p>
-                        <div class="flex items-center border border-gray-300 rounded overflow-hidden">
-                            <input type="number" value="${percent}" oninput="updateTotalDisplay()" class="w-full text-center text-sm p-1.5 border-none focus:ring-0 font-bold text-blue-600 pct-input">
-                            <span class="bg-gray-100 text-xs px-2 py-1.5 text-gray-500 font-bold border-l border-gray-300">%</span>
-                        </div>
-                    </div>
-                    <button class="text-gray-400 hover:text-red-500 p-2 mt-4" onclick="removeAllocRow(this, '${allocId}')" title="Remover Alocação"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
-                </div>
-                
-                <div class="flex gap-3 pt-2 border-t border-gray-100">
-                    <div class="flex-1">
-                        <label class="text-[10px] font-bold text-gray-500 uppercase block mb-1">Data Início</label>
-                        <input type="date" value="${start}" class="w-full text-xs border border-gray-300 rounded p-1 text-gray-600 start-date-input">
-                    </div>
-                    <div class="flex-1">
-                        <label class="text-[10px] font-bold text-gray-500 uppercase block mb-1">Data Fim (Opcional)</label>
-                        <input type="date" value="${end}" class="w-full text-xs border border-gray-300 rounded p-1 text-gray-600 end-date-input">
-                    </div>
-                    <div class="flex-1">
-                        <label class="text-[10px] font-bold text-gray-500 uppercase block mb-1">Fim Original ${isFuture ? '(Bloqueado)' : ''}</label>
-                        <input type="date" value="${originalEnd}" ${disabledAttr} class="w-full text-xs border border-gray-300 rounded p-1 ${bgClass} original-end-input">
-                    </div>
-                </div>
-            </div>`;
-        }
-        
-        async function removeAllocRow(btn, allocId) {
-            // Verifica se o ID é nulo, vazio ou as strings literais "null"/"undefined" que podem vir do template string
-            if (!allocId || allocId.trim() === '' || allocId === 'null' || allocId === 'undefined') {
-                // Se não tem ID real, é linha nova não salva, remove apenas do DOM
-                btn.closest('.alloc-row').remove();
-                updateTotalDisplay();
-                return;
-            }
-
-            if (!confirm('Tem certeza que deseja excluir esta alocação permanentemente?')) return;
-
-            try {
-                const res = await fetch(`${API_URL}/allocation/${allocId}`, {
-                    method: 'DELETE'
-                });
-                
-                const json = await res.json();
-                
-                if (json.success) {
-                    btn.closest('.alloc-row').remove();
-                    updateTotalDisplay();
-                    // Opcional: Recarregar dados para garantir consistência
-                    // await loadDashboard(); 
-                } else {
-                    alert('Erro ao excluir: ' + (json.error || 'Erro desconhecido'));
-                }
-            } catch (e) {
-                console.error(e);
-                alert('Erro de conexão ao excluir.');
-            }
-        }
-
-        function updateTotalDisplay() {
-             let total = 0;
-             document.querySelectorAll('.pct-input').forEach(i => total += parseFloat(i.value || 0));
-             document.getElementById('alloc-total-display').innerText = total + "%"; 
-        }
-
-        function addAllocationRow() {
-            const container = document.getElementById('alloc-inputs-container');
-            const defaultService = myServices.length > 0 ? myServices[0].id : '';
-            const today = new Date().toISOString().split('T')[0];
-            container.innerHTML += createAllocRow(null, defaultService, 0, today, '', ''); 
-            lucide.createIcons();
-        }
-
-        async function saveAllocations() {
-            const rows = document.querySelectorAll('.alloc-row');
-            const payload = {
-                personId: currentEditingPersonId,
-                allocations: []
-            };
-            
-            let hasError = false;
-
-            rows.forEach(r => {
-                if(hasError) return;
-
-                const allocId = r.getAttribute('data-alloc-id');
-                const serviceId = r.querySelector('.service-select').value;
-                const percent = parseFloat(r.querySelector('.pct-input').value) || 0;
-                const startDate = r.querySelector('.start-date-input').value;
-                const endDate = r.querySelector('.end-date-input').value;
-                const originalEndDate = r.querySelector('.original-end-input').value;
-
-                if (!originalEndDate) {
-                    alert("A Data Fim Original é obrigatória para todas as alocações.");
-                    hasError = true;
-                    return;
-                }
-
-                payload.allocations.push({ 
-                    allocationId: allocId, 
-                    serviceId, 
-                    percent,
-                    startDate,
-                    endDate,
-                    originalEndDate
-                });
+            currentEditingPersonId = id; const res = teamData.find(r => r.id === id); document.getElementById('alloc-modal-name').innerText = name;
+            const container = document.getElementById('alloc-inputs-container'); container.innerHTML = '';
+            if (res && res.allocations) res.allocations.forEach(a => {
+                const sId = a.Servico__c, sName = a.Servico__r ? a.Servico__r.Name : 'Serviço', isM = myServices.some(s => s.id === sId);
+                if(isM) container.innerHTML += createAllocRow(a.Id, sId, a.Percentual__c, a.DataInicio__c, a.DataFim__c, a.DataFimOriginal__c);
+                else container.innerHTML += `<div class="flex flex-col bg-gray-50 p-5 rounded-[24px] border border-gray-100 opacity-60 text-left"><p class="text-[8px] font-black text-gray-400 uppercase tracking-widest mb-1">Outro Gestor</p><div class="flex justify-between items-center"><p class="text-xs font-black text-gray-600 uppercase tracking-tighter">${sName}</p><span class="font-black text-gray-600 text-sm">${a.Percentual__c}%</span></div></div>`;
             });
-            
-            if(hasError) return;
-
-            console.log("Enviando payload:", payload); // DEBUG
-
-            try {
-                const res = await fetch(`${API_URL}/allocation`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-                
-                const json = await res.json();
-                if(!json.success) throw new Error(json.error || 'Erro desconhecido');
-
-                closeModal('allocation-modal');
-                await loadDashboard(); 
-                alert("Salvo com sucesso!");
-            } catch(e) { console.error(e); alert("Erro ao salvar: " + e.message); }
-        }
-        function openModal(id) {
-            const m = document.getElementById(id);
-            m.classList.remove('hidden');
-            setTimeout(() => { m.classList.remove('opacity-0'); m.querySelector('div').classList.remove('scale-95'); }, 10);
-        }
-        function closeModal(id) {
-            const m = document.getElementById(id);
-            m.classList.add('opacity-0');
-            setTimeout(() => m.classList.add('hidden'), 300);
-        }
-        
-        function setActiveLink(clicked) {
-            document.querySelectorAll('.sub-nav-link').forEach(l => {
-                l.classList.remove('active');
-                l.classList.add('inactive');
-            });
-            clicked.classList.add('active');
-            clicked.classList.remove('inactive');
+            updateTotalDisplay(); lucide.createIcons(); openModal('allocation-modal');
         }
 
-        // --- CARREGAMENTO INICIAL ---
-        document.addEventListener('DOMContentLoaded', async () => {
-            console.log("Iniciando Dashboard...");
-            // 1. Carrega seus serviços primeiro
-            await loadMyServices();
-            
-            // 2. Inicializa dashboard com o período selecionado
-            const periodSelect = document.querySelector('header select');
-            if (periodSelect) {
-                onDateChange(periodSelect);
-            } else {
-                loadDashboard();
-            }
-        });
+        function createAllocRow(aId, sId, pct, s, e, oE) {
+            const today = new Date().toISOString().split('T')[0], isF = s > today;
+            return `<div class="bg-gray-50 p-6 rounded-[32px] border border-gray-100 alloc-row space-y-5 text-left" data-alloc-id="${aId || ''}"><div class="flex items-center gap-4"><div class="flex-1 text-left"><label class="text-[9px] font-black text-gray-400 uppercase tracking-widest px-2 mb-1 block">Projeto</label><select class="w-full bg-white border-2 border-gray-100 rounded-2xl px-4 py-2.5 text-xs font-bold focus:ring-4 focus:ring-blue-50 outline-none service-select">${myServices.map(x => `<option value="${x.id}" ${x.id === sId ? 'selected' : ''}>${x.name}</option>`).join('')}</select></div><div class="w-24 text-left"><label class="text-[9px] font-black text-gray-400 uppercase tracking-widest px-2 mb-1 block">Percentual</label><div class="flex items-center bg-white border-2 border-gray-100 rounded-2xl overflow-hidden px-3"><input type="number" value="${pct}" oninput="updateTotalDisplay()" class="w-full text-center text-xs py-2.5 border-none outline-none font-black text-c3c-blue pct-input"><span class="text-[10px] font-black text-gray-300">%</span></div></div><button class="text-gray-300 hover:text-red-500 p-2 mt-4" onclick="removeAllocRow(this, '${aId}')"><i data-lucide="trash-2" class="w-4 h-4"></i></button></div><div class="flex gap-4 pt-4 border-t border-gray-100"><div class="flex-1"><label class="text-[8px] font-black text-gray-400 uppercase tracking-widest block mb-1">Início</label><input type="date" value="${s}" class="w-full bg-white border border-gray-100 rounded-xl px-3 py-1.5 text-[10px] font-bold outline-none start-date-input"></div><div class="flex-1"><label class="text-[8px] font-black text-gray-400 uppercase tracking-widest block mb-1">Fim (Opc)</label><input type="date" value="${e}" class="w-full bg-white border border-gray-100 rounded-xl px-3 py-1.5 text-[10px] font-bold outline-none end-date-input"></div><div class="flex-1"><label class="text-[8px] font-black text-gray-400 uppercase tracking-widest block mb-1">Fim Orig ${isF?'(Bloq)':''}</label><input type="date" value="${oE}" ${isF?'disabled':''} class="w-full ${isF?'bg-gray-100':'bg-white'} border border-gray-100 rounded-xl px-3 py-1.5 text-[10px] font-bold outline-none original-end-input"></div></div></div>`;
+        }
 
-        // Init
-        lucide.createIcons();
+        async function removeAllocRow(btn, id) { if (!id || id === 'null') { btn.closest('.alloc-row').remove(); updateTotalDisplay(); return; } if (!confirm('Remover permanentemente?')) return; const res = await fetch(`${API_URL.replace('/support-management','')}/allocation/${id}`, { method: 'DELETE' }); if ((await res.json()).success) { btn.closest('.alloc-row').remove(); updateTotalDisplay(); } }
+        function updateTotalDisplay() { let t = 0; document.querySelectorAll('.pct-input').forEach(i => t += parseFloat(i.value || 0)); document.getElementById('alloc-total-display').innerText = t + "%"; }
+        function addAllocationRow() { const c = document.getElementById('alloc-inputs-container'); c.innerHTML += createAllocRow(null, myServices[0]?.id, 0, new Date().toISOString().split('T')[0], '', ''); lucide.createIcons(); }
+        async function saveAllocations() { const rows = document.querySelectorAll('.alloc-row'); const p = { personId: currentEditingPersonId, allocations: [] }; let err = false; rows.forEach(r => { if(err) return; const oE = r.querySelector('.original-end-input').value; if (!oE) { alert("Fim Original obrigatório"); err = true; return; } p.allocations.push({ allocationId: r.getAttribute('data-alloc-id'), serviceId: r.querySelector('.service-select').value, percent: parseFloat(r.querySelector('.pct-input').value) || 0, startDate: r.querySelector('.start-date-input').value, endDate: r.querySelector('.end-date-input').value, originalEndDate: oE }); }); if(err) return; try { const res = await fetch(`${API_URL.replace('/support-management','')}/allocation`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(p) }); if((await res.json()).success) { closeModal('allocation-modal'); loadDashboard(); } } catch(e) { console.error(e); } }
+        function openModal(id) { const m = document.getElementById(id); m.classList.remove('hidden'); setTimeout(() => m.classList.remove('scale-95'), 10); }
+        function closeModal(id) { const m = document.getElementById(id); m.classList.add('opacity-0'); setTimeout(() => m.classList.add('hidden'), 300); }
+        function setActiveLink(c) { document.querySelectorAll('.sub-nav-link').forEach(l => { l.classList.remove('active'); l.classList.add('text-gray-400'); }); c.classList.add('active'); c.classList.remove('text-gray-400'); }
+        document.addEventListener('DOMContentLoaded', async () => { await loadMyServices(); const s = document.querySelector('header select'); if (s) onDateChange(s); else loadDashboard(); });
     </script>
 </body>
 </html>
