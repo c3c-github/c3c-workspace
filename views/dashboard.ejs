@@ -268,28 +268,37 @@
         async function loadPeriods() {
             try {
                 const res = await fetch(`${API_URL}/periods?type=user`);
-                const periods = await res.json();
+                const data = await res.json();
                 const selector = document.getElementById('period-selector');
                 selector.innerHTML = '';
                 
-                if(!periods || periods.length === 0) { 
+                if(!data || data.length === 0) { 
                     selector.innerHTML = '<option value="">Sem contratos ativos</option>'; 
                     return; 
                 }
                 
-                let defaultIndex = periods.findIndex(p => p.isSuggestedDefault);
-                if(defaultIndex === -1) defaultIndex = 0;
+                // Encontra o período não finalizado mais antigo
+                // Como a lista vem ordenada DESC (recentes primeiro), 
+                // o mais antigo não finalizado é o último do array filtrado.
+                const nonFinalized = data.filter(p => p.Status__c !== 'Finalizado/Pago');
+                
+                let suggestedId = null;
+                if (nonFinalized.length > 0) {
+                    suggestedId = nonFinalized[nonFinalized.length - 1].Id;
+                } else if (data.length > 0) {
+                    suggestedId = data[0].Id;
+                }
 
-                periods.forEach((p, i) => {
+                data.forEach((p, i) => {
                     const opt = document.createElement('option');
-                    opt.value = JSON.stringify({start: p.DataInicio__c, end: p.DataFim__c});
+                    opt.value = JSON.stringify({id: p.Id, start: p.DataInicio__c, end: p.DataFim__c});
                     opt.text = p.Name;
-                    if (i === defaultIndex) opt.selected = true;
+                    if (p.Id === suggestedId) opt.selected = true;
                     selector.appendChild(opt);
                 });
                 
-                triggerDataLoad(selector.value);
-            } catch (err) { console.error(err); }
+                if(data.length > 0) triggerDataLoad(selector.value);
+            } catch(e) { console.error(e); }
         }
 
         function triggerDataLoad(jsonDates) {

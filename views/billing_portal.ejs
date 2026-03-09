@@ -297,16 +297,31 @@
                 if (result.success && result.data) {
                     const d = result.data;
                     const mapping = { 'nf-numero': d.numeroNota, 'nf-data-emissao': d.dataEmissao, 'nf-emitente': d.nomeEmitente, 'cnpj-emissor': d.cnpjEmissor, 'cnpj-receptor': d.cnpjReceptor, 'nf-valor': d.valorTotal };
+                    
                     Object.keys(mapping).forEach(id => {
                         const el = document.getElementById(id);
                         let val = mapping[id];
-                        const isInvalid = !val || (typeof val === 'string' && (val.toLowerCase() === 'n/a' || val.trim() === '')) || (id === 'nf-valor' && (parseFloat(val) <= 0 || isNaN(parseFloat(val))));
+                        
+                        // Verifica se é nulo, undefined, string "null", string "n/a" ou vazio
+                        const isNullString = typeof val === 'string' && (val.toLowerCase() === 'null' || val.toLowerCase() === 'n/a' || val.trim() === '');
+                        const isInvalidValue = !val || isNullString;
+                        const isInvalidPrice = id === 'nf-valor' && (parseFloat(val) <= 0 || isNaN(parseFloat(val)));
+                        
+                        const isInvalid = isInvalidValue || isInvalidPrice;
+                        
+                        console.log(`[IA Analysis] Field: ${id}, Value: ${val}, isInvalid: ${isInvalid}`);
+
+                        el.classList.remove('border-teal-500', 'bg-teal-50/30');
+                        
                         if (!isInvalid) {
-                            el.value = val; el.disabled = true;
+                            el.value = val; 
+                            el.disabled = true;
                             el.classList.add('border-teal-500', 'bg-teal-50/30');
                         } else {
                             if (id !== 'nf-valor') el.value = '';
-                            el.disabled = false; isManualFill = true; 
+                            el.disabled = false; 
+                            el.removeAttribute('disabled'); // Força a remoção do atributo
+                            isManualFill = true; 
                             el.placeholder = "Preencha manualmente";
                         }
                     });
@@ -315,7 +330,9 @@
                 isManualFill = true;
                 ['nf-numero', 'nf-data-emissao', 'nf-emitente', 'cnpj-emissor', 'cnpj-receptor', 'nf-valor'].forEach(f => {
                     const el = document.getElementById(f);
-                    el.disabled = false; el.placeholder = "Preencha manualmente";
+                    el.disabled = false; 
+                    el.classList.remove('border-teal-500', 'bg-teal-50/30');
+                    el.placeholder = "Preencha manualmente";
                 });
             } finally { loader.classList.add('hidden'); validateForm(); }
         }
