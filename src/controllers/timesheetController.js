@@ -7,9 +7,11 @@ const { getSfConnection } = require('../config/salesforce');
 async function calculateDailyStats(conn, userId, targetDate) {
     const dateStr = targetDate.includes('T') ? targetDate.split('T')[0] : targetDate;
     
-    // 1. Busca DiaPeriodo
+    // 1. Busca DiaPeriodo e dados do contrato
     const diaQuery = `
-        SELECT Id, Periodo__c, Periodo__r.ContratoPessoa__r.Hora__c 
+        SELECT Id, Periodo__c, 
+               Periodo__r.ContratoPessoa__r.Hora__c,
+               Periodo__r.ContratoPessoa__r.Pessoa__r.HorasContrato__c
         FROM DiaPeriodo__c 
         WHERE Data__c = ${dateStr} 
         AND Periodo__r.ContratoPessoa__r.Pessoa__c = '${userId}'
@@ -32,7 +34,10 @@ async function calculateDailyStats(conn, userId, targetDate) {
     if (diaRes.length === 0) return { exists: false, diaPeriodoId: null, limiteDia: 8, usedNormal: 0, usedExtra: 0 };
     
     const diaRecord = diaRes[0];
-    const limiteDia = (diaRecord.Periodo__r && diaRecord.Periodo__r.ContratoPessoa__r && diaRecord.Periodo__r.ContratoPessoa__r.Hora__c) ? diaRecord.Periodo__r.ContratoPessoa__r.Hora__c : 8;
+    let limiteDia = 8;
+    if (diaRecord.Periodo__r && diaRecord.Periodo__r.ContratoPessoa__r) {
+        limiteDia = diaRecord.Periodo__r.ContratoPessoa__r.Hora__c || diaRecord.Periodo__r.ContratoPessoa__r.Pessoa__r?.HorasContrato__c || 8;
+    }
 
     // 2. Soma horas já lançadas
     const somaQuery = `
@@ -145,7 +150,7 @@ exports.getCalendarData = async (req, res) => {
         if (!periodId) return res.status(400).json({ error: "PeriodId obrigatório." });
 
         const soqlDias = `SELECT Id, Name, Data__c, Tipo__c FROM DiaPeriodo__c WHERE Periodo__c = '${periodId}' ORDER BY Data__c ASC`;
-        const soqlPeriodo = `SELECT Status__c, ContratoPessoa__r.Hora__c FROM Periodo__c WHERE Id = '${periodId}'`;
+        const soqlPeriodo = `SELECT Status__c, ContratoPessoa__r.Hora__c, ContratoPessoa__r.Pessoa__r.HorasContrato__c FROM Periodo__c WHERE Id = '${periodId}'`;
         
         const soqlLancamentos = `
             SELECT DiaPeriodo__r.Data__c, Status__c, Horas__c, HorasExtras__c, 
@@ -170,8 +175,8 @@ exports.getCalendarData = async (req, res) => {
         if (resPeriodo.totalSize > 0) {
             const pRec = resPeriodo.records[0];
             statusGeral = pRec.Status__c || 'Aberto';
-            if (pRec.ContratoPessoa__r && pRec.ContratoPessoa__r.Hora__c) {
-                horasDiarias = pRec.ContratoPessoa__r.Hora__c;
+            if (pRec.ContratoPessoa__r) {
+                horasDiarias = pRec.ContratoPessoa__r.Hora__c || pRec.ContratoPessoa__r.Pessoa__r?.HorasContrato__c || 8;
             }
         }
 
@@ -239,7 +244,7 @@ exports.getCalendarData = async (req, res) => {
         const totalContratado = horasDiarias * diasUteisCount;
         const saldoBancoTotal = (resSaldo.records && resSaldo.records[0] && resSaldo.records[0].total) ? resSaldo.records[0].total : 0;
 
-        res.json({ periodId, grid: calendarGrid, summary: { totalContratado, totalRealizado: totalLancadoNoPeriodo, saldoBancoTotal, variacaoPeriodo: totalBancoPeriodo, statusGeral } });
+        res.json({ periodId, grid: calendarGrid, summary: { totalContratado, totalRealizado: totalLancadoNoPeriodo, saldoBancoTotal, variacaoPeriodo: totalBancoPeriodo, statusGeral, limiteDiario: horasDiarias } });
     } catch (error) { res.status(500).json({ error: error.message }); }
 };
 
@@ -258,10 +263,10 @@ exports.getDayDetails = async (req, res) => {
         `;
         const logsRes = await conn.query(logsQuery);
 
-        const diaQuery = `SELECT Id, Periodo__r.Status__c, Periodo__r.ContratoPessoa__r.Hora__c FROM DiaPeriodo__c WHERE Data__c = ${dateStr} AND Periodo__r.ContratoPessoa__r.Pessoa__c = '${userId}' LIMIT 1`;
+        const diaQuery = `SELECT Id, Periodo__r.Status__c, Periodo__r.ContratoPessoa__r.Hora__c, Periodo__r.ContratoPessoa__r.Pessoa__r.HorasContrato__c FROM DiaPeriodo__c WHERE Data__c = ${dateStr} AND Periodo__r.ContratoPessoa__r.Pessoa__c = '${userId}' LIMIT 1`;
         let diaRes = await conn.query(diaQuery);
         if (diaRes.totalSize === 0) {
-            diaRes = await conn.query(`SELECT Id, Periodo__r.Status__c, Periodo__r.ContratoPessoa__r.Hora__c FROM DiaPeriodo__c WHERE Data__c = '${dateStr}' AND Periodo__r.ContratoPessoa__r.Pessoa__c = '${userId}' LIMIT 1`);
+            diaRes = await conn.query(`SELECT Id, Periodo__r.Status__c, Periodo__r.ContratoPessoa__r.Hora__c, Periodo__r.ContratoPessoa__r.Pessoa__r.HorasContrato__c FROM DiaPeriodo__c WHERE Data__c = '${dateStr}' AND Periodo__r.ContratoPessoa__r.Pessoa__c = '${userId}' LIMIT 1`);
         }
 
         const entries = logsRes.records.map(l => ({
@@ -287,8 +292,9 @@ exports.getDayDetails = async (req, res) => {
 
         const pStatus = diaRes.records[0]?.Periodo__r?.Status__c || 'Aberto';
         const isLocked = pStatus !== 'Aberto';
+        const limiteDiario = diaRes.records[0]?.Periodo__r?.ContratoPessoa__r?.Hora__c || diaRes.records[0]?.Periodo__r?.ContratoPessoa__r?.Pessoa__r?.HorasContrato__c || 8;
 
-        res.json({ date: dateStr, allocations, activities, entries, isLocked, periodoStatus: pStatus, status_list: uniqueStatuses, diaPeriodoId: diaRes.records[0]?.Id });
+        res.json({ date: dateStr, allocations, activities, entries, isLocked, periodoStatus: pStatus, status_list: uniqueStatuses, diaPeriodoId: diaRes.records[0]?.Id, limiteDiario });
     } catch (e) { res.status(500).json({ error: e.message }); }
 };
 

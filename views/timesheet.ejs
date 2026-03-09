@@ -230,7 +230,8 @@
     <script>
         lucide.createIcons();
         let currentPeriods=[], currentPeriodIndex=0, currentGridData={}, dayProjects=[], dayActivities=[], dayEntries=[], currentOpenDayId=null, currentOpenDate=null, projectAllocationMap={}, isNonBusinessDay=false;
-        const DAILY_CONTRACT=8, MAX_DAY_HOURS=24;
+        let DAILY_CONTRACT=8;
+        const MAX_DAY_HOURS=24;
 
         function toggleLoading(show) { 
             const el = document.getElementById('loading-overlay'); 
@@ -270,6 +271,7 @@
         }
 
         function updateSummary(summary) {
+            if (summary.limiteDiario) DAILY_CONTRACT = summary.limiteDiario;
             document.getElementById('card-contratado').innerText = (summary.totalContratado || 0).toFixed(1) + 'h';
             document.getElementById('card-realizado').innerText = (summary.totalRealizado || 0).toFixed(1) + 'h';
             const saldo = summary.saldoBancoTotal || 0;
@@ -322,7 +324,9 @@
             document.getElementById('day-panel').classList.remove('closed'); document.getElementById('day-panel').classList.add('open');
             try {
                 const res = await fetch(`/api/timesheet/day?date=${key}&diaPeriodoId=${g.id}`);
-                const d = await res.json(); dayProjects=d.allocations||[]; dayActivities=d.activities||[]; dayEntries=d.entries||[];
+                const d = await res.json(); 
+                if (d.limiteDiario) DAILY_CONTRACT = d.limiteDiario;
+                dayProjects=d.allocations||[]; dayActivities=d.activities||[]; dayEntries=d.entries||[];
                 const projSel=document.getElementById('input-project'); projSel.innerHTML='<option value="" disabled selected>Selecione...</option>';
                 const allocL = document.getElementById('allocations-list'); allocL.innerHTML='';
                 if(dayProjects.length>0) {
