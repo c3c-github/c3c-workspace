@@ -67,6 +67,8 @@ exports.getPeriods = async (req, res) => {
             const result = await conn.query(query);
             records = result.records;
         } else {
+            const emailLider = req.session.user.email;
+            
             // Busca ciclos únicos agrupando por data, cobrindo todo o histórico
             const query = `
                 SELECT DataInicio__c, DataFim__c 
@@ -76,15 +78,22 @@ exports.getPeriods = async (req, res) => {
                 LIMIT 1000
             `;
             
-            // Busca o ciclo padrão sugerido (o mais antigo com pendência)
-            const qDefault = `SELECT DataInicio__c, DataFim__c FROM Periodo__c WHERE Status__c != 'Finalizado/Pago' ORDER BY DataInicio__c ASC LIMIT 1`;
+            // Busca o ciclo padrão sugerido (o mais antigo que NÃO esteja Finalizado/Pago nos serviços do gestor)
+            const qDefault = `
+                SELECT DiaPeriodo__r.Periodo__r.DataInicio__c, DiaPeriodo__r.Periodo__r.DataFim__c 
+                FROM LancamentoHora__c 
+                WHERE DiaPeriodo__r.Periodo__r.Status__c != 'Finalizado/Pago'
+                AND Servico__r.Lider__r.Email__c = '${emailLider}'
+                ORDER BY DiaPeriodo__r.Periodo__r.DataInicio__c ASC 
+                LIMIT 1
+            `;
             
             const [result, resDefault] = await Promise.all([
                 conn.query(query),
                 conn.query(qDefault)
             ]);
             
-            const suggestedDefault = resDefault.records[0] ? `${resDefault.records[0].DataInicio__c}_${resDefault.records[0].DataFim__c}` : null;
+            const suggestedDefault = resDefault.records[0] ? `${resDefault.records[0].DiaPeriodo__r.Periodo__r.DataInicio__c}_${resDefault.records[0].DiaPeriodo__r.Periodo__r.DataFim__c}` : null;
 
             records = result.records.map(p => {
                 const start = new Date(p.DataInicio__c + 'T12:00:00');

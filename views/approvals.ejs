@@ -135,11 +135,20 @@
         <div class="bg-white rounded-[40px] shadow-2xl w-full max-w-5xl overflow-hidden transform scale-95 transition-all flex flex-col max-h-[85vh]">
             <header class="p-8 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
                 <div class="text-left">
-                    <h3 class="text-xl font-black text-gray-800 tracking-tighter uppercase leading-tight">Extrato do Recurso</h3>
+                    <h3 id="activity-modal-title" class="text-xl font-black text-gray-800 tracking-tighter uppercase leading-tight">Extrato do Recurso</h3>
                     <p class="text-[10px] font-black text-c3c-blue uppercase tracking-widest mt-1">Análise individual dos lançamentos</p>
                 </div>
-                <button onclick="closeModal('modal-activities')" class="p-3 text-gray-400 hover:bg-white hover:text-red-500 rounded-full shadow-sm transition-all"><i data-lucide="x"></i></button>
+                <button onclick="closeActivityModal()" class="p-3 text-gray-400 hover:bg-white hover:text-red-500 rounded-full shadow-sm transition-all"><i data-lucide="x"></i></button>
             </header>
+
+            <!-- DASHBOARD RECURSO (TOTALIZADORES) -->
+            <div id="resource-summary-dashboard" class="px-8 py-6 bg-white border-b border-gray-100 flex flex-wrap gap-8 items-center shrink-0">
+                <div class="flex flex-col text-left"><span class="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1">Previsto</span><span id="res-sum-prev" class="text-lg font-black text-gray-800">--h</span></div>
+                <div class="flex flex-col text-left"><span class="text-[9px] font-black text-c3c-blue uppercase tracking-widest mb-1">Realizado (Calc)</span><span id="res-sum-real" class="text-lg font-black text-c3c-blue">--h</span></div>
+                <div class="flex flex-col text-left"><span class="text-[9px] font-black text-orange-500 uppercase tracking-widest mb-1">Extras (Pg)</span><span id="res-sum-ext" class="text-lg font-black text-orange-500">--h</span></div>
+                <div class="flex flex-col text-left"><span class="text-[9px] font-black text-purple-500 uppercase tracking-widest mb-1">Banco (Hr)</span><span id="res-sum-banco" class="text-lg font-black text-purple-500">--h</span></div>
+                <div class="flex flex-col text-left"><span class="text-[9px] font-black text-red-400 uppercase tracking-widest mb-1">Ausências</span><span id="res-sum-aus" class="text-lg font-black text-red-400">--h</span></div>
+            </div>
 
             <!-- MASS ACTIONS -->
             <div class="px-8 py-4 bg-white border-b border-gray-100 flex items-center justify-between gap-4">
@@ -164,6 +173,8 @@
                             <th class="px-4 py-4 text-right">Ext(Pg)</th>
                             <th class="px-4 py-4 text-right">Ext(Bc)</th>
                             <th class="px-4 py-4 text-right">Aus(Bc)</th>
+                            <th class="px-4 py-4 text-right">Aus(Out)</th>
+                            <th class="px-4 py-4 text-right bg-blue-50/30">Total (Calc)</th>
                             <th class="px-8 py-4 text-center">Status</th>
                         </tr>
                     </thead>
@@ -195,7 +206,7 @@
     <script>
         lucide.createIcons();
         const API_URL = '/api';
-        let availablePeriods = [], currentPeriodIndex = 0, currentProjectItem = null, currentModalServiceId = null, currentModalPersonId = null;
+        let availablePeriods = [], currentProjectItem = null, currentModalServiceId = null, currentModalPersonId = null, currentModalPersonName = null, currentModalAloc = 0;
 
         function toggleLoading(show) { const el = document.getElementById('loading-overlay'); if(show) el.classList.remove('hidden'); else el.classList.add('hidden'); }
 
@@ -206,18 +217,20 @@
                 const res = await fetch(`${API_URL}/periods?type=manager`);
                 if(res.status === 401) window.location.href = '/';
                 const periods = await res.json();
-                if(periods.length === 0) return;
+                if(!periods || periods.length === 0) return;
                 availablePeriods = periods; 
 
-                const nonFinalized = periods.filter(p => p.Status__c !== 'Finalizado/Pago');
-                let suggestedId = nonFinalized.length > 0 ? nonFinalized[nonFinalized.length - 1].Id : periods[0].Id;
-                
+                console.log("[DEBUG Approvals] Periods from API:", periods);
+
                 const selector = document.getElementById('period-selector');
                 selector.innerHTML = periods.map(p => `
-                    <option value='${JSON.stringify({id:p.Id, start:p.DataInicio__c, end:p.DataFim__c})}' ${p.Id === suggestedId ? 'selected' : ''}>
+                    <option value='${JSON.stringify({id:p.Id, start:p.DataInicio__c, end:p.DataFim__c})}' ${p.isSuggestedDefault ? 'selected' : ''}>
                         ${p.Name}
                     </option>
                 `).join('');
+
+                console.log("[DEBUG Approvals] Selected Index:", selector.selectedIndex);
+                console.log("[DEBUG Approvals] Selected Value:", selector.value);
 
                 triggerDataLoad(selector.value);
             } catch (err) { console.error(err); }
@@ -288,12 +301,12 @@
                     const val = (v, cls) => v > 0 ? `<span class="font-black ${cls}">${v.toFixed(1)}</span>` : '<span class="text-gray-300">-</span>';
                     let actions = '';
                     if(r.periodStatus === 'Em aprovação do serviço' && r.countPending > 0) {
-                        actions = `<div class="flex justify-center gap-2 items-center"><button onclick="openActivityModal('${serviceId}', '${r.id}')" class="p-2 text-gray-400 hover:text-c3c-blue rounded-xl hover:bg-blue-50 transition-all"><i data-lucide="list-collapse" class="w-4 h-4"></i></button><button onclick="openRejectModal('${serviceId}', '${r.id}', '${r.name}')" class="p-2 text-red-400 hover:text-red-600 rounded-xl hover:bg-red-50 transition-all"><i data-lucide="x" class="w-4 h-4"></i></button><button onclick="approveAction('${serviceId}', '${r.id}', 'approve')" class="p-2 text-teal-500 hover:text-teal-700 rounded-xl hover:bg-teal-50 transition-all"><i data-lucide="check" class="w-4 h-4"></i></button></div>`;
+                        actions = `<div class="flex justify-center gap-2 items-center"><button onclick="openActivityModal('${serviceId}', '${r.id}', '${r.name}', ${r.alocado})" class="p-2 text-gray-400 hover:text-c3c-blue rounded-xl hover:bg-blue-50 transition-all"><i data-lucide="list-collapse" class="w-4 h-4"></i></button><button onclick="openRejectModal('${serviceId}', '${r.id}', '${r.name}')" class="p-2 text-red-400 hover:text-red-600 rounded-xl hover:bg-red-50 transition-all"><i data-lucide="x" class="w-4 h-4"></i></button><button onclick="approveAction('${serviceId}', '${r.id}', 'approve')" class="p-2 text-teal-500 hover:text-teal-700 rounded-xl hover:bg-teal-50 transition-all"><i data-lucide="check" class="w-4 h-4"></i></button></div>`;
                     } else {
                         let label = r.periodStatus || 'Aberto', bCls = 'text-gray-400 border-gray-100 bg-gray-50';
                         if (r.periodStatus === 'Aberto') { label = 'Rascunho'; bCls = 'text-blue-500 border-blue-50 bg-blue-50/50'; }
                         else if (r.countPending === 0) { label = 'Aprovado'; bCls = 'text-teal-600 border-teal-50 bg-teal-50/50'; }
-                        actions = `<div class="flex justify-center items-center gap-2"><button onclick="openActivityModal('${serviceId}', '${r.id}')" class="text-gray-300 hover:text-c3c-blue p-2"><i data-lucide="eye" class="w-4 h-4"></i></button><span class="text-[8px] font-black uppercase px-2 py-0.5 rounded-full border ${bCls} tracking-widest">${label}</span></div>`;
+                        actions = `<div class="flex justify-center items-center gap-2"><button onclick="openActivityModal('${serviceId}', '${r.id}', '${r.name}', ${r.alocado})" class="text-gray-300 hover:text-c3c-blue p-2"><i data-lucide="eye" class="w-4 h-4"></i></button><span class="text-[8px] font-black uppercase px-2 py-0.5 rounded-full border ${bCls} tracking-widest">${label}</span></div>`;
                     }
                     let confClass = 'text-teal-600 font-bold';
                     if (r.percentual > 105) confClass = 'text-red-500 font-black';
@@ -307,25 +320,61 @@
             } catch(e) { console.error(e); }
         }
 
-        async function openActivityModal(serviceId, personId) {
+        async function openActivityModal(serviceId, personId, personName, alocado) {
             currentModalServiceId = serviceId; currentModalPersonId = personId;
+            if (personName) currentModalPersonName = personName;
+            if (alocado !== undefined) currentModalAloc = alocado;
+
             const modal = document.getElementById('modal-activities'); const tbody = document.getElementById('activity-table-body');
-            tbody.innerHTML = '<tr><td colspan="8" class="text-center py-20 text-gray-300 font-black uppercase text-[10px]"><i data-lucide="loader-2" class="w-6 h-6 animate-spin inline-block mb-2"></i><br>Carregando extrato...</td></tr>';
+            document.getElementById('activity-modal-title').innerText = `Extrato: ${currentModalPersonName || 'Recurso'}`;
+            document.getElementById('res-sum-prev').innerText = (currentModalAloc || 0).toFixed(0) + 'h';
+            
+            tbody.innerHTML = '<tr><td colspan="10" class="text-center py-20 text-gray-300 font-black uppercase text-[10px]"><i data-lucide="loader-2" class="w-6 h-6 animate-spin inline-block mb-2"></i><br>Carregando extrato...</td></tr>';
             lucide.createIcons(); modal.classList.remove('hidden'); document.getElementById('check-all-entries').checked = false; updateMassActionButtons();
             const p = JSON.parse(document.getElementById('period-selector').value);
             try {
                 const res = await fetch(`${API_URL}/approvals/${serviceId}/resources/${personId}/activities?inicio=${p.start}&fim=${p.end}`);
                 const activities = await res.json();
                 tbody.innerHTML = '';
-                if(activities.length === 0) { tbody.innerHTML = '<tr><td colspan="8" class="py-10 text-center text-gray-400 font-bold uppercase text-[10px]">Nenhum registro encontrado</td></tr>'; return; }
+                if(activities.length === 0) { 
+                    tbody.innerHTML = '<tr><td colspan="10" class="py-10 text-center text-gray-400 font-bold uppercase text-[10px]">Nenhum registro encontrado</td></tr>'; 
+                    return; 
+                }
+
+                let tNorm=0, tExPg=0, tExBc=0, tAuBc=0, tAuOu=0, tCalc=0;
+
                 activities.forEach(a => {
                     const justificativa = a.justificativa ? `<br><span class="text-[9px] text-gray-400 font-medium tracking-tight italic">"${a.justificativa}"</span>` : '';
                     let stBadge = `<span class="text-[8px] font-black uppercase bg-gray-50 text-gray-400 px-2 py-0.5 rounded-full border border-gray-100">${a.status}</span>`, canSelect = false;
                     if (a.status === 'Em aprovação do serviço') { stBadge = `<span class="text-[8px] font-black uppercase bg-blue-50 text-c3c-blue px-2 py-0.5 rounded-full border border-blue-100">Pendente</span>`; canSelect = true; }
-                    else if (a.status === 'Aprovado') stBadge = `<span class="text-[8px] font-black uppercase bg-teal-50 text-teal-600 px-2 py-0.5 rounded-full border border-teal-100">Aprovado</span>`;
+                    else if (a.status === 'Aprovado' || a.status === 'Em aprovação do RH') stBadge = `<span class="text-[8px] font-black uppercase bg-teal-50 text-teal-600 px-2 py-0.5 rounded-full border border-teal-100">Aprovado</span>`;
+                    
+                    const lineCalc = a.normal + (a.extraPgto * 2);
+                    
+                    tNorm += a.normal; tExPg += a.extraPgto; tExBc += a.extraBanco; tAuBc += a.ausenciaBanco; tAuOu += a.ausenciaOutras; tCalc += lineCalc;
+
                     const val = (v, cls) => v > 0 ? `<span class="font-black ${cls}">${v.toFixed(1)}h</span>` : '<span class="text-gray-200">-</span>';
-                    tbody.innerHTML += `<tr class="hover:bg-gray-50/50 border-b border-gray-50 last:border-0"><td class="py-4 px-8 text-center">${canSelect ? `<input type="checkbox" class="entry-checkbox w-4 h-4 rounded border-gray-200 text-c3c-blue focus:ring-blue-100" value="${a.id}" onchange="updateMassActionButtons()">` : '<i data-lucide="lock" class="w-3 h-3 text-gray-200 mx-auto"></i>'}</td><td class="py-4 px-4 text-[10px] font-black text-gray-400 uppercase tracking-tighter">${formatSafeDate(a.data)}</td><td class="py-4 px-4"><p class="text-xs font-bold text-gray-800 tracking-tight leading-tight">${a.atividade}</p>${justificativa}</td><td class="py-4 px-4 text-right border-l border-gray-50/50">${val(a.normal, 'text-gray-700')}</td><td class="py-4 px-4 text-right border-l border-gray-50/50">${val(a.extraPgto, 'text-orange-500')}</td><td class="py-4 px-4 text-right border-l border-gray-50/50">${val(a.extraBanco, 'text-purple-500')}</td><td class="py-4 px-4 text-right border-l border-gray-50/50">${val(a.ausenciaBanco, 'text-gray-500')}</td><td class="py-4 px-8 text-center border-l border-gray-50/50">${stBadge}</td></tr>`;
+                    
+                    tbody.innerHTML += `
+                        <tr class="hover:bg-gray-50/50 border-b border-gray-50 last:border-0">
+                            <td class="py-4 px-8 text-center">${canSelect ? `<input type="checkbox" class="entry-checkbox w-4 h-4 rounded border-gray-200 text-c3c-blue focus:ring-blue-100" value="${a.id}" onchange="updateMassActionButtons()">` : '<i data-lucide="lock" class="w-3 h-3 text-gray-200 mx-auto"></i>'}</td>
+                            <td class="py-4 px-4 text-[10px] font-black text-gray-400 uppercase tracking-tighter">${formatSafeDate(a.data)}</td>
+                            <td class="py-4 px-4"><p class="text-xs font-bold text-gray-800 tracking-tight leading-tight">${a.atividade}</p>${justificativa}</td>
+                            <td class="py-4 px-4 text-right border-l border-gray-50/50">${val(a.normal, 'text-gray-700')}</td>
+                            <td class="py-4 px-4 text-right border-l border-gray-50/50">${val(a.extraPgto, 'text-orange-500')}</td>
+                            <td class="py-4 px-4 text-right border-l border-gray-50/50">${val(a.extraBanco, 'text-purple-500')}</td>
+                            <td class="py-4 px-4 text-right border-l border-gray-50/50">${val(a.ausenciaBanco, 'text-gray-500')}</td>
+                            <td class="py-4 px-4 text-right border-l border-gray-50/50">${val(a.ausenciaOutras, 'text-red-400')}</td>
+                            <td class="py-4 px-4 text-right border-l border-gray-50/50 bg-blue-50/20 font-black text-c3c-blue text-xs">${lineCalc.toFixed(1)}h<br><span class="text-[8px] font-normal text-gray-400">H+2E</span></td>
+                            <td class="py-4 px-8 text-center border-l border-gray-50/50">${stBadge}</td>
+                        </tr>`;
                 });
+
+                document.getElementById('res-sum-real').innerText = tCalc.toFixed(1) + 'h';
+                document.getElementById('res-sum-ext').innerText = tExPg.toFixed(1) + 'h';
+                document.getElementById('res-sum-banco').innerText = tExBc.toFixed(1) + 'h';
+                document.getElementById('res-sum-aus').innerText = (tAuBc + tAuOu).toFixed(1) + 'h';
+
                 lucide.createIcons();
             } catch (err) { console.error(err); }
         }
@@ -378,7 +427,13 @@
                 const res = await fetch(`${API_URL}/approvals/action`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
                 if ((await res.json()).success) { 
                     document.getElementById('modal-reject').classList.add('hidden'); 
-                    if (currentModalServiceId && currentModalPersonId && !isMass) await openActivityModal(currentModalServiceId, currentModalPersonId); 
+                    
+                    // Comportamento corrigido: Atualiza o extrato sem fechar o modal de atividades
+                    if (currentModalServiceId && currentModalPersonId) {
+                        await openActivityModal(currentModalServiceId, currentModalPersonId);
+                    }
+
+                    // Sempre atualiza o modal de recursos e a lista de projetos
                     if (currentProjectItem) await openModal(currentProjectItem); 
                     loadProjects(p.start, p.end); 
                 }
@@ -391,12 +446,16 @@
             try {
                 toggleLoading(true);
                 const res = await fetch(`${API_URL}/approvals/action`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ serviceId: sId, personId: pId, action, inicio: p.start, fim: p.end }) });
-                if ((await res.json()).success) { if (currentProjectItem) await openModal(currentProjectItem); loadProjects(p.start, p.end); }
+                if ((await res.json()).success) { 
+                    if (currentProjectItem) await openModal(currentProjectItem); 
+                    loadProjects(p.start, p.end); 
+                }
             } catch (err) { alert('Erro técnico.'); } finally { toggleLoading(false); }
         }
 
         function formatSafeDate(d) { if (!d) return '-'; const p = d.split('-'); return p.length === 3 ? `${p[2]}/${p[1]}/${p[0]}` : d; }
         function closeModal(id) { const m = document.getElementById(id); m.querySelector('div').classList.add('scale-95'); setTimeout(() => m.classList.add('hidden'), 200); }
+        function closeActivityModal() { document.getElementById('modal-activities').classList.add('hidden'); }
     </script>
 </body>
 </html>
