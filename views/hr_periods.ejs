@@ -134,11 +134,27 @@
         async function loadAvailableCycles() {
             try {
                 const res = await fetch('/api/periods');
-                const cycles = await res.json();
+                const data = await res.json();
                 const selector = document.getElementById('cycle-selector');
                 selector.innerHTML = '';
-                if (cycles.length === 0) { selector.innerHTML = '<option value="">Sem ciclos</option>'; return; }
-                cycles.forEach(c => { selector.innerHTML += `<option value="${c.DataInicio__c}|${c.DataFim__c}">${c.Name}</option>`; });
+                
+                if(!data || data.length === 0) { 
+                    selector.innerHTML = '<option value="">Sem ciclos ativos</option>'; 
+                    return; 
+                }
+                
+                // Encontra o período não finalizado mais antigo
+                const nonFinalized = data.filter(p => p.Status__c !== 'Finalizado/Pago');
+                let suggestedId = nonFinalized.length > 0 ? nonFinalized[nonFinalized.length - 1].Id : data[0].Id;
+
+                data.forEach((c, i) => { 
+                    const opt = document.createElement('option');
+                    opt.value = `${c.DataInicio__c}|${c.DataFim__c}`;
+                    opt.text = c.Name;
+                    if(c.Id === suggestedId) opt.selected = true;
+                    selector.appendChild(opt);
+                });
+                
                 loadFunnelAndList();
             } catch (e) { console.error(e); }
         }
