@@ -127,6 +127,34 @@ exports.getTickets = async (req, res) => {
         const result = await conn.query(soql);
         let records = result.records;
 
+        // BUSCA ESCOPO DE CONTAS PARA ESTATÍSTICAS PRECISAS
+        const today = new Date().toISOString().split('T')[0];
+        const soqlAloc = `SELECT Servico__r.Conta__c FROM Alocacao__c WHERE Pessoa__c = '${userId}' AND DataInicio__c <= ${today} AND (DataFim__c >= ${today} OR DataFim__c = NULL)`;
+        const alocRes = await conn.query(soqlAloc);
+        const accountIds = [...new Set(alocRes.records.map(a => a.Servico__r ? a.Servico__r.Conta__c : null).filter(id => id !== null))];
+        const idsList = accountIds.map(id => `'${id}'`).join(',');
+
+        let stats = { totalInQueue: 0, criticalInQueue: 0, myActive: 0, slaPercent: 100 };
+
+        if (accountIds.length > 0) {
+            const statsQuery = `SELECT Priority, Pessoa__c, IsClosed, DataEstimativaEntrega__c, LastModifiedDate FROM Case WHERE AccountId IN (${idsList}) LIMIT 2000`;
+            const statsRes = await conn.query(statsQuery);
+            const sRecs = statsRes.records;
+
+            stats.totalInQueue = sRecs.filter(x => !x.Pessoa__c && !x.IsClosed).length;
+            stats.criticalInQueue = sRecs.filter(x => !x.Pessoa__c && !x.IsClosed && (x.Priority === 'High' || x.Priority === 'Critical')).length;
+            stats.myActive = sRecs.filter(x => x.Pessoa__c && areIdsEqual(x.Pessoa__c, userId) && !x.IsClosed).length;
+
+            // SLA: (Fechados no prazo) / (Total fechados com previsão)
+            const closedWithPrev = sRecs.filter(x => x.IsClosed && x.DataEstimativaEntrega__c);
+            const onTime = closedWithPrev.filter(x => {
+                const closing = new Date(x.LastModifiedDate);
+                const limit = new Date(x.DataEstimativaEntrega__c);
+                return closing <= limit;
+            }).length;
+            stats.slaPercent = closedWithPrev.length > 0 ? Math.round((onTime / closedWithPrev.length) * 100) : 100;
+        }
+
         const typeScore = { 'Bug': 0, 'Erro': 0, 'Melhoria': 1, 'Dúvida': 2 };
         const priorityScore = { 'Critical': 0, 'High': 1, 'Medium': 2, 'Low': 3 };
         
@@ -139,11 +167,14 @@ exports.getTickets = async (req, res) => {
             return new Date(b.CreatedDate) - new Date(a.CreatedDate);
         });
 
-        res.json(records.map(c => ({
-            id: c.Id, caseNumber: c.CaseNumber, title: c.Subject || 'Sem Assunto', client: c.Account ? c.Account.Name : 'N/A',
-            status: c.Status, priority: c.Priority, type: c.Type, desc: c.Description, ownerName: c.Pessoa__r ? c.Pessoa__r.Name : 'Fila',
-            date: new Date(c.CreatedDate).toLocaleDateString('pt-BR'), rawDate: c.CreatedDate, isClosed: c.IsClosed
-        })));
+        res.json({
+            tickets: records.map(c => ({
+                id: c.Id, caseNumber: c.CaseNumber, title: c.Subject || 'Sem Assunto', client: c.Account ? c.Account.Name : 'N/A',
+                status: c.Status, priority: c.Priority, type: c.Type, desc: c.Description, ownerName: c.Pessoa__r ? c.Pessoa__r.Name : null,
+                date: new Date(c.CreatedDate).toLocaleDateString('pt-BR'), rawDate: c.CreatedDate, isClosed: c.IsClosed
+            })),
+            stats: stats
+        });
     } catch (err) { res.status(500).json({ error: 'Erro ao buscar chamados: ' + err.message }); }
 };
 
@@ -152,7 +183,7 @@ exports.getTicketDetails = async (req, res) => {
     const userId = req.session.user.id;
     try {
         const conn = await getSfConnection();
-        const tQuery = `SELECT Id, Subject, Description, Status, Type, Priority, Origin, CreatedDate, LastModifiedDate, DataExpectativaCliente__c, DataEstimativaEntrega__c, IsClosed FROM Case WHERE Id = '${id}'`;
+        const tQuery = `SELECT Id, CaseNumber, Subject, Description, Status, Type, Priority, Origin, CreatedDate, LastModifiedDate, DataExpectativaCliente__c, DataEstimativaEntrega__c, IsClosed, Pessoa__c, AccountId, Account.Name FROM Case WHERE Id = '${id}'`;
         const tResult = await conn.query(tQuery);
         if (tResult.totalSize === 0) throw new Error('Chamado não encontrado.');
         const t = tResult.records[0];
@@ -187,8 +218,10 @@ exports.getTicketDetails = async (req, res) => {
 
         res.json({
             ticket: {
+                CaseNumber: t.CaseNumber,
                 Subject: t.Subject, Description: t.Description, Status: t.Status, Type: t.Type, Priority: t.Priority, Origin: t.Origin,
                 CreatedDate: t.CreatedDate, LastModifiedDate: t.LastModifiedDate, IsClosed: t.IsClosed,
+                Pessoa__c: t.Pessoa__c, AccountId: t.AccountId, Account: t.Account ? { Name: t.Account.Name } : null,
                 LastUpdateClient: lastClientDate, LastUpdateOps: lastOpsDate,
                 DataExpectativaCliente__c: t.DataExpectativaCliente__c || null, DataEstimativaEntrega__c: t.DataEstimativaEntrega__c || null
             },
@@ -236,23 +269,62 @@ exports.createTicket = async (req, res) => {
     try {
         const { serviceId, accountId, contactId, type, priority, origin, expectationDate, assignToMe, subject, desc } = req.body;
         const conn = await getSfConnection();
-        const caseData = { Subject: subject, Description: desc, AccountId: accountId, ContactId: contactId || null, Type: type, Priority: priority, Origin: origin, Status: 'New', DataExpectativaCliente__c: expectationDate || null };
+        const caseData = { 
+            Subject: subject, 
+            Description: desc, 
+            AccountId: accountId, 
+            ContactId: contactId || null, 
+            Type: type, 
+            Priority: priority, 
+            Origin: origin, 
+            Status: 'New', 
+            DataExpectativaCliente__c: expectationDate || null 
+        };
         let logA = 'Criado';
-        if (assignToMe === true || assignToMe === 'true') { caseData.Pessoa__c = req.session.user.id; caseData.Status = 'In Progress'; logA = 'Criado e Assumido'; }
+        if (assignToMe === true || assignToMe === 'true' || assignToMe === 1) { 
+            caseData.Pessoa__c = req.session.user.id; 
+            caseData.Status = 'In Progress'; 
+            logA = 'Criado e Assumido'; 
+        }
         const ret = await conn.sobject('Case').create(caseData);
-        if (ret.success) { await createCaseLog(conn, ret.id, logA, req.session.user.id, 'Operacao'); res.json({ success: true, id: ret.id }); } 
+        if (ret.success) { 
+            // Criar atividade inicial vinculada ao serviço para permitir lançamentos
+            await conn.sobject('Atividade__c').create({
+                Name: 'Atuação Inicial',
+                Caso__c: ret.id,
+                Servico__c: serviceId
+            });
+
+            await createCaseLog(conn, ret.id, logA, req.session.user.id, 'Operacao'); 
+            res.json({ success: true, id: ret.id }); 
+        } 
         else res.status(400).json({ success: false, errors: ret.errors });
-    } catch (err) { res.status(500).json({ error: 'Erro ao criar.' }); }
+    } catch (err) { 
+        console.error('Erro detalhado na criação de ticket:', err);
+        res.status(500).json({ error: 'Erro ao criar: ' + (err.message || 'Erro desconhecido') }); 
+    }
 };
 
 exports.updateTicket = async (req, res) => {
     try {
         const { id, status, estimationDate, type, priority } = req.body;
         const conn = await getSfConnection();
+
+        if (status === 'Closed') {
+            // Verifica se já tem data ou se está vindo agora
+            const existing = await conn.sobject('Case').retrieve(id);
+            if (!existing.DataEstimativaEntrega__c && !estimationDate) {
+                return res.status(400).json({ success: false, error: 'A Previsão de Entrega é obrigatória para finalizar o chamado.' });
+            }
+        }
+
         const ret = await conn.sobject('Case').update({ Id: id, Status: status, Type: type, Priority: priority, DataEstimativaEntrega__c: estimationDate || null });
-        if (ret.success) { await createCaseLog(conn, id, 'Atualizado', req.session.user.id, 'Operacao', `Status: ${status}`); res.json({ success: true }); }
+        if (ret.success) { 
+            await createCaseLog(conn, id, 'Atualizado', req.session.user.id, 'Operacao', `Status: ${status}`); 
+            res.json({ success: true }); 
+        }
         else res.status(400).json({ success: false, errors: ret.errors });
-    } catch (err) { res.status(500).json({ error: 'Erro ao atualizar.' }); }
+    } catch (err) { res.status(500).json({ error: 'Erro ao atualizar: ' + err.message }); }
 };
 
 exports.reopenTicket = async (req, res) => {
