@@ -2,7 +2,8 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <title>Gestão de Ponto & Ciclo (RH) - C3C Workplace</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestão de Pessoas - C3C Workplace</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
@@ -12,7 +13,12 @@
                 extend: {
                     fontFamily: { sans: ['Montserrat', 'sans-serif'] },
                     colors: { 
-                        c3c: { blue: '#2978FF', teal: '#1DDDBD', gray: '#F2F2F2', bg: '#F8FAFC' } 
+                        c3c: { 
+                            blue: '#2978FF', 
+                            teal: '#1DDDBD', 
+                            gray: '#F2F2F2',
+                            dark: '#000000'
+                        } 
                     }
                 }
             }
@@ -20,123 +26,137 @@
     </script>
     <style>
         body { font-family: 'Montserrat', sans-serif; background-color: #F8FAFC; }
+        .bg-c3c-gradient { background: transparent linear-gradient(118deg, #1DDDBD 0%, #1ED9C0 45%, #2978FF 100%) 0% 0% no-repeat padding-box; }
         .fade-in { animation: fadeIn 0.4s ease-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        .modal-backdrop { background-color: rgba(0, 0, 0, 0.5); backdrop-filter: blur(2px); }
-        .status-badge { @apply px-2 py-1 rounded-md text-[10px] font-bold uppercase border whitespace-nowrap; }
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; height: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #E2E8F0; border-radius: 10px; }
+        .status-badge { @apply px-3 py-1 rounded-full text-[9px] font-black uppercase border tracking-widest text-center; }
     </style>
 </head>
 <body class="h-screen flex overflow-hidden bg-[#F8FAFC]">
 
-    <div id="mobile-overlay" onclick="toggleMenu()" class="fixed inset-0 bg-black/50 z-30 hidden md:hidden transition-opacity opacity-0"></div>
-    <%- include('partials/sidebar') %>
+    <div id="mobile-overlay" onclick="toggleMenu()" class="fixed inset-0 bg-black/50 z-30 hidden md:hidden transition-opacity opacity-0 backdrop-blur-sm"></div>
+    
+    <%- include('partials/sidebar', { page: 'hr' }) %>
 
-    <main class="flex-1 flex flex-col md:ml-64 relative w-full transition-all duration-300">
+    <main class="flex-1 flex flex-col md:ml-64 relative w-full transition-all duration-300 overflow-hidden">
         
-        <header class="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-4 md:px-8 sticky top-0 z-20">
-            <div class="flex items-center gap-4">
+        <!-- HEADER -->
+        <header class="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-4 md:px-8 sticky top-0 z-20 shrink-0">
+            <div class="flex items-center gap-4 text-left">
                 <button onclick="toggleMenu()" class="md:hidden p-2 text-gray-600 hover:bg-gray-100 rounded-lg">
                     <i data-lucide="menu" class="w-6 h-6"></i>
                 </button>
-                <h1 class="text-lg md:text-xl font-bold text-gray-800 flex items-center gap-2">
-                    Gestão de Horas
-                    <span class="hidden md:inline-flex bg-purple-100 text-purple-700 text-xs px-2 py-1 rounded-full items-center gap-1">
-                        <i data-lucide="shield-check" class="w-3 h-3"></i> Backoffice
-                    </span>
-                </h1>
+                <div>
+                    <h1 class="text-lg md:text-xl font-bold text-gray-800 flex items-center gap-2 tracking-tight">Gestão de Pessoas <span class="text-c3c-blue">👥</span></h1>
+                    <p class="text-[10px] text-gray-400 font-bold uppercase tracking-widest hidden sm:block">Controle de Ciclo e Compliance RH</p>
+                </div>
             </div>
+            
             <div class="flex items-center gap-3">
-                <select id="period-selector" onchange="triggerDataLoad(this.value)" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2 cursor-pointer outline-none min-w-[200px]">
-                    <option>Carregando ciclos...</option>
-                </select>
-                <button onclick="triggerDataLoad(document.getElementById('period-selector').value)" class="bg-blue-600 hover:bg-blue-700 text-white p-2 rounded-lg shadow-sm transition-colors" title="Atualizar">
-                    <i data-lucide="refresh-cw" class="w-5 h-5"></i>
+                <div class="flex items-center bg-gray-50 border border-gray-200 rounded-xl px-3 py-1.5 gap-2 shadow-sm focus-within:ring-2 focus-within:ring-c3c-blue transition-all">
+                    <i data-lucide="calendar" class="w-4 h-4 text-c3c-blue"></i>
+                    <select id="period-selector" onchange="triggerDataLoad(this.value)" class="bg-transparent text-sm font-bold text-gray-700 outline-none cursor-pointer min-w-[180px]">
+                        <option>Carregando ciclos...</option>
+                    </select>
+                </div>
+                <button onclick="triggerDataLoad(document.getElementById('period-selector').value)" class="p-2.5 bg-white border border-gray-100 rounded-xl text-c3c-blue hover:shadow-md transition-all active:scale-95 shadow-sm">
+                    <i data-lucide="refresh-cw" class="w-4 h-4"></i>
                 </button>
             </div>
         </header>
 
-        <div class="flex-1 overflow-y-auto p-4 md:p-8 fade-in">
-            <!-- FUNIL -->
-            <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4 mb-8" id="funnel-container"></div>
-
-            <!-- RESUMO FINANCEIRO OPERACIONAL -->
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                <div class="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm">
-                    <div class="flex items-center gap-3 mb-2">
-                        <div class="p-2 bg-blue-50 text-blue-600 rounded-lg"><i data-lucide="banknote" class="w-5 h-5"></i></div>
-                        <span class="text-xs font-bold text-gray-400 uppercase tracking-wider">Total em Horas</span>
-                    </div>
-                    <p class="text-2xl font-black text-gray-800" id="total-financeiro-horas">R$ 0,00</p>
-                </div>
-                <div class="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm">
-                    <div class="flex items-center gap-3 mb-2">
-                        <div class="p-2 bg-teal-50 text-teal-600 rounded-lg"><i data-lucide="gift" class="w-5 h-5"></i></div>
-                        <span class="text-xs font-bold text-gray-400 uppercase tracking-wider">Total em Benefícios</span>
-                    </div>
-                    <p class="text-2xl font-black text-gray-800" id="total-financeiro-beneficios">R$ 0,00</p>
-                </div>
-                <div class="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm bg-gradient-to-br from-blue-600 to-indigo-700 text-white border-0">
-                    <div class="flex items-center gap-3 mb-2">
-                        <div class="p-2 bg-white/20 text-white rounded-lg"><i data-lucide="wallet" class="w-5 h-5"></i></div>
-                        <span class="text-xs font-bold text-blue-100 uppercase tracking-wider">Custo Total Período</span>
-                    </div>
-                    <p class="text-2xl font-black text-white" id="total-financeiro-periodo">R$ 0,00</p>
+        <!-- CONTEÚDO -->
+        <div class="flex-1 overflow-y-auto p-4 md:p-8 fade-in custom-scrollbar text-left">
+            
+            <!-- FUNIL DE STATUS -->
+            <div class="mb-10 overflow-x-auto pb-4 no-scrollbar">
+                <div class="flex gap-4 min-w-max" id="funnel-container">
+                    <!-- Cards de Funil injetados via JS -->
                 </div>
             </div>
 
-            <div class="bg-white rounded-2xl shadow-sm border border-gray-200 flex flex-col">
-                <div class="p-6 border-b border-gray-100 flex flex-col gap-6">
-                    <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-                        <div>
-                            <h2 class="text-lg font-bold text-gray-900">Saúde da Operação</h2>
-                            <p class="text-xs text-gray-400">Compliance e evolução de status.</p>
-                        </div>
-                        <div class="flex flex-col sm:flex-row items-center gap-3 w-full lg:w-auto">
-                            <div class="relative w-full sm:w-64">
-                                <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400"></i>
-                                <input type="text" id="search-input" onkeyup="filterTable()" placeholder="Buscar colaborador..." class="pl-9 pr-4 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 w-full">
-                            </div>
-                            <select id="status-periodo-filter" onchange="triggerDataLoad(document.getElementById('period-selector').value)" class="bg-gray-50 border border-gray-200 rounded-xl px-4 py-2 text-sm font-medium text-gray-600 outline-none w-full sm:w-auto">
-                                <option value="">Todos os Status</option>
-                                <option value="Aberto">Aberto</option>
-                                <option value="Aguardando Aprovação Líder">Aguardando Líder</option>
-                                <option value="Aguardando Aprovação RH">Aguardando RH</option>
-                                <option value="Liberado para Nota Fiscal">Liberado p/ NF</option>
-                                <option value="Nota em Validação">Nota em Validação</option>
-                                <option value="Pronto para Pagamento">Pronto p/ Pagamento</option>
-                            </select>
-                        </div>
+            <!-- KPIS FINANCEIROS -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+                <div class="bg-white p-6 rounded-[32px] shadow-sm border border-gray-100 relative overflow-hidden group hover:shadow-md transition-all text-left">
+                    <div class="flex items-center gap-3 mb-4">
+                        <div class="p-2.5 bg-blue-50 text-c3c-blue rounded-2xl"><i data-lucide="clock" class="w-5 h-5"></i></div>
+                        <span class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Total em Horas</span>
                     </div>
+                    <p class="text-3xl font-black text-gray-800 tracking-tighter" id="total-financeiro-horas">R$ 0,00</p>
+                </div>
+                <div class="bg-white p-6 rounded-[32px] shadow-sm border border-gray-100 relative overflow-hidden group hover:shadow-md transition-all text-left">
+                    <div class="flex items-center gap-3 mb-4">
+                        <div class="p-2.5 bg-teal-50 text-c3c-teal rounded-2xl"><i data-lucide="gift" class="w-5 h-5"></i></div>
+                        <span class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Total Benefícios</span>
+                    </div>
+                    <p class="text-3xl font-black text-gray-800 tracking-tighter" id="total-financeiro-beneficios">R$ 0,00</p>
+                </div>
+                <div class="bg-c3c-gradient p-6 rounded-[32px] shadow-xl shadow-blue-100 relative overflow-hidden group hover:scale-[1.02] transition-all text-left text-white">
+                    <div class="flex items-center gap-3 mb-4 relative z-10">
+                        <div class="p-2.5 bg-white/20 text-white rounded-2xl backdrop-blur-sm"><i data-lucide="wallet" class="w-5 h-5"></i></div>
+                        <span class="text-[10px] font-black text-blue-50 uppercase tracking-widest">Custo Total Ciclo</span>
+                    </div>
+                    <p class="text-3xl font-black text-white tracking-tighter relative z-10" id="total-financeiro-periodo">R$ 0,00</p>
+                    <div class="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-3xl -mr-10 -mt-10"></div>
+                </div>
+            </div>
 
-                    <!-- BULK ACTIONS -->
-                    <div id="bulk-actions" class="hidden flex items-center justify-between p-3 bg-purple-50 rounded-xl border border-purple-100 animate-fade-in">
-                        <div class="flex items-center gap-3 ml-2">
-                            <div class="p-1.5 bg-purple-600 text-white rounded-lg"><i data-lucide="layers" class="w-4 h-4"></i></div>
-                            <span class="text-xs font-bold text-purple-700" id="selected-count">0 selecionados</span>
+            <!-- TABELA PRINCIPAL -->
+            <div class="bg-white rounded-[40px] shadow-sm border border-gray-100 overflow-hidden flex flex-col">
+                <div class="p-8 border-b border-gray-50 flex flex-col lg:flex-row lg:items-center justify-between gap-6 bg-gray-50/30">
+                    <div>
+                        <h2 class="text-lg font-black text-gray-800 uppercase tracking-tight">Saúde da Operação</h2>
+                        <p class="text-[10px] text-gray-400 font-bold uppercase mt-1">Gestão de prazos e conformidade de equipe</p>
+                    </div>
+                    
+                    <div class="flex flex-col sm:flex-row items-center gap-4">
+                        <div class="relative w-full sm:w-72 group">
+                            <i data-lucide="search" class="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300 group-focus-within:text-c3c-blue transition-colors"></i>
+                            <input type="text" id="search-input" onkeyup="filterTable()" placeholder="Buscar colaborador..." class="w-full pl-11 pr-4 py-3 bg-white border border-gray-100 rounded-2xl text-xs font-bold focus:ring-4 focus:ring-blue-50 focus:border-c3c-blue outline-none transition-all">
                         </div>
-                        <div class="flex gap-2">
-                            <!-- Botões de avançar/recuar removidos por simplificação (funcionalidade suprida por Recall/Fluxo Automático) -->
-                        </div>
+                        <select id="status-periodo-filter" onchange="triggerDataLoad(document.getElementById('period-selector').value)" class="bg-white border border-gray-100 rounded-2xl px-5 py-3 text-xs font-black text-gray-500 uppercase tracking-widest outline-none focus:ring-4 focus:ring-blue-50 transition-all cursor-pointer">
+                            <option value="">Todos os Status</option>
+                            <option value="Aberto">Aberto</option>
+                            <option value="Aguardando Aprovação Líder">Aguardando Líder</option>
+                            <option value="Aguardando Aprovação RH">Aguardando RH</option>
+                            <option value="Liberado para Nota Fiscal">Liberado p/ NF</option>
+                            <option value="Nota em Validação">Nota em Validação</option>
+                            <option value="Pronto para Pagamento">Pronto p/ Pagamento</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- BULK ACTIONS -->
+                <div id="bulk-actions" class="hidden px-8 py-4 bg-blue-50/50 border-b border-blue-100 flex items-center justify-between fade-in">
+                    <div class="flex items-center gap-3">
+                        <div class="p-2 bg-c3c-blue text-white rounded-xl shadow-sm"><i data-lucide="check-square" class="w-4 h-4"></i></div>
+                        <span class="text-[10px] font-black text-c3c-blue uppercase tracking-widest" id="selected-count">0 selecionados</span>
+                    </div>
+                    <div class="flex gap-3">
+                        <!-- Botões de ação em massa se necessário -->
                     </div>
                 </div>
 
                 <div class="overflow-x-auto">
-                    <table class="w-full text-sm text-left">
-                        <thead class="bg-gray-50 text-gray-500 uppercase text-[10px] font-bold border-b border-gray-200">
-                            <tr>
-                                <th class="px-6 py-4 w-10"><input type="checkbox" id="select-all" onchange="toggleSelectAll()" class="rounded border-gray-300 text-purple-600"></th>
-                                <th class="px-6 py-4">Colaborador</th>
-                                <th class="px-6 py-4 text-center">Compliance</th>
-                                <th class="px-6 py-4">Carga vs Realizado</th>
-                                <th class="px-6 py-4 text-right">Vlr. Hora</th>
-                                <th class="px-6 py-4 text-right">Total Horas</th>
-                                <th class="px-6 py-4 text-right">Total Benef.</th>
-                                <th class="px-6 py-4 text-center">Status Período</th>
-                                <th class="px-6 py-4 text-right">Ações</th>
+                    <table class="w-full text-left">
+                        <thead class="bg-gray-50/50 border-b border-gray-100">
+                            <tr class="text-[9px] font-black text-gray-400 uppercase tracking-widest">
+                                <th class="px-8 py-5 w-10"><input type="checkbox" id="select-all" onchange="toggleSelectAll()" class="w-4 h-4 rounded-lg border-2 border-gray-200 text-c3c-blue focus:ring-blue-100 transition-all"></th>
+                                <th class="px-6 py-5">Colaborador</th>
+                                <th class="px-4 py-5 text-center">Compliance</th>
+                                <th class="px-6 py-5 w-48">Carga Mês</th>
+                                <th class="px-4 py-5 text-right">Vlr. Hora</th>
+                                <th class="px-4 py-5 text-right">Total Horas</th>
+                                <th class="px-4 py-5 text-right">Benefícios</th>
+                                <th class="px-6 py-5 text-center">Status Ciclo</th>
+                                <th class="px-8 py-5 text-right">Ações</th>
                             </tr>
                         </thead>
-                        <tbody class="divide-y divide-gray-100" id="hr-table-body">
-                            <tr><td colspan="6" class="text-center py-10 text-gray-400 italic">Carregando dados...</td></tr>
+                        <tbody class="divide-y divide-gray-50" id="hr-table-body">
+                            <!-- Injetado via JS -->
                         </tbody>
                     </table>
                 </div>
@@ -144,71 +164,118 @@
         </div>
     </main>
 
-    <!-- MODAL LOGS -->
-    <div id="logs-modal" class="fixed inset-0 modal-backdrop z-50 hidden flex items-center justify-center opacity-0 transition-opacity duration-300 p-4">
-        <div class="bg-white rounded-xl shadow-2xl w-full max-w-6xl transform scale-95 transition-transform duration-300 flex flex-col max-h-[90vh]">
-            <div class="bg-gray-900 text-white rounded-t-xl p-6">
-                <div class="flex justify-between items-start mb-6">
-                    <div><h3 class="text-xl font-bold" id="modal-name">Colaborador</h3><p class="text-gray-400 text-[10px] uppercase font-bold tracking-wider">Análise de Lançamentos</p></div>
+    <!-- MODAL LOGS PREMIUM -->
+    <div id="logs-modal" class="fixed inset-0 bg-black/60 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-[40px] shadow-2xl w-full max-w-7xl transform scale-95 transition-all flex flex-col max-h-[90vh] overflow-hidden">
+            
+            <header class="p-8 border-b border-gray-100 bg-gray-900 text-white shrink-0">
+                <div class="flex justify-between items-start mb-8">
+                    <div class="text-left">
+                        <h3 class="text-2xl font-black tracking-tighter uppercase leading-tight" id="modal-name">Colaborador</h3>
+                        <p class="text-[10px] font-black text-blue-400 uppercase tracking-[0.2em] mt-1">Análise detalhada de lançamentos</p>
+                    </div>
                     <div class="flex items-center gap-3">
-                        <button id="btn-mass-reject" onclick="openHrMassRejectModal()" class="hidden bg-red-500/20 text-red-400 border border-red-500/30 px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-red-500 hover:text-white transition-all">Reprovar</button>
-                        <button id="btn-mass-approve" onclick="confirmHrMassApprove()" class="hidden bg-green-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-green-700 transition-all shadow-sm">Aprovar</button>
-                        <button onclick="closeModal()" class="bg-gray-800 hover:bg-gray-700 p-2 rounded-lg text-gray-300"><i data-lucide="x" class="w-5 h-5"></i></button>
+                        <button id="btn-mass-reject" onclick="openHrMassRejectModal()" class="hidden bg-red-500/20 text-red-400 border border-red-500/30 px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-red-600 hover:text-white transition-all">Reprovar Seleção</button>
+                        <button id="btn-mass-approve" onclick="confirmHrMassApprove()" class="hidden bg-teal-600 text-white px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-xl shadow-teal-900/20 hover:bg-teal-700 transition-all">Aprovar Seleção</button>
+                        <button onclick="closeModal()" class="p-3 bg-white/10 hover:bg-white/20 rounded-full transition-all text-white"><i data-lucide="x"></i></button>
                     </div>
                 </div>
-                <div class="grid grid-cols-2 md:grid-cols-8 gap-4 text-center text-xs">
-                    <div class="border-r border-gray-800"><span class="block text-lg font-bold text-gray-300" id="modal-normal">--</span>NORMAIS</div>
-                    <div class="border-r border-gray-800"><span class="block text-lg font-bold text-green-400" id="modal-extra">--</span>EXTRA</div>
-                    <div class="border-r border-gray-800"><span class="block text-lg font-bold text-indigo-400" id="modal-banco">--</span>BANCO</div>
-                    <div class="border-r border-gray-800"><span class="block text-lg font-bold text-orange-400" id="modal-ausencia">--</span>AUSÊNCIAS</div>
-                    <div class="border-r border-gray-800"><span class="block text-lg font-bold text-white" id="modal-total">--</span>REALIZADO</div>
-                    <div class="border-r border-gray-800"><span class="block text-lg font-bold text-blue-200" id="modal-meta">--</span>META</div>
-                    <div class="border-r border-gray-800"><span class="block text-lg font-bold text-yellow-200" id="modal-horas-pago">--</span>HORAS PAGO</div>
-                    <div><span class="block text-lg font-bold" id="modal-saldo">--</span>SALDO</div>
+                
+                <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4">
+                    <div class="text-left p-4 bg-white/5 rounded-2xl border border-white/10"><span class="block text-[8px] font-black text-gray-400 uppercase mb-1">Normais</span><span id="modal-normal" class="text-lg font-black text-blue-200 tracking-tighter">--</span></div>
+                    <div class="text-left p-4 bg-white/5 rounded-2xl border border-white/10"><span class="block text-[8px] font-black text-gray-400 uppercase mb-1">Extras</span><span id="modal-extra" class="text-lg font-black text-orange-400 tracking-tighter">--</span></div>
+                    <div class="text-left p-4 bg-white/5 rounded-2xl border border-white/10"><span class="block text-[8px] font-black text-gray-400 uppercase mb-1">Banco</span><span id="modal-banco" class="text-lg font-black tracking-tighter">--</span></div>
+                    <div class="text-left p-4 bg-white/5 rounded-2xl border border-white/10"><span class="block text-[8px] font-black text-gray-400 uppercase mb-1">Ausências</span><span id="modal-ausencia" class="text-lg font-black text-red-400 tracking-tighter">--</span></div>
+                    <div class="text-left p-4 bg-white/5 rounded-2xl border border-white/10"><span class="block text-[8px] font-black text-gray-400 uppercase mb-1">Realizado</span><span id="modal-total" class="text-lg font-black text-white tracking-tighter">--</span></div>
+                    <div class="text-left p-4 bg-white/5 rounded-2xl border border-white/10"><span class="block text-[8px] font-black text-gray-400 uppercase mb-1">Meta Mês</span><span id="modal-meta" class="text-lg font-black text-gray-400 tracking-tighter">--</span></div>
+                    <div class="text-left p-4 bg-white/5 rounded-2xl border border-white/10"><span class="block text-[8px] font-black text-gray-400 uppercase mb-1">Horas Pagas</span><span id="modal-horas-pago" class="text-lg font-black text-yellow-400 tracking-tighter">--</span></div>
+                    <div class="text-left p-4 bg-blue-500 rounded-2xl shadow-lg"><span class="block text-[8px] font-black text-blue-100 uppercase mb-1">Saldo Final</span><span id="modal-saldo" class="text-lg font-black text-white tracking-tighter">--</span></div>
                 </div>
+            </header>
+
+            <div class="flex-1 overflow-y-auto custom-scrollbar bg-white">
+                <table class="w-full text-left">
+                    <thead class="bg-gray-50 text-gray-400 uppercase text-[9px] font-black sticky top-0 z-10 border-b border-gray-100">
+                        <tr>
+                            <th class="px-8 py-4 w-10 text-center"><input type="checkbox" id="check-all-hr" onchange="toggleAllHr(this)" class="w-4 h-4 rounded border-gray-200 text-c3c-blue focus:ring-blue-100"></th>
+                            <th class="px-4 py-4">Data</th>
+                            <th class="px-4 py-4">Serviço / Projeto</th>
+                            <th class="px-4 py-4">Atividade / Justificativa</th>
+                            <th class="px-4 py-4 text-right">Norm</th>
+                            <th class="px-4 py-4 text-right">Extra</th>
+                            <th class="px-4 py-4 text-right">Banco</th>
+                            <th class="px-4 py-4 text-right">Ausên</th>
+                            <th class="px-8 py-4 text-center">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="modal-logs-body" class="divide-y divide-gray-50"></tbody>
+                </table>
             </div>
-            <div class="overflow-y-auto flex-1 bg-white">
-                <table class="w-full text-sm text-left"><thead class="bg-gray-50 text-gray-500 uppercase text-[10px] font-bold sticky top-0 shadow-sm border-b border-gray-100"><tr><th class="px-6 py-3 w-10"><input type="checkbox" id="check-all-hr" onchange="toggleAllHr(this)" class="rounded"></th><th class="px-6 py-3">Data</th><th class="px-6 py-3">Serviço</th><th class="px-6 py-3">Atividade</th><th class="px-6 py-3 text-right">H.N</th><th class="px-6 py-3 text-right">H.E</th><th class="px-6 py-3 text-right">H.B</th><th class="px-6 py-3 text-right">H.A</th><th class="px-6 py-3 text-center">Status</th></tr></thead><tbody class="divide-y divide-gray-100" id="modal-logs-body"></tbody></table>
-            </div>
-            <div class="p-4 border-t border-gray-100 bg-white flex justify-end"><button onclick="closeModal()" class="px-6 py-2 bg-gray-100 text-gray-700 font-bold rounded-xl">Fechar</button></div>
+            
+            <footer class="p-8 border-t border-gray-100 bg-gray-50/50 flex justify-end shrink-0">
+                <button onclick="closeModal()" class="px-8 py-3 bg-white border-2 border-gray-100 text-gray-400 font-black uppercase text-[10px] tracking-widest rounded-2xl hover:bg-gray-100 transition-all">Fechar Análise</button>
+            </footer>
         </div>
     </div>
 
-    <!-- MODAL REPROVAÇÃO -->
-    <div id="modal-reject" class="fixed inset-0 z-[60] hidden">
-        <div class="absolute inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4">
-            <div class="bg-white rounded-2xl shadow-xl w-full max-w-md p-8 transform animate-fade-in">
-                <h3 class="text-xl font-bold text-red-600 mb-2">Reprovar Lançamentos</h3>
-                <p class="text-sm text-gray-500 mb-6">Reprovando para: <strong id="reject-person-name"></strong></p>
-                <input type="hidden" id="reject-person-id">
-                <textarea id="reject-reason" rows="4" class="w-full border border-gray-200 rounded-xl p-4 text-sm focus:ring-2 focus:ring-red-500 outline-none mb-6 resize-none" placeholder="Digite o motivo..."></textarea>
-                <div class="flex justify-end gap-3"><button onclick="document.getElementById('modal-reject').classList.add('hidden')" class="px-6 py-2 text-gray-500 font-bold">Cancelar</button><button onclick="confirmReject()" class="px-8 py-2 bg-red-600 text-white font-bold rounded-xl">Reprovar</button></div>
+    <!-- MODAL REJEIÇÃO -->
+    <div id="modal-reject" class="fixed inset-0 z-[100] hidden flex items-center justify-center p-4 backdrop-blur-md bg-black/60">
+        <div class="bg-white rounded-[40px] shadow-2xl w-full max-w-md p-10 text-center animate-[fadeIn_0.2s_ease-out]">
+            <div class="w-20 h-20 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto mb-6"><i data-lucide="alert-triangle" class="w-10 h-10"></i></div>
+            <h3 class="text-2xl font-black text-gray-800 tracking-tighter uppercase mb-2">Reprovar Lançamento</h3>
+            <p class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-8">Informar motivo para <span id="reject-person-name" class="text-red-500">...</span></p>
+            
+            <input type="hidden" id="reject-person-id">
+            <textarea id="reject-reason" rows="4" class="w-full bg-gray-50 border-2 border-gray-100 rounded-[32px] p-6 text-sm font-medium focus:ring-4 focus:ring-red-50 outline-none mb-8 resize-none placeholder:text-gray-300" placeholder="Digite o motivo da reprovação..."></textarea>
+            
+            <div class="flex gap-4">
+                <button onclick="document.getElementById('modal-reject').classList.add('hidden')" class="flex-1 py-4 text-gray-400 font-black uppercase text-[10px] tracking-widest hover:text-gray-600 transition-all">Cancelar</button>
+                <button onclick="confirmReject()" class="flex-[2] py-4 bg-red-600 text-white font-black uppercase text-xs tracking-widest rounded-2xl shadow-xl shadow-red-100 hover:opacity-90 active:scale-95 transition-all">Confirmar</button>
             </div>
         </div>
     </div>
 
     <script>
         lucide.createIcons();
-        const API_URL = '/api'; let allEmployees = []; let currentModalPersonId = null;
-        const statusColors = { 'Aberto': 'bg-gray-100 text-gray-600 border-gray-200', 'Aguardando Aprovação Líder': 'bg-blue-50 text-blue-600 border-blue-100', 'Aguardando Aprovação RH': 'bg-orange-50 text-orange-600 border-orange-100', 'Liberado para Nota Fiscal': 'bg-teal-50 text-teal-600 border-teal-100', 'Nota em Validação': 'bg-purple-50 text-purple-600 border-purple-100', 'Pronto para Pagamento': 'bg-green-50 text-green-600 border-green-100', 'Finalizado/Pago': 'bg-indigo-50 text-indigo-600 border-indigo-100' };
+        const API_URL = '/api'; 
+        let allEmployees = []; 
+        let currentModalPersonId = null;
+        const statusColors = { 
+            'Aberto': 'bg-gray-100 text-gray-500 border-gray-200', 
+            'Aguardando Aprovação Líder': 'bg-blue-50 text-c3c-blue border-blue-100', 
+            'Aguardando Aprovação RH': 'bg-orange-50 text-orange-600 border-orange-100', 
+            'Liberado para Nota Fiscal': 'bg-teal-50 text-teal-600 border-teal-100', 
+            'Nota em Validação': 'bg-purple-50 text-purple-600 border-purple-100', 
+            'Pronto para Pagamento': 'bg-green-50 text-green-600 border-green-100', 
+            'Finalizado/Pago': 'bg-indigo-50 text-indigo-600 border-indigo-100' 
+        };
 
         document.addEventListener('DOMContentLoaded', () => { loadAvailableCycles(); });
 
         async function loadAvailableCycles() {
             try {
-                const res = await fetch('/api/periods'); const cycles = await res.json(); const selector = document.getElementById('period-selector'); selector.innerHTML = '';
+                const res = await fetch('/api/periods'); 
+                const data = await res.json(); 
+                const selector = document.getElementById('period-selector'); 
+                selector.innerHTML = '';
                 
-                // Tenta encontrar o sugerido, senão pega o primeiro (índice 0)
-                let selectedIndex = cycles.findIndex(c => c.isSuggestedDefault);
-                if (selectedIndex === -1 && cycles.length > 0) selectedIndex = 0;
+                if(!data || data.length === 0) { 
+                    selector.innerHTML = '<option value="">Sem ciclos ativos</option>'; 
+                    return; 
+                }
+                
+                // Encontra o período não finalizado mais antigo
+                const nonFinalized = data.filter(p => p.Status__c !== 'Finalizado/Pago');
+                let suggestedId = nonFinalized.length > 0 ? nonFinalized[nonFinalized.length - 1].Id : data[0].Id;
 
-                cycles.forEach((c, i) => { 
+                data.forEach((c, i) => { 
                     const opt = document.createElement('option'); 
                     opt.value = JSON.stringify({start: c.DataInicio__c, end: c.DataFim__c}); 
                     opt.text = c.Name; 
-                    if(i === selectedIndex) opt.selected = true; 
+                    if(c.Id === suggestedId) opt.selected = true; 
                     selector.appendChild(opt); 
                 });
+                
                 if(selector.options.length > 0) triggerDataLoad(selector.value);
             } catch(e) { console.error(e); }
         }
@@ -216,14 +283,14 @@
         function triggerDataLoad(v) { if(!v) return; const d = JSON.parse(v); const st = document.getElementById('status-periodo-filter').value; loadTableData(d.start, d.end, st); }
 
         async function loadTableData(start, end, stFilter = '') {
-            const tbody = document.getElementById('hr-table-body'); tbody.innerHTML = '<tr><td colspan="8" class="text-center py-10 text-blue-600 font-bold">Carregando...</td></tr>';
+            const tbody = document.getElementById('hr-table-body'); 
+            tbody.innerHTML = '<tr><td colspan="9" class="text-center py-20 text-gray-300 font-black uppercase text-[10px] tracking-widest italic animate-pulse">Sincronizando dados...</td></tr>';
             try {
                 const url = `${API_URL}/hr/employees?inicio=${start}&fim=${end}${stFilter ? '&statusPeriodo='+stFilter : ''}`;
                 const res = await fetch(url); const r = await res.json(); 
                 renderFunnel(r.funnel); 
                 allEmployees = r.data; 
                 
-                // Atualiza Resumo Financeiro
                 let sumHoras = 0, sumBen = 0, sumTotal = 0;
                 allEmployees.forEach(emp => {
                     sumHoras += (emp.valorTotalHoras || 0);
@@ -241,37 +308,40 @@
 
         function renderFunnel(data) {
             const container = document.getElementById('funnel-container'); container.innerHTML = '';
-            const statuses = ['Aberto', 'Aguardando Aprovação Líder', 'Aguardando Aprovação RH', 'Liberado para Nota Fiscal', 'Nota em Validação', 'Pronto para Pagamento', 'Pagamento Agendado', 'Finalizado/Pago'];
-            statuses.forEach(st => { const item = data.find(d => d.Status__c === st) || { total: 0 }; container.innerHTML += `<div class="bg-white p-3 rounded-2xl border border-gray-100 text-center hover:border-purple-200 cursor-pointer min-w-[100px]" onclick="filterByStatus('${st}')"><p class="text-[8px] font-bold text-gray-400 uppercase truncate mb-1">${st}</p><p class="text-lg font-black text-gray-800">${item.total}</p></div>`; });
+            const statuses = ['Aberto', 'Aguardando Aprovação Líder', 'Aguardando Aprovação RH', 'Liberado para Nota Fiscal', 'Nota em Validação', 'Pronto para Pagamento', 'Finalizado/Pago'];
+            statuses.forEach(st => { 
+                const item = data.find(d => d.Status__c === st) || { total: 0 }; 
+                container.innerHTML += `
+                    <div class="bg-white p-4 rounded-3xl border border-gray-100 text-center hover:border-c3c-blue hover:shadow-lg transition-all cursor-pointer min-w-[120px] group" onclick="filterByStatus('${st}')">
+                        <p class="text-[8px] font-black text-gray-400 uppercase truncate mb-1 group-hover:text-c3c-blue transition-colors">${st}</p>
+                        <p class="text-xl font-black text-gray-800">${item.total}</p>
+                    </div>`; 
+            });
         }
 
         function renderTable() {
             const tbody = document.getElementById('hr-table-body'); const search = document.getElementById('search-input').value.toLowerCase(); tbody.innerHTML = '';
             allEmployees.sort((a, b) => a.name.localeCompare(b.name));
             const filtered = allEmployees.filter(p => p.name.toLowerCase().includes(search));
-            if (filtered.length === 0) { tbody.innerHTML = '<tr><td colspan="8" class="px-6 py-10 text-center text-gray-400 italic">Nenhum registro.</td></tr>'; return; }
+            if (filtered.length === 0) { tbody.innerHTML = '<tr><td colspan="9" class="px-6 py-20 text-center text-gray-300 font-black uppercase text-[10px] tracking-widest italic">Nenhum registro encontrado.</td></tr>'; return; }
             filtered.forEach(p => {
-                const pct = p.contract > 0 ? (p.total / p.contract) * 100 : 0; const barColor = pct > 110 ? 'bg-red-500' : (pct < 70 ? 'bg-yellow-500' : 'bg-green-500'); const compColor = p.incompleteDays === 0 ? 'text-green-500' : 'text-red-500';
-                let act = `<div class="flex justify-end gap-2"><button onclick="openModal('${p.id}','${p.name}')" class="p-2 text-gray-400 hover:text-blue-600 bg-gray-50 rounded-lg transition-all"><i data-lucide="eye" class="w-4 h-4"></i></button>`;
+                const pct = p.contract > 0 ? (p.total / p.contract) * 100 : 0; const barColor = pct > 110 ? 'bg-red-500' : (pct < 70 ? 'bg-orange-500' : 'bg-teal-500'); const compColor = p.incompleteDays === 0 ? 'text-teal-600' : 'text-red-500';
+                let act = `<div class="flex justify-end gap-2"><button onclick="openModal('${p.id}','${p.name}')" class="p-2 text-gray-400 hover:text-c3c-blue bg-gray-50 rounded-xl transition-all shadow-sm"><i data-lucide="eye" class="w-4 h-4"></i></button>`;
                 if (p.statusPeriodo === 'Aguardando Aprovação RH') {
-                    act += `<button onclick="performAction('${p.id}','${p.name}','approve')" class="px-3 py-1 bg-green-600 text-white text-[10px] font-bold rounded shadow-sm">Aprovar</button><button onclick="openRejectModal('${p.id}','${p.name}')" class="px-3 py-1 bg-red-50 text-red-600 border border-red-200 text-[10px] font-bold rounded">Reprovar</button>`;
+                    act += `<button onclick="performAction('${p.id}','${p.name}','approve')" class="px-4 py-2 bg-teal-600 text-white text-[9px] font-black uppercase tracking-widest rounded-xl shadow-lg shadow-teal-100 hover:opacity-90 active:scale-95 transition-all">Aprovar</button><button onclick="openRejectModal('${p.id}','${p.name}')" class="px-4 py-2 bg-white border-2 border-red-50 text-red-500 text-[9px] font-black uppercase tracking-widest rounded-xl hover:bg-red-50 transition-all">Reprovar</button>`;
                 }
                 act += `</div>`;
                 
-                const vHora = (p.valorHora || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-                const vTotalHoras = (p.valorTotalHoras || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-                const vTotalBen = (p.valorTotalBeneficios || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-
-                tbody.innerHTML += `<tr class="hover:bg-gray-50 transition-colors">
-                    <td class="px-6 py-4"><input type="checkbox" name="period-check" value="${p.periodId}" onchange="updateBulkActions()" class="rounded border-gray-300"></td>
-                    <td class="px-6 py-4"><div class="flex items-center gap-3"><div class="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-[10px] font-bold text-blue-600">${p.name.charAt(0)}</div><div><p class="font-bold text-gray-900 leading-tight">${p.name}</p><p class="text-[10px] text-gray-400">${p.role}</p></div></div></td>
-                    <td class="px-6 py-4 text-center"><div class="flex flex-col items-center"><i data-lucide="${p.incompleteDays === 0 ? 'check-circle' : 'alert-circle'}" class="w-4 h-4 ${compColor} mb-1"></i><span class="text-[8px] font-bold ${compColor} uppercase">${p.incompleteDays === 0 ? 'Completo' : p.incompleteDays + ' pend.'}</span></div></td>
-                    <td class="px-6 py-4"><div class="flex justify-between text-[10px] font-bold mb-1"><span class="text-gray-700">${p.total.toFixed(1)}h</span><span class="text-gray-400">Meta: ${p.contract}h</span></div><div class="w-full bg-gray-100 rounded-full h-1.5 overflow-hidden"><div class="${barColor} h-1.5" style="width:${Math.min(pct, 100)}%"></div></div></td>
-                    <td class="px-6 py-4 text-right font-mono text-xs text-gray-600">${vHora}</td>
-                    <td class="px-6 py-4 text-right font-bold text-blue-600">${vTotalHoras}</td>
-                    <td class="px-6 py-4 text-right font-bold text-teal-600">${vTotalBen}</td>
-                    <td class="px-6 py-4 text-center"><span class="status-badge ${statusColors[p.statusPeriodo]}">${p.statusPeriodo}</span></td>
-                    <td class="px-6 py-4 text-right">${act}</td>
+                tbody.innerHTML += `<tr class="hover:bg-gray-50/50 transition-colors">
+                    <td class="px-8 py-6 text-center"><input type="checkbox" name="period-check" value="${p.periodId}" onchange="updateBulkActions()" class="w-4 h-4 rounded border-gray-200 text-c3c-blue focus:ring-blue-100 transition-all"></td>
+                    <td class="px-6 py-6 text-left"><div class="flex items-center gap-4"><div class="w-10 h-10 rounded-2xl bg-blue-50 flex items-center justify-center text-c3c-blue font-black uppercase shadow-sm border border-blue-100">${p.name.charAt(0)}</div><div><p class="font-black text-gray-800 text-xs uppercase tracking-tighter">${p.name}</p><p class="text-[9px] font-bold text-gray-400 uppercase tracking-widest">${p.role}</p></div></div></td>
+                    <td class="px-4 py-6 text-center"><div class="flex flex-col items-center"><span class="text-[10px] font-black ${compColor} uppercase tracking-widest">${p.incompleteDays === 0 ? '✓ Completo' : p.incompleteDays + ' pend.'}</span></div></td>
+                    <td class="px-6 py-6"><div class="flex justify-between text-[9px] font-black uppercase mb-1"><span class="text-gray-700">${p.total.toFixed(1)}h</span><span class="text-gray-300">Meta: ${p.contract}h</span></div><div class="w-full bg-gray-100 rounded-full h-1.5 overflow-hidden"><div class="${barColor} h-1.5 transition-all duration-1000" style="width:${Math.min(pct, 100)}%"></div></div></td>
+                    <td class="px-4 py-6 text-right font-black text-xs text-gray-400">R$ ${p.valorHora.toFixed(2)}</td>
+                    <td class="px-4 py-6 text-right font-black text-c3c-blue text-sm tracking-tighter">R$ ${p.valorTotalHoras.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</td>
+                    <td class="px-4 py-6 text-right font-black text-teal-600 text-sm tracking-tighter">R$ ${p.valorTotalBeneficios.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</td>
+                    <td class="px-6 py-6 text-center"><span class="status-badge ${statusColors[p.statusPeriodo]}">${p.statusPeriodo}</span></td>
+                    <td class="px-8 py-6 text-right">${act}</td>
                 </tr>`;
             });
             lucide.createIcons();
@@ -280,78 +350,43 @@
         async function performAction(pid, pname, type, reason=null, entryIds = null) {
             const dates = JSON.parse(document.getElementById('period-selector').value);
             try { 
-                const res = await fetch(`${API_URL}/hr/action`, { 
-                    method: 'POST', 
-                    headers: {'Content-Type':'application/json'}, 
-                    body: JSON.stringify({ 
-                        personId: pid, 
-                        action: type, 
-                        inicio: dates.start, 
-                        fim: dates.end, 
-                        motivo: reason, 
-                        entryIds: Array.isArray(entryIds) ? entryIds : (entryIds ? [entryIds] : null) 
-                    }) 
-                }); 
-                const r = await res.json(); 
-                if(r.success) { 
-                    // Se foi uma ação em logs específicos (modal aberto)
-                    if(entryIds && currentModalPersonId) {
-                        await openModal(currentModalPersonId, document.getElementById('modal-name').innerText); 
-                        // SEMPRE atualiza a tabela principal tb, pois o status do período pode ter mudado
-                        triggerDataLoad(document.getElementById('period-selector').value);
-                    } else { 
-                        triggerDataLoad(document.getElementById('period-selector').value); 
-                    } 
-                } else { alert('Erro: ' + r.message); } 
-            } catch(e) { alert('Erro de conexão'); }
+                const res = await fetch(`${API_URL}/hr/action`, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ personId: pid, action: type, inicio: dates.start, fim: dates.end, motivo: reason, entryIds: Array.isArray(entryIds) ? entryIds : (entryIds ? [entryIds] : null) }) }); 
+                if((await res.json()).success) { if(entryIds && currentModalPersonId) await openModal(currentModalPersonId, document.getElementById('modal-name').innerText); triggerDataLoad(document.getElementById('period-selector').value); } 
+            } catch(e) { console.error(e); }
         }
         function openRejectModal(id, name) { document.getElementById('reject-person-id').value = id; document.getElementById('reject-person-name').innerText = name; document.getElementById('reject-reason').value = ''; document.getElementById('modal-reject').classList.remove('hidden'); }
-        async function confirmReject() { const id = document.getElementById('reject-person-id').value; const reason = document.getElementById('reject-reason').value.trim(); if(!reason) return alert("Motivo obrigatório"); if(id === 'MASS') await performAction(currentModalPersonId, 'Selecionados', 'reject', reason, getHrSelectedEntryIds()); else { const isLog = id.startsWith('a1D'); await performAction(isLog ? currentModalPersonId : id, '', 'reject', reason, isLog ? [id] : null); } document.getElementById('modal-reject').classList.add('hidden'); }
+        async function confirmReject() { const id = document.getElementById('reject-person-id').value, reason = document.getElementById('reject-reason').value.trim(); if(!reason) return alert("Motivo obrigatório"); if(id === 'MASS') await performAction(currentModalPersonId, 'Selecionados', 'reject', reason, getHrSelectedEntryIds()); else { const isLog = id.startsWith('a1D'); await performAction(isLog ? currentModalPersonId : id, '', 'reject', reason, isLog ? [id] : null); } document.getElementById('modal-reject').classList.add('hidden'); }
         function toggleSelectAll() { const all = document.getElementById('select-all').checked; document.querySelectorAll('input[name="period-check"]').forEach(c => c.checked = all); updateBulkActions(); }
-        function updateBulkActions() { const selected = document.querySelectorAll('input[name="period-check"]:checked'); const toolbar = document.getElementById('bulk-actions'); const countLabel = document.getElementById('selected-count'); if (selected.length > 0) { toolbar.classList.remove('hidden'); countLabel.innerText = `${selected.length} selecionados`; } else { toolbar.classList.add('hidden'); } }
+        function updateBulkActions() { const sel = document.querySelectorAll('input[name="period-check"]:checked'), bar = document.getElementById('bulk-actions'), lbl = document.getElementById('selected-count'); if (sel.length > 0) { bar.classList.remove('hidden'); lbl.innerText = `${sel.length} selecionados`; } else { bar.classList.add('hidden'); } }
         async function openModal(id, name) {
-            currentModalPersonId = id; const m = document.getElementById('logs-modal'); const tb = document.getElementById('modal-logs-body'); document.getElementById('modal-name').innerText = name;
-            // Reset Mass Actions Checkbox
-            const checkAll = document.getElementById('check-all-hr');
-            if(checkAll) checkAll.checked = false;
-            updateHrMassActionButtons();
-
+            currentModalPersonId = id; const m = document.getElementById('logs-modal'), tb = document.getElementById('modal-logs-body'); document.getElementById('modal-name').innerText = name;
+            document.getElementById('check-all-hr').checked = false; updateHrMassActionButtons();
             ['modal-normal','modal-extra','modal-banco','modal-ausencia','modal-total','modal-meta','modal-saldo', 'modal-horas-pago'].forEach(e => document.getElementById(e).innerText = '...');
-            m.classList.remove('hidden'); setTimeout(()=>{m.classList.remove('opacity-0');m.querySelector('div').classList.remove('scale-95');},10);
+            m.classList.remove('hidden'); setTimeout(()=>{m.querySelector('div').classList.remove('scale-95');},10);
             const dates = JSON.parse(document.getElementById('period-selector').value);
             try {
-                const res = await fetch(`${API_URL}/hr/employees/${id}/details?inicio=${dates.start}&fim=${dates.end}`); const d = await res.json(); const s = d.summary;
-                
-                // Busca info financeira complementar do allEmployees
-                const empData = allEmployees.find(e => e.id === id);
-
-                document.getElementById('modal-normal').innerText = s.normal.toFixed(1)+'h'; document.getElementById('modal-extra').innerText = s.extra.toFixed(1)+'h'; const b = document.getElementById('modal-banco'); b.innerText = (s.banco > 0 ? '+' : '') + s.banco.toFixed(1) + 'h'; b.className = s.banco > 0 ? "block text-lg font-bold text-indigo-400" : (s.banco < 0 ? "block text-lg font-bold text-yellow-400" : "block text-lg font-bold text-gray-500");
+                const res = await fetch(`${API_URL}/hr/employees/${id}/details?inicio=${dates.start}&fim=${dates.end}`); const d = await res.json(), s = d.summary, emp = allEmployees.find(e => e.id === id);
+                document.getElementById('modal-normal').innerText = s.normal.toFixed(1)+'h'; document.getElementById('modal-extra').innerText = s.extra.toFixed(1)+'h'; const b = document.getElementById('modal-banco'); b.innerText = (s.banco > 0 ? '+' : '') + s.banco.toFixed(1) + 'h'; b.className = s.banco > 0 ? "text-lg font-black text-indigo-400" : (s.banco < 0 ? "text-lg font-black text-yellow-400" : "text-lg font-black text-white/40");
                 document.getElementById('modal-ausencia').innerText = s.ausencia.toFixed(1)+'h'; document.getElementById('modal-total').innerText = s.totalRealizado.toFixed(1)+'h'; document.getElementById('modal-meta').innerText = s.contract.toFixed(1)+'h';
-                
-                document.getElementById('modal-horas-pago').innerText = (empData ? (empData.totalHorasFinanceiro || 0).toFixed(1) : '0.0') + 'h';
-
-                const saldo = s.totalRealizado - s.contract; const salEl = document.getElementById('modal-saldo'); salEl.innerText = (saldo > 0 ? '+' : '') + saldo.toFixed(1) + 'h'; salEl.className = saldo > 0 ? "block text-lg font-bold text-green-400" : (saldo < 0 ? "block text-lg font-bold text-red-400" : "block text-lg font-bold text-gray-400");
+                document.getElementById('modal-horas-pago').innerText = (emp ? emp.totalHorasFinanceiro : 0).toFixed(1) + 'h';
+                const saldo = s.totalRealizado - s.contract, salEl = document.getElementById('modal-saldo'); salEl.innerText = (saldo > 0 ? '+' : '') + saldo.toFixed(1) + 'h'; salEl.className = saldo > 0 ? "text-lg font-black text-white" : (saldo < 0 ? "text-lg font-black text-red-200" : "text-lg font-black text-blue-100");
                 tb.innerHTML = ''; d.logs.forEach(l => {
-                    const date = new Date(l.date+'T12:00:00').toLocaleDateString('pt-BR', {day:'2-digit', month:'2-digit', weekday:'short'}); const stColor = l.status === 'Aprovado' ? 'text-green-600' : (l.status.includes('Reprovado') ? 'text-red-600' : 'text-blue-600');
-                    let badge = `<span class="text-[10px] font-bold ${stColor}">${l.status}</span>`; let checkbox = `<div class="flex justify-center"><i data-lucide="lock" class="w-3 h-3 text-gray-300"></i></div>`;
-                    if (l.status === 'Em aprovação do RH') { badge = `<div class="flex gap-1"><button onclick="performAction('${id}','','approve','','${l.id}')" class="p-1 bg-green-50 text-green-600 rounded border border-green-200 hover:bg-green-600 hover:text-white transition-all"><i data-lucide="check" class="w-3 h-3"></i></button><button onclick="openRejectModal('${l.id}','Lançamento')" class="p-1 bg-red-50 text-red-600 rounded border border-red-200 hover:bg-red-600 hover:text-white transition-all"><i data-lucide="x" class="w-3 h-3"></i></button></div>`; checkbox = `<input type="checkbox" class="hr-entry-checkbox rounded border-gray-300 text-indigo-600" value="${l.id}" onchange="updateHrMassActionButtons()">`; }
-                    tb.innerHTML += `<tr class="hover:bg-gray-50 text-xs"><td class="px-6 py-3 text-center">${checkbox}</td><td class="px-6 py-3 uppercase font-bold text-gray-500">${date}</td><td class="px-6 py-3 font-bold">${l.project || '-'}</td><td class="px-6 py-3 text-gray-600">${l.activity || '-'}</td><td class="px-6 py-3 text-right font-bold text-blue-600">${l.normal?.toFixed(1) || '-'}</td><td class="px-6 py-3 text-right font-bold text-green-600">${l.extraPgto?.toFixed(1) || '-'}</td><td class="px-6 py-3 text-right font-bold text-indigo-600">${l.banco?.toFixed(1) || '-'}</td><td class="px-6 py-3 text-right font-bold text-orange-600">${l.ausencia?.toFixed(1) || '-'}</td><td class="px-6 py-3 text-center">${badge}</td></tr>`;
+                    const date = new Date(l.date+'T12:00:00').toLocaleDateString('pt-BR', {day:'2-digit', month:'2-digit', weekday:'short'}); const stCls = l.status === 'Aprovado' ? 'text-teal-600 font-black' : (l.status.includes('Reprovado') ? 'text-red-500 font-black' : 'text-c3c-blue font-black');
+                    let badge = `<span class="text-[9px] font-black uppercase tracking-widest ${stCls}">${l.status}</span>`, checkbox = `<div class="flex justify-center"><i data-lucide="lock" class="w-3.5 h-3.5 text-gray-200"></i></div>`;
+                    if (l.status === 'Em aprovação do RH') { badge = `<div class="flex justify-center gap-2"><button onclick="performAction('${id}','','approve','','${l.id}')" class="p-2 bg-teal-50 text-teal-600 rounded-xl border border-teal-100 hover:bg-teal-600 hover:text-white transition-all"><i data-lucide="check" class="w-3.5 h-3.5"></i></button><button onclick="openRejectModal('${l.id}','${l.activity}')" class="p-2 bg-red-50 text-red-500 rounded-xl border border-red-100 hover:bg-red-600 hover:text-white transition-all"><i data-lucide="x" class="w-3.5 h-3.5"></i></button></div>`; checkbox = `<div class="flex justify-center"><input type="checkbox" class="hr-entry-checkbox w-4 h-4 rounded border-gray-200 text-c3c-blue" value="${l.id}" onchange="updateHrMassActionButtons()"></div>`; }
+                    tb.innerHTML += `<tr class="hover:bg-gray-50 transition-colors border-b border-gray-50 text-xs"><td class="px-8 py-4">${checkbox}</td><td class="px-4 py-4 uppercase font-black text-gray-400 text-[10px]">${date}</td><td class="px-4 py-4 font-black text-gray-800 uppercase tracking-tighter text-[10px]">${l.project || '-'}</td><td class="px-4 py-4 text-gray-600 font-medium leading-tight">${l.activity || '-'}</td><td class="px-4 py-4 text-right font-black text-gray-700">${l.normal?.toFixed(1) || '-'}</td><td class="px-4 py-4 text-right font-black text-orange-500">${l.extraPgto?.toFixed(1) || '-'}</td><td class="px-4 py-4 text-right font-black text-purple-500">${l.banco?.toFixed(1) || '-'}</td><td class="px-4 py-4 text-right font-black text-red-400">${l.ausencia?.toFixed(1) || '-'}</td><td class="px-8 py-4 text-center">${badge}</td></tr>`;
                 }); lucide.createIcons();
             } catch(e) { console.error(e); }
         }
-        function updateHrMassActionButtons() { const selectedCount = document.querySelectorAll('.hr-entry-checkbox:checked').length; const btnApprove = document.getElementById('btn-mass-approve'); const btnReject = document.getElementById('btn-mass-reject'); if(selectedCount > 0) { btnApprove.classList.remove('hidden'); btnReject.classList.remove('hidden'); btnApprove.innerText = `Aprovar (${selectedCount})`; btnReject.innerText = `Reprovar (${selectedCount})`; } else { btnApprove.classList.add('hidden'); btnReject.classList.add('hidden'); } }
+        function updateHrMassActionButtons() { const sel = document.querySelectorAll('.hr-entry-checkbox:checked').length, bA = document.getElementById('btn-mass-approve'), bR = document.getElementById('btn-mass-reject'); if(sel > 0) { bA.classList.remove('hidden'); bR.classList.remove('hidden'); bA.innerText = `Aprovar (${sel})`; bR.innerText = `Reprovar (${sel})`; } else { bA.classList.add('hidden'); bR.classList.add('hidden'); } }
         function getHrSelectedEntryIds() { return Array.from(document.querySelectorAll('.hr-entry-checkbox:checked')).map(cb => cb.value); }
-        function toggleAllHr(master) {
-            const checks = document.querySelectorAll('.hr-entry-checkbox');
-            checks.forEach(c => c.checked = master.checked);
-            updateHrMassActionButtons();
-        }
-        async function confirmHrMassApprove() { const ids = getHrSelectedEntryIds(); if(!confirm(`Aprovar ${ids.length} lançamento(s)?`)) return; await performAction(currentModalPersonId, 'Selecionados', 'approve', null, ids); }
+        function toggleAllHr(master) { document.querySelectorAll('.hr-entry-checkbox').forEach(c => c.checked = master.checked); updateHrMassActionButtons(); }
+        async function confirmHrMassApprove() { const ids = getHrSelectedEntryIds(); if(!confirm(`Aprovar ${ids.length} item(s)?`)) return; await performAction(currentModalPersonId, 'Selecionados', 'approve', null, ids); }
         function openHrMassRejectModal() { const ids = getHrSelectedEntryIds(); document.getElementById('reject-person-name').innerText = `${ids.length} lançamento(s)`; document.getElementById('reject-person-id').value = 'MASS'; document.getElementById('modal-reject').classList.remove('hidden'); }
-        function closeModal() { const m=document.getElementById('logs-modal'); m.classList.add('opacity-0'); m.querySelector('div').classList.add('scale-95'); setTimeout(()=>m.classList.add('hidden'),300); }
+        function closeModal() { const m=document.getElementById('logs-modal'); m.querySelector('div').classList.add('scale-95'); setTimeout(()=>m.classList.add('hidden'),200); }
         function filterByStatus(st) { document.getElementById('status-periodo-filter').value = st; triggerDataLoad(document.getElementById('period-selector').value); }
         function filterTable() { renderTable(); }
-        function toggleMenu() { const s=document.getElementById('sidebar'); const o=document.getElementById('mobile-overlay'); if(s.classList.contains('-translate-x-full')){ s.classList.remove('-translate-x-full'); o.classList.remove('hidden'); setTimeout(()=>o.classList.remove('opacity-0'),10); } else { s.classList.add('-translate-x-full'); o.classList.add('opacity-0'); setTimeout(()=>o.classList.add('hidden'),300); } }
+        function toggleMenu() { const s=document.getElementById('sidebar'), o=document.getElementById('mobile-overlay'); s.classList.toggle('-translate-x-full'); o.classList.toggle('hidden'); setTimeout(()=>o.classList.toggle('opacity-0'),10); }
     </script>
 </body>
 </html>
