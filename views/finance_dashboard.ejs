@@ -59,9 +59,9 @@
             <!-- FILTROS E AÇÕES -->
             <div class="mb-10 flex flex-wrap items-center justify-between gap-6">
                 <div class="flex flex-wrap items-center gap-4">
-                    <div class="bg-white px-5 py-2 rounded-2xl border border-gray-100 shadow-sm flex items-center gap-3">
-                        <span class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Filtrar Status</span>
-                        <select id="filter-status" onchange="loadFinancePeriods()" class="text-xs font-black text-gray-700 outline-none bg-transparent cursor-pointer uppercase tracking-tighter">
+                    <div class="bg-gray-50 border border-gray-200 rounded-xl px-3 py-1.5 gap-2 shadow-sm focus-within:ring-2 focus-within:ring-c3c-blue transition-all flex items-center">
+                        <i data-lucide="filter" class="w-4 h-4 text-c3c-blue"></i>
+                        <select id="filter-status" onchange="loadFinancePeriods()" class="bg-transparent text-sm font-bold text-gray-700 outline-none cursor-pointer min-w-[180px] pr-8">
                             <option value="Nota em Validação" selected>Nota em Validação</option>
                             <option value="Liberado para Nota Fiscal">Reprovadas / Pendentes</option>
                             <option value="Pronto para Pagamento">Pronto p/ Pagamento</option>
