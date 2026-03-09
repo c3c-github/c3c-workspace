@@ -64,11 +64,16 @@
                     <input type="text" id="search-input" onkeyup="filterServices()" placeholder="Buscar por serviço ou cliente..." class="w-72 pl-11 pr-4 py-2.5 bg-gray-50 border border-gray-100 rounded-2xl text-xs font-bold focus:ring-4 focus:ring-blue-50 focus:border-c3c-blue outline-none transition-all">
                 </div>
                 <div class="h-8 w-px bg-gray-100 hidden lg:block"></div>
-                <select id="status-filter" onchange="filterServices()" class="bg-transparent text-xs font-black text-gray-500 uppercase tracking-widest outline-none cursor-pointer hover:text-c3c-blue transition-colors">
-                    <option value="active" selected>Somente Ativos</option>
-                    <option value="inactive">Inativos</option>
-                    <option value="all">Ver Todos</option>
-                </select>
+                
+                <div class="flex items-center bg-gray-50 border border-gray-100 rounded-xl px-3 py-1.5 gap-2 shadow-sm focus-within:ring-2 focus-within:ring-c3c-blue transition-all">
+                    <i data-lucide="filter" class="w-3.5 h-3.5 text-c3c-blue"></i>
+                    <select id="status-filter" onchange="filterServices()" class="bg-transparent text-[10px] font-black text-gray-500 uppercase tracking-widest outline-none cursor-pointer pr-6">
+                        <option value="active" selected>Ativos</option>
+                        <option value="inactive">Inativos</option>
+                        <option value="all">Todos</option>
+                    </select>
+                </div>
+
                 <button onclick="openServiceModal()" class="bg-c3c-gradient text-white text-[10px] font-black uppercase tracking-widest px-6 py-3 rounded-xl shadow-lg shadow-blue-100 transition-all active:scale-95 flex items-center gap-2">
                     <i data-lucide="plus" class="w-4 h-4"></i> Novo Serviço
                 </button>
