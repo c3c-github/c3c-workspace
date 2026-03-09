@@ -255,20 +255,27 @@
         async function loadAvailableCycles() {
             try {
                 const res = await fetch('/api/periods'); 
-                const cycles = await res.json(); 
+                const data = await res.json(); 
                 const selector = document.getElementById('period-selector'); 
                 selector.innerHTML = '';
                 
-                let selectedIndex = cycles.findIndex(c => c.isSuggestedDefault);
-                if (selectedIndex === -1 && cycles.length > 0) selectedIndex = 0;
+                if(!data || data.length === 0) { 
+                    selector.innerHTML = '<option value="">Sem ciclos ativos</option>'; 
+                    return; 
+                }
+                
+                // Encontra o período não finalizado mais antigo
+                const nonFinalized = data.filter(p => p.Status__c !== 'Finalizado/Pago');
+                let suggestedId = nonFinalized.length > 0 ? nonFinalized[nonFinalized.length - 1].Id : data[0].Id;
 
-                cycles.forEach((c, i) => { 
+                data.forEach((c, i) => { 
                     const opt = document.createElement('option'); 
                     opt.value = JSON.stringify({start: c.DataInicio__c, end: c.DataFim__c}); 
                     opt.text = c.Name; 
-                    if(i === selectedIndex) opt.selected = true; 
+                    if(c.Id === suggestedId) opt.selected = true; 
                     selector.appendChild(opt); 
                 });
+                
                 if(selector.options.length > 0) triggerDataLoad(selector.value);
             } catch(e) { console.error(e); }
         }
