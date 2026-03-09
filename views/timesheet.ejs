@@ -16,7 +16,8 @@
                         c3c: { 
                             blue: '#2978FF', 
                             teal: '#1DDDBD', 
-                            gray: '#F2F2F2'
+                            gray: '#F2F2F2',
+                            dark: '#000000'
                         } 
                     }
                 }
@@ -29,9 +30,8 @@
         .custom-scrollbar::-webkit-scrollbar { width: 4px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #E2E8F0; border-radius: 10px; }
-        .day-card { transition: all 0.2s ease; }
-        .day-card:hover { transform: translateY(-2px); }
-        .slide-over { transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
+        .day-card { transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
+        .slide-over { transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
         .slide-over.closed { transform: translateX(100%); }
         .slide-over.open { transform: translateX(0); }
         select { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%232978FF'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 0.75rem center; background-size: 1rem; }
@@ -45,191 +45,198 @@
 
     <main class="flex-1 flex flex-col md:ml-64 relative w-full transition-all duration-300 overflow-hidden">
         
-        <header class="h-auto bg-white border-b border-gray-200 flex flex-col px-8 py-4 shrink-0 text-left">
-            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
-                <div class="flex items-center gap-4">
+        <!-- HEADER -->
+        <header class="h-auto bg-white border-b border-gray-100 flex flex-col px-4 md:px-8 py-4 md:py-6 shrink-0 text-left sticky top-0 z-20">
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 md:gap-6 mb-4 md:mb-8">
+                <div class="flex items-center gap-3 md:gap-4">
                     <button onclick="document.getElementById('sidebar').classList.toggle('-translate-x-full')" class="md:hidden p-2 text-gray-600 hover:bg-gray-100 rounded-lg">
                         <i data-lucide="menu"></i>
                     </button>
                     <div>
-                        <h1 class="text-lg md:text-xl font-bold text-gray-800 flex items-center gap-2 tracking-tight">Meus Lançamentos <span class="text-c3c-blue">⏱️</span></h1>
-                        <p class="text-[10px] text-gray-400 font-bold uppercase tracking-widest hidden sm:block">Registre suas horas com precisão</p>
+                        <h1 class="text-lg md:text-2xl font-black text-gray-800 flex items-center gap-2 md:gap-3 tracking-tighter uppercase leading-tight">Lançamentos <span class="text-c3c-blue">⏱️</span></h1>
+                        <p class="text-[10px] text-gray-400 font-black uppercase tracking-[0.2em] mt-1 hidden sm:block">Workspace Jornada</p>
                     </div>
                 </div>
 
-                <div class="flex items-center gap-3">
-                    <div class="flex items-center bg-gray-50 border border-gray-200 rounded-xl px-3 py-1.5 gap-2 shadow-sm focus-within:ring-2 focus-within:ring-c3c-blue transition-all">
-                        <i data-lucide="calendar" class="w-4 h-4 text-c3c-blue"></i>
-                        <select id="period-selector" onchange="loadCalendarFromSelect(this.value)" class="bg-transparent text-sm font-bold text-gray-700 outline-none cursor-pointer min-w-[180px] pr-8">
+                <div class="flex items-center gap-2 md:gap-4 w-full md:w-auto">
+                    <div class="flex-1 md:flex-none flex items-center bg-gray-50 md:bg-white border border-gray-100 md:border-gray-200 rounded-2xl px-3 md:px-6 py-2 md:py-3 gap-2 md:gap-4 shadow-sm md:shadow-md md:shadow-blue-50/50 focus-within:ring-4 focus-within:ring-blue-50 focus-within:border-c3c-blue transition-all group">
+                        <i data-lucide="calendar" class="w-4 h-4 text-c3c-blue group-hover:scale-110 transition-transform shrink-0"></i>
+                        <select id="period-selector" onchange="loadCalendarFromSelect(this.value)" class="bg-transparent text-[11px] md:text-[13px] font-black text-gray-700 outline-none cursor-pointer w-full md:min-w-[160px] pr-6 md:pr-8 uppercase tracking-[0.2em]">
                             <option>Carregando...</option>
                         </select>
                     </div>
-                    <button id="submit-period-btn" onclick="submitPeriod()" class="hidden bg-c3c-gradient text-white px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest shadow-lg shadow-blue-100 transition-all active:scale-95 flex items-center gap-2">
-                        <i data-lucide="send" class="w-4 h-4"></i> Enviar Folha
-                    </button>
-                    <button id="recall-period-btn" onclick="recallPeriod()" class="hidden bg-orange-50 text-orange-600 border border-orange-100 px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest shadow-sm transition-all active:scale-95 flex items-center gap-2">
-                        <i data-lucide="rotate-ccw" class="w-4 h-4"></i> Recall
-                    </button>
+                    <div class="flex items-center gap-2 shrink-0">
+                        <button id="submit-period-btn" onclick="submitPeriod()" class="hidden bg-c3c-gradient text-white p-3 md:px-6 md:py-3.5 rounded-xl md:rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-xl shadow-blue-100 transition-all active:scale-95 flex items-center gap-2">
+                            <i data-lucide="send" class="w-4 h-4"></i> <span class="hidden md:inline">Finalizar Ciclo</span>
+                        </button>
+                        <button id="recall-period-btn" onclick="recallPeriod()" class="hidden bg-orange-600 text-white p-3 md:px-6 md:py-3.5 rounded-xl md:rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-xl shadow-orange-100 transition-all active:scale-95 flex items-center gap-2">
+                            <i data-lucide="rotate-ccw" class="w-4 h-4"></i> <span class="hidden md:inline">Recall</span>
+                        </button>
+                    </div>
                 </div>
             </div>
 
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div class="bg-gray-50 border border-gray-100 rounded-xl p-3 flex flex-col">
-                    <span class="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1">Contratado</span>
-                    <p class="text-lg font-black text-gray-700" id="card-contratado">--h</p>
+            <!-- DASHBOARD MES (ESCONDIDO NO MOBILE POR PADRÃO) -->
+            <div class="hidden md:grid grid-cols-2 lg:grid-cols-4 gap-6">
+                <div class="bg-gray-50/50 border border-gray-100 rounded-[32px] p-6 flex flex-col hover:bg-white transition-all group">
+                    <span class="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-2">Contrato</span>
+                    <p class="text-2xl font-black text-gray-800 tracking-tighter" id="card-contratado">--h</p>
                 </div>
-                <div class="bg-blue-50/50 border border-blue-100 rounded-xl p-3 flex flex-col">
-                    <span class="text-[9px] font-black text-c3c-blue uppercase tracking-widest mb-1">Lançado (Mês)</span>
-                    <p class="text-lg font-black text-gray-800" id="card-realizado">--h</p>
+                <div class="bg-blue-50/30 border border-blue-50 rounded-[32px] p-6 flex flex-col hover:bg-white transition-all group">
+                    <span class="text-[9px] font-black text-c3c-blue uppercase tracking-widest mb-2">Realizado</span>
+                    <p class="text-2xl font-black text-gray-800 tracking-tighter" id="card-realizado">--h</p>
                 </div>
-                <div class="bg-white border border-gray-100 rounded-xl p-3 flex flex-col relative overflow-hidden">
-                    <div id="card-banco-bar" class="absolute left-0 top-0 bottom-0 w-1 bg-gray-200" id="card-banco-bar"></div>
-                    <span class="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1">Saldo Banco</span>
-                    <p class="text-lg font-black text-gray-700" id="card-banco">--h</p>
+                <div class="bg-white border border-gray-100 rounded-[32px] p-6 flex flex-col relative overflow-hidden transition-all group">
+                    <div id="card-banco-bar" class="absolute left-0 top-0 bottom-0 w-1.5 bg-gray-100"></div>
+                    <span class="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-2">Saldo Banco</span>
+                    <p class="text-2xl font-black text-gray-800 tracking-tighter" id="card-banco">--h</p>
                 </div>
-                <div class="bg-white border border-gray-100 rounded-xl p-3 flex flex-col justify-center items-center">
-                    <span id="card-status-label" class="px-3 py-1 text-[10px] font-black uppercase rounded-full border tracking-widest">Aberto</span>
+                <div class="bg-gray-50/50 border border-gray-100 rounded-[32px] p-6 flex items-center justify-center hover:bg-white transition-all">
+                    <span id="card-status-label" class="px-6 py-2 text-[10px] font-black uppercase rounded-full border tracking-[0.2em]">Aguardando...</span>
                 </div>
             </div>
         </header>
 
+        <!-- CONTEÚDO -->
         <div class="flex-1 overflow-y-auto p-4 md:p-8 custom-scrollbar">
-            <div class="mb-6 flex flex-wrap gap-4 bg-white p-4 rounded-2xl border border-gray-100 shadow-sm items-center text-[10px] font-black uppercase tracking-widest text-gray-400">
-                <div class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full border-2 border-gray-300"></span> Rascunho</div>
-                <div class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-blue-400"></span> Serviço</div>
-                <div class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-indigo-400"></span> RH</div>
-                <div class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-teal-500"></span> Aprovado</div>
-                <div class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full border-2 border-red-500"></span> Reprovado</div>
+            
+            <!-- LEGENDA DINÂMICA (PICKLIST NO MOBILE) -->
+            <div class="mb-6 flex flex-col sm:flex-row justify-between items-center gap-4">
+                <div class="hidden sm:flex flex-wrap gap-4 bg-white p-4 rounded-[24px] border border-gray-100 shadow-sm items-center text-[9px] font-black uppercase tracking-widest text-gray-400">
+                    <div class="flex items-center gap-2"><span class="w-2.5 h-2.5 rounded-full border-2 border-gray-200"></span> Rascunho</div>
+                    <div class="flex items-center gap-2"><span class="w-2.5 h-2.5 rounded-full bg-blue-400"></span> Líder</div>
+                    <div class="flex items-center gap-2"><span class="w-2.5 h-2.5 rounded-full bg-indigo-500"></span> RH</div>
+                    <div class="flex items-center gap-2"><span class="w-2.5 h-2.5 rounded-full bg-teal-500"></span> OK</div>
+                    <div class="flex items-center gap-2"><span class="w-2.5 h-2.5 rounded-full bg-red-500"></span> Erro</div>
+                </div>
+                
+                <div class="sm:hidden w-full">
+                    <select class="w-full bg-white border border-gray-100 rounded-xl px-4 py-3 text-[10px] font-black uppercase tracking-widest text-gray-500 outline-none">
+                        <option disabled selected>Legenda de Status</option>
+                        <option disabled>⚪️ Rascunho / Aberto</option>
+                        <option disabled>🔵 Aguardando Líder</option>
+                        <option disabled>🟣 Aguardando RH</option>
+                        <option disabled>🟢 Aprovado / Finalizado</option>
+                        <option disabled>🔴 Reprovado / Ajuste</option>
+                    </select>
+                </div>
             </div>
 
-            <div class="grid grid-cols-7 gap-4 mb-4 text-center">
-                <% ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'].forEach(d => { %>
-                    <div class="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]"><%= d %></div>
+            <!-- CALENDARIO -->
+            <div class="grid grid-cols-7 gap-2 md:gap-6 mb-4 text-center">
+                <% ['D','S','T','Q','Q','S','S'].forEach(d => { %>
+                    <div class="text-[10px] font-black text-gray-300 uppercase tracking-widest md:tracking-[0.3em]"><%= d %></div>
                 <% }) %>
             </div>
-            <div id="calendar-grid" class="grid grid-cols-7 gap-4"></div>
+            <div id="calendar-grid" class="grid grid-cols-7 gap-2 md:gap-6"></div>
         </div>
 
-        <div id="day-panel" class="fixed inset-y-0 right-0 w-full md:w-[600px] bg-white shadow-2xl z-50 slide-over closed flex flex-col border-l border-gray-100">
-            <header class="p-6 border-b border-gray-100 flex items-center justify-between shrink-0 bg-white sticky top-0 z-10">
+        <!-- PAINEL LATERAL (DIA) -->
+        <div id="day-panel" class="fixed inset-y-0 right-0 w-full md:w-[650px] bg-white shadow-2xl z-50 slide-over closed flex flex-col border-l border-gray-100">
+            <header class="p-6 md:p-8 border-b border-gray-100 flex items-center justify-between shrink-0 bg-gray-50/50">
                 <div class="text-left">
-                    <span id="panel-weekday" class="text-[10px] font-black text-c3c-blue uppercase tracking-[0.3em] block mb-1">--</span>
-                    <h3 id="panel-date" class="text-2xl font-black text-gray-800 tracking-tighter leading-tight">-- de --</h3>
+                    <span id="panel-weekday" class="text-[10px] font-black text-c3c-blue uppercase tracking-[0.4em] block mb-1">--</span>
+                    <h3 id="panel-date" class="text-2xl md:text-3xl font-black text-gray-800 tracking-tighter uppercase leading-tight">-- de --</h3>
                 </div>
-                <button onclick="closeDayPanel()" class="p-3 text-gray-400 hover:bg-gray-100 rounded-full transition-all"><i data-lucide="x" class="w-6 h-6"></i></button>
+                <button onclick="closeDayPanel()" class="p-3 md:p-4 text-gray-400 hover:bg-white hover:text-red-500 rounded-full shadow-sm transition-all"><i data-lucide="x" class="w-6 h-6"></i></button>
             </header>
 
             <div class="flex-1 overflow-y-auto p-6 md:p-8 custom-scrollbar">
                 <!-- 1. ALOCAÇÕES -->
-                <div class="mb-10">
-                    <h3 class="text-[10px] font-black text-gray-800 uppercase tracking-[0.2em] mb-6 px-2 flex items-center gap-2 text-left"><i data-lucide="briefcase" class="w-4 h-4 text-c3c-blue"></i> Alocações Vigentes</h3>
+                <div class="mb-10 md:mb-12">
+                    <h3 class="text-[10px] font-black text-gray-800 uppercase tracking-[0.2em] mb-6 px-2 flex items-center gap-2 text-left"><i data-lucide="briefcase" class="w-4 h-4 text-c3c-blue"></i> Projetos Disponíveis</h3>
                     <div id="allocations-list" class="flex overflow-x-auto gap-4 pb-4 -mx-2 px-2 no-scrollbar snap-x scroll-smooth"></div>
                 </div>
 
-                <!-- 2. LANÇAMENTOS EXISTENTES -->
-                <div class="mb-10">
+                <!-- 2. LANÇAMENTOS (CONDICIONAL) -->
+                <div id="entries-section-wrapper" class="mb-10 md:mb-12 hidden">
                     <div class="flex justify-between items-end mb-6 px-2">
-                        <h3 class="text-[10px] font-black text-gray-800 uppercase tracking-[0.2em] flex items-center gap-2 text-left"><i data-lucide="list" class="w-4 h-4 text-c3c-blue"></i> Lançamentos Deste Dia</h3>
-                        <span id="entries-count-badge" class="text-[10px] font-black text-gray-400 uppercase tracking-widest hidden">0 itens</span>
+                        <h3 class="text-[10px] font-black text-gray-800 uppercase tracking-[0.2em] flex items-center gap-2 text-left"><i data-lucide="list" class="w-4 h-4 text-c3c-blue"></i> Lançamentos do Dia</h3>
+                        <span id="entries-count-badge" class="text-[10px] font-black text-gray-400 uppercase tracking-widest">0 itens</span>
                     </div>
-                    
-                    <div id="rejection-alert" class="hidden mb-6 p-4 bg-red-50 border border-red-100 rounded-2xl flex items-start gap-3">
-                        <i data-lucide="alert-circle" class="w-5 h-5 text-red-500 shrink-0"></i>
-                        <div>
-                            <p class="text-xs font-black text-red-600 uppercase tracking-widest mb-1">Reprovado</p>
-                            <p id="rejection-reason" class="text-sm text-red-500 font-medium italic leading-snug"></p>
-                        </div>
-                    </div>
-
-                    <div id="entries-list" class="flex overflow-x-auto gap-4 pb-6 -mx-2 px-2 no-scrollbar snap-x scroll-smooth"></div>
+                    <div id="entries-list" class="flex overflow-x-auto gap-4 md:gap-6 pb-6 -mx-2 px-2 no-scrollbar snap-x scroll-smooth"></div>
                 </div>
 
                 <!-- 3. FORMULÁRIO -->
-                <div id="add-activity-container" class="mb-10 p-6 bg-gray-50 rounded-[32px] border border-gray-100 relative group">
+                <div id="add-activity-container" class="mb-12 p-6 md:p-10 bg-gray-50/50 rounded-[32px] md:rounded-[48px] border border-gray-100 relative group">
                     <input type="hidden" id="input-entry-id">
-                    <h4 id="form-title" class="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-6 text-left">Nova Atividade</h4>
+                    <h4 id="form-title" class="text-lg font-black text-gray-800 uppercase tracking-tighter mb-8 text-left">Registrar Atividade</h4>
                     
-                    <div id="readonly-alert" class="hidden mb-6 p-4 bg-blue-50 border border-blue-100 rounded-2xl flex items-center gap-3">
-                        <i data-lucide="lock" class="w-5 h-5 text-c3c-blue shrink-0"></i>
-                        <p id="readonly-reason" class="text-[10px] font-black text-c3c-blue uppercase tracking-widest leading-tight"></p>
-                    </div>
-
-                    <div class="space-y-5">
+                    <div class="space-y-6">
                         <div class="text-left">
-                            <label class="block text-[10px] font-black text-gray-400 uppercase mb-2 tracking-widest">Projeto / Serviço</label>
-                            <select id="input-project" onchange="resetActivitySearch(); validateRules('init')" class="w-full bg-white border border-gray-200 rounded-2xl px-5 py-3 text-sm font-bold focus:ring-2 focus:ring-c3c-blue outline-none transition-all cursor-pointer">
+                            <label class="block text-[10px] font-black text-gray-400 uppercase mb-3 tracking-widest px-1">Projeto / Serviço <span class="text-red-500">*</span></label>
+                            <select id="input-project" onchange="resetActivitySearch(); validateRules('init')" class="w-full bg-white border-2 border-gray-100 rounded-[24px] px-6 py-4 text-sm font-black focus:ring-4 focus:ring-blue-50 focus:border-c3c-blue outline-none transition-all cursor-pointer">
                                 <option value="" disabled selected>Selecione...</option>
                             </select>
                         </div>
 
                         <div class="relative text-left">
-                            <label class="block text-[10px] font-black text-gray-400 uppercase mb-2 tracking-widest">Atividade</label>
+                            <label class="block text-[10px] font-black text-gray-400 uppercase mb-3 tracking-widest px-1">Atividade <span class="text-red-500">*</span></label>
                             <div class="relative">
-                                <input type="text" id="input-activity-search" oninput="filterActivities()" placeholder="Busque ou descreva a atividade..." class="w-full bg-white border border-gray-200 rounded-2xl px-5 py-3 text-sm font-bold focus:ring-2 focus:ring-c3c-blue outline-none pr-12 transition-all">
-                                <button id="btn-clear-activity" onclick="clearActivity()" class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-300 hover:text-red-500 hidden transition-colors"><i data-lucide="x-circle" class="w-5 h-5"></i></button>
+                                <input type="text" id="input-activity-search" onfocus="filterActivities(true)" oninput="filterActivities()" placeholder="O que você desenvolveu?" class="w-full bg-white border-2 border-gray-100 rounded-[24px] px-6 py-4 text-sm font-black focus:ring-4 focus:ring-blue-50 focus:border-c3c-blue outline-none pr-14 transition-all placeholder:text-gray-300">
+                                <button id="btn-clear-activity" onclick="clearActivity()" class="absolute right-6 top-1/2 -translate-y-1/2 text-gray-300 hover:text-red-500 hidden transition-colors"><i data-lucide="x-circle" class="w-6 h-6"></i></button>
                             </div>
                             <input type="hidden" id="input-activity-id">
-                            <ul id="activity-dropdown" class="absolute z-50 w-full mt-2 bg-white border border-gray-100 rounded-2xl shadow-2xl max-h-60 overflow-y-auto hidden divide-y divide-gray-50 py-2"></ul>
+                            <ul id="activity-dropdown" class="absolute z-50 w-full mt-3 bg-white border border-gray-100 rounded-[24px] shadow-2xl max-h-60 overflow-y-auto hidden divide-y divide-gray-50 py-3"></ul>
                         </div>
 
-                        <div class="grid grid-cols-3 gap-4 text-left">
+                        <div class="grid grid-cols-3 gap-4 md:gap-6 text-left">
                             <div class="relative">
-                                <label class="block text-[9px] font-black text-teal-600 uppercase mb-2 tracking-widest text-center">H. Normal</label>
-                                <input type="number" id="input-normal" step="0.5" value="0" oninput="sanitizeField(this)" class="w-full bg-white border border-gray-200 rounded-2xl px-4 py-3 text-lg font-black focus:ring-2 focus:ring-teal-500 outline-none disabled:bg-gray-100 transition-all text-center">
-                                <span id="msg-normal" class="absolute -bottom-4 left-2 text-[8px] font-bold text-red-400 uppercase hidden"></span>
-                            </div>
-                            <div class="relative">
-                                <label class="block text-[9px] font-black text-orange-500 uppercase mb-2 tracking-widest text-center">H. Extra</label>
-                                <input type="number" id="input-extra" step="0.5" value="0" oninput="sanitizeField(this)" class="w-full bg-white border border-gray-200 rounded-2xl px-4 py-3 text-lg font-black focus:ring-2 focus:ring-orange-500 outline-none disabled:bg-gray-100 transition-all text-center">
-                                <span id="msg-extra" class="absolute -bottom-4 left-2 text-[8px] font-bold text-red-400 uppercase hidden"></span>
+                                <label class="block text-[9px] font-black text-teal-600 uppercase mb-3 tracking-widest text-center">Normal</label>
+                                <input type="number" id="input-normal" step="0.5" value="0" oninput="sanitizeField(this)" class="w-full bg-white border-2 border-gray-100 rounded-[24px] px-2 py-5 text-xl font-black focus:ring-4 focus:ring-teal-50 focus:border-teal-500 outline-none disabled:bg-gray-100 transition-all text-center">
                             </div>
                             <div class="relative">
-                                <label class="block text-[9px] font-black text-red-500 uppercase mb-2 tracking-widest text-center">Ausência</label>
-                                <input type="number" id="input-leave" step="0.5" value="0" oninput="sanitizeField(this)" class="w-full bg-white border border-gray-200 rounded-2xl px-4 py-3 text-lg font-black focus:ring-2 focus:ring-red-500 outline-none disabled:bg-gray-100 transition-all text-center">
-                                <span id="msg-leave" class="absolute -bottom-4 left-2 text-[8px] font-bold text-red-400 uppercase hidden"></span>
+                                <label class="block text-[9px] font-black text-orange-500 uppercase mb-3 tracking-widest text-center">Extra</label>
+                                <input type="number" id="input-extra" step="0.5" value="0" oninput="sanitizeField(this)" class="w-full bg-white border-2 border-gray-100 rounded-[24px] px-2 py-5 text-xl font-black focus:ring-4 focus:ring-orange-50 focus:border-orange-500 outline-none disabled:bg-gray-100 transition-all text-center">
+                            </div>
+                            <div class="relative">
+                                <label class="block text-[9px] font-black text-red-500 uppercase mb-3 tracking-widest text-center">Ausência</label>
+                                <input type="number" id="input-leave" step="0.5" value="0" oninput="sanitizeField(this)" class="w-full bg-white border-2 border-gray-100 rounded-[24px] px-2 py-5 text-xl font-black focus:ring-4 focus:ring-red-50 focus:border-red-500 outline-none disabled:bg-gray-100 transition-all text-center">
                             </div>
                         </div>
 
-                        <div id="options-extra" class="hidden p-4 bg-orange-50/50 rounded-2xl border border-orange-100 flex items-center justify-between">
-                            <span class="text-[10px] font-black text-orange-600 uppercase tracking-widest">Destino Extra:</span>
-                            <div class="flex gap-4">
-                                <label class="flex items-center gap-2 cursor-pointer text-left"><input type="radio" name="radio-extra" value="Banco" checked class="w-4 h-4 text-orange-500 focus:ring-orange-500"><span class="text-[10px] font-bold text-orange-700 uppercase">Banco</span></label>
-                                <label class="flex items-center gap-2 cursor-pointer text-left"><input type="radio" name="radio-extra" value="Pagamento" class="w-4 h-4 text-orange-500 focus:ring-orange-500"><span class="text-[10px] font-bold text-orange-700 uppercase">Pagamento</span></label>
+                        <!-- CAMPOS CONDICIONAIS (JUSTIFICATIVA / TIPO) -->
+                        <div id="conditional-fields" class="hidden space-y-6">
+                            <div id="options-extra" class="hidden text-left">
+                                <label class="block text-[10px] font-black text-orange-600 uppercase mb-3 tracking-widest px-1">Destino Extra</label>
+                                <select id="select-extra-type" class="w-full bg-white border-2 border-gray-100 rounded-[24px] px-6 py-4 text-sm font-black focus:ring-4 focus:ring-orange-50 focus:border-orange-500 outline-none transition-all cursor-pointer">
+                                    <option value="Banco" selected>Lançar p/ Banco de Horas</option>
+                                    <option value="Pagamento">Lançar p/ Pagamento (Extra)</option>
+                                </select>
+                            </div>
+
+                            <div id="options-absence" class="hidden text-left">
+                                <label class="block text-[10px] font-black text-red-500 uppercase mb-3 tracking-widest px-1">Tipo de Ausência</label>
+                                <select id="select-absence-type" class="w-full bg-white border-2 border-gray-100 rounded-[24px] px-6 py-4 text-sm font-black focus:ring-4 focus:ring-red-50 focus:border-red-500 outline-none transition-all cursor-pointer">
+                                    <option value="Abonada">Abonada (Remunerada)</option>
+                                    <option value="Desconto">Desconto (Falta)</option>
+                                    <option value="Banco">Descontar do Banco de Horas</option>
+                                </select>
+                            </div>
+
+                            <div class="text-left">
+                                <label class="block text-[10px] font-black text-gray-400 uppercase mb-3 tracking-widest flex justify-between px-1">Justificativa <span class="text-red-500 font-bold italic text-[9px]">* Obrigatória</span></label>
+                                <textarea id="input-reason" rows="3" placeholder="Explique o motivo..." class="w-full bg-white border-2 border-gray-100 rounded-[32px] px-6 py-5 text-sm font-medium focus:ring-4 focus:ring-blue-50 focus:border-c3c-blue outline-none resize-none transition-all placeholder:text-gray-300"></textarea>
                             </div>
                         </div>
 
-                        <div id="options-absence" class="hidden text-left">
-                            <label class="block text-[10px] font-black text-gray-400 uppercase mb-2 tracking-widest">Tipo Ausência</label>
-                            <select id="select-absence-type" class="w-full bg-white border border-gray-200 rounded-2xl px-5 py-3 text-sm font-bold focus:ring-2 focus:ring-red-500 outline-none transition-all cursor-pointer">
-                                <option value="Abonada">Abonada (Remunerada)</option>
-                                <option value="Desconto">Desconto (Falta)</option>
-                                <option value="Banco">Banco de Horas</option>
-                            </select>
-                        </div>
-
-                        <div class="text-left">
-                            <label class="block text-[10px] font-black text-gray-400 uppercase mb-2 tracking-widest flex justify-between">Justificativa <span id="req-justification" class="text-red-500 lowercase font-bold hidden italic">*obrigatória</span></label>
-                            <textarea id="input-reason" rows="3" placeholder="Descreva sua atividade ou motivo da ausência/extra..." class="w-full bg-white border border-gray-200 rounded-2xl px-5 py-4 text-sm font-medium focus:ring-2 focus:ring-c3c-blue outline-none resize-none transition-all placeholder:text-gray-300"></textarea>
-                        </div>
-
-                        <div class="flex gap-3 pt-4">
-                            <button id="btn-add-entry" onclick="addEntry()" class="flex-1 bg-c3c-gradient text-white font-black uppercase text-xs tracking-widest py-4 rounded-2xl shadow-xl hover:opacity-90 active:scale-95 transition-all">Salvar</button>
-                            <button id="btn-cancel-edit" onclick="resetForm()" class="hidden px-6 text-gray-400 font-black uppercase text-[10px] hover:text-gray-600 transition-colors">Cancelar</button>
+                        <div class="flex flex-col sm:flex-row gap-4 pt-6">
+                            <button id="btn-add-entry" onclick="addEntry()" class="flex-1 bg-c3c-gradient text-white font-black uppercase text-[11px] tracking-[0.2em] py-5 rounded-[24px] shadow-xl shadow-blue-100 hover:opacity-90 active:scale-95 transition-all">Salvar Registro</button>
+                            <button id="btn-cancel-edit" onclick="resetForm()" class="hidden px-8 py-4 text-gray-400 font-black uppercase text-[10px] tracking-widest hover:text-gray-800 transition-colors">Descartar</button>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <footer class="p-6 md:p-8 bg-gray-50 border-t border-gray-100 shrink-0 sticky bottom-0">
+            <footer class="p-6 md:p-10 bg-gray-50 border-t border-gray-100 shrink-0 sticky bottom-0 z-10">
                 <div class="flex items-center justify-between">
-                    <div class="flex gap-6">
-                        <div class="flex flex-col text-left"><span class="text-[9px] font-black text-gray-400 uppercase tracking-widest">Normal</span><span id="footer-normal" class="text-lg font-black text-gray-800 leading-tight">0.0h</span></div>
-                        <div class="flex flex-col text-left"><span class="text-[9px] font-black text-gray-400 uppercase tracking-widest">Ausência</span><span id="footer-absence" class="text-lg font-black text-gray-800 leading-tight">0.0h</span></div>
-                        <div class="flex flex-col text-left"><span class="text-[9px] font-black text-gray-400 uppercase tracking-widest">Extra</span><span id="footer-extra" class="text-lg font-black text-gray-800 leading-tight">0.0h</span></div>
+                    <div class="flex gap-4 md:gap-8">
+                        <div class="flex flex-col text-left"><span class="text-[8px] md:text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1">Normal</span><span id="footer-normal" class="text-sm md:text-xl font-black text-gray-800 tracking-tighter">0.0h</span></div>
+                        <div class="flex flex-col text-left"><span class="text-[8px] md:text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1">Extra</span><span id="footer-extra" class="text-sm md:text-xl font-black text-orange-500 tracking-tighter">0.0h</span></div>
                     </div>
                     <div class="flex flex-col items-end">
-                        <span class="text-[9px] font-black text-gray-400 uppercase tracking-widest">Saldo do Dia</span>
-                        <span id="footer-balance" class="text-2xl font-black text-gray-300 tracking-tighter leading-tight">0.0h</span>
+                        <span class="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1">Saldo Dia</span>
+                        <span id="footer-balance" class="text-xl md:text-3xl font-black text-gray-300 tracking-tighter">0.0h</span>
                     </div>
                 </div>
             </footer>
@@ -248,11 +255,22 @@
                 const res = await fetch('/api/periods?type=user');
                 currentPeriods = await res.json();
                 if(currentPeriods.length === 0) return;
+                
+                const formatLabel = (p) => {
+                    const months = ['JAN','FEV','MAR','ABR','MAI','JUN','JUL','AGO','SET','OUT','NOV','DEZ'];
+                    // p.DataInicio__c é YYYY-MM-DD
+                    const parts = p.DataInicio__c.split('-');
+                    if(parts.length < 2) return p.Name.toUpperCase();
+                    const mIdx = parseInt(parts[1]) - 1;
+                    const year = parts[0].slice(-2);
+                    return `${months[mIdx]} ${year}`;
+                };
+
                 const nonFinalized = currentPeriods.filter(p => p.Status__c !== 'Finalizado/Pago');
                 let suggestedId = nonFinalized.length > 0 ? nonFinalized[nonFinalized.length - 1].Id : currentPeriods[0].Id;
                 currentPeriodIndex = currentPeriods.findIndex(p => p.Id === suggestedId);
                 const selector = document.getElementById('period-selector');
-                selector.innerHTML = currentPeriods.map(p => `<option value='${JSON.stringify({id:p.Id, start:p.DataInicio__c, end:p.DataFim__c, status:p.Status__c})}' ${p.Id === suggestedId ? 'selected' : ''}>${p.Name}</option>`).join('');
+                selector.innerHTML = currentPeriods.map(p => `<option value='${JSON.stringify({id:p.Id, start:p.DataInicio__c, end:p.DataFim__c, status:p.Status__c})}' ${p.Id === suggestedId ? 'selected' : ''}>${formatLabel(p)}</option>`).join('');
                 loadCalendar(suggestedId);
             } catch (err) { console.error(err); }
         }
@@ -261,12 +279,6 @@
             const p = JSON.parse(jsonVal);
             currentPeriodIndex = currentPeriods.findIndex(cp => cp.Id === p.id);
             loadCalendar(p.id);
-        }
-
-        function changePeriod(dir) { 
-            let next=currentPeriodIndex+dir; if(next<0||next>=currentPeriods.length) return; 
-            currentPeriodIndex=next; const selector = document.getElementById('period-selector');
-            selector.selectedIndex = next; const p = JSON.parse(selector.value); loadCalendar(p.id); 
         }
 
         async function loadCalendar(pId) {
@@ -280,51 +292,65 @@
         }
 
         function updateSummary(summary) {
+            const isMobile = window.innerWidth < 768;
             document.getElementById('card-contratado').innerText = (summary.totalContratado || 0).toFixed(1) + 'h';
             document.getElementById('card-realizado').innerText = (summary.totalRealizado || 0).toFixed(1) + 'h';
             const saldo = summary.saldoBancoTotal || 0;
             const saldoEl = document.getElementById('card-banco');
             saldoEl.innerText = (saldo > 0 ? '+' : '') + saldo.toFixed(2) + 'h';
-            saldoEl.className = saldo > 0 ? "text-lg font-black text-teal-500" : (saldo < 0 ? "text-lg font-black text-red-500" : "text-lg font-black text-gray-700");
-            document.getElementById('card-banco-bar').className = `absolute left-0 top-0 bottom-0 w-1 ${saldo > 0 ? 'bg-teal-500' : (saldo < 0 ? 'bg-red-500' : 'bg-gray-200')}`;
+            saldoEl.className = saldo > 0 ? "text-2xl font-black text-teal-500" : (saldo < 0 ? "text-2xl font-black text-red-500" : "text-2xl font-black text-gray-800");
+            document.getElementById('card-banco-bar').className = `absolute left-0 top-0 bottom-0 w-1.5 ${saldo > 0 ? 'bg-teal-500' : (saldo < 0 ? 'bg-red-500' : 'bg-gray-200')}`;
             const st = summary.statusGeral || 'Aberto';
             document.getElementById('card-status-label').innerText = st;
             document.getElementById('submit-period-btn').classList.toggle('hidden', st !== 'Aberto');
-            document.getElementById('recall-period-btn').classList.toggle('hidden', !['Em aprovação do serviço', 'Aguardando Aprovação Líder', 'Aguardando Aprovação RH'].includes(st));
+            document.getElementById('recall-period-btn').classList.toggle('hidden', !['Em aprovação do serviço', 'Aguardando Aprovação Líder', 'Aguardando Aprovação RH', 'Reprovado serviço', 'Reprovado RH'].includes(st));
             const mapColor = { 'Aberto': 'blue', 'Finalizado/Pago': 'teal', 'Liberado para Nota Fiscal': 'teal' };
             const color = mapColor[st] || 'blue';
-            document.getElementById('card-status-label').className = `px-3 py-1 bg-${color}-50 text-${color}-600 text-[10px] font-black uppercase rounded-full border border-${color}-100 text-center tracking-widest`;
+            document.getElementById('card-status-label').className = `px-6 py-2 bg-${color}-50 text-${color}-600 text-[10px] font-black uppercase rounded-full border border-${color}-100 text-center tracking-[0.2em] shadow-sm`;
         }
 
         function renderGrid(grid) {
+            const isMobile = window.innerWidth < 768;
             const el = document.getElementById('calendar-grid'); el.innerHTML='';
             const dates = Object.keys(grid).sort(); if(dates.length===0) return;
             const startDay = new Date(dates[0]+'T12:00:00').getDay();
-            for(let i=0; i<startDay; i++) el.innerHTML += `<div class="h-28 bg-gray-50/50 border border-transparent rounded-2xl opacity-20 hidden md:block"></div>`;
+            
+            // Mantém os fillers visíveis em todos os tamanhos para não quebrar o grid de 7 dias
+            for(let i=0; i<startDay; i++) el.innerHTML += `<div class="h-16 md:h-32 bg-gray-50/10 border border-transparent rounded-xl md:rounded-[24px] opacity-20"></div>`;
+            
             dates.forEach(key => {
                 const d = grid[key]; const dayNum = new Date(key+'T12:00:00').getDate();
-                let bg='bg-white border-gray-100 hover:border-c3c-blue/30', ind='', cnt='<span class="text-gray-300 text-[10px] font-bold">0h</span>';
-                if(d.total>0 || d.entries.length>0) {
-                    cnt=`<span class="font-black text-gray-700 text-sm">${d.total.toFixed(1)}h</span>`;
-                    let dots = '<div class="absolute top-2 right-2 flex gap-1 items-center">';
+                let bg='bg-white border-gray-100 hover:border-blue-200 shadow-sm', ind='', cnt='';
+                
+                if(d.total > 0 || d.entries.length > 0) {
+                    if(!isMobile) cnt=`<span class="font-black text-gray-800 text-sm tracking-tighter">${d.total.toFixed(1)}h</span>`;
+                    
+                    // Indicadores: No mobile ficam logo abaixo do número para economizar espaço
+                    let dots = `<div class="absolute ${isMobile ? 'bottom-2 left-1/2 -translate-x-1/2' : 'top-3 right-3'} flex gap-1 items-center">`;
                     (d.status_list || []).forEach(st => {
-                        if(st === 'draft') dots += '<div class="w-2 h-2 border border-gray-400 rounded-full"></div>';
-                        else if(st === 'submitted_service') dots += '<div class="w-2 h-2 bg-blue-400 rounded-full"></div>';
-                        else if(st === 'submitted_rh') dots += '<div class="w-2 h-2 bg-purple-400 rounded-full"></div>';
-                        else if(st === 'approved') dots += '<div class="w-2 h-2 bg-teal-500 rounded-full"></div>';
-                        else if(st.includes('rejected')) dots += '<div class="w-2 h-2 bg-red-500 rounded-full"></div>';
+                        let dotCls = 'w-1.5 h-1.5 md:w-2 md:h-2 rounded-full';
+                        if(st === 'draft') dotCls += ' border border-gray-300';
+                        else if(st === 'submitted_service') dotCls += ' bg-blue-400';
+                        else if(st === 'submitted_rh') dotCls += ' bg-indigo-500';
+                        else if(st === 'approved') dotCls += ' bg-teal-500';
+                        else if(st.includes('rejected')) dotCls += ' bg-red-500';
+                        dots += `<div class="${dotCls}"></div>`;
                     });
                     dots += '</div>'; ind = dots;
+                    
                     if(d.status_list.includes('rejected_rh') || d.status_list.includes('rejected_service')) bg = 'bg-red-50 border-red-100';
-                    else if(d.status_list.includes('submitted_service')) bg = 'bg-blue-50/50 border-blue-100';
-                    else if(d.status_list.includes('submitted_rh')) bg = 'bg-purple-50/50 border-purple-100';
-                    else if(d.status_list.includes('approved')) bg = 'bg-teal-50/50 border-teal-100';
+                    else if(d.status_list.includes('submitted_service')) bg = 'bg-blue-50/30 border-blue-100';
+                    else if(d.status_list.includes('submitted_rh')) bg = 'bg-indigo-50/30 border-indigo-100';
+                    else if(d.status_list.includes('approved')) bg = 'bg-teal-50/30 border-teal-100';
                 } else {
-                    if(d.status_day==='holiday') cnt=`<span class="bg-rose-50 text-rose-600 text-[9px] px-2 py-0.5 rounded-full font-black border border-rose-100 uppercase truncate max-w-full text-center">${d.label}</span>`;
-                    else if(d.status_day==='vacation') cnt=`<span class="bg-teal-50 text-teal-600 text-[9px] px-2 py-0.5 rounded-full font-black border border-teal-100 uppercase truncate max-w-full text-center">${d.label || 'Férias'}</span>`;
-                    else if(d.status_day==='weekend') bg='bg-gray-50/50 opacity-60';
+                    if(!isMobile) {
+                        if(d.status_day==='holiday') cnt=`<span class="bg-rose-50 text-rose-600 text-[8px] px-2 py-1 rounded-full font-black border border-rose-100 uppercase truncate max-w-full text-center tracking-widest">${d.label}</span>`;
+                        else if(d.status_day==='vacation') cnt=`<span class="bg-teal-50 text-teal-600 text-[8px] px-2 py-1 rounded-full font-black border border-teal-100 uppercase truncate max-w-full text-center tracking-widest">${d.label || 'Férias'}</span>`;
+                    }
+                    if(d.status_day==='weekend') bg='bg-gray-100/50 opacity-80 border-transparent';
                 }
-                el.innerHTML += `<div onclick="openDayPanel('${key}')" class="day-card relative h-28 rounded-2xl border p-4 cursor-pointer transition-all flex flex-col justify-between group ${bg}">${ind}<span class="font-black text-gray-400 group-hover:text-c3c-blue transition-colors text-left">${dayNum}</span><div class="mt-auto w-full text-left overflow-hidden">${cnt}</div></div>`;
+                const cellHeight = isMobile ? 'h-16' : 'h-32';
+                el.innerHTML += `<div onclick="openDayPanel('${key}')" class="day-card relative ${cellHeight} rounded-xl md:rounded-[24px] border p-2 md:p-5 cursor-pointer flex flex-col justify-between group ${bg}">${ind}<span class="font-black text-gray-400 group-hover:text-c3c-blue transition-colors text-left text-[10px] md:text-xs">${dayNum}</span><div class="mt-auto w-full text-left overflow-hidden">${cnt}</div></div>`;
             });
             lucide.createIcons();
         }
@@ -336,34 +362,23 @@
             document.getElementById('panel-weekday').innerText=new Date(key+'T12:00:00').toLocaleDateString('pt-BR',{weekday:'long'});
             document.getElementById('panel-date').innerText=new Date(key+'T12:00:00').toLocaleDateString('pt-BR',{day:'numeric',month:'long'});
             resetForm(); 
-            const allocL = document.getElementById('allocations-list'); const projSel=document.getElementById('input-project');
-            allocL.innerHTML='<span class="text-xs text-gray-400 p-2 animate-pulse">Carregando...</span>';
-            projSel.innerHTML='<option value="" disabled selected>Carregando...</option>';
             document.getElementById('slide-overlay').classList.remove('hidden'); setTimeout(()=>document.getElementById('slide-overlay').classList.remove('opacity-0'),10);
             document.getElementById('day-panel').classList.remove('closed'); document.getElementById('day-panel').classList.add('open');
             try {
                 const res = await fetch(`/api/timesheet/day?date=${key}&diaPeriodoId=${g.id}`);
                 const d = await res.json();
                 dayProjects=d.allocations||[]; dayActivities=d.activities||[]; dayEntries=d.entries||[];
-                allocL.innerHTML=''; projSel.innerHTML='<option value="" disabled selected>Selecione...</option>';
+                const projSel=document.getElementById('input-project'); projSel.innerHTML='<option value="" disabled selected>Selecione...</option>';
+                const allocL = document.getElementById('allocations-list'); allocL.innerHTML='';
                 if(dayProjects.length>0) {
                     dayProjects.forEach(p => {
                         projectAllocationMap[p.id] = p.alocacaoId;
-                        allocL.innerHTML+=`<div onclick="selectProjectFromCard('${p.id}')" class="snap-start bg-blue-50 border border-blue-100 hover:ring-2 hover:ring-c3c-blue rounded-2xl p-4 min-w-[200px] cursor-pointer transition-all relative group shadow-sm text-left"><p class="text-[9px] text-c3c-blue font-black mb-1 uppercase tracking-widest">Alocação</p><p class="font-bold text-gray-800 text-xs truncate uppercase tracking-tighter" title="${p.name}">${p.name}</p></div>`;
+                        allocL.innerHTML+=`<div onclick="selectProjectFromCard('${p.id}')" class="snap-start bg-white border border-gray-100 hover:border-c3c-blue rounded-[24px] p-5 min-w-[220px] cursor-pointer transition-all shadow-sm text-left"><p class="text-[9px] text-gray-300 font-black mb-1 uppercase tracking-widest">Projeto Ativo</p><p class="font-black text-gray-800 text-xs truncate uppercase tracking-tighter">${p.name}</p></div>`;
                         projSel.innerHTML+=`<option value="${p.id}">${p.name}</option>`;
                     });
-                    if(dayProjects.length===1) { projSel.value=dayProjects[0].id; resetActivitySearch(); }
-                } else allocL.innerHTML='<div class="text-[10px] text-gray-400 p-4 italic border-2 border-dashed border-gray-100 rounded-2xl w-full text-center font-bold uppercase tracking-widest">Sem alocações</div>';
+                } else allocL.innerHTML='<div class="text-[10px] text-gray-400 p-6 italic border-2 border-dashed border-gray-100 rounded-[32px] w-full text-center font-black uppercase">Sem alocações</div>';
                 renderEntriesList(); validateRules('init'); 
-                const isLocked = d.isLocked;
-                document.getElementById('add-activity-container').classList.toggle('hidden', isLocked);
-                const readonlyAlert = document.getElementById('readonly-alert');
-                if(isLocked) { readonlyAlert.classList.remove('hidden'); document.getElementById('readonly-reason').innerText=`Adição Bloqueada (${d.periodoStatus})`; } 
-                else readonlyAlert.classList.add('hidden');
-                const rejectedEntry = dayEntries.find(e => ['Reprovado serviço', 'Reprovado RH'].includes(e.status));
-                const rejAlert = document.getElementById('rejection-alert');
-                if(rejectedEntry) { rejAlert.classList.remove('hidden'); document.getElementById('rejection-reason').innerText = rejectedEntry.reason || 'Reprovado pelo gestor ou RH'; } 
-                else rejAlert.classList.add('hidden');
+                document.getElementById('add-activity-container').classList.toggle('hidden', d.isLocked);
             } catch(e) { console.error(e); }
             lucide.createIcons();
         }
@@ -371,122 +386,91 @@
         function renderEntriesList() {
             const entL = document.getElementById('entries-list'); entL.innerHTML='';
             const countBadge = document.getElementById('entries-count-badge');
-            if(dayEntries.length>0) {
-                countBadge.innerText = `${dayEntries.length} ${dayEntries.length === 1 ? 'item' : 'itens'}`; countBadge.classList.remove('hidden');
+            const sectionWrapper = document.getElementById('entries-section-wrapper');
+            if(dayEntries.length > 0) {
+                sectionWrapper.classList.remove('hidden');
+                countBadge.innerText = `${dayEntries.length} ${dayEntries.length === 1 ? 'item' : 'itens'}`;
                 dayEntries.forEach(e => {
                     const entryJson = JSON.stringify(e).replace(/"/g, '&quot;');
                     const canEdit=['Rascunho','Reprovado serviço','Reprovado RH'].includes(e.status) && !currentGridData[currentOpenDate].isLocked;
-                    let brd='border-gray-100', bg='bg-white', stColor = 'text-gray-400';
-                    if(e.status === 'Aprovado') { stColor = 'text-teal-600 font-black'; brd='border-teal-100'; bg='bg-teal-50/30'; }
-                    else if(e.status.includes('Reprovado')) { stColor = 'text-red-500 font-black'; brd='border-red-100'; bg='bg-red-50/30'; }
-                    let badges = '';
-                    if(e.hours > 0) badges += `<span class="bg-white text-gray-700 px-2 py-1 rounded-lg text-[9px] font-black border border-gray-100 uppercase tracking-tighter">NORMAL: ${e.hours}h</span> `;
-                    if(e.hoursExtra > 0) badges += `<span class="bg-orange-50 text-orange-600 px-2 py-1 rounded-lg text-[9px] font-black border border-orange-100 uppercase tracking-tighter">EXTRA: ${e.hoursExtra}h</span> `;
-                    if(e.hoursBank > 0) badges += `<span class="bg-purple-50 text-purple-600 px-2 py-1 rounded-lg text-[9px] font-black border border-purple-100 uppercase tracking-tighter">BANCO: ${e.hoursBank}h</span> `;
-                    if(e.hoursAbsence > 0) badges += `<span class="bg-red-50 text-red-600 px-2 py-1 rounded-lg text-[9px] font-black border border-red-100 uppercase tracking-tighter">AUSÊNCIA: ${e.hoursAbsence}h</span> `;
-                    entL.innerHTML+=`<div onclick="editEntry(${canEdit ? entryJson : '{}'})" class="snap-start ${bg} border ${brd} rounded-[24px] p-5 shadow-sm relative group hover:shadow-md transition-all text-left ${canEdit ? 'cursor-pointer' : ''} min-w-[300px]"><div class="flex justify-between items-start mb-3"><div class="flex-1 min-w-0"><p class="text-[9px] font-black text-c3c-blue uppercase tracking-widest mb-1">Lançamento</p><p class="text-[10px] font-bold text-gray-400 uppercase tracking-tighter mb-1 truncate">${e.project}</p><p class="text-sm font-black text-gray-800 leading-tight">${e.activity}</p></div><span class="text-[8px] font-black uppercase tracking-widest ${stColor} ml-2 shrink-0">${e.status}</span></div><div class="flex flex-wrap gap-2 mt-4">${badges}</div>${canEdit ? `<div class="mt-4 pt-4 border-t border-gray-100 flex justify-end"><button onclick="event.stopPropagation(); removeEntry('${e.id}')" class="text-gray-300 hover:text-red-500 flex items-center gap-1 transition-colors"><span class="text-[9px] font-black uppercase tracking-widest">Excluir</span><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button></div>` : ''}</div>`;
+                    entL.innerHTML+=`
+                        <div onclick="editEntry(${canEdit ? entryJson : '{}'})" class="snap-start bg-white border border-gray-100 rounded-[32px] p-6 shadow-sm relative group hover:shadow-md transition-all text-left ${canEdit ? 'cursor-pointer' : ''} min-w-[300px]">
+                            <p class="text-[9px] font-black text-c3c-blue uppercase tracking-widest mb-1">Lançamento</p>
+                            <p class="text-sm font-black text-gray-800 leading-tight mb-4">${e.activity}</p>
+                            <div class="flex flex-wrap gap-2">
+                                <span class="bg-gray-100 text-gray-700 px-3 py-1 rounded-xl text-[9px] font-black border border-gray-200 uppercase tracking-widest">${e.hours}h Norm</span>
+                                ${e.hoursExtra > 0 ? `<span class="bg-orange-50 text-orange-600 px-3 py-1 rounded-xl text-[9px] font-black border border-orange-100 uppercase tracking-widest">${e.hoursExtra}h Ext</span>` : ''}
+                            </div>
+                        </div>`;
                 });
-                lucide.createIcons();
-            } else { countBadge.classList.add('hidden'); entL.innerHTML='<div class="py-12 text-center text-gray-300 font-bold uppercase text-[10px] tracking-[0.2em] w-full">Sem lançamentos</div>'; }
+            } else { sectionWrapper.classList.add('hidden'); }
         }
 
         function editEntry(e) {
             if (!e || !e.id) return;
             document.getElementById('input-entry-id').value = e.id;
-            document.getElementById('form-title').innerText = 'Editar Atividade';
+            document.getElementById('form-title').innerText = 'Editar Registro';
             document.getElementById('input-project').value = e.projectId;
             document.getElementById('input-activity-search').value = e.activity;
             document.getElementById('input-activity-id').value = e.activityId;
             document.getElementById('input-normal').value = e.hours;
-            const radios = document.getElementsByName('radio-extra');
-            if (e.hoursExtra > 0) { document.getElementById('input-extra').value = e.hoursExtra; radios.forEach(r => { if(r.value === 'Pagamento') r.checked = true; }); } 
-            else if (e.hoursBank > 0) { document.getElementById('input-extra').value = e.hoursBank; radios.forEach(r => { if(r.value === 'Banco') r.checked = true; }); } 
-            else document.getElementById('input-extra').value = 0;
+            document.getElementById('input-extra').value = e.hoursExtra || e.hoursBank || 0;
+            document.getElementById('select-extra-type').value = e.hoursExtra > 0 ? 'Pagamento' : 'Banco';
             document.getElementById('input-leave').value = e.hoursAbsence;
-            document.getElementById('select-absence-type').value = e.hoursBank < 0 ? 'Banco' : 'Abonada';
+            document.getElementById('select-absence-type').value = e.hoursBank < 0 ? 'Banco' : (e.absenceType || 'Abonada');
             document.getElementById('input-reason').value = e.justification || '';
-            document.getElementById('btn-add-entry').innerText = 'Salvar';
+            document.getElementById('btn-add-entry').innerText = 'Salvar Alterações';
             document.getElementById('btn-cancel-edit').classList.remove('hidden');
+            document.getElementById('btn-clear-activity').classList.remove('hidden');
             validateRules('init');
-        }
-
-        function sanitizeField(el) { el.value = Math.max(0, parseFloat(el.value)||0); validateRules(el.id.replace('input-', '')); }
-
-        function calculateDayTotals(excludeId = null) {
-            let totalNormal = 0, totalExtra = 0, totalAbsence = 0, totalAll = 0;
-            dayEntries.forEach(e => { if (e.id !== excludeId) {
-                totalNormal += e.hours; totalExtra += (e.hoursExtra + (e.hoursBank > 0 ? e.hoursBank : 0));
-                totalAbsence += e.hoursAbsence; totalAll += (e.hours + e.hoursExtra + Math.abs(e.hoursBank) + e.hoursAbsence);
-            }});
-            return { totalNormal, totalExtra, totalAbsence, totalAll };
+            document.getElementById('add-activity-container').scrollIntoView({ behavior: 'smooth', block: 'center' });
         }
 
         function validateRules(source) {
-            const inputId = document.getElementById('input-entry-id').value; 
-            const existing = calculateDayTotals(inputId); 
             const hN = document.getElementById('input-normal'), hE = document.getElementById('input-extra'), hL = document.getElementById('input-leave');
-            const msgN = document.getElementById('msg-normal'), msgE = document.getElementById('msg-extra'), msgL = document.getElementById('msg-leave');
-            msgN.classList.add('hidden'); msgE.classList.add('hidden'); msgL.classList.add('hidden');
-            hN.disabled = hE.disabled = hL.disabled = false;
             let inN = parseFloat(hN.value) || 0, inE = parseFloat(hE.value) || 0, inL = parseFloat(hL.value) || 0;
-            const totalSoFar = existing.totalAll + inN + inE + inL;
-            if (totalSoFar > MAX_DAY_HOURS) {
-                const cap = Math.max(0, MAX_DAY_HOURS - existing.totalAll - (inN+inE+inL) + (source==='normal'?inN : source==='extra'?inE : inL));
-                if (source === 'normal') { inN = cap; hN.value = inN; } else if (source === 'extra') { inE = cap; hE.value = inE; } else if (source === 'leave') { inL = cap; hL.value = inL; }
-            }
-            if (isNonBusinessDay) {
-                hN.disabled = hL.disabled = true; hN.value = hL.value = 0; inN = inL = 0;
-                msgN.innerText = msgL.innerText = "Dia não útil"; msgN.classList.remove('hidden'); msgL.classList.remove('hidden');
-            } else {
-                const currentAbsence = existing.totalAbsence + inL;
-                if (currentAbsence >= DAILY_CONTRACT) { hN.disabled = true; hN.value = 0; inN = 0; msgN.innerText = "Contrato preenchido"; msgN.classList.remove('hidden'); } 
-                else { const maxN = Math.max(0, DAILY_CONTRACT - currentAbsence - existing.totalNormal); if (inN > maxN) { inN = maxN; hN.value = inN; msgN.innerText = `Máx: ${maxN}h`; msgN.classList.remove('hidden'); } }
-                const currentNormal = existing.totalNormal + inN;
-                if (currentNormal >= DAILY_CONTRACT) { hL.disabled = true; hL.value = 0; inL = 0; msgL.innerText = "Contrato preenchido"; msgL.classList.remove('hidden'); } 
-                else { const maxL = Math.max(0, DAILY_CONTRACT - currentNormal - existing.totalAbsence); if (inL > maxL) { inL = maxL; hL.value = inL; msgL.innerText = `Máx: ${maxL}h`; msgL.classList.remove('hidden'); } }
-                const effective = (existing.totalNormal + inN) + (existing.totalAbsence + inL);
-                if (effective < DAILY_CONTRACT) { hE.disabled = true; hE.value = 0; inE = 0; msgE.innerText = "Complete as 8h"; msgE.classList.remove('hidden'); }
-            }
+            
+            const hasCondition = inE > 0 || inL > 0;
+            document.getElementById('conditional-fields').classList.toggle('hidden', !hasCondition);
             document.getElementById('options-extra').classList.toggle('hidden', inE <= 0);
             document.getElementById('options-absence').classList.toggle('hidden', inL <= 0);
-            document.getElementById('req-justification').classList.toggle('hidden', inE <= 0 && inL <= 0);
-            updateRealTimeFooter(existing, inN, inE, inL);
+            
+            updateRealTimeFooter(calculateDayTotals(document.getElementById('input-entry-id').value), inN, inE, inL);
         }
 
         function updateRealTimeFooter(ex, inN, inE, inL) {
             const tN = ex.totalNormal + inN, tA = ex.totalAbsence + inL, tE = ex.totalExtra + inE;
-            const total = tN + tA + tE; const balance = isNonBusinessDay ? total : total - DAILY_CONTRACT;
             document.getElementById('footer-normal').innerText = tN.toFixed(1) + 'h';
-            document.getElementById('footer-absence').innerText = tA.toFixed(1) + 'h';
             document.getElementById('footer-extra').innerText = tE.toFixed(1) + 'h';
+            const bal = isNonBusinessDay ? (tN+tA+tE) : (tN+tA+tE - DAILY_CONTRACT);
             const balEl = document.getElementById('footer-balance');
-            balEl.innerText = (balance > 0 ? '+' : '') + balance.toFixed(1) + 'h';
-            if(balance > 0) balEl.className = "text-2xl font-black text-purple-600";
-            else if(balance < 0) balEl.className = "text-2xl font-black text-red-400";
-            else balEl.className = "text-2xl font-black text-gray-300";
+            balEl.innerText = (bal > 0 ? '+' : '') + bal.toFixed(1) + 'h';
+            balEl.className = bal > 0 ? "text-xl md:text-3xl font-black text-purple-600 tracking-tighter" : (bal < 0 ? "text-xl md:text-3xl font-black text-red-400 tracking-tighter" : "text-xl md:text-3xl font-black text-gray-300 tracking-tighter");
         }
 
-        function filterActivities() {
-            const pId=document.getElementById('input-project').value; const term=document.getElementById('input-activity-search').value.toLowerCase().trim();
-            const drp=document.getElementById('activity-dropdown'); const clr=document.getElementById('btn-clear-activity');
-            if(!pId) { alert('Selecione um projeto.'); return; }
-            clr.classList.toggle('hidden', term.length === 0);
+        function filterActivities(force = false) {
+            const pId=document.getElementById('input-project').value; 
+            const term=document.getElementById('input-activity-search').value.toLowerCase().trim();
+            const drp=document.getElementById('activity-dropdown');
+            if(!pId) return;
+            document.getElementById('btn-clear-activity').classList.toggle('hidden', term.length === 0);
+            if(term.length === 0 && !force) { drp.classList.add('hidden'); return; }
             const matches=dayActivities.filter(a=>String(a.projectId)===String(pId)&&a.name.toLowerCase().includes(term));
-            drp.innerHTML=''; let exact=false;
-            matches.forEach(a=>{ if(a.name.toLowerCase()===term) exact=true; drp.innerHTML+=`<li onclick="selectExistingActivity('${a.id}','${a.name}')" class="px-5 py-3 hover:bg-gray-50 cursor-pointer text-sm font-bold text-gray-700 block transition-colors text-left">${a.name}</li>`; });
-            if(term.length>0 && !exact) drp.innerHTML+=`<li onclick="selectNewActivity()" class="px-5 py-4 bg-blue-50 hover:bg-blue-100 cursor-pointer text-xs text-c3c-blue font-black flex items-center gap-2 border-t border-blue-100 block uppercase tracking-widest text-left"><i data-lucide="plus" class="w-4 h-4 text-left"></i> Criar: "${document.getElementById('input-activity-search').value}"</li>`;
-            drp.classList.toggle('hidden', drp.innerHTML === ''); lucide.createIcons();
+            drp.innerHTML=''; 
+            matches.forEach(a=> drp.innerHTML+=`<li onclick="selectExistingActivity('${a.id}','${a.name}')" class="px-6 py-4 hover:bg-gray-50 cursor-pointer text-sm font-black text-gray-700 block transition-colors text-left uppercase tracking-tighter">${a.name}</li>`);
+            if(term.length>0 && !matches.find(m=>m.name.toLowerCase()===term)) drp.innerHTML+=`<li onclick="selectNewActivity()" class="px-6 py-5 bg-blue-50 hover:bg-blue-100 cursor-pointer text-[10px] text-c3c-blue font-black border-t border-blue-100 block uppercase tracking-widest text-left">Criar: "${term}"</li>`;
+            drp.classList.remove('hidden'); lucide.createIcons();
         }
 
-        function selectExistingActivity(id,name) { document.getElementById('input-activity-search').value=name; document.getElementById('input-activity-id').value=id; document.getElementById('activity-dropdown').classList.add('hidden'); }
+        function selectExistingActivity(id,name) { document.getElementById('input-activity-search').value=name; document.getElementById('input-activity-id').value=id; document.getElementById('activity-dropdown').classList.add('hidden'); document.getElementById('btn-clear-activity').classList.remove('hidden'); }
         function selectNewActivity() { document.getElementById('input-activity-id').value='NEW'; document.getElementById('activity-dropdown').classList.add('hidden'); }
-        function clearActivity() { document.getElementById('input-activity-search').value=''; document.getElementById('input-activity-id').value=''; document.getElementById('activity-dropdown').classList.add('hidden'); document.getElementById('btn-clear-activity').classList.add('hidden'); }
+        function clearActivity() { document.getElementById('input-activity-search').value=''; document.getElementById('input-activity-id').value=''; document.getElementById('activity-dropdown').classList.add('hidden'); document.getElementById('btn-clear-activity').classList.add('hidden'); filterActivities(true); }
         function resetActivitySearch() { clearActivity(); }
         function resetForm() {
-            document.getElementById('input-entry-id').value = ''; document.getElementById('form-title').innerText = 'Nova Atividade';
+            document.getElementById('input-entry-id').value = ''; document.getElementById('form-title').innerText = 'Registrar Atividade';
             document.getElementById('input-normal').value = 0; document.getElementById('input-extra').value = 0; document.getElementById('input-leave').value = 0;
             document.getElementById('input-reason').value = ''; clearActivity();
-            document.getElementById('btn-add-entry').innerText = 'Salvar'; document.getElementById('btn-cancel-edit').classList.add('hidden');
+            document.getElementById('btn-add-entry').innerText = 'Salvar Registro'; document.getElementById('btn-cancel-edit').classList.add('hidden');
             validateRules('init');
         }
 
@@ -501,42 +485,35 @@
             const reason = document.getElementById('input-reason').value.trim();
             if(!pId || !actName || (hN+hE+hA)===0) return alert("Preencha projeto, atividade e horas.");
             if((hE>0 || hA>0) && reason.length < 5) return alert("Justificativa obrigatória.");
-            let exType=''; if(hE>0) document.getElementsByName('radio-extra').forEach(r=>{if(r.checked) exType=r.value});
-            let abType=''; if(hA>0) abType=document.getElementById('select-absence-type').value;
+            const exType = hE > 0 ? document.getElementById('select-extra-type').value : '';
+            const abType = hA > 0 ? document.getElementById('select-absence-type').value : '';
             const btn=document.getElementById('btn-add-entry'); btn.disabled=true; btn.innerText='Salvando...';
             try {
                 const payload = { entryId: entryId||null, diaPeriodoId: currentOpenDayId, projectId: pId, alocacaoId: projectAllocationMap[pId], activityId: actId==='NEW'?'':actId, activityName: actName, hoursNormal: hN, hoursExtra: hE, hoursAbsence: hA, reason: reason, extraType: exType, absenceType: abType, date: currentOpenDate };
                 const res = await fetch('/api/timesheet/entry', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload) });
-                const d = await res.json();
-                if(d.success) { 
+                if((await res.json()).success) { 
                     await loadCalendar(currentPeriods[currentPeriodIndex].Id); 
                     const resDay = await fetch(`/api/timesheet/day?date=${currentOpenDate}&diaPeriodoId=${currentOpenDayId}`);
-                    const dDay = await resDay.json();
-                    dayEntries = dDay.entries;
-                    renderEntriesList();
-                    resetForm(); 
-                } else alert('Erro: ' + d.message);
-            } catch(e) { console.error(e); } finally { btn.disabled=false; btn.innerText='Salvar'; }
+                    dayEntries = (await resDay.json()).entries;
+                    renderEntriesList(); resetForm(); 
+                }
+            } catch(e) { console.error(e); } finally { btn.disabled=false; btn.innerText='Salvar Registro'; }
         }
 
-        async function removeEntry(id) { 
-            if(!confirm("Excluir lançamento?")) return; 
-            try { 
-                const res = await fetch(`/api/timesheet/entry/${id}`, { method:'DELETE' }); 
-                if(res.ok) { 
-                    await loadCalendar(currentPeriods[currentPeriodIndex].Id); 
-                    const resDay = await fetch(`/api/timesheet/day?date=${currentOpenDate}&diaPeriodoId=${currentOpenDayId}`);
-                    const dDay = await resDay.json();
-                    dayEntries = dDay.entries;
-                    renderEntriesList();
-                } 
-            } catch(e) { console.error(e); } 
+        function calculateDayTotals(excludeId = null) {
+            let totalNormal = 0, totalExtra = 0, totalAbsence = 0, totalAll = 0;
+            dayEntries.forEach(e => { if (e.id !== excludeId) {
+                totalNormal += e.hours; totalExtra += (e.hoursExtra + (e.hoursBank > 0 ? e.hoursBank : 0));
+                totalAbsence += e.hoursAbsence; totalAll += (e.hours + e.hoursExtra + Math.abs(e.hoursBank) + e.hoursAbsence);
+            }});
+            return { totalNormal, totalExtra, totalAbsence, totalAll };
         }
-        
-        async function submitPeriod() { const p = currentPeriods[currentPeriodIndex]; if(!confirm(`Enviar folha de ${p.Name}?`)) return; try { const res = await fetch('/api/timesheet/submit-period', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ periodId: p.Id }) }); if(res.ok) location.reload(); } catch(e) { console.error(e); } }
-        async function recallPeriod() { const p = currentPeriods[currentPeriodIndex]; if(!confirm(`RECALL da folha de ${p.Name}?`)) return; try { const res = await fetch('/api/timesheet/recall-period', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ periodId: p.Id }) }); if(res.ok) location.reload(); } catch(e) { console.error(e); } }
+
         function closeDayPanel() { document.getElementById('day-panel').classList.remove('open'); document.getElementById('day-panel').classList.add('closed'); const ov=document.getElementById('slide-overlay'); ov.classList.add('opacity-0'); setTimeout(()=>ov.classList.add('hidden'),300); }
         function selectProjectFromCard(id) { document.getElementById('input-project').value=id; resetActivitySearch(); validateRules('init'); }
+        async function submitPeriod() { const p = currentPeriods[currentPeriodIndex]; if(!confirm(`Enviar folha de ${p.Name}?`)) return; try { const res = await fetch('/api/timesheet/submit-period', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ periodId: p.Id }) }); if(res.ok) location.reload(); } catch(e) { console.error(e); } }
+        async function recallPeriod() { const p = currentPeriods[currentPeriodIndex]; if(!confirm(`Atenção: O Recall voltará todos os lançamentos para "Rascunho". Deseja continuar?`)) return; try { const res = await fetch('/api/timesheet/recall-period', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ periodId: p.Id }) }); if(res.ok) location.reload(); } catch(e) { console.error(e); } }
+        window.addEventListener('resize', () => { renderGrid(currentGridData); updateSummary({ statusGeral: document.getElementById('card-status-label').innerText }); });
     </script>
 </body>
 </html>

@@ -442,18 +442,19 @@ exports.recallPeriod = async (req, res) => {
         const userId = req.session.user.id;
         const conn = await getSfConnection();
 
-        // 1. Busca todos os lançamentos que estão em processo de aprovação
+        // 1. Busca todos os lançamentos que NÃO estão aprovados para resetar para Rascunho
         const query = `
-            SELECT Id 
-            FROM LancamentoHora__c 
-            WHERE Periodo__c = '${periodId}' 
-            AND Pessoa__c = '${userId}' 
-            AND Status__c IN ('Em aprovação do serviço', 'Aguardando Aprovação Líder', 'Aguardando Aprovação RH')
+            SELECT Id
+            FROM LancamentoHora__c
+            WHERE Periodo__c = '${periodId}'
+            AND Pessoa__c = '${userId}'
+            AND Status__c NOT IN ('Aprovado', 'Faturado', 'Fechado')
         `;
         const result = await conn.query(query);
-        
+
         // 2. Volta Lançamentos para Rascunho se existirem
         if (result.totalSize > 0) {
+            // Dividir em lotes de 200 para o Salesforce se necessário (jsforce cuida disso geralmente, mas garantimos)
             const updates = result.records.map(r => ({ Id: r.Id, Status__c: 'Rascunho' }));
             await conn.sobject('LancamentoHora__c').update(updates);
         }
