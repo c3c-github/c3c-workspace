@@ -325,20 +325,27 @@ exports.saveEntry = async (req, res) => {
             oldVal.e = (old.HorasExtras__c || 0) + oldBanco;
         }
 
-        const inNorm = parseFloat(hoursNormal)||0;
-        const inExtraVal = parseFloat(hoursExtra)||0;
-        const inAbs = parseFloat(hoursAbsence)||0;
+        const inNorm = Math.round((parseFloat(hoursNormal)||0) * 2) / 2;
+        const inExtraVal = Math.round((parseFloat(hoursExtra)||0) * 2) / 2;
+        const inAbs = Math.round((parseFloat(hoursAbsence)||0) * 2) / 2;
 
-        let finalNorm=inNorm, finalExtra=0, finalBanco=0, finalAusRem=0, finalAusNaoRem=0, finalJust=reason||'';
+        let finalNorm = parseFloat(inNorm.toFixed(1));
+        let finalExtra = 0;
+        let finalBanco = 0;
+        let finalAusRem = 0;
+        let finalAusNaoRem = 0;
+        let finalJust = reason||'';
 
         if(inExtraVal > 0) {
-            if(extraType === 'Banco') { finalBanco += inExtraVal; if(!finalJust.includes('[Banco]')) finalJust = '[Banco] ' + finalJust; } 
-            else { finalExtra = inExtraVal; if(!finalJust.includes('[Extra]')) finalJust = '[Extra] ' + finalJust; }
+            const val = parseFloat(inExtraVal.toFixed(1));
+            if(extraType === 'Banco') { finalBanco += val; if(!finalJust.includes('[Banco]')) finalJust = '[Banco] ' + finalJust; } 
+            else { finalExtra = val; if(!finalJust.includes('[Extra]')) finalJust = '[Extra] ' + finalJust; }
         }
         if(inAbs > 0) {
-            if(absenceType === 'Banco') { finalBanco -= inAbs; if(!finalJust.includes('[Aus.Banco]')) finalJust = '[Aus.Banco] ' + finalJust; }
-            else if(absenceType === 'Abonada') finalAusRem = inAbs;
-            else finalAusNaoRem = inAbs;
+            const val = parseFloat(inAbs.toFixed(1));
+            if(absenceType === 'Banco') { finalBanco -= val; if(!finalJust.includes('[Aus.Banco]')) finalJust = '[Aus.Banco] ' + finalJust; }
+            else if(absenceType === 'Abonada') finalAusRem = val;
+            else finalAusNaoRem = val;
         }
 
         const newTotalNormal = (stats.usedNormal - oldVal.n) + finalNorm;
