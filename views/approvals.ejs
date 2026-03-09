@@ -32,9 +32,15 @@
         .custom-scrollbar::-webkit-scrollbar { width: 4px; height: 4px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #E2E8F0; border-radius: 10px; }
+        select { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%232978FF'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 0.75rem center; background-size: 1rem; }
     </style>
 </head>
 <body class="h-screen flex overflow-hidden bg-[#F8FAFC]">
+
+    <div id="loading-overlay" class="fixed inset-0 bg-white/80 backdrop-blur-sm z-[100] hidden flex flex-col items-center justify-center">
+        <div class="w-12 h-12 border-4 border-blue-100 border-t-c3c-blue rounded-full animate-spin mb-4"></div>
+        <p class="text-xs font-black text-c3c-blue uppercase tracking-widest animate-pulse">Processando...</p>
+    </div>
 
     <%- include('partials/sidebar', { page: 'approvals' }) %>
 
@@ -52,12 +58,11 @@
                 </div>
             </div>
             
-            <div class="flex items-center bg-gray-50 border border-gray-200 rounded-xl px-2 py-1 gap-2 shadow-sm focus-within:ring-2 focus-within:ring-c3c-blue transition-all">
-                <button onclick="changePeriod(1)" class="p-2 hover:bg-white rounded-lg text-gray-400 hover:text-c3c-blue transition-colors"><i data-lucide="chevron-left" class="w-4 h-4"></i></button>
-                <div class="flex flex-col items-center px-2 min-w-[140px]">
-                    <span id="period-display" class="text-xs font-black text-gray-700 tracking-tighter">Carregando...</span>
-                </div>
-                <button onclick="changePeriod(-1)" class="p-2 hover:bg-white rounded-lg text-gray-400 hover:text-c3c-blue transition-colors"><i data-lucide="chevron-right" class="w-4 h-4"></i></button>
+            <div class="flex items-center bg-gray-50 border border-gray-200 rounded-xl px-3 py-1.5 gap-2 shadow-sm focus-within:ring-2 focus-within:ring-c3c-blue transition-all">
+                <i data-lucide="calendar" class="w-4 h-4 text-c3c-blue"></i>
+                <select id="period-selector" onchange="triggerDataLoad(this.value)" class="bg-transparent text-sm font-bold text-gray-700 outline-none cursor-pointer min-w-[180px] pr-8">
+                    <option>Carregando ciclos...</option>
+                </select>
             </div>
         </header>
 
@@ -69,7 +74,7 @@
                     <h2 class="text-2xl font-black text-gray-800 tracking-tighter uppercase leading-tight">Projetos Pendentes</h2>
                     <p class="text-xs font-bold text-gray-400 uppercase tracking-widest mt-1">Analise os apontamentos consolidados por serviço</p>
                 </div>
-                <button onclick="updatePeriodDisplay()" class="p-3 bg-white border border-gray-100 rounded-2xl text-c3c-blue hover:shadow-md transition-all active:scale-95 shadow-sm"><i data-lucide="refresh-cw" class="w-5 h-5"></i></button>
+                <button onclick="triggerDataLoad(document.getElementById('period-selector').value)" class="p-3 bg-white border border-gray-100 rounded-2xl text-c3c-blue hover:shadow-md transition-all active:scale-95 shadow-sm"><i data-lucide="refresh-cw" class="w-5 h-5"></i></button>
             </div>
 
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-8" id="approval-cards-container">
@@ -87,7 +92,7 @@
                     <h3 id="modal-title" class="text-2xl font-black text-gray-800 tracking-tighter uppercase leading-tight">...</h3>
                     <p class="text-[10px] font-black text-c3c-blue uppercase tracking-[0.2em] mt-1">Extrato consolidado por recurso</p>
                 </div>
-                <button onclick="closeModal()" class="p-3 text-gray-400 hover:bg-white hover:text-red-500 rounded-full shadow-sm transition-all"><i data-lucide="x"></i></button>
+                <button onclick="closeModal('modal-approval')" class="p-3 text-gray-400 hover:bg-white hover:text-red-500 rounded-full shadow-sm transition-all"><i data-lucide="x"></i></button>
             </header>
 
             <!-- DASHBOARD MODAL -->
@@ -133,7 +138,7 @@
                     <h3 class="text-xl font-black text-gray-800 tracking-tighter uppercase leading-tight">Extrato do Recurso</h3>
                     <p class="text-[10px] font-black text-c3c-blue uppercase tracking-widest mt-1">Análise individual dos lançamentos</p>
                 </div>
-                <button onclick="closeActivityModal()" class="p-3 text-gray-400 hover:bg-white hover:text-red-500 rounded-full shadow-sm transition-all"><i data-lucide="x"></i></button>
+                <button onclick="closeModal('modal-activities')" class="p-3 text-gray-400 hover:bg-white hover:text-red-500 rounded-full shadow-sm transition-all"><i data-lucide="x"></i></button>
             </header>
 
             <!-- MASS ACTIONS -->
@@ -170,7 +175,7 @@
 
     <!-- MODAL REJEIÇÃO -->
     <div id="modal-reject" class="fixed inset-0 bg-black/80 backdrop-blur-md z-[80] hidden flex items-center justify-center p-4">
-        <div class="bg-white rounded-[40px] shadow-2xl w-full max-w-md p-8 text-center animate-[fadeIn_0.2s_ease-out]">
+        <div class="bg-white rounded-[40px] shadow-2xl w-full max-w-md p-10 text-center animate-[fadeIn_0.2s_ease-out]">
             <div class="w-20 h-20 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-6 text-red-500"><i data-lucide="alert-triangle" class="w-10 h-10"></i></div>
             <h3 class="text-2xl font-black text-gray-800 tracking-tighter uppercase mb-2 leading-tight">Reprovar Lançamentos</h3>
             <p class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-8">Informe o motivo para <span id="reject-person-name" class="text-red-500">...</span></p>
@@ -178,7 +183,7 @@
             <input type="hidden" id="reject-service-id">
             <input type="hidden" id="reject-person-id">
             
-            <textarea id="reject-reason" rows="4" class="w-full bg-gray-50 border-2 border-gray-100 rounded-3xl p-5 text-sm font-medium focus:ring-4 focus:ring-red-50 outline-none mb-8 resize-none placeholder:text-gray-300" placeholder="Ex: Justificativa insuficiente, projeto incorreto..."></textarea>
+            <textarea id="reject-reason" rows="4" class="w-full bg-gray-50 border-2 border-gray-100 rounded-3xl p-6 text-sm font-medium focus:ring-4 focus:ring-red-50 outline-none mb-8 resize-none placeholder:text-gray-300" placeholder="Ex: Justificativa insuficiente, projeto incorreto..."></textarea>
             
             <div class="flex gap-4">
                 <button onclick="document.getElementById('modal-reject').classList.add('hidden')" class="flex-1 py-4 text-gray-400 font-black uppercase text-[10px] tracking-widest hover:text-gray-600">Cancelar</button>
@@ -190,7 +195,9 @@
     <script>
         lucide.createIcons();
         const API_URL = '/api';
-        let availablePeriods = [], currentPeriodIndex = 0, currentProjectItem = null;
+        let availablePeriods = [], currentPeriodIndex = 0, currentProjectItem = null, currentModalServiceId = null, currentModalPersonId = null;
+
+        function toggleLoading(show) { const el = document.getElementById('loading-overlay'); if(show) el.classList.remove('hidden'); else el.classList.add('hidden'); }
 
         document.addEventListener('DOMContentLoaded', loadPeriods);
         
@@ -199,41 +206,41 @@
                 const res = await fetch(`${API_URL}/periods?type=manager`);
                 if(res.status === 401) window.location.href = '/';
                 const periods = await res.json();
-                if(periods.length === 0) { document.getElementById('period-display').innerText = "Sem períodos"; return; }
+                if(periods.length === 0) return;
                 availablePeriods = periods; 
-                // Seleção Inteligente: Período não finalizado mais antigo
+
                 const nonFinalized = periods.filter(p => p.Status__c !== 'Finalizado/Pago');
                 let suggestedId = nonFinalized.length > 0 ? nonFinalized[nonFinalized.length - 1].Id : periods[0].Id;
-                currentPeriodIndex = periods.findIndex(p => p.Id === suggestedId);
-                updatePeriodDisplay();
+                
+                const selector = document.getElementById('period-selector');
+                selector.innerHTML = periods.map(p => `
+                    <option value='${JSON.stringify({id:p.Id, start:p.DataInicio__c, end:p.DataFim__c})}' ${p.Id === suggestedId ? 'selected' : ''}>
+                        ${p.Name}
+                    </option>
+                `).join('');
+
+                triggerDataLoad(selector.value);
             } catch (err) { console.error(err); }
         }
 
-        function updatePeriodDisplay() {
-            if(!availablePeriods[currentPeriodIndex]) return;
-            const p = availablePeriods[currentPeriodIndex];
-            document.getElementById('period-display').innerText = p.Name;
-            loadProjects(p.DataInicio__c, p.DataFim__c);
-        }
-
-        function changePeriod(dir) {
-            const next = currentPeriodIndex + dir;
-            if(next >= 0 && next < availablePeriods.length) { currentPeriodIndex = next; updatePeriodDisplay(); }
+        function triggerDataLoad(jsonVal) {
+            const p = JSON.parse(jsonVal);
+            loadProjects(p.start, p.end);
         }
 
         async function loadProjects(start, end) {
             const container = document.getElementById('approval-cards-container');
-            container.innerHTML = '<div class="col-span-full py-20 text-center"><div class="w-12 h-12 border-4 border-blue-100 border-t-c3c-blue rounded-full animate-spin mx-auto mb-4"></div><p class="text-[10px] font-black text-gray-300 uppercase tracking-widest">Carregando projetos...</p></div>';
+            container.innerHTML = '<div class="col-span-full py-20 text-center"><div class="w-12 h-12 border-4 border-blue-100 border-t-c3c-blue rounded-full animate-spin mx-auto mb-4"></div><p class="text-[10px] font-black text-gray-300 uppercase tracking-widest">Sincronizando projetos...</p></div>';
             try {
                 const res = await fetch(`${API_URL}/approvals/projects?inicio=${start}&fim=${end}`);
                 const projects = await res.json();
                 container.innerHTML = '';
-                if(projects.length === 0) { container.innerHTML = '<div class="col-span-full py-20 text-center border-2 border-dashed border-gray-100 rounded-[40px]"><p class="text-[10px] font-black text-gray-300 uppercase tracking-widest">Nenhum projeto encontrado</p></div>'; return; }
+                if(projects.length === 0) { container.innerHTML = '<div class="col-span-full py-20 text-center border-2 border-dashed border-gray-100 rounded-[40px]"><p class="text-[10px] font-black text-gray-300 uppercase tracking-widest">Nenhum projeto pendente</p></div>'; return; }
                 projects.forEach(item => {
                     const isOpen = item.statusUI === 'Aberto';
-                    let confColor = 'text-teal-600', barColor = 'bg-teal-500';
-                    if(item.percentual > 105) { confColor = 'text-red-500'; barColor = 'bg-red-500'; }
-                    else if(item.percentual < 95) { confColor = 'text-orange-500'; barColor = 'bg-orange-500'; }
+                    let confColor = 'text-teal-600';
+                    if(item.percentual > 105) { confColor = 'text-red-500'; }
+                    else if(item.percentual < 95) { confColor = 'text-orange-500'; }
                     const badge = isOpen ? '<span class="bg-orange-50 text-orange-600 text-[9px] font-black px-3 py-1 rounded-full border border-orange-100 uppercase tracking-widest">Pendente</span>' : '<span class="bg-teal-50 text-teal-600 text-[9px] font-black px-3 py-1 rounded-full border border-teal-100 uppercase tracking-widest">Aprovado</span>';
                     container.innerHTML += `
                     <div class="bg-white rounded-[40px] shadow-sm border border-gray-100 p-8 flex flex-col h-full hover:shadow-xl hover:shadow-blue-50 transition-all duration-300 group">
@@ -266,14 +273,15 @@
             document.getElementById('sum-ext').innerText = metrics.extra.toFixed(0) + 'h';
             document.getElementById('sum-conf').innerText = percentual + '%';
             document.getElementById('sum-bar').style.width = Math.min(percentual, 100) + '%';
-            tbody.innerHTML = '<tr><td colspan="10" class="text-center py-20 text-gray-300 font-black uppercase text-[10px]"><i data-lucide="loader-2" class="w-6 h-6 animate-spin inline-block mb-2"></i><br>Carregando...</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="10" class="text-center py-20 text-gray-300 font-black uppercase text-[10px]"><i data-lucide="loader-2" class="w-6 h-6 animate-spin inline-block mb-2"></i><br>Carregando recursos...</td></tr>';
             lucide.createIcons(); modal.classList.remove('hidden'); setTimeout(() => modal.querySelector('div').classList.remove('scale-95'), 10);
-            const p = availablePeriods[currentPeriodIndex];
+            
+            const p = JSON.parse(document.getElementById('period-selector').value);
             try {
-                const url = `${API_URL}/approvals/${serviceId}/resources?inicio=${p.DataInicio__c}&fim=${p.DataFim__c}`;
+                const url = `${API_URL}/approvals/${serviceId}/resources?inicio=${p.start}&fim=${p.end}`;
                 const res = await fetch(url); const resources = await res.json();
                 tbody.innerHTML = '';
-                if (resources.length === 0) { tbody.innerHTML = '<tr><td colspan="10" class="text-center py-10 text-gray-400 font-bold uppercase text-[10px]">Sem dados</td></tr>'; return; }
+                if (resources.length === 0) { tbody.innerHTML = '<tr><td colspan="10" class="py-10 text-center text-gray-400 font-bold uppercase text-[10px]">Sem dados</td></tr>'; return; }
                 let tAloc=0, tNorm=0, tExPg=0, tExBc=0, tAuBc=0, tAuOu=0, tReal=0;
                 resources.forEach(r => {
                     tAloc += r.alocado; tNorm += r.horasNormais; tExPg += r.horasExtrasPgto; tExBc += r.horasExtrasBanco; tAuBc += r.horasAusenciaBanco; tAuOu += r.horasAusenciaOutras; tReal += r.totalRealizado;
@@ -304,12 +312,12 @@
             const modal = document.getElementById('modal-activities'); const tbody = document.getElementById('activity-table-body');
             tbody.innerHTML = '<tr><td colspan="8" class="text-center py-20 text-gray-300 font-black uppercase text-[10px]"><i data-lucide="loader-2" class="w-6 h-6 animate-spin inline-block mb-2"></i><br>Carregando extrato...</td></tr>';
             lucide.createIcons(); modal.classList.remove('hidden'); document.getElementById('check-all-entries').checked = false; updateMassActionButtons();
-            const p = availablePeriods[currentPeriodIndex];
+            const p = JSON.parse(document.getElementById('period-selector').value);
             try {
-                const res = await fetch(`${API_URL}/approvals/${serviceId}/resources/${personId}/activities?inicio=${p.DataInicio__c}&fim=${p.DataFim__c}`);
+                const res = await fetch(`${API_URL}/approvals/${serviceId}/resources/${personId}/activities?inicio=${p.start}&fim=${p.end}`);
                 const activities = await res.json();
                 tbody.innerHTML = '';
-                if(activities.length === 0) { tbody.innerHTML = '<tr><td colspan="8" class="text-center py-10 text-gray-400 font-bold uppercase text-[10px]">Nenhum registro encontrado</td></tr>'; return; }
+                if(activities.length === 0) { tbody.innerHTML = '<tr><td colspan="8" class="py-10 text-center text-gray-400 font-bold uppercase text-[10px]">Nenhum registro encontrado</td></tr>'; return; }
                 activities.forEach(a => {
                     const justificativa = a.justificativa ? `<br><span class="text-[9px] text-gray-400 font-medium tracking-tight italic">"${a.justificativa}"</span>` : '';
                     let stBadge = `<span class="text-[8px] font-black uppercase bg-gray-50 text-gray-400 px-2 py-0.5 rounded-full border border-gray-100">${a.status}</span>`, canSelect = false;
@@ -333,11 +341,16 @@
         async function confirmMassApprove() {
             const ids = Array.from(document.querySelectorAll('.entry-checkbox:checked')).map(cb => cb.value);
             if(!confirm(`Confirma aprovação de ${ids.length} itens?`)) return;
-            const p = availablePeriods[currentPeriodIndex];
+            const p = JSON.parse(document.getElementById('period-selector').value);
             try {
-                const res = await fetch(`${API_URL}/approvals/action`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ entryIds: ids, action: 'approve', inicio: p.DataInicio__c, fim: p.DataFim__c }) });
-                if ((await res.json()).success) { await openActivityModal(currentModalServiceId, currentModalPersonId); await openModal(currentProjectItem); loadProjects(p.DataInicio__c, p.DataFim__c); }
-            } catch (e) { alert('Erro na aprovação.'); }
+                toggleLoading(true);
+                const res = await fetch(`${API_URL}/approvals/action`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ entryIds: ids, action: 'approve', inicio: p.start, fim: p.end }) });
+                if ((await res.json()).success) { 
+                    if (currentModalServiceId && currentModalPersonId) await openActivityModal(currentModalServiceId, currentModalPersonId); 
+                    if (currentProjectItem) await openModal(currentProjectItem); 
+                    loadProjects(p.start, p.end); 
+                }
+            } catch (e) { alert('Erro na aprovação.'); } finally { toggleLoading(false); }
         }
 
         function openRejectModal(sId, pId, name) {
@@ -356,28 +369,34 @@
         async function confirmReject() {
             const isMass = document.getElementById('reject-service-id').value === 'MASS'; const reason = document.getElementById('reject-reason').value.trim();
             if(!reason) { alert("Informe o motivo."); return; }
-            const p = availablePeriods[currentPeriodIndex];
-            const payload = { action: 'reject', motivo: reason, inicio: p.DataInicio__c, fim: p.DataFim__c };
+            const p = JSON.parse(document.getElementById('period-selector').value);
+            const payload = { action: 'reject', motivo: reason, inicio: p.start, fim: p.end };
             if (isMass) payload.entryIds = Array.from(document.querySelectorAll('.entry-checkbox:checked')).map(cb => cb.value);
             else { payload.serviceId = document.getElementById('reject-service-id').value; payload.personId = document.getElementById('reject-person-id').value; }
             try {
+                toggleLoading(true);
                 const res = await fetch(`${API_URL}/approvals/action`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-                if ((await res.json()).success) { document.getElementById('modal-reject').classList.add('hidden'); if (currentModalServiceId && currentModalPersonId && !isMass) await openActivityModal(currentModalServiceId, currentModalPersonId); await openModal(currentProjectItem); loadProjects(p.DataInicio__c, p.DataFim__c); }
-            } catch (e) { alert('Erro técnico.'); }
+                if ((await res.json()).success) { 
+                    document.getElementById('modal-reject').classList.add('hidden'); 
+                    if (currentModalServiceId && currentModalPersonId && !isMass) await openActivityModal(currentModalServiceId, currentModalPersonId); 
+                    if (currentProjectItem) await openModal(currentProjectItem); 
+                    loadProjects(p.start, p.end); 
+                }
+            } catch (e) { alert('Erro técnico.'); } finally { toggleLoading(false); }
         }
 
         async function approveAction(sId, pId, action) {
             if(!confirm('Aprovar todos os itens pendentes deste recurso?')) return;
-            const p = availablePeriods[currentPeriodIndex];
+            const p = JSON.parse(document.getElementById('period-selector').value);
             try {
-                const res = await fetch(`${API_URL}/approvals/action`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ serviceId: sId, personId: pId, action, inicio: p.DataInicio__c, fim: p.DataFim__c }) });
-                if ((await res.json()).success) { openModal(currentProjectItem); loadProjects(p.DataInicio__c, p.DataFim__c); }
-            } catch (err) { alert('Erro técnico.'); }
+                toggleLoading(true);
+                const res = await fetch(`${API_URL}/approvals/action`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ serviceId: sId, personId: pId, action, inicio: p.start, fim: p.end }) });
+                if ((await res.json()).success) { if (currentProjectItem) await openModal(currentProjectItem); loadProjects(p.start, p.end); }
+            } catch (err) { alert('Erro técnico.'); } finally { toggleLoading(false); }
         }
 
         function formatSafeDate(d) { if (!d) return '-'; const p = d.split('-'); return p.length === 3 ? `${p[2]}/${p[1]}/${p[0]}` : d; }
-        function closeModal() { document.getElementById('modal-approval').querySelector('div').classList.add('scale-95'); setTimeout(() => document.getElementById('modal-approval').classList.add('hidden'), 200); }
-        function closeActivityModal() { document.getElementById('modal-activities').classList.add('hidden'); }
+        function closeModal(id) { const m = document.getElementById(id); m.querySelector('div').classList.add('scale-95'); setTimeout(() => m.classList.add('hidden'), 200); }
     </script>
 </body>
 </html>
