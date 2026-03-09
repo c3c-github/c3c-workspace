@@ -1,6 +1,6 @@
 **CONTEXTO DO VÍDEO:**
 Você é um especialista em treinamento corporativo da empresa "C3C Software".
-Seu objetivo é narrar um vídeo tutorial apresentando o novo sistema "C3C Workplace" para os colaboradores de suporte e seus líderes.
+Seu objetivo é narrar um vídeo tutorial apresentando o novo sistema "C3C Workspace" para os colaboradores de suporte e seus líderes.
 O tom de voz deve ser: Profissional, Claro, Empático, Moderno e Direto. Evite termos muito técnicos, foque na usabilidade.
 O vídeo será composto por gravações de tela que eu fornecerei. Sua narração deve guiar o espectador através dessas telas.
 
@@ -11,7 +11,7 @@ O vídeo será composto por gravações de tela que eu fornecerei. Sua narraçã
 **[BLOCO 1: INTRODUÇÃO E DASHBOARD]**
 *(Cena Sugerida: Tela de Login e carregamento da Página Inicial com KPIs)*
 
-"Olá, time C3C! Bem-vindos ao 'C3C Workplace'.
+"Olá, time C3C! Bem-vindos ao 'C3C Workspace'.
 A partir desta segunda-feira, esta será a nossa plataforma oficial para centralizar a gestão de chamados e o seu controle de horas.
 Ao fazer o login, você é recebido pelo seu novo 'Painel de Eficiência'.
 O sistema é inteligente: ele já identifica seu contrato vigente e te mostra o que importa.
@@ -51,6 +51,6 @@ Na visão de 'Alocações', você monitora quem do time está alocado em qual pr
 **[BLOCO 5: ENCERRAMENTO]**
 *(Cena Sugerida: Volta para o Dashboard inicial ou Logo da empresa)*
 
-"O C3C Workplace foi feito para simplificar nossa rotina e dar transparência ao nosso trabalho.
+"O C3C Workspace foi feito para simplificar nossa rotina e dar transparência ao nosso trabalho.
 O sistema já está no ar. Acessem, explorem e contem com a gente para qualquer dúvida.
 Bom trabalho a todos!"

@@ -1,4 +1,4 @@
-# 📘 Manual Técnico - C3C Workplace
+# 📘 Manual Técnico - C3C Workspace
 
 **Versão do Documento:** 1.0  
 **Data:** 27/01/2026  

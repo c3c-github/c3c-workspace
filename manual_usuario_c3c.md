@@ -1,17 +1,17 @@
-# 📖 Manual do Usuário - C3C Workplace
+# 📖 Manual do Usuário - C3C Workspace
 
-**Bem-vindo ao C3C Workplace!**  
+**Bem-vindo ao C3C Workspace!**  
 Este guia foi criado para auxiliar a unidade de **Suporte** a utilizar a nova plataforma de gestão de chamados e apontamento de horas. Aqui você encontrará o fluxo completo de trabalho, desde a captura de um ticket até o registro das atividades.
 
 ---
 
 ## 1. Primeiros Passos
 
-### O que é o C3C Workplace?
+### O que é o C3C Workspace?
 É a plataforma centralizada onde você realizará o atendimento aos clientes e o registro de suas atividades. O sistema integra a gestão de tickets (Mesa de Operações) com o controle de horas (Timesheet), eliminando a necessidade de usar múltiplas ferramentas.
 
 ### Como Acessar
-1.  Acesse o link do sistema workplace.c3csoftware.com.br.
+1.  Acesse o link do sistema workspace.c3csoftware.com.br.
 2.  Faça login com sua conta corporativa (Microsoft/Azure).
 3.  Você será direcionado ao **Painel de Eficiência**.
 

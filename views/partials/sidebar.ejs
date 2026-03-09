@@ -9,7 +9,7 @@
                 <img src="/assets/signatures/assinaturaCapivorce.png" alt="Capivorce" class="w-full h-full object-cover hover:scale-110 transition-transform cursor-help" title="Olá! Eu sou a Capivorce.">
             </div>
         </div>
-        <p class="mt-4 text-[10px] font-black text-gray-300 uppercase tracking-[0.3em]">Workplace</p>
+        <p class="mt-4 text-[10px] font-black text-gray-300 uppercase tracking-[0.3em]">Workspace</p>
     </div>
 
     <!-- NAVEGAÇÃO -->
@@ -21,6 +21,13 @@
             <span class="font-medium text-sm">Dashboard</span>
         </a>
 
+        <% if (user.grupos && user.grupos.includes('OPERACAO')) { %>
+            <a href="/operations" class="nav-item <%= (typeof page !== 'undefined' && page === 'operations') ? 'active-nav' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900' %> flex items-center gap-3 px-6 py-3 transition-all">
+                <i data-lucide="terminal" class="w-5 h-5"></i>
+                <span class="font-medium text-sm">Mesa de Ops</span>
+            </a>
+        <% } %>
+
         <a href="/timesheet" class="nav-item <%= (typeof page !== 'undefined' && page === 'timesheet') ? 'active-nav' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900' %> flex items-center gap-3 px-6 py-3 transition-all">
             <i data-lucide="clock" class="w-5 h-5"></i>
             <span class="font-medium text-sm">Meus Lançamentos</span>
@@ -30,14 +37,6 @@
             <i data-lucide="file-text" class="w-5 h-5"></i>
             <span class="font-medium text-sm">Portal de Notas</span>
         </a>
-
-        <% if (user.grupos && user.grupos.includes('OPERACAO')) { %>
-            <p class="px-6 text-xs font-semibold text-gray-400 uppercase tracking-wider mt-8 mb-2">Operações</p>
-            <a href="/operations" class="nav-item <%= (typeof page !== 'undefined' && page === 'operations') ? 'active-nav' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900' %> flex items-center gap-3 px-6 py-3 transition-all">
-                <i data-lucide="terminal" class="w-5 h-5"></i>
-                <span class="font-medium text-sm">Mesa de Ops</span>
-            </a>
-        <% } %>
 
         <% if (user.grupos && (user.grupos.includes('GESTOR') || user.grupos.includes('DIRETOR') || user.grupos.includes('GESTAO_SUPORTE') || user.grupos.includes('ADMIN_RH'))) { %>
             <p class="px-6 text-xs font-semibold text-gray-400 uppercase tracking-wider mt-8 mb-2">Gestão</p>
