@@ -27,258 +27,316 @@
     <style>
         body { font-family: 'Montserrat', sans-serif; background-color: #F8FAFC; }
         .bg-c3c-gradient { background: transparent linear-gradient(118deg, #1DDDBD 0%, #1ED9C0 45%, #2978FF 100%) 0% 0% no-repeat padding-box; }
-        .fade-in { animation: fadeIn 0.4s ease-out; }
+        .fade-in { animation: fadeIn 0.3s ease-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         .custom-scrollbar::-webkit-scrollbar { width: 4px; height: 4px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #E2E8F0; border-radius: 10px; }
-        .tab-active { color: #2978FF; border-bottom: 3px solid #2978FF; }
+        .tab-active { color: #2978FF; border-bottom: 4px solid #2978FF; }
         
-        /* Status Path Steps */
-        .path-container { display: flex; width: 100%; border-radius: 12px; overflow: hidden; border: 1px solid #F1F5F9; background: #F8FAFC; }
-        .path-step { flex: 1; text-align: center; padding: 12px 4px; font-size: 10px; font-weight: 800; color: #94A3B8; cursor: pointer; transition: all 0.2s; position: relative; clip-path: polygon(0% 0%, 92% 0%, 100% 50%, 92% 100%, 0% 100%, 8% 50%); margin-left: -8px; text-transform: uppercase; letter-spacing: 0.05em; }
-        .path-step:first-child { margin-left: 0; clip-path: polygon(0% 0%, 92% 0%, 100% 50%, 92% 100%, 0% 100%); }
-        .path-step:last-child { clip-path: polygon(0% 0%, 100% 0%, 100% 100%, 0% 100%, 8% 50%); }
-        .path-step.active { background: #2978FF; color: white; }
+        .path-container { display: flex; width: 100%; border-radius: 24px; overflow: hidden; border: 1px solid #F1F5F9; background: #F8FAFC; gap: 6px; padding: 6px; }
+        .path-step { flex: 1; text-align: center; padding: 14px 4px; font-size: 10px; font-weight: 900; color: #94A3B8; cursor: pointer; transition: all 0.2s; border-radius: 18px; text-transform: uppercase; letter-spacing: 0.1em; }
+        .path-step.active { background: #2978FF; color: white; box-shadow: 0 8px 20px rgba(41, 120, 255, 0.25); }
         .path-step.completed { background: #1DDDBD; color: white; }
         .path-step:hover:not(.active):not(.completed) { background: #E2E8F0; color: #475569; }
+
+        .timer-active { animation: pulse-timer 2s infinite; }
+        @keyframes pulse-timer { 0% { box-shadow: 0 0 0 0 rgba(41, 120, 255, 0.4); } 70% { box-shadow: 0 0 0 15px rgba(41, 120, 255, 0); } 100% { box-shadow: 0 0 0 0 rgba(41, 120, 255, 0); } }
     </style>
 </head>
 <body class="h-screen flex overflow-hidden bg-[#F8FAFC]">
 
-    <div id="loading-overlay" class="fixed inset-0 bg-white/80 backdrop-blur-sm z-[100] hidden flex flex-col items-center justify-center">
+    <div id="loading-overlay" class="fixed inset-0 bg-white/80 backdrop-blur-sm z-[200] hidden flex flex-col items-center justify-center">
         <div class="w-12 h-12 border-4 border-blue-100 border-t-c3c-blue rounded-full animate-spin mb-4"></div>
-        <p class="text-xs font-black text-c3c-blue uppercase tracking-widest animate-pulse">Sincronizando...</p>
+        <p class="text-[10px] font-black text-c3c-blue uppercase tracking-widest animate-pulse">Workspace em sincronia...</p>
     </div>
 
     <%- include('partials/sidebar', { page: 'operations' }) %>
 
-    <main class="flex-1 flex flex-col md:ml-64 relative w-full transition-all duration-300 overflow-hidden">
+    <!-- VIEW: LISTA (FULL WIDTH) -->
+    <main id="main-list-view" class="flex-1 flex flex-col md:ml-64 relative w-full transition-all duration-300 overflow-hidden">
         
-        <!-- HEADER -->
-        <header class="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-4 md:px-8 sticky top-0 z-20 shrink-0">
-            <div class="flex items-center gap-4 text-left">
+        <!-- HEADER LISTA -->
+        <header class="h-20 bg-white border-b border-gray-100 flex items-center justify-between px-8 sticky top-0 z-20 shrink-0">
+            <div class="flex items-center gap-4">
                 <button onclick="document.getElementById('sidebar').classList.toggle('-translate-x-full')" class="md:hidden p-2 text-gray-600 hover:bg-gray-100 rounded-lg">
                     <i data-lucide="menu" class="w-6 h-6"></i>
                 </button>
                 <div>
-                    <h1 class="text-lg md:text-xl font-bold text-gray-800 flex items-center gap-2 tracking-tight">Mesa de Operações <span class="text-c3c-blue">⚙️</span></h1>
-                    <p class="text-[10px] text-gray-400 font-bold uppercase tracking-widest hidden sm:block">Fila de atendimento em tempo real</p>
+                    <h1 class="text-xl font-black text-gray-800 flex items-center gap-3 tracking-tighter uppercase leading-tight">Mesa de Operações <span class="text-c3c-blue">⚙️</span></h1>
+                    <p class="text-[9px] text-gray-400 font-black uppercase tracking-[0.3em] mt-1 hidden sm:block">Central de Atendimento Workspace</p>
                 </div>
             </div>
 
-            <div class="hidden md:flex items-center bg-gray-50 rounded-2xl px-5 py-2 border border-gray-100 shadow-sm">
-                <div class="text-2xl font-black text-gray-700 mr-4 w-32 text-center tracking-tighter" id="global-timer">00:00:00</div>
-                <div class="flex gap-2">
-                    <button id="global-play" onclick="startGlobalTimer()" class="p-2.5 bg-teal-500 hover:bg-teal-600 text-white rounded-xl shadow-lg shadow-teal-100 transition-all active:scale-95 disabled:opacity-30 disabled:shadow-none" disabled><i data-lucide="play" class="w-4 h-4 fill-current"></i></button>
-                    <button id="global-stop" onclick="stopGlobalTimer()" class="hidden p-2.5 bg-red-500 hover:bg-red-600 text-white rounded-xl shadow-lg shadow-red-100 transition-all active:scale-95"><i data-lucide="square" class="w-4 h-4 fill-current"></i></button>
+            <div class="flex items-center gap-6">
+                <div class="relative group hidden lg:block">
+                    <i data-lucide="search" class="w-4 h-4 text-gray-300 absolute left-5 top-1/2 -translate-y-1/2 group-focus-within:text-c3c-blue transition-colors"></i>
+                    <input type="text" id="search-tickets" placeholder="Buscar chamados..." class="w-80 pl-12 pr-6 py-3 bg-gray-50 border-2 border-gray-100 rounded-full text-xs font-black focus:ring-4 focus:ring-blue-50 focus:border-c3c-blue outline-none transition-all">
                 </div>
+                <button onclick="openNewTicketModal()" class="bg-c3c-gradient text-white text-[10px] font-black uppercase tracking-[0.2em] px-8 py-3.5 rounded-full shadow-xl shadow-blue-100 hover:opacity-90 transition-all active:scale-95 flex items-center gap-3"><i data-lucide="plus" class="w-4 h-4"></i> Novo Chamado</button>
             </div>
         </header>
 
-        <div class="flex-1 flex overflow-hidden">
-            <!-- LISTA DE TICKETS -->
-            <aside class="w-full md:w-[420px] flex flex-col border-r border-gray-100 bg-white" id="ticket-list-panel">
-                <div class="p-6 border-b border-gray-50 flex flex-col gap-6">
-                    <button onclick="openNewTicketModal()" class="w-full bg-c3c-gradient text-white text-xs font-black uppercase tracking-widest py-4 rounded-2xl shadow-xl shadow-blue-100 transition-all active:scale-95 flex items-center justify-center gap-2"><i data-lucide="plus-circle" class="w-4 h-4"></i> Abrir Chamado</button>
-                    
-                    <div class="relative group">
-                        <i data-lucide="search" class="w-4 h-4 text-gray-300 absolute left-4 top-1/2 -translate-y-1/2 group-focus-within:text-c3c-blue transition-colors"></i>
-                        <input type="text" id="search-tickets" placeholder="Buscar por número, título ou cliente..." class="w-full pl-11 pr-4 py-3 bg-gray-50 border border-gray-100 rounded-2xl text-xs font-bold focus:ring-4 focus:ring-blue-50 focus:border-c3c-blue outline-none transition-all">
+        <!-- CONTEÚDO LISTA -->
+        <div class="flex-1 overflow-y-auto p-8 custom-scrollbar">
+            
+            <!-- DASHBOARD OPERACIONAL -->
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-10">
+                <div class="bg-white p-8 rounded-[40px] border border-gray-100 shadow-sm flex flex-col justify-between hover:shadow-xl hover:shadow-blue-50/50 transition-all group">
+                    <div class="flex justify-between items-start mb-4">
+                        <div class="p-3 bg-blue-50 text-c3c-blue rounded-2xl group-hover:scale-110 transition-transform"><i data-lucide="inbox"></i></div>
+                        <span class="text-3xl font-black text-gray-800 tabular-nums" id="stat-total">0</span>
                     </div>
+                    <span class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Chamados Totais</span>
+                </div>
+                <div class="bg-white p-8 rounded-[40px] border border-gray-100 shadow-sm flex flex-col justify-between hover:shadow-xl hover:shadow-red-50/50 transition-all group">
+                    <div class="flex justify-between items-start mb-4">
+                        <div class="p-3 bg-red-50 text-red-500 rounded-2xl group-hover:scale-110 transition-transform"><i data-lucide="alert-triangle"></i></div>
+                        <span class="text-3xl font-black text-red-600 tabular-nums" id="stat-urgent">0</span>
+                    </div>
+                    <span class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Itens Críticos</span>
+                </div>
+                <div class="bg-white p-8 rounded-[40px] border border-gray-100 shadow-sm flex flex-col justify-between hover:shadow-xl hover:shadow-teal-50/50 transition-all group">
+                    <div class="flex justify-between items-start mb-4">
+                        <div class="p-3 bg-teal-50 text-teal-500 rounded-2xl group-hover:scale-110 transition-transform"><i data-lucide="user-check"></i></div>
+                        <span class="text-3xl font-black text-teal-600 tabular-nums" id="stat-my">0</span>
+                    </div>
+                    <span class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Meus Atendimentos</span>
+                </div>
+                <div class="bg-c3c-gradient p-8 rounded-[40px] shadow-2xl shadow-blue-100 flex flex-col justify-center text-white relative overflow-hidden group">
+                    <div class="relative z-10">
+                        <span class="text-[10px] font-black uppercase tracking-widest opacity-80 mb-2 block">Tempo de Resposta</span>
+                        <p class="text-2xl font-black tracking-tighter">98.2% SLA</p>
+                    </div>
+                    <i data-lucide="zap" class="absolute right-[-10px] bottom-[-10px] w-32 h-32 opacity-10 group-hover:scale-110 transition-transform"></i>
+                </div>
+            </div>
 
-                    <div class="flex gap-1 bg-gray-50 p-1 rounded-2xl border border-gray-100 overflow-x-auto no-scrollbar">
-                        <button onclick="changeFilter('my')" id="tab-my" class="flex-1 py-2.5 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all tab-active whitespace-nowrap px-4">Meus</button>
-                        <button onclick="changeFilter('queue')" id="tab-queue" class="flex-1 py-2.5 text-[10px] font-black uppercase tracking-widest rounded-xl text-gray-400 hover:text-gray-600 transition-all whitespace-nowrap px-4">Fila</button>
-                        <button onclick="changeFilter('team')" id="tab-team" class="flex-1 py-2.5 text-[10px] font-black uppercase tracking-widest rounded-xl text-gray-400 hover:text-gray-600 transition-all whitespace-nowrap px-4">Equipe</button>
-                        <button onclick="changeFilter('all')" id="tab-all" class="flex-1 py-2.5 text-[10px] font-black uppercase tracking-widest rounded-xl text-gray-400 hover:text-gray-600 transition-all whitespace-nowrap px-4">Todos</button>
+            <!-- FILTROS E TABELA -->
+            <div class="bg-white rounded-[48px] border border-gray-100 shadow-sm overflow-hidden flex flex-col">
+                <div class="px-8 py-6 border-b border-gray-50 flex flex-col md:flex-row justify-between items-center gap-6 bg-gray-50/30">
+                    <div class="flex gap-2 p-1.5 bg-white rounded-[20px] border border-gray-100 shadow-sm">
+                        <button onclick="changeFilter('my')" id="tab-my" class="px-8 py-3 text-[10px] font-black uppercase tracking-widest rounded-[14px] transition-all bg-c3c-blue text-white shadow-lg shadow-blue-100">Meus</button>
+                        <button onclick="changeFilter('queue')" id="tab-queue" class="px-8 py-3 text-[10px] font-black uppercase tracking-widest rounded-[14px] text-gray-400 hover:text-gray-600 transition-all">Fila</button>
+                        <button onclick="changeFilter('team')" id="tab-team" class="px-8 py-3 text-[10px] font-black uppercase tracking-widest rounded-[14px] text-gray-400 hover:text-gray-600 transition-all">Equipe</button>
+                        <button onclick="changeFilter('all')" id="tab-all" class="px-8 py-3 text-[10px] font-black uppercase tracking-widest rounded-[14px] text-gray-400 hover:text-gray-600 transition-all">Todos</button>
                     </div>
+                    <p class="text-[10px] font-black text-gray-300 uppercase tracking-widest" id="list-count-info">Exibindo 0 chamados</p>
                 </div>
 
-                <div id="tickets-list-container" class="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar bg-gray-50/30">
-                    <!-- Cards de Ticket injetados via JS -->
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left">
+                        <thead>
+                            <tr class="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] border-b border-gray-50">
+                                <th class="px-10 py-6">Ticket</th>
+                                <th class="px-6 py-6">Cliente / Serviço</th>
+                                <th class="px-6 py-6">Assunto</th>
+                                <th class="px-6 py-6 text-center">Status</th>
+                                <th class="px-6 py-6 text-center">SLA</th>
+                                <th class="px-10 py-6 text-right">Ação</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tickets-table-body" class="divide-y divide-gray-50">
+                            <!-- Injetado via JS -->
+                        </tbody>
+                    </table>
                 </div>
-            </aside>
-
-            <!-- WORKSPACE -->
-            <section class="hidden md:flex flex-1 bg-white flex-col relative w-full overflow-hidden" id="ticket-workspace">
-                <div id="empty-state" class="absolute inset-0 flex flex-col items-center justify-center bg-gray-50/50 text-center p-10">
-                    <div class="w-32 h-32 bg-white rounded-full flex items-center justify-center shadow-sm mb-6 text-gray-200 border border-gray-100"><i data-lucide="mouse-pointer-2" class="w-12 h-12"></i></div>
-                    <h3 class="text-sm font-black text-gray-400 uppercase tracking-widest">Nenhum chamado selecionado</h3>
-                    <p class="text-[10px] font-bold text-gray-300 uppercase mt-2">Escolha um item na lista ao lado para iniciar</p>
-                </div>
-                
-                <div id="ticket-panel" class="flex-1 flex flex-col h-full hidden z-10 bg-white w-full fade-in">
-                    <!-- HEADER DETALHES -->
-                    <div class="px-8 py-6 border-b border-gray-100 bg-white shrink-0">
-                        <div class="flex flex-col md:flex-row justify-between items-start gap-6 mb-6">
-                            <div class="flex-1 text-left min-w-0">
-                                <div class="flex items-center gap-3 mb-2">
-                                    <span class="bg-gray-100 text-gray-500 px-3 py-1 rounded-full text-[9px] font-black tracking-widest" id="detail-number">#0000</span>
-                                    <span class="text-[9px] font-black text-c3c-blue uppercase tracking-widest truncate" id="detail-client">CLIENTE</span>
-                                </div>
-                                <h1 class="text-2xl font-black text-gray-800 tracking-tighter leading-tight truncate" id="detail-title">Título do Chamado</h1>
-                            </div>
-                            <div id="header-actions" class="flex gap-2 shrink-0">
-                                <!-- Ações injetadas via JS -->
-                            </div>
-                        </div>
-
-                        <!-- STATUS PATH -->
-                        <div id="status-path-container" class="mb-4"></div>
-                    </div>
-
-                    <!-- TABS -->
-                    <div class="flex px-8 border-b border-gray-100 bg-white gap-8 shrink-0 overflow-x-auto no-scrollbar">
-                        <button onclick="switchDetailTab('info')" id="dt-info" class="pb-4 text-[10px] font-black uppercase tracking-[0.2em] tab-active whitespace-nowrap">Resumo</button>
-                        <button onclick="switchDetailTab('logs')" id="dt-logs" class="pb-4 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 hover:text-gray-600 transition-all whitespace-nowrap">Apontamentos</button>
-                        <button onclick="switchDetailTab('edit')" id="dt-edit" class="pb-4 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 hover:text-gray-600 transition-all whitespace-nowrap hidden">Ajustes</button>
-                        <button onclick="switchDetailTab('attach')" id="dt-attach" class="pb-4 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 hover:text-gray-600 transition-all whitespace-nowrap">Anexos</button>
-                    </div>
-
-                    <!-- CONTEÚDO DA TAB -->
-                    <div class="flex-1 overflow-y-auto p-8 custom-scrollbar bg-gray-50/30">
-                        
-                        <!-- TAB: RESUMO -->
-                        <div id="view-info" class="space-y-8 fade-in">
-                            <div class="grid grid-cols-2 lg:grid-cols-4 gap-6">
-                                <div class="bg-white p-5 rounded-3xl border border-gray-100 shadow-sm text-left"><p class="text-[8px] font-black text-gray-400 uppercase tracking-widest mb-1">Status Atual</p><p class="text-sm font-black text-gray-800" id="info-status">-</p></div>
-                                <div class="bg-white p-5 rounded-3xl border border-gray-100 shadow-sm text-left"><p class="text-[8px] font-black text-gray-400 uppercase tracking-widest mb-1">Prioridade</p><p class="text-sm font-black text-gray-800" id="info-prio">-</p></div>
-                                <div class="bg-white p-5 rounded-3xl border border-gray-100 shadow-sm text-left"><p class="text-[8px] font-black text-gray-400 uppercase tracking-widest mb-1">Tipo</p><p class="text-sm font-black text-gray-800" id="info-type">-</p></div>
-                                <div class="bg-white p-5 rounded-3xl border border-gray-100 shadow-sm text-left"><p class="text-[8px] font-black text-gray-400 uppercase tracking-widest mb-1">Origem</p><p class="text-sm font-black text-gray-800" id="info-origin">-</p></div>
-                            </div>
-
-                            <div class="bg-white p-8 rounded-[32px] border border-gray-100 shadow-sm text-left">
-                                <h4 class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4">Descrição do Chamado</h4>
-                                <div class="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap" id="detail-desc">...</div>
-                            </div>
-
-                            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                                <div class="space-y-4 text-left">
-                                    <h4 class="text-[10px] font-black text-gray-400 uppercase tracking-widest px-2">Cronologia</h4>
-                                    <div class="bg-white rounded-[32px] border border-gray-100 shadow-sm overflow-hidden divide-y divide-gray-50">
-                                        <div class="p-5 flex justify-between items-center"><span class="text-[10px] font-bold text-gray-400 uppercase">Abertura</span><span class="text-xs font-black text-gray-700" id="ts-open">-</span></div>
-                                        <div class="p-5 flex justify-between items-center bg-gray-50/30"><span class="text-[10px] font-bold text-gray-400 uppercase">Expectativa Cliente</span><span class="text-xs font-black text-gray-700" id="ts-expect">-</span></div>
-                                        <div class="p-5 flex justify-between items-center"><span class="text-[10px] font-bold text-gray-400 uppercase">Estimativa Entrega</span><span class="text-xs font-black text-c3c-blue" id="ts-estim">-</span></div>
-                                        <div class="p-5 flex justify-between items-center bg-gray-50/30"><span class="text-[10px] font-bold text-gray-400 uppercase">Última Atualização (Ops)</span><span class="text-xs font-black text-gray-700" id="ts-last-ops">-</span></div>
-                                        <div class="p-5 flex justify-between items-center"><span class="text-[10px] font-bold text-gray-400 uppercase">Última Atualização (Cli)</span><span class="text-xs font-black text-gray-700" id="ts-last-cli">-</span></div>
-                                    </div>
-                                </div>
-                                <div class="space-y-4 text-left">
-                                    <h4 class="text-[10px] font-black text-gray-400 uppercase tracking-widest px-2">Comentários Rápidos</h4>
-                                    <div class="bg-white p-6 rounded-[32px] border border-gray-100 shadow-sm space-y-4">
-                                        <div id="comments-list" class="space-y-3 max-h-60 overflow-y-auto custom-scrollbar pr-2 text-left"></div>
-                                        <div class="pt-4 border-t border-gray-50 flex gap-2">
-                                            <input type="text" id="quick-comment" placeholder="Escreva algo..." class="flex-1 bg-gray-50 border border-gray-100 rounded-2xl px-5 py-3 text-xs font-bold outline-none focus:ring-4 focus:ring-blue-50 focus:bg-white transition-all">
-                                            <button onclick="postComment()" class="p-3 bg-blue-50 text-c3c-blue rounded-2xl hover:bg-c3c-blue hover:text-white transition-all"><i data-lucide="send" class="w-5 h-5"></i></button>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- TAB: APONTAMENTOS -->
-                        <div id="view-logs" class="hidden fade-in space-y-6">
-                            <div class="bg-white rounded-[32px] shadow-sm border border-gray-100 overflow-hidden">
-                                <div class="overflow-x-auto">
-                                    <table class="w-full text-left">
-                                        <thead class="bg-gray-50/50 border-b border-gray-100">
-                                            <tr class="text-[9px] font-black text-gray-400 uppercase tracking-widest">
-                                                <th class="px-6 py-4">Data</th>
-                                                <th class="px-6 py-4">Responsável</th>
-                                                <th class="px-6 py-4">Atividade</th>
-                                                <th class="px-6 py-4 text-center">Status</th>
-                                                <th class="px-4 py-4 text-center">Norm</th>
-                                                <th class="px-4 py-4 text-center">Ext</th>
-                                                <th class="px-6 py-4 text-center">Ações</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody id="logs-table-body" class="divide-y divide-gray-50"></tbody>
-                                    </table>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- TAB: AJUSTES -->
-                        <div id="view-edit" class="hidden fade-in max-w-2xl mx-auto">
-                            <div class="bg-white p-10 rounded-[40px] border border-gray-100 shadow-sm space-y-8 text-left">
-                                <div class="grid grid-cols-2 gap-6">
-                                    <div><label class="block text-[10px] font-black text-gray-400 uppercase mb-2 tracking-widest">Status</label><select id="edit-status" class="w-full bg-gray-50 border-2 border-gray-100 rounded-2xl px-5 py-3 text-sm font-bold focus:ring-4 focus:ring-blue-100 outline-none transition-all"><option value="New">Novo (Fila)</option><option value="In Progress">Em Atendimento</option><option value="On Hold">Em Pausa</option><option value="Waiting">Aguardando Cliente</option><option value="Closed">Fechado</option></select></div>
-                                    <div><label class="block text-[10px] font-black text-gray-400 uppercase mb-2 tracking-widest">Prioridade</label><select id="edit-priority" class="w-full bg-gray-50 border-2 border-gray-100 rounded-2xl px-5 py-3 text-sm font-bold focus:ring-4 focus:ring-blue-100 outline-none transition-all"><option value="Low">Baixa</option><option value="Medium">Média</option><option value="High">Alta</option><option value="Critical">Crítica</option></select></div>
-                                </div>
-                                <div class="grid grid-cols-2 gap-6">
-                                    <div><label class="block text-[10px] font-black text-gray-400 uppercase mb-2 tracking-widest">Tipo</label><select id="edit-type" class="w-full bg-gray-50 border-2 border-gray-100 rounded-2xl px-5 py-3 text-sm font-bold focus:ring-4 focus:ring-blue-100 outline-none transition-all"><option value="Bug">Bug (Erro)</option><option value="Melhoria">Melhoria</option><option value="Dúvida">Dúvida</option><option value="Outros">Outros</option></select></div>
-                                    <div><label class="block text-[10px] font-black text-gray-400 uppercase mb-2 tracking-widest">Estimativa</label><input type="date" id="edit-estimation" class="w-full bg-gray-50 border-2 border-gray-100 rounded-2xl px-5 py-3 text-sm font-bold focus:ring-4 focus:ring-blue-100 outline-none transition-all"></div>
-                                </div>
-                                <div class="pt-6 border-t border-gray-50 flex justify-end"><button onclick="saveTicketUpdates()" class="px-10 py-4 bg-c3c-gradient text-white font-black uppercase text-xs tracking-widest rounded-2xl shadow-xl shadow-blue-100 hover:opacity-90 active:scale-95 transition-all">Salvar Alterações</button></div>
-                            </div>
-                        </div>
-
-                        <!-- TAB: ANEXOS -->
-                        <div id="view-attach" class="hidden fade-in space-y-6 max-w-3xl mx-auto">
-                            <div class="bg-blue-50/50 p-8 border-2 border-dashed border-blue-100 rounded-[40px] text-center group relative hover:border-c3c-blue transition-all">
-                                <input type="file" id="attach-new-file" multiple onchange="uploadFiles(activeTicketId)" class="absolute inset-0 opacity-0 cursor-pointer z-10">
-                                <div class="w-16 h-16 bg-white rounded-2xl shadow-sm text-c3c-blue flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform"><i data-lucide="upload-cloud"></i></div>
-                                <p class="text-xs font-black text-gray-800 uppercase tracking-widest">Enviar Anexos</p>
-                                <p class="text-[10px] font-bold text-gray-400 uppercase mt-1">Imagens, Logs, Documentos...</p>
-                            </div>
-                            <div id="attach-list" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
-                        </div>
-                    </div>
-                </div>
-            </section>
+            </div>
         </div>
     </main>
 
-    <!-- MODAL NOVO CHAMADO -->
-    <div id="new-ticket-modal" class="fixed inset-0 bg-black/60 backdrop-blur-md hidden z-[100] flex items-center justify-center p-4">
-        <div class="bg-white rounded-[40px] shadow-2xl w-full max-w-3xl overflow-hidden transform scale-95 transition-all flex flex-col max-h-[90vh]">
-            <header class="p-8 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center shrink-0">
-                <div class="text-left"><h3 class="text-2xl font-black text-gray-800 tracking-tighter uppercase leading-tight">Novo Chamado</h3><p class="text-[10px] font-black text-c3c-blue uppercase tracking-widest mt-1">Inicie um novo fluxo de atendimento</p></div>
-                <button onclick="closeModal('new-ticket-modal')" class="p-3 text-gray-400 hover:bg-white hover:text-red-500 rounded-full shadow-sm transition-all"><i data-lucide="x"></i></button>
+    <!-- VIEW: DETALHES (PÁGINA INTEIRA) -->
+    <main id="main-detail-view" class="flex-1 flex flex-col md:ml-64 relative w-full transition-all duration-300 overflow-hidden hidden">
+        
+        <!-- HEADER DETALHES -->
+        <header class="h-24 bg-white border-b border-gray-100 flex items-center justify-between px-10 sticky top-0 z-20 shrink-0">
+            <div class="flex items-center gap-6">
+                <button onclick="closeTicketDetails()" class="p-4 bg-gray-50 text-gray-400 hover:text-c3c-blue rounded-3xl transition-all active:scale-90"><i data-lucide="arrow-left" class="w-6 h-6"></i></button>
+                <div class="text-left">
+                    <div class="flex items-center gap-3 mb-1">
+                        <span class="text-[10px] font-black text-gray-400 tracking-widest uppercase" id="detail-number">#0000</span>
+                        <div class="w-1 h-1 bg-gray-200 rounded-full"></div>
+                        <span class="text-[10px] font-black text-c3c-blue uppercase tracking-widest" id="detail-client">CLIENTE</span>
+                    </div>
+                    <h1 class="text-2xl font-black text-gray-800 tracking-tighter uppercase truncate max-w-[600px]" id="detail-title">...</h1>
+                </div>
+            </div>
+
+            <!-- TIMER INTEGRADO NO HEADER DETALHES -->
+            <div class="flex items-center gap-6">
+                <div class="flex items-center bg-gray-50 border border-gray-100 rounded-[24px] px-6 py-3 transition-all" id="timer-container">
+                    <div class="text-2xl font-black text-gray-800 mr-6 w-32 text-center tracking-tighter tabular-nums" id="global-timer">00:00:00</div>
+                    <div class="flex gap-2">
+                        <button id="global-play" onclick="startGlobalTimer()" class="p-3 bg-teal-500 hover:bg-teal-600 text-white rounded-2xl shadow-lg transition-all active:scale-95 disabled:opacity-30" disabled><i data-lucide="play" class="w-4 h-4 fill-current"></i></button>
+                        <button id="global-stop" onclick="stopGlobalTimer()" class="hidden p-3 bg-red-500 hover:bg-red-600 text-white rounded-2xl shadow-lg transition-all active:scale-95"><i data-lucide="square" class="w-4 h-4 fill-current"></i></button>
+                    </div>
+                </div>
+                <div id="header-actions" class="flex gap-3"></div>
+            </div>
+        </header>
+
+        <div class="flex-1 overflow-hidden flex flex-col">
+            <!-- TABS SUPERIORES -->
+            <div class="flex px-10 border-b border-gray-100 bg-white gap-12 shrink-0">
+                <button onclick="switchDetailTab('info')" id="dt-info" class="pb-6 pt-8 text-[11px] font-black uppercase tracking-[0.2em] tab-active whitespace-nowrap">Central de Atuação</button>
+                <button onclick="switchDetailTab('logs')" id="dt-logs" class="pb-6 pt-8 text-[11px] font-black uppercase tracking-[0.2em] text-gray-400 hover:text-gray-600 transition-all whitespace-nowrap">Extrato de Horas</button>
+                <button onclick="switchDetailTab('attach')" id="dt-attach" class="pb-6 pt-8 text-[11px] font-black uppercase tracking-[0.2em] text-gray-400 hover:text-gray-600 transition-all whitespace-nowrap">Anexos & Evidências</button>
+                <button onclick="switchDetailTab('edit')" id="dt-edit" class="pb-6 pt-8 text-[11px] font-black uppercase tracking-[0.2em] text-gray-400 hover:text-gray-600 transition-all whitespace-nowrap hidden">Configurações</button>
+            </div>
+
+            <div class="flex-1 overflow-y-auto p-10 custom-scrollbar bg-gray-50/30">
+                <div id="status-path-container" class="mb-10 max-w-5xl mx-auto"></div>
+
+                <!-- CONTEÚDO DINÂMICO -->
+                <div id="view-info" class="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-10 fade-in">
+                    <!-- COLUNA ESQUERDA (DADOS TÉCNICOS) -->
+                    <div class="lg:col-span-2 space-y-10">
+                        <div class="bg-white p-12 rounded-[48px] border border-gray-100 shadow-sm text-left relative overflow-hidden">
+                            <div class="absolute top-0 left-0 w-2 h-full bg-c3c-blue"></div>
+                            <h4 class="text-[11px] font-black text-gray-400 uppercase tracking-[0.2em] mb-8">Detalhamento do Chamado</h4>
+                            <div class="text-base text-gray-700 leading-relaxed font-medium whitespace-pre-wrap" id="detail-desc">...</div>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-8">
+                            <div class="bg-white p-8 rounded-[40px] border border-gray-100 shadow-sm text-left">
+                                <h4 class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-6">Informações</h4>
+                                <div class="space-y-4">
+                                    <div class="flex justify-between"><span class="text-[10px] font-black text-gray-300 uppercase">Prioridade</span><span class="text-xs font-black text-gray-800" id="info-prio">-</span></div>
+                                    <div class="flex justify-between"><span class="text-[10px] font-black text-gray-300 uppercase">Tipo</span><span class="text-xs font-black text-gray-800" id="info-type">-</span></div>
+                                    <div class="flex justify-between"><span class="text-[10px] font-black text-gray-300 uppercase">Origem</span><span class="text-xs font-black text-gray-800" id="info-origin">-</span></div>
+                                </div>
+                            </div>
+                            <div class="bg-white p-8 rounded-[40px] border border-gray-100 shadow-sm text-left">
+                                <h4 class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-6">Prazos</h4>
+                                <div class="space-y-4">
+                                    <div class="flex justify-between"><span class="text-[10px] font-black text-gray-300 uppercase">Abertura</span><span class="text-xs font-black text-gray-800" id="ts-open">-</span></div>
+                                    <div class="flex justify-between"><span class="text-[10px] font-black text-gray-300 uppercase">SLA Cliente</span><span class="text-xs font-black text-red-500" id="ts-expect">-</span></div>
+                                    <div class="flex justify-between"><span class="text-[10px] font-black text-c3c-blue uppercase">Entrega C3C</span><span class="text-xs font-black text-c3c-blue" id="ts-estim">-</span></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- COLUNA DIREITA (INTERAÇÃO) -->
+                    <div class="space-y-10">
+                        <div class="bg-white p-10 rounded-[48px] border border-gray-100 shadow-sm flex flex-col h-[600px] text-left">
+                            <h4 class="text-[11px] font-black text-gray-400 uppercase tracking-[0.2em] mb-8 px-2">Notas Internas</h4>
+                            <div id="comments-list" class="flex-1 space-y-6 overflow-y-auto custom-scrollbar pr-4 mb-8"></div>
+                            <div class="pt-8 border-t border-gray-50 flex gap-4">
+                                <input type="text" id="quick-comment" placeholder="Escrever comentário..." class="flex-1 bg-gray-50 border-2 border-gray-100 rounded-[24px] px-6 py-4 text-xs font-black outline-none focus:ring-4 focus:ring-blue-50 focus:bg-white transition-all">
+                                <button onclick="postComment()" class="p-5 bg-blue-50 text-c3c-blue rounded-[24px] hover:bg-c3c-blue hover:text-white transition-all active:scale-90 shadow-sm"><i data-lucide="send" class="w-5 h-5"></i></button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TAB: APONTAMENTOS -->
+                <div id="view-logs" class="hidden fade-in space-y-10 max-w-7xl mx-auto">
+                    <div class="bg-white rounded-[48px] shadow-sm border border-gray-100 overflow-hidden">
+                        <table class="w-full text-left">
+                            <thead class="bg-gray-50/50 border-b border-gray-100">
+                                <tr class="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">
+                                    <th class="px-10 py-6">Data</th>
+                                    <th class="px-8 py-6">Recurso</th>
+                                    <th class="px-8 py-6">Atividade</th>
+                                    <th class="px-8 py-6 text-center">Status</th>
+                                    <th class="px-6 py-6 text-center">H. Normal</th>
+                                    <th class="px-6 py-6 text-center">H. Extra</th>
+                                    <th class="px-10 py-6 text-center">Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="logs-table-body" class="divide-y divide-gray-50"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- TAB: ANEXOS -->
+                <div id="view-attach" class="hidden fade-in space-y-10 max-w-5xl mx-auto text-left">
+                    <div class="bg-blue-50/20 p-16 border-4 border-dashed border-blue-100 rounded-[60px] text-center group relative hover:border-c3c-blue transition-all">
+                        <input type="file" id="attach-new-file" multiple onchange="uploadFiles(activeTicketId)" class="absolute inset-0 opacity-0 cursor-pointer z-10">
+                        <div class="w-24 h-24 bg-white rounded-[32px] shadow-xl text-c3c-blue flex items-center justify-center mx-auto mb-8 group-hover:scale-110 transition-transform"><i data-lucide="cloud-upload" class="w-10 h-10"></i></div>
+                        <p class="text-lg font-black text-gray-800 uppercase tracking-[0.2em]">Dropzone Digital</p>
+                        <p class="text-xs font-bold text-gray-400 uppercase mt-2 tracking-widest">Arraste seus arquivos ou clique aqui para selecionar</p>
+                    </div>
+                    <div id="attach-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"></div>
+                </div>
+
+                <!-- TAB: CONFIGURAÇÕES -->
+                <div id="view-edit" class="hidden fade-in max-w-3xl mx-auto">
+                    <div class="bg-white p-16 rounded-[60px] border border-gray-100 shadow-2xl shadow-blue-50/50 space-y-12 text-left">
+                        <div class="grid grid-cols-2 gap-10">
+                            <div><label class="block text-[11px] font-black text-gray-400 uppercase mb-4 tracking-widest px-2">Fluxo de Status</label><select id="edit-status" class="w-full bg-gray-50 border-2 border-gray-100 rounded-[24px] px-8 py-5 text-sm font-black focus:ring-4 focus:ring-blue-100 outline-none transition-all cursor-pointer"><option value="New">Fila de Triagem</option><option value="In Progress">Em Atendimento</option><option value="On Hold">Em Pausa Técnica</option><option value="Waiting">Aguardando Cliente</option><option value="Closed">Encerrar Chamado</option></select></div>
+                            <div><label class="block text-[11px] font-black text-gray-400 uppercase mb-4 tracking-widest px-2">Nível de Criticidade</label><select id="edit-priority" class="w-full bg-gray-50 border-2 border-gray-100 rounded-[24px] px-8 py-5 text-sm font-black focus:ring-4 focus:ring-blue-100 outline-none transition-all cursor-pointer"><option value="Low">Baixa Prioridade</option><option value="Medium">Média Prioridade</option><option value="High">Alta Prioridade</option><option value="Critical">Prioridade Crítica</option></select></div>
+                        </div>
+                        <div><label class="block text-[11px] font-black text-gray-400 uppercase mb-4 tracking-widest px-2">Estimativa de Conclusão</label><input type="date" id="edit-estimation" class="w-full bg-gray-50 border-2 border-gray-100 rounded-[24px] px-8 py-5 text-sm font-black focus:ring-4 focus:ring-blue-100 transition-all outline-none"></div>
+                        <div class="pt-10 border-t border-gray-50 flex justify-end"><button onclick="saveTicketUpdates()" class="px-16 py-6 bg-c3c-gradient text-white font-black uppercase text-xs tracking-[0.3em] rounded-[32px] shadow-2xl shadow-blue-100 hover:opacity-90 active:scale-95 transition-all">Sincronizar Workspace</button></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- MODAL NOVO CHAMADO (REFATORADO) -->
+    <div id="new-ticket-modal" class="fixed inset-0 bg-black/80 backdrop-blur-2xl hidden z-[300] flex items-center justify-center p-4">
+        <div class="bg-white rounded-[60px] shadow-2xl w-full max-w-5xl overflow-hidden transform scale-95 transition-all flex flex-col max-h-[95vh]">
+            <header class="p-12 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center shrink-0">
+                <div class="text-left"><h3 class="text-4xl font-black text-gray-800 tracking-tighter uppercase leading-tight">Novo Chamado</h3><p class="text-xs font-black text-c3c-blue uppercase tracking-[0.3em] mt-3">Preencha todos os campos obrigatórios (*)</p></div>
+                <button onclick="closeModal('new-ticket-modal')" class="p-5 text-gray-400 hover:bg-white hover:text-red-500 rounded-full shadow-sm transition-all"><i data-lucide="x" class="w-8 h-8"></i></button>
             </header>
-            <div class="p-8 overflow-y-auto custom-scrollbar flex-1 bg-white">
-                <form id="form-create-ticket" class="space-y-8 text-left">
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div><label class="block text-[10px] font-black text-gray-400 uppercase mb-2 tracking-widest px-2">Serviço/Contrato</label><select id="new-service" onchange="onServiceChange()" class="w-full bg-gray-50 border-2 border-gray-100 rounded-2xl px-5 py-3 text-sm font-bold focus:ring-4 focus:ring-blue-100 outline-none transition-all"><option value="">Selecione...</option></select><input type="hidden" id="new-account-id"></div>
-                        <div><label class="block text-[10px] font-black text-gray-400 uppercase mb-2 tracking-widest px-2 flex justify-between">Contato <span><button type="button" onclick="toggleContactMode()" class="text-c3c-blue lowercase hover:underline">+ Criar</button></span></label><div id="contact-select-mode"><select id="new-contact" disabled class="w-full bg-gray-50 border-2 border-gray-100 rounded-2xl px-5 py-3 text-sm font-bold focus:ring-4 focus:ring-blue-100 outline-none transition-all disabled:opacity-50"><option value="">Selecione o serviço...</option></select></div><div id="contact-create-mode" class="hidden space-y-3"><input type="text" id="new-contact-name" placeholder="Nome completo" class="w-full bg-gray-50 border-2 border-gray-100 rounded-2xl px-5 py-2 text-xs font-bold outline-none"><input type="email" id="new-contact-email" placeholder="E-mail" class="w-full bg-gray-50 border-2 border-gray-100 rounded-2xl px-5 py-2 text-xs font-bold outline-none"><div class="flex gap-2"><input type="text" id="new-contact-mobile" placeholder="Celular" class="flex-1 bg-gray-50 border-2 border-gray-100 rounded-2xl px-5 py-2 text-xs font-bold outline-none"><button type="button" onclick="saveNewContact()" class="p-3 bg-teal-500 text-white rounded-2xl hover:bg-teal-600 transition-all"><i data-lucide="check" class="w-4 h-4"></i></button><button type="button" onclick="toggleContactMode()" class="p-3 bg-gray-100 text-gray-400 rounded-2xl hover:bg-gray-200 transition-all"><i data-lucide="x" class="w-4 h-4"></i></button></div></div></div>
+            <div class="p-12 overflow-y-auto custom-scrollbar flex-1 bg-white">
+                <form id="form-create-ticket" class="space-y-12 text-left">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-10">
+                        <div><label class="block text-[11px] font-black text-gray-400 uppercase mb-4 tracking-widest px-4">Serviço/Contrato <span class="text-red-500">*</span></label><select id="new-service" onchange="onServiceChange()" required class="w-full bg-gray-50 border-2 border-gray-100 rounded-[24px] px-8 py-5 text-sm font-black focus:ring-4 focus:ring-blue-50 outline-none transition-all cursor-pointer"><option value="">Selecione...</option></select><input type="hidden" id="new-account-id"></div>
+                        <div><label class="block text-[11px] font-black text-gray-400 uppercase mb-4 tracking-widest px-4 flex justify-between">Contato <span class="text-red-500">*</span> <button type="button" onclick="toggleContactMode()" class="text-c3c-blue font-bold lowercase hover:underline">+ criar novo</button></label><div id="contact-select-mode"><select id="new-contact" disabled required class="w-full bg-gray-50 border-2 border-gray-100 rounded-[24px] px-8 py-5 text-sm font-black focus:ring-4 focus:ring-blue-50 outline-none transition-all disabled:opacity-50"><option value="">Selecione o serviço...</option></select></div><div id="contact-create-mode" class="hidden space-y-4 p-6 bg-blue-50/30 rounded-[32px] border border-blue-100/50"><input type="text" id="new-contact-name" placeholder="Nome Completo *" class="w-full bg-white border-2 border-gray-100 rounded-[16px] px-6 py-4 text-xs font-black outline-none"><input type="email" id="new-contact-email" placeholder="E-mail Corporativo *" class="w-full bg-white border-2 border-gray-100 rounded-[16px] px-6 py-4 text-xs font-black outline-none"><div class="flex gap-3"><input type="text" id="new-contact-mobile" placeholder="Celular *" class="flex-1 bg-white border-2 border-gray-100 rounded-[16px] px-6 py-4 text-xs font-black outline-none"><button type="button" onclick="saveNewContact()" class="px-6 bg-teal-500 text-white rounded-2xl hover:bg-teal-600 shadow-lg shadow-teal-100 transition-all"><i data-lucide="check"></i></button><button type="button" onclick="toggleContactMode()" class="px-6 bg-gray-100 text-gray-400 rounded-2xl hover:bg-gray-200 transition-all"><i data-lucide="x"></i></button></div></div></div>
                     </div>
-                    <div><label class="block text-[10px] font-black text-gray-400 uppercase mb-2 tracking-widest px-2">Assunto / Resumo</label><input type="text" id="new-subject" placeholder="Ex: Erro ao emitir nota fiscal..." class="w-full bg-gray-50 border-2 border-gray-100 rounded-2xl px-5 py-3 text-sm font-bold focus:ring-4 focus:ring-blue-100 outline-none transition-all"></div>
-                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                        <div><label class="block text-[10px] font-black text-gray-400 uppercase mb-2 tracking-widest">Prioridade</label><select id="new-priority" class="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-2 text-[10px] font-black uppercase outline-none focus:ring-2 focus:ring-blue-100"><option value="Low">Baixa</option><option value="Medium" selected>Média</option><option value="High">Alta</option><option value="Critical">Crítica</option></select></div>
-                        <div><label class="block text-[10px] font-black text-gray-400 uppercase mb-2 tracking-widest">Tipo</label><select id="new-type" onchange="updateDescriptionTemplate()" class="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-2 text-[10px] font-black uppercase outline-none focus:ring-2 focus:ring-blue-100"><option value="Bug">Bug</option><option value="Melhoria" selected>Melhoria</option><option value="Dúvida">Dúvida</option><option value="Outros">Outros</option></select></div>
-                        <div><label class="block text-[10px] font-black text-gray-400 uppercase mb-2 tracking-widest">Origem</label><select id="new-origin" class="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-2 text-[10px] font-black uppercase outline-none focus:ring-2 focus:ring-blue-100"><option value="Email">E-mail</option><option value="Phone">Telefone</option><option value="Web" selected>Portal</option><option value="Chat">Chat</option></select></div>
-                        <div><label class="block text-[10px] font-black text-gray-400 uppercase mb-2 tracking-widest">Expectativa</label><input type="date" id="new-expectation" class="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-2 text-[10px] font-bold outline-none focus:ring-2 focus:ring-blue-100"></div>
+                    <div><label class="block text-[11px] font-black text-gray-400 uppercase mb-4 tracking-widest px-4">Assunto do Chamado <span class="text-red-500">*</span></label><input type="text" id="new-subject" required placeholder="Ex: Erro ao processar arquivo de remessa..." class="w-full bg-gray-50 border-2 border-gray-100 rounded-[24px] px-8 py-5 text-sm font-black focus:ring-4 focus:ring-blue-50 outline-none transition-all"></div>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-8">
+                        <div><label class="block text-[11px] font-black text-gray-400 uppercase mb-4 tracking-widest px-2">Criticidade <span class="text-red-500">*</span></label><select id="new-priority" required class="w-full bg-gray-50 border border-gray-100 rounded-2xl px-5 py-4 text-[10px] font-black uppercase outline-none focus:ring-2 focus:ring-blue-100"><option value="Low">Baixa</option><option value="Medium" selected>Média</option><option value="High">Alta</option><option value="Critical">Crítica</option></select></div>
+                        <div><label class="block text-[11px] font-black text-gray-400 uppercase mb-4 tracking-widest px-2">Tipo <span class="text-red-500">*</span></label><select id="new-type" required onchange="updateDescriptionTemplate()" class="w-full bg-gray-50 border border-gray-100 rounded-2xl px-5 py-4 text-[10px] font-black uppercase outline-none focus:ring-2 focus:ring-blue-100"><option value="Bug">Bug</option><option value="Melhoria" selected>Melhoria</option><option value="Dúvida">Dúvida</option><option value="Outros">Outros</option></select></div>
+                        <div><label class="block text-[11px] font-black text-gray-400 uppercase mb-4 tracking-widest px-2">Origem <span class="text-red-500">*</span></label><select id="new-origin" required class="w-full bg-gray-50 border border-gray-100 rounded-2xl px-5 py-4 text-[10px] font-black uppercase outline-none focus:ring-2 focus:ring-blue-100"><option value="Email">E-mail</option><option value="Phone">Telefone</option><option value="Web" selected>Portal</option><option value="Chat">Chat</option></select></div>
+                        <div><label class="block text-[11px] font-black text-gray-400 uppercase mb-4 tracking-widest px-2">Expectativa <span class="text-red-500">*</span></label><input type="date" id="new-expectation" required class="w-full bg-gray-50 border border-gray-100 rounded-2xl px-5 py-4 text-[10px] font-black outline-none focus:ring-2 focus:ring-blue-100"></div>
                     </div>
-                    <div><label class="block text-[10px] font-black text-gray-400 uppercase mb-2 tracking-widest px-2">Detalhamento</label><textarea id="new-desc" rows="5" class="w-full bg-gray-50 border-2 border-gray-100 rounded-[32px] p-6 text-sm font-medium focus:ring-4 focus:ring-blue-50 outline-none transition-all resize-none placeholder:text-gray-300"></textarea></div>
-                    <div class="bg-blue-50/50 p-6 rounded-[32px] border border-blue-100/50 flex flex-col md:flex-row items-center justify-between gap-4"><div class="flex items-center gap-4 text-left"><div class="w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-c3c-blue shadow-sm shrink-0"><i data-lucide="paperclip" class="w-5 h-5"></i></div><div><p class="text-[10px] font-black text-gray-800 uppercase tracking-widest">Anexar arquivos iniciais</p><input type="file" id="new-files" multiple class="text-[10px] text-gray-400 font-bold mt-1"></div></div><label class="flex items-center gap-3 cursor-pointer group"><input type="checkbox" id="new-assign" checked class="w-5 h-5 rounded-lg border-2 border-gray-200 text-teal-500 focus:ring-teal-100"><span class="text-[10px] font-black text-gray-500 uppercase tracking-widest group-hover:text-gray-700">Assumir Chamado</span></label></div>
+                    <div><label class="block text-[11px] font-black text-gray-400 uppercase mb-4 tracking-widest px-4">Descrição Detalhada <span class="text-red-500">*</span></label><textarea id="new-desc" required rows="6" class="w-full bg-gray-50 border-2 border-gray-100 rounded-[40px] p-10 text-sm font-medium focus:ring-4 focus:ring-blue-50 outline-none transition-all resize-none placeholder:text-gray-300" placeholder="Forneça o máximo de detalhes, prints, logs e caminhos para o erro..."></textarea></div>
+                    
+                    <!-- ANEXO MODERNIZADO -->
+                    <div class="bg-gray-50/50 p-10 rounded-[48px] border border-gray-100 relative group hover:border-c3c-blue transition-all flex flex-col items-center">
+                        <input type="file" id="new-files" multiple class="absolute inset-0 opacity-0 cursor-pointer z-10">
+                        <div class="w-16 h-16 bg-white rounded-2xl shadow-md text-c3c-blue flex items-center justify-center mb-4 group-hover:scale-110 transition-transform"><i data-lucide="paperclip" class="w-6 h-6"></i></div>
+                        <p class="text-xs font-black text-gray-800 uppercase tracking-widest">Adicionar Anexos</p>
+                        <p class="text-[10px] font-bold text-gray-400 uppercase mt-1">Imagens ou Documentos (Opcional)</p>
+                    </div>
                 </form>
             </div>
-            <footer class="p-8 border-t border-gray-100 bg-gray-50/50 flex justify-end gap-4 shrink-0"><button onclick="closeModal('new-ticket-modal')" class="px-6 py-3 text-gray-400 font-black uppercase text-[10px] tracking-widest hover:text-gray-600 transition-all">Cancelar</button><button onclick="submitNewTicket()" class="px-10 py-4 bg-c3c-gradient text-white font-black uppercase text-xs tracking-widest rounded-2xl shadow-xl shadow-blue-100 hover:opacity-90 active:scale-95 transition-all">Criar Chamado</button></footer>
+            <footer class="p-12 border-t border-gray-100 bg-gray-50/50 flex justify-between items-center shrink-0">
+                <label class="flex items-center gap-4 cursor-pointer group bg-white px-8 py-4 rounded-3xl border border-gray-100 shadow-sm"><input type="checkbox" id="new-assign" checked class="w-6 h-6 rounded-xl border-2 border-gray-200 text-teal-500 focus:ring-teal-100"><span class="text-xs font-black text-gray-500 uppercase tracking-widest group-hover:text-gray-800">Assumir este Chamado</span></label>
+                <div class="flex gap-6">
+                    <button onclick="closeModal('new-ticket-modal')" class="px-10 py-5 text-gray-400 font-black uppercase text-[11px] tracking-[0.3em] hover:text-gray-600">Cancelar</button>
+                    <button onclick="submitNewTicket()" class="px-16 py-6 bg-c3c-gradient text-white font-black uppercase text-xs tracking-[0.3em] rounded-[32px] shadow-2xl shadow-blue-100 hover:opacity-90 active:scale-95 transition-all">Abrir Chamado</button>
+                </div>
+            </footer>
         </div>
     </div>
 
     <!-- MODAL APONTAMENTO -->
-    <div id="time-modal" class="fixed inset-0 bg-black/80 backdrop-blur-md hidden z-[110] flex items-center justify-center p-4">
-        <div class="bg-white rounded-[40px] shadow-2xl w-full max-w-md p-10 text-center transform scale-95 transition-all flex flex-col items-center">
-            <div class="w-20 h-20 bg-blue-50 rounded-full flex items-center justify-center mb-6 text-c3c-blue shadow-inner"><i data-lucide="clock" class="w-10 h-10"></i></div>
-            <h3 class="text-2xl font-black text-gray-800 tracking-tighter uppercase mb-2">Apontar Horas</h3>
-            <p id="lock-warning" class="text-[10px] font-black text-red-500 bg-red-50 px-3 py-1 rounded-full border border-red-100 uppercase tracking-widest mb-6 hidden"></p>
-            
+    <div id="time-modal" class="fixed inset-0 bg-black/80 backdrop-blur-md hidden z-[400] flex items-center justify-center p-4">
+        <div class="bg-white rounded-[60px] shadow-2xl w-full max-w-md p-12 text-center transform scale-95 transition-all flex flex-col items-center">
+            <div class="w-24 h-24 bg-blue-50 rounded-[32px] flex items-center justify-center mb-8 text-c3c-blue shadow-inner group transition-transform hover:scale-110"><i data-lucide="clock" class="w-12 h-12"></i></div>
+            <h3 class="text-3xl font-black text-gray-800 tracking-tighter uppercase mb-2">Apontar Jornada</h3>
+            <p id="lock-warning" class="text-[10px] font-black text-red-500 bg-red-50 px-4 py-1.5 rounded-full border border-red-100 uppercase tracking-widest mb-8 hidden"></p>
             <input type="hidden" id="modal-log-id">
-            <div class="w-full space-y-6">
-                <div class="grid grid-cols-2 gap-4">
-                    <div class="text-left"><label class="block text-[9px] font-black text-gray-400 uppercase mb-2 tracking-widest px-2">Data</label><input type="date" id="modal-date" onchange="fetchLimits()" class="w-full bg-gray-50 border-2 border-gray-100 rounded-2xl px-5 py-3 text-xs font-bold outline-none focus:ring-4 focus:ring-blue-50 transition-all"></div>
-                    <div class="text-left"><label class="block text-[9px] font-black text-gray-400 uppercase mb-2 tracking-widest px-2">Atividade</label><select id="modal-activity-select" onchange="toggleNewActivityInput()" class="w-full bg-gray-50 border-2 border-gray-100 rounded-2xl px-5 py-3 text-xs font-bold outline-none focus:ring-4 focus:ring-blue-50 transition-all"></select><input type="text" id="modal-new-activity-name" placeholder="Nome da nova atividade" class="w-full mt-2 bg-gray-50 border-2 border-gray-100 rounded-xl px-4 py-2 text-xs font-bold hidden"></div>
+            <div class="w-full space-y-8">
+                <div class="grid grid-cols-2 gap-6">
+                    <div class="text-left"><label class="block text-[9px] font-black text-gray-400 uppercase mb-3 tracking-widest px-3">Data Lançamento</label><input type="date" id="modal-date" onchange="fetchLimits()" class="w-full bg-gray-50 border-2 border-gray-100 rounded-[20px] px-6 py-4 text-xs font-black outline-none focus:ring-4 focus:ring-blue-50 transition-all"></div>
+                    <div class="text-left"><label class="block text-[9px] font-black text-gray-400 uppercase mb-3 tracking-widest px-3">Atividade</label><select id="modal-activity-select" onchange="toggleNewActivityInput()" class="w-full bg-gray-50 border-2 border-gray-100 rounded-[20px] px-6 py-4 text-xs font-black outline-none focus:ring-4 focus:ring-blue-50 transition-all"></select><input type="text" id="modal-new-activity-name" placeholder="Nova Atividade..." class="w-full mt-3 bg-gray-50 border-2 border-gray-100 rounded-xl px-5 py-3 text-xs font-black hidden"></div>
                 </div>
-                <div class="grid grid-cols-2 gap-4">
-                    <div class="relative text-left"><label class="block text-[9px] font-black text-teal-600 uppercase mb-2 tracking-widest px-2">Normal</label><input type="number" id="modal-hours-normal" step="0.5" onchange="formatHours(this)" placeholder="0.0" class="w-full bg-white border-2 border-gray-100 rounded-2xl px-5 py-4 text-xl font-black text-gray-800 outline-none focus:ring-4 focus:ring-teal-100 transition-all text-center"></div>
-                    <div class="relative text-left"><label class="block text-[9px] font-black text-orange-500 uppercase mb-2 tracking-widest px-2 flex justify-between">Extra <i data-lucide="lock" class="w-3 h-3" id="icon-lock-extra"></i></label><input type="number" id="modal-hours-extra" step="0.5" onchange="formatHours(this)" placeholder="0.0" disabled class="w-full bg-gray-50 border-2 border-gray-100 rounded-2xl px-5 py-4 text-xl font-black text-gray-400 outline-none focus:ring-4 focus:ring-orange-100 transition-all text-center"></div>
+                <div class="grid grid-cols-2 gap-6">
+                    <div class="relative text-left"><label class="block text-[10px] font-black text-teal-600 uppercase mb-3 tracking-widest px-3 text-center">Horas Normais</label><input type="number" id="modal-hours-normal" step="0.5" onchange="formatHours(this)" placeholder="0.0" class="w-full bg-white border-2 border-gray-100 rounded-[24px] px-6 py-5 text-2xl font-black text-gray-800 outline-none focus:ring-4 focus:ring-teal-100 transition-all text-center"></div>
+                    <div class="relative text-left"><label class="block text-[10px] font-black text-orange-500 uppercase mb-3 tracking-widest px-3 flex justify-between">Extra <i data-lucide="lock" class="w-4 h-4" id="icon-lock-extra"></i></label><input type="number" id="modal-hours-extra" step="0.5" onchange="formatHours(this)" placeholder="0.0" disabled class="w-full bg-gray-50 border-2 border-gray-100 rounded-[24px] px-6 py-5 text-2xl font-black text-gray-400 outline-none focus:ring-4 focus:ring-orange-100 transition-all text-center"></div>
                 </div>
-                <div class="bg-gray-50 p-4 rounded-3xl border border-gray-100 flex justify-around items-center"><div class="flex flex-col"><span class="text-[8px] font-black text-gray-400 uppercase">Total Dia</span><span id="val-used" class="text-xs font-black text-gray-700">0.0h</span></div><div class="w-px h-6 bg-gray-200"></div><div class="flex flex-col"><span class="text-[8px] font-black text-gray-400 uppercase">Limite</span><span id="val-limit" class="text-xs font-black text-gray-700">8.0h</span></div><div class="w-px h-6 bg-gray-200"></div><div class="flex flex-col"><span class="text-[8px] font-black text-teal-600 uppercase">Saldo</span><span id="val-saldo" class="text-xs font-black text-teal-600">8.0h</span></div></div>
-                <div class="text-left"><label class="block text-[9px] font-black text-gray-400 uppercase mb-2 tracking-widest px-2">Justificativa / Descrição</label><textarea id="modal-desc" rows="3" class="w-full bg-gray-50 border-2 border-gray-100 rounded-[24px] p-5 text-xs font-medium outline-none focus:ring-4 focus:ring-blue-50 transition-all resize-none placeholder:text-gray-300" placeholder="O que você realizou?"></textarea></div>
+                <div class="bg-gray-50 p-6 rounded-[32px] border border-gray-100 flex justify-around items-center"><div class="flex flex-col"><span class="text-[9px] font-black text-gray-400 uppercase tracking-widest">Dia</span><span id="val-used" class="text-sm font-black text-gray-800 tabular-nums">0.0h</span></div><div class="w-px h-8 bg-gray-200"></div><div class="flex flex-col"><span class="text-[9px] font-black text-gray-400 uppercase tracking-widest">Saldo</span><span id="val-saldo" class="text-sm font-black text-teal-600 tabular-nums">8.0h</span></div></div>
+                <div class="text-left"><label class="block text-[10px] font-black text-gray-400 uppercase mb-3 tracking-widest px-3">O que você desenvolveu?</label><textarea id="modal-desc" rows="3" class="w-full bg-gray-50 border-2 border-gray-100 rounded-[32px] p-6 text-xs font-medium outline-none focus:ring-4 focus:ring-blue-50 transition-all resize-none placeholder:text-gray-300"></textarea></div>
             </div>
-            <div class="flex gap-4 w-full mt-10"><button onclick="closeModal('time-modal')" class="flex-1 py-4 text-gray-400 font-black uppercase text-[10px] tracking-widest">Voltar</button><button id="btn-save-log" onclick="saveLog()" class="flex-[2] py-4 bg-c3c-gradient text-white font-black uppercase text-xs tracking-widest rounded-2xl shadow-xl shadow-blue-100 hover:opacity-90 active:scale-95 transition-all">Salvar Apontamento</button></div>
+            <div class="flex gap-6 w-full mt-12"><button onclick="closeModal('time-modal')" class="flex-1 py-5 text-gray-400 font-black uppercase text-[11px] tracking-[0.2em] hover:text-gray-600 transition-all">Voltar</button><button id="btn-save-log" onclick="saveLog()" class="flex-[2] py-5 bg-c3c-gradient text-white font-black uppercase text-xs tracking-[0.2em] rounded-[24px] shadow-2xl shadow-blue-100 hover:opacity-90 active:scale-95 transition-all">Confirmar</button></div>
         </div>
     </div>
 
@@ -290,58 +348,87 @@
 
         document.getElementById('search-tickets').addEventListener('input', (e) => {
             const t = e.target.value.toLowerCase();
-            renderList(ticketsCache.filter(x => x.title.toLowerCase().includes(t) || x.caseNumber.toLowerCase().includes(t) || x.client.toLowerCase().includes(t)));
+            renderTable(ticketsCache.filter(x => x.title.toLowerCase().includes(t) || x.caseNumber.toLowerCase().includes(t) || x.client.toLowerCase().includes(t)));
         });
 
         async function changeFilter(type) {
             currentFilter = type;
             ['my','queue','team','all'].forEach(t => { 
                 const b = document.getElementById(`tab-${t}`); 
-                if(t===type) b.className = 'flex-1 py-2.5 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all bg-white text-c3c-blue shadow-sm px-4';
-                else b.className = 'flex-1 py-2.5 text-[10px] font-black uppercase tracking-widest rounded-xl text-gray-400 hover:text-gray-600 transition-all whitespace-nowrap px-4';
+                if(t===type) b.className = 'px-8 py-3 text-[10px] font-black uppercase tracking-widest rounded-[14px] transition-all bg-c3c-blue text-white shadow-lg shadow-blue-100';
+                else b.className = 'px-8 py-3 text-[10px] font-black uppercase tracking-widest rounded-[14px] text-gray-400 hover:text-gray-600 transition-all';
             });
-            const list = document.getElementById('tickets-list-container'); list.innerHTML = '<div class="py-10 text-center"><div class="w-8 h-8 border-4 border-blue-50 border-t-c3c-blue rounded-full animate-spin mx-auto"></div></div>';
+            const body = document.getElementById('tickets-table-body'); body.innerHTML = '<tr><td colspan="6" class="py-20 text-center"><div class="w-10 h-10 border-4 border-blue-50 border-t-c3c-blue rounded-full animate-spin mx-auto"></div></td></tr>';
             try { 
                 const res = await fetch(`/api/ops/tickets?filter=${type}`);
-                ticketsCache = await res.json(); renderList(ticketsCache);
-            } catch(e) { list.innerHTML = '<p class="text-center text-xs text-red-400 font-black uppercase">Erro de conexão</p>'; }
+                ticketsCache = await res.json(); renderTable(ticketsCache);
+                updateStats(ticketsCache);
+            } catch(e) { body.innerHTML = '<tr><td colspan="6" class="text-center py-10 text-red-400 font-black uppercase">Erro de conexão</td></tr>'; }
         }
 
-        function renderList(data) {
-            const list = document.getElementById('tickets-list-container'); list.innerHTML = '';
-            if(data.length === 0) return list.innerHTML = '<div class="py-20 text-center opacity-30"><i data-lucide="package-search" class="w-10 h-10 mx-auto mb-2"></i><p class="text-[10px] font-black uppercase tracking-widest">Nada encontrado</p></div>';
+        function updateStats(data) {
+            document.getElementById('stat-total').innerText = data.length;
+            document.getElementById('stat-urgent').innerText = data.filter(x => x.priority === 'High' || x.priority === 'Critical').length;
+            document.getElementById('stat-my').innerText = data.filter(x => x.ownerId === '<%= user.id %>').length;
+            document.getElementById('list-count-info').innerText = `Exibindo ${data.length} chamados`;
+        }
+
+        function renderTable(data) {
+            const body = document.getElementById('tickets-table-body'); body.innerHTML = '';
+            if(data.length === 0) return body.innerHTML = '<tr><td colspan="6" class="py-32 text-center opacity-30"><i data-lucide="inbox" class="w-12 h-12 mx-auto mb-4"></i><p class="text-[10px] font-black uppercase tracking-[0.3em]">Nada encontrado</p></td></tr>';
             data.forEach(t => {
                 const isUrgent = t.priority === 'High' || t.priority === 'Critical';
-                const brd = isUrgent ? 'border-red-100' : 'border-gray-100';
-                const bg = isUrgent ? 'bg-red-50/30' : 'bg-white';
-                list.innerHTML += `<div onclick="loadTicketDetails('${t.id}')" class="p-5 border ${brd} rounded-[24px] cursor-pointer hover:shadow-xl hover:shadow-blue-50 transition-all ${bg} text-left group">
-                    <div class="flex justify-between items-start mb-3">
-                        <span class="text-[9px] font-black text-gray-400 tracking-widest uppercase group-hover:text-c3c-blue transition-colors">${t.caseNumber}</span>
-                        <span class="text-[8px] font-black uppercase px-2 py-0.5 rounded-full border border-gray-100 bg-gray-50 text-gray-500">${t.status}</span>
-                    </div>
-                    <div class="text-sm font-black text-gray-800 leading-snug line-clamp-2 mb-4">${t.title}</div>
-                    <div class="flex justify-between items-center pt-4 border-t border-gray-50">
-                        <span class="text-[9px] font-black text-gray-400 uppercase truncate max-w-[150px]">${t.client}</span>
-                        <span class="text-[8px] font-bold text-gray-300 uppercase">${t.date}</span>
-                    </div>
-                </div>`;
+                const prioLabel = isUrgent ? '<span class="bg-red-50 text-red-600 px-3 py-1 rounded-full text-[8px] font-black border border-red-100">URGENTE</span>' : '';
+                body.innerHTML += `<tr class="hover:bg-gray-50/50 transition-all group">
+                    <td class="px-10 py-6 text-xs font-black text-gray-400 tracking-widest uppercase">${t.caseNumber}</td>
+                    <td class="px-6 py-6"><p class="text-xs font-black text-gray-800 uppercase tracking-tighter">${t.client}</p><p class="text-[9px] font-bold text-gray-400 uppercase tracking-widest mt-1">${t.serviceName || 'SUPORTE'}</p></td>
+                    <td class="px-6 py-6 text-sm font-black text-gray-700 max-w-md truncate">${t.title} ${prioLabel}</td>
+                    <td class="px-6 py-6 text-center"><span class="px-3 py-1 bg-white border border-gray-100 rounded-full text-[8px] font-black text-gray-500 shadow-sm uppercase">${t.status}</span></td>
+                    <td class="px-6 py-6 text-center text-[10px] font-black text-gray-400 uppercase">${t.date}</td>
+                    <td class="px-10 py-6 text-right"><button onclick="loadTicketDetails('${t.id}')" class="px-6 py-2.5 bg-white border-2 border-blue-50 text-c3c-blue font-black text-[9px] uppercase tracking-widest rounded-xl hover:bg-c3c-blue hover:text-white transition-all">Atuar</button></td>
+                </tr>`;
             });
             lucide.createIcons();
         }
 
+        async function loadTicketDetails(id) {
+            toggleLoading(true);
+            try {
+                const res = await fetch(`/api/ops/tickets/${id}/details`); const det = await res.json(); currentTicketData = det.ticket; activeTicketId = id;
+                document.getElementById('main-list-view').classList.add('hidden');
+                document.getElementById('main-detail-view').classList.remove('hidden');
+                
+                document.getElementById('detail-number').innerText = currentTicketData.CaseNumber;
+                document.getElementById('detail-client').innerText = currentTicketData.Account ? currentTicketData.Account.Name : 'CLIENTE';
+                document.getElementById('detail-title').innerText = currentTicketData.Subject;
+                
+                renderStatusPath(currentTicketData.Status);
+                setupActions(); switchDetailTab('info');
+                
+                document.getElementById('info-status').innerText = currentTicketData.Status; document.getElementById('info-prio').innerText = currentTicketData.Priority; document.getElementById('info-type').innerText = currentTicketData.Type; document.getElementById('info-origin').innerText = currentTicketData.Origin; document.getElementById('detail-desc').innerText = currentTicketData.Description || '-';
+                document.getElementById('ts-open').innerText = formatDate(currentTicketData.CreatedDate); document.getElementById('ts-expect').innerText = formatDate(currentTicketData.DataExpectativaCliente__c); document.getElementById('ts-estim').innerText = formatDate(currentTicketData.DataEstimativaEntrega__c); document.getElementById('ts-last-ops').innerText = formatDate(currentTicketData.LastUpdateOps);
+                document.getElementById('edit-status').value = currentTicketData.Status; document.getElementById('edit-priority').value = currentTicketData.Priority; document.getElementById('edit-estimation').value = currentTicketData.DataEstimativaEntrega__c || '';
+                
+                renderLogs(det.logs); renderComments(det.comments); renderAttach(det.attachments);
+            } catch(e) { console.error(e); } finally { toggleLoading(false); }
+        }
+
+        function closeTicketDetails() { document.getElementById('main-detail-view').classList.add('hidden'); document.getElementById('main-list-view').classList.remove('hidden'); if(globalInterval) stopGlobalTimer(); }
+
+        function formatDate(dt) { if(!dt) return '-'; return new Date(dt.split('T')[0] + 'T12:00:00').toLocaleDateString('pt-BR'); }
         function setupActions() {
             const acts = document.getElementById('header-actions'); let btns = '';
-            const logBtn = `<button onclick="openLogModal(false)" class="bg-white border-2 border-blue-50 text-c3c-blue px-6 py-2.5 rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-sm hover:bg-blue-50 active:scale-95 transition-all flex items-center gap-2"><i data-lucide="plus" class="w-3.5 h-3.5"></i> Lançar</button><button onclick="startGlobalTimer()" class="bg-teal-500 text-white px-6 py-2.5 rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-xl shadow-teal-100 hover:bg-teal-600 active:scale-95 transition-all flex items-center gap-2"><i data-lucide="clock" class="w-3.5 h-3.5"></i> Timer</button>`;
-            if(currentFilter === 'queue') btns = `<button onclick="assignTicket()" class="bg-c3c-gradient text-white px-8 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-xl shadow-blue-100 active:scale-95 transition-all">Assumir Chamado</button>`;
-            else if(currentFilter === 'my') btns = `${logBtn}<button onclick="transferTicket('queue')" class="px-6 py-2.5 text-red-400 hover:text-red-600 text-[10px] font-black uppercase tracking-widest transition-all">Devolver</button>`;
-            else btns = `${logBtn}<button onclick="assignTicket()" class="bg-white border-2 border-blue-50 text-c3c-blue px-6 py-2.5 rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-sm hover:bg-blue-50 transition-all active:scale-95">Puxar p/ Mim</button>`;
+            const logBtn = `<button onclick="openLogModal(false)" class="bg-white border-2 border-blue-50 text-c3c-blue px-8 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-sm hover:bg-blue-50 active:scale-95 transition-all flex items-center gap-3"><i data-lucide="plus" class="w-4 h-4"></i> Lançar</button><button onclick="startGlobalTimer()" class="bg-teal-500 text-white px-8 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-xl shadow-teal-100 hover:bg-teal-600 active:scale-95 transition-all flex items-center gap-3"><i data-lucide="clock" class="w-4 h-4"></i> Timer</button>`;
+            if(currentFilter === 'queue') btns = `<button onclick="assignTicket()" class="bg-c3c-gradient text-white px-10 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-2xl shadow-blue-100 active:scale-95 transition-all flex items-center gap-3"><i data-lucide="user-plus" class="w-4 h-4"></i> Assumir</button>`;
+            else if(currentFilter === 'my') btns = `${logBtn}<button onclick="transferTicket('queue')" class="px-6 py-3 text-red-400 hover:text-red-600 text-[10px] font-black uppercase tracking-widest transition-all">Devolver</button>`;
+            else btns = `${logBtn}<button onclick="assignTicket()" class="bg-white border-2 border-blue-50 text-c3c-blue px-8 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-sm hover:bg-blue-50 transition-all active:scale-95">Puxar p/ Mim</button>`;
             acts.innerHTML = btns; lucide.createIcons();
             const editTab = document.getElementById('dt-edit'); if(editTab) { if(currentFilter === 'my') editTab.classList.remove('hidden'); else editTab.classList.add('hidden'); }
         }
 
         function renderStatusPath(currentStatus) {
-            const steps = ['New', 'In Progress', 'On Hold', 'Waiting', 'Closed']; let html = '<div class="path-container shadow-sm">';
-            if (currentStatus === 'Closed') html = `<div class="w-full bg-teal-50 border border-teal-100 p-4 rounded-2xl flex justify-between items-center"><span class="text-xs font-black text-teal-600 uppercase tracking-widest flex items-center gap-2"><i data-lucide="check-circle" class="w-5 h-5"></i> Chamado Resolvido</span><button onclick="reopenTicket()" class="bg-white text-teal-600 border-2 border-teal-100 text-[10px] font-black uppercase tracking-widest px-5 py-2 rounded-xl hover:bg-teal-100 transition-all">Reabrir</button></div>`;
+            const steps = ['New', 'In Progress', 'On Hold', 'Waiting', 'Closed']; let html = '<div class="path-container">';
+            if (currentStatus === 'Closed') html = `<div class="w-full bg-teal-50 border border-teal-100 p-6 rounded-[32px] flex justify-between items-center shadow-sm"><div class="flex items-center gap-4"><div class="w-12 h-12 bg-teal-500 rounded-full flex items-center justify-center text-white shadow-xl shadow-teal-100"><i data-lucide="check" class="w-8 h-8"></i></div><div><span class="text-lg font-black text-teal-600 uppercase tracking-widest block leading-tight">Ticket Encerrado</span><p class="text-[10px] font-black text-teal-400 uppercase tracking-widest mt-1">Este item não permite novos apontamentos</p></div></div><button onclick="reopenTicket()" class="bg-white text-teal-600 border-2 border-teal-100 text-[10px] font-black uppercase tracking-widest px-10 py-4 rounded-[20px] hover:bg-teal-100 transition-all">Reabrir</button></div>`;
             else {
                 let passed = true;
                 steps.forEach(s => {
@@ -354,114 +441,48 @@
             document.getElementById('status-path-container').innerHTML = html; lucide.createIcons();
         }
 
-        async function updateStatus(s) { try { toggleLoading(true); const r = await fetch('/api/ops/tickets/update', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ id: activeTicketId, status: s }) }); if(r.ok) { if(s==='Closed') { changeFilter(currentFilter); document.getElementById('ticket-panel').classList.add('hidden'); } else loadTicketDetails(activeTicketId); } } catch(e) { console.error(e); } finally { toggleLoading(false); } }
+        async function updateStatus(s) { try { toggleLoading(true); const r = await fetch('/api/ops/tickets/update', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ id: activeTicketId, status: s }) }); if(r.ok) { if(s==='Closed') closeTicketDetails(); else loadTicketDetails(activeTicketId); } } catch(e) { console.error(e); } finally { toggleLoading(false); } }
         async function reopenTicket() { if(!confirm("Reabrir?")) return; try { toggleLoading(true); const r = await fetch('/api/ops/tickets/reopen', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ id: activeTicketId }) }); if(r.ok) loadTicketDetails(activeTicketId); } catch(e) { console.error(e); } finally { toggleLoading(false); } }
 
-        async function loadTicketDetails(id) {
-            activeTicketId = id; document.getElementById('ticket-panel').classList.remove('hidden'); document.getElementById('empty-state').classList.add('hidden');
-            const t = ticketsCache.find(x => x.id === id) || {};
-            document.getElementById('detail-number').innerText = t.caseNumber || '#'; document.getElementById('detail-client').innerText = t.client || '...'; document.getElementById('detail-title').innerText = t.title || '...';
-            setupActions(); switchDetailTab('info'); toggleLoading(true);
-            try {
-                const res = await fetch(`/api/ops/tickets/${id}/details`); const det = await res.json(); currentTicketData = det.ticket; 
-                renderStatusPath(currentTicketData.Status);
-                if(currentTicketData.Status === 'Closed') { document.getElementById('header-actions').querySelectorAll('button').forEach(b => b.disabled = true); }
-                document.getElementById('info-status').innerText = currentTicketData.Status; document.getElementById('info-prio').innerText = currentTicketData.Priority; document.getElementById('info-type').innerText = currentTicketData.Type; document.getElementById('info-origin').innerText = currentTicketData.Origin; document.getElementById('detail-desc').innerText = currentTicketData.Description || '-';
-                document.getElementById('ts-open').innerText = formatDate(currentTicketData.CreatedDate); document.getElementById('ts-expect').innerText = formatDate(currentTicketData.DataExpectativaCliente__c); document.getElementById('ts-estim').innerText = formatDate(currentTicketData.DataEstimativaEntrega__c); document.getElementById('ts-last-ops').innerText = formatDate(currentTicketData.LastUpdateOps); document.getElementById('ts-last-cli').innerText = formatDate(currentTicketData.LastUpdateClient);
-                document.getElementById('edit-status').value = currentTicketData.Status; document.getElementById('edit-type').value = currentTicketData.Type; document.getElementById('edit-priority').value = currentTicketData.Priority; document.getElementById('edit-estimation').value = currentTicketData.DataEstimativaEntrega__c || '';
-                renderLogs(det.logs); renderComments(det.comments); renderAttach(det.attachments);
-            } catch(e) { console.error(e); } finally { toggleLoading(false); }
-        }
-
-        function formatDate(dt) { if(!dt) return '-'; return new Date(dt.split('T')[0] + 'T12:00:00').toLocaleDateString('pt-BR'); }
         function renderLogs(logs) { 
             const tb = document.getElementById('logs-table-body'); tb.innerHTML = ''; 
             logs.forEach(l => {
                 let btns = `<span class="text-[9px] font-black text-gray-300 uppercase tracking-widest">${l.status || 'Draft'}</span>`;
                 if (l.canEdit && currentTicketData.Status !== 'Closed') {
-                    btns = `<div class="flex items-center justify-center gap-3"><button onclick="openEditLog('${l.id}','${l.rawDate}','${l.hoursNormal}','${l.hoursExtra}','${l.desc}')" class="text-blue-400 hover:text-c3c-blue transition-colors"><i data-lucide="pencil" class="w-4 h-4"></i></button><button onclick="deleteLog('${l.id}')" class="text-red-300 hover:text-red-500 transition-colors"><i data-lucide="trash-2" class="w-4 h-4"></i></button></div>`;
+                    btns = `<div class="flex items-center justify-center gap-4"><button onclick="openEditLog('${l.id}','${l.rawDate}','${l.hoursNormal}','${l.hoursExtra}','${l.desc}')" class="text-blue-400 hover:text-c3c-blue transition-colors"><i data-lucide="pencil" class="w-4 h-4"></i></button><button onclick="deleteLog('${l.id}')" class="text-red-300 hover:text-red-500 transition-colors"><i data-lucide="trash-2" class="w-4 h-4"></i></button></div>`;
                 }
-                let stCls = 'text-gray-400';
-                if (l.status === 'Aprovado') stCls = 'text-teal-600 font-black';
-                else if (l.status.includes('Reprovado')) stCls = 'text-red-500 font-black';
-                else if (l.status.includes('aprovação')) stCls = 'text-c3c-blue font-black';
-                tb.innerHTML += `<tr class="hover:bg-gray-50 transition-colors border-b border-gray-50"><td class="px-6 py-4 text-[10px] font-bold text-gray-500 uppercase">${l.date}</td><td class="px-6 py-4 text-xs font-black text-gray-700 uppercase tracking-tighter">${l.ownerName}</td><td class="px-6 py-4 text-xs text-gray-600 leading-tight">${l.activity}</td><td class="px-6 py-4 text-center text-[8px] font-black uppercase tracking-widest ${stCls}">${l.status || 'Rascunho'}</td><td class="px-4 py-4 text-center text-teal-600 font-black text-sm">${l.hoursNormal}h</td><td class="px-4 py-4 text-center text-orange-500 font-black text-sm">${l.hoursExtra}h</td><td class="px-6 py-4 text-center">${btns}</td></tr>`;
+                tb.innerHTML += `<tr class="hover:bg-gray-50/50 transition-colors border-b border-gray-50 last:border-0"><td class="px-10 py-6 text-[10px] font-bold text-gray-500 uppercase tracking-tighter">${l.date}</td><td class="px-8 py-6 text-xs font-black text-gray-700 uppercase tracking-tighter">${l.ownerName}</td><td class="px-8 py-6 text-xs text-gray-600 leading-tight font-medium">${l.activity}</td><td class="px-8 py-6 text-center text-[8px] font-black uppercase tracking-widest"><span class="px-3 py-1 rounded-full bg-white shadow-sm border border-gray-50">${l.status || 'Rascunho'}</span></td><td class="px-6 py-6 text-center text-teal-600 font-black text-sm tabular-nums">${l.hoursNormal}h</td><td class="px-6 py-6 text-center text-orange-500 font-black text-sm tabular-nums">${l.hoursExtra}h</td><td class="px-10 py-6 text-center">${btns}</td></tr>`;
             });
             lucide.createIcons();
         }
         
-        function renderComments(comments) { const l = document.getElementById('comments-list'); l.innerHTML = ''; comments.forEach(c => l.innerHTML += `<div class="bg-gray-50 p-4 rounded-2xl border border-gray-100 text-left"><span class="text-[9px] font-black text-gray-400 uppercase tracking-widest">${c.time}</span><p class="mt-2 text-xs font-medium text-gray-700 leading-relaxed">${c.text}</p></div>`); }
-        function renderAttach(atts) { 
-            const l = document.getElementById('attach-list'); l.innerHTML = '';
-            if(!atts||atts.length===0) return l.innerHTML='<div class="col-span-full py-10 text-center text-gray-300 font-black uppercase text-[10px] tracking-widest">Sem anexos</div>'; 
-            atts.forEach(a => l.innerHTML += `<div class="flex items-center justify-between p-4 bg-white border border-gray-100 rounded-2xl hover:shadow-md transition-all text-left"><div class="flex items-center gap-3 overflow-hidden text-left"><i data-lucide="file" class="w-5 h-5 text-gray-300 shrink-0"></i><div class="truncate"><p class="truncate text-[10px] font-black text-gray-800 uppercase tracking-tighter" title="${a.name}">${a.name}</p><p class="text-[8px] font-bold text-gray-400 uppercase">${(a.size/1024).toFixed(1)} KB</p></div></div><a href="/api/ops/attachments/${a.id}/download" target="_blank" class="p-2 bg-blue-50 text-c3c-blue rounded-xl hover:bg-c3c-blue hover:text-white transition-all"><i data-lucide="download" class="w-4 h-4"></i></a></div>`);
-            lucide.createIcons(); 
-        }
+        function renderComments(comments) { const l = document.getElementById('comments-list'); l.innerHTML = ''; if(comments.length === 0) l.innerHTML = '<div class="h-full flex items-center justify-center opacity-20"><p class="text-[9px] font-black uppercase tracking-widest">Sem notas internas</p></div>'; comments.forEach(c => l.innerHTML += `<div class="bg-gray-50/50 p-6 rounded-3xl border border-gray-100 text-left hover:bg-white transition-all"><div class="flex justify-between items-center mb-2"><span class="text-[10px] font-black text-c3c-blue uppercase tracking-widest">Workspace Note</span><span class="text-[8px] font-black text-gray-300 uppercase tracking-widest">${c.time}</span></div><p class="text-xs font-medium text-gray-700 leading-relaxed">${c.text}</p></div>`); }
+        function renderAttach(atts) { const l = document.getElementById('attach-list'); l.innerHTML = ''; if(!atts||atts.length===0) return l.innerHTML='<div class="col-span-full py-20 text-center opacity-20"><i data-lucide="files" class="w-12 h-12 mx-auto mb-4"></i><p class="text-[10px] font-black uppercase tracking-[0.3em]">Nenhum anexo encontrado</p></div>'; atts.forEach(a => l.innerHTML += `<div class="flex items-center justify-between p-6 bg-white border border-gray-100 rounded-3xl hover:shadow-xl transition-all text-left"><div class="flex items-center gap-4 overflow-hidden"><div class="w-12 h-12 bg-gray-50 rounded-2xl flex items-center justify-center text-gray-400 shrink-0"><i data-lucide="file-text" class="w-6 h-6"></i></div><div class="truncate"><p class="truncate text-[10px] font-black text-gray-800 uppercase tracking-tighter" title="${a.name}">${a.name}</p><p class="text-[8px] font-bold text-gray-400 uppercase mt-1">${(a.size/1024).toFixed(1)} KB</p></div></div><a href="/api/ops/attachments/${a.id}/download" target="_blank" class="p-4 bg-blue-50 text-c3c-blue rounded-2xl hover:bg-c3c-blue hover:text-white transition-all active:scale-90"><i data-lucide="download" class="w-5 h-5"></i></a></div>`); lucide.createIcons(); }
 
         function openEditLog(id, date, norm, extra, desc) { openLogModal(false); document.getElementById('modal-log-id').value = id; document.getElementById('modal-date').value = date; fetchLimits().then(() => { document.getElementById('modal-hours-normal').value = norm; document.getElementById('modal-hours-extra').value = extra; document.getElementById('modal-desc').value = desc; checkLocks(); }); }
         async function deleteLog(id) { if(!confirm("Excluir?")) return; try { toggleLoading(true); await fetch('/api/ops/log/delete', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ logId: id }) }); loadTicketDetails(activeTicketId); } catch(e) { console.error(e); } finally { toggleLoading(false); } }
 
-        async function fetchLimits() { 
-            const d = document.getElementById('modal-date').value; if(!d) return; 
-            try { 
-                const r = await fetch(`/api/ops/limits?date=${d}`); const j = await r.json(); 
-                const isL = j.isLocked && !document.getElementById('modal-log-id').value;
-                document.getElementById('modal-hours-normal').disabled = isL; document.getElementById('modal-hours-extra').disabled = isL; document.getElementById('modal-desc').disabled = isL; document.getElementById('btn-save-log').disabled = isL;
-                document.getElementById('lock-warning').classList.toggle('hidden', !isL);
-                if (isL) document.getElementById('lock-warning').innerText = `Bloqueado (${j.periodStatus})`;
-                currentDayLimit = j.limit; currentDayUsed = j.usedNormal; currentDayUsedExtra = j.usedExtra; checkLocks(); 
-            } catch(e) { console.error(e); } 
-        }
-
-        function checkLocks() { 
-            if(document.getElementById('btn-save-log').disabled) return; 
-            const hN = parseFloat(document.getElementById('modal-hours-normal').value) || 0, hE = parseFloat(document.getElementById('modal-hours-extra').value) || 0;
-            document.getElementById('val-used').innerText = (currentDayUsed + currentDayUsedExtra + hN + hE).toFixed(1) + 'h';
-            document.getElementById('val-limit').innerText = currentDayLimit + 'h';
-            document.getElementById('val-saldo').innerText = Math.max(0, currentDayLimit - currentDayUsed - hN).toFixed(1) + 'h';
-            const inN = document.getElementById('modal-hours-normal'), inE = document.getElementById('modal-hours-extra');
-            if (currentDayUsed >= (currentDayLimit - 0.01)) inN.classList.add('bg-gray-50', 'text-gray-400'); else inN.classList.remove('bg-gray-50', 'text-gray-400');
-            if ((currentDayUsed + hN) >= (currentDayLimit - 0.01)) { inE.disabled = false; inE.classList.replace('bg-gray-50', 'bg-white'); document.getElementById('icon-lock-extra').classList.add('hidden'); } else { inE.disabled = true; inE.value = ''; inE.classList.replace('bg-white', 'bg-gray-50'); document.getElementById('icon-lock-extra').classList.remove('hidden'); }
-        }
-
+        async function fetchLimits() { const d = document.getElementById('modal-date').value; if(!d) return; try { const r = await fetch(`/api/ops/limits?date=${d}`); const j = await r.json(); const isL = j.isLocked && !document.getElementById('modal-log-id').value; document.getElementById('modal-hours-normal').disabled = isL; document.getElementById('modal-hours-extra').disabled = isL; document.getElementById('modal-desc').disabled = isL; document.getElementById('btn-save-log').disabled = isL; document.getElementById('lock-warning').classList.toggle('hidden', !isL); if (isL) document.getElementById('lock-warning').innerText = `Período Bloqueado (${j.periodStatus})`; currentDayLimit = j.limit; currentDayUsed = j.usedNormal; currentDayUsedExtra = j.usedExtra; checkLocks(); } catch(e) { console.error(e); } }
+        function checkLocks() { if(document.getElementById('btn-save-log').disabled) return; const hN = parseFloat(document.getElementById('modal-hours-normal').value) || 0, hE = parseFloat(document.getElementById('modal-hours-extra').value) || 0; document.getElementById('val-used').innerText = (currentDayUsed + currentDayUsedExtra + hN + hE).toFixed(1) + 'h'; document.getElementById('val-saldo').innerText = Math.max(0, currentDayLimit - currentDayUsed - hN).toFixed(1) + 'h'; const inN = document.getElementById('modal-hours-normal'), inE = document.getElementById('modal-hours-extra'); if (currentDayUsed >= (currentDayLimit - 0.01)) inN.classList.add('bg-gray-50', 'text-gray-400'); else inN.classList.remove('bg-gray-50', 'text-gray-400'); if ((currentDayUsed + hN) >= (currentDayLimit - 0.01)) { inE.disabled = false; inE.classList.replace('bg-gray-50', 'bg-white'); document.getElementById('icon-lock-extra').classList.add('hidden'); } else { inE.disabled = true; inE.value = ''; inE.classList.replace('bg-white', 'bg-gray-50'); document.getElementById('icon-lock-extra').classList.remove('hidden'); } }
         function formatHours(inp) { let v = parseFloat(inp.value); if(isNaN(v) || v < 0) { inp.value = ''; checkLocks(); return; } let r = Math.round(v*2)/2; if(r > 24) r = 24; inp.value = r; checkLocks(); }
-        async function openLogModal(ft) { 
-            if(!activeTicketId) return alert("Selecione."); if(currentTicketData.Status === 'Closed') return alert("Reabra para lançar.");
-            openModal('time-modal');
-            if (!document.getElementById('modal-log-id').value) {
-                document.getElementById('modal-date').value = new Date().toISOString().split('T')[0];
-                document.getElementById('modal-hours-normal').value = ''; document.getElementById('modal-hours-extra').value = ''; document.getElementById('modal-desc').value = '';
-            }
-            await fetchLimits(); 
-            const s = document.getElementById('modal-activity-select'); const res = await fetch(`/api/ops/tickets/${activeTicketId}/activities`); const a = await res.json(); s.innerHTML = a.map(x => `<option value="${x.Id}">${x.Name}</option>`).join('') + `<option value="new">+ Nova</option>`; toggleNewActivityInput(); 
-            if(ft) { document.getElementById('modal-hours-normal').value = (Math.ceil((globalSeconds/3600)*2)/2).toFixed(1); checkLocks(); } 
-        }
-        
-        async function saveLog() { 
-            try {
-                toggleLoading(true);
-                const p = { logId: document.getElementById('modal-log-id').value, caseId: activeTicketId, activityId: document.getElementById('modal-activity-select').value, newActivityName: document.getElementById('modal-new-activity-name').value, hoursNormal: document.getElementById('modal-hours-normal').value, hoursExtra: document.getElementById('modal-hours-extra').value, desc: document.getElementById('modal-desc').value, date: document.getElementById('modal-date').value };
-                const res = await fetch('/api/ops/log', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(p) });
-                if((await res.json()).success) { closeModal('time-modal'); loadTicketDetails(activeTicketId); }
-            } catch(e) { console.error(e); } finally { toggleLoading(false); }
-        }
-
-        async function saveTicketUpdates() { try { toggleLoading(true); const p = { id: activeTicketId, status: document.getElementById('edit-status').value, type: document.getElementById('edit-type').value, priority: document.getElementById('edit-priority').value, estimationDate: document.getElementById('edit-estimation').value }; const res = await fetch('/api/ops/tickets/update', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(p) }); if(p.status === 'Closed') { changeFilter(currentFilter); document.getElementById('ticket-panel').classList.add('hidden'); } else loadTicketDetails(activeTicketId); } catch(e) { console.error(e); } finally { toggleLoading(false); } }
-        function switchDetailTab(t) { ['info','logs','edit','attach'].forEach(x => { const v=document.getElementById(`view-${x}`), b=document.getElementById(`dt-${x}`); if(v) v.classList.add('hidden'); if(b) b.className = 'pb-4 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 hover:text-gray-600 transition-all whitespace-nowrap'; if(x==='edit' && currentFilter!=='my' && b) b.classList.add('hidden'); }); const v = document.getElementById(`view-${t}`), b = document.getElementById(`dt-${t}`); if(v) v.classList.remove('hidden'); if(b) b.className = 'pb-4 text-[10px] font-black uppercase tracking-[0.2em] tab-active whitespace-nowrap'; }
+        async function openLogModal(ft) { if(!activeTicketId) return; if(currentTicketData.Status === 'Closed') return alert("Reabra para lançar."); openModal('time-modal'); if (!document.getElementById('modal-log-id').value) { document.getElementById('modal-date').value = new Date().toISOString().split('T')[0]; document.getElementById('modal-hours-normal').value = ''; document.getElementById('modal-hours-extra').value = ''; document.getElementById('modal-desc').value = ''; } await fetchLimits(); const s = document.getElementById('modal-activity-select'); const res = await fetch(`/api/ops/tickets/${activeTicketId}/activities`); const a = await res.json(); s.innerHTML = a.map(x => `<option value="${x.Id}">${x.Name}</option>`).join('') + `<option value="new">+ Nova Atividade</option>`; toggleNewActivityInput(); if(ft) { document.getElementById('modal-hours-normal').value = (Math.ceil((globalSeconds/3600)*2)/2).toFixed(1); checkLocks(); } }
+        async function saveLog() { try { toggleLoading(true); const p = { logId: document.getElementById('modal-log-id').value, caseId: activeTicketId, activityId: document.getElementById('modal-activity-select').value, newActivityName: document.getElementById('modal-new-activity-name').value, hoursNormal: document.getElementById('modal-hours-normal').value, hoursExtra: document.getElementById('modal-hours-extra').value, desc: document.getElementById('modal-desc').value, date: document.getElementById('modal-date').value }; const res = await fetch('/api/ops/log', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(p) }); if((await res.json()).success) { closeModal('time-modal'); loadTicketDetails(activeTicketId); } } catch(e) { console.error(e); } finally { toggleLoading(false); } }
+        async function saveTicketUpdates() { try { toggleLoading(true); const p = { id: activeTicketId, status: document.getElementById('edit-status').value, priority: document.getElementById('edit-priority').value, estimationDate: document.getElementById('edit-estimation').value }; const res = await fetch('/api/ops/tickets/update', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(p) }); if(p.status === 'Closed') closeTicketDetails(); else loadTicketDetails(activeTicketId); } catch(e) { console.error(e); } finally { toggleLoading(false); } }
+        function switchDetailTab(t) { ['info','logs','edit','attach'].forEach(x => { const v=document.getElementById(`view-${x}`), b=document.getElementById(`dt-${x}`); if(v) v.classList.add('hidden'); if(b) b.className = 'pb-6 pt-8 text-[11px] font-black uppercase tracking-[0.2em] text-gray-400 hover:text-gray-600 transition-all whitespace-nowrap'; if(x==='edit' && currentFilter!=='my' && b) b.classList.add('hidden'); }); const v = document.getElementById(`view-${t}`), b = document.getElementById(`dt-${t}`); if(v) v.classList.remove('hidden'); if(b) b.className = 'pb-6 pt-8 text-[11px] font-black uppercase tracking-[0.2em] tab-active whitespace-nowrap'; }
         function openModal(id) { const m = document.getElementById(id); m.classList.remove('hidden'); setTimeout(() => m.classList.remove('scale-95'), 10); }
         function closeModal(id) { const m = document.getElementById(id); m.querySelector('div').classList.add('scale-95'); setTimeout(() => m.classList.add('hidden'), 200); if(id==='time-modal') document.getElementById('modal-log-id').value = ''; }
         async function assignTicket() { try { toggleLoading(true); const r = await fetch('/api/ops/tickets/assign', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ id: activeTicketId }) }); if(r.ok) { await changeFilter('my'); loadTicketDetails(activeTicketId); } } catch(e) { console.error(e); } finally { toggleLoading(false); } }
-        async function transferTicket(t) { try { toggleLoading(true); const r = await fetch('/api/ops/tickets/transfer', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ id: activeTicketId, target: t }) }); if(r.ok) { changeFilter(currentFilter); document.getElementById('ticket-panel').classList.add('hidden'); } } catch(e) { console.error(e); } finally { toggleLoading(false); } }
+        async function transferTicket(t) { try { toggleLoading(true); const r = await fetch('/api/ops/tickets/transfer', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ id: activeTicketId, target: t }) }); if(r.ok) { changeFilter(currentFilter); closeTicketDetails(); } } catch(e) { console.error(e); } finally { toggleLoading(false); } }
         async function postComment() { const t = document.getElementById('quick-comment').value; if(!t) return; const r = await fetch('/api/ops/comment', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ caseId: activeTicketId, text: t }) }); if(r.ok) { document.getElementById('quick-comment').value = ''; loadTicketDetails(activeTicketId); } }
         function toggleContactMode() { const s = document.getElementById('contact-select-mode'), c = document.getElementById('contact-create-mode'); s.classList.toggle('hidden'); c.classList.toggle('hidden'); }
         async function saveNewContact() { try { toggleLoading(true); const res = await fetch('/api/ops/contact/create', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ accountId: document.getElementById('new-account-id').value, name: document.getElementById('new-contact-name').value, email: document.getElementById('new-contact-email').value, mobile: document.getElementById('new-contact-mobile').value }) }); const j = await res.json(); if(j.success) { toggleContactMode(); const s = document.getElementById('new-contact'); const o = document.createElement('option'); o.value = j.id; o.text = `${j.name} (Novo)`; o.selected = true; s.appendChild(o); } } catch(e) { console.error(e); } finally { toggleLoading(false); } }
         async function openNewTicketModal() { openModal('new-ticket-modal'); document.getElementById('form-create-ticket').reset(); document.getElementById('new-contact').innerHTML='<option value="">Selecione...</option>'; document.getElementById('new-contact').disabled=true; if(createOptionsCache.length===0) { const res = await fetch('/api/ops/create-options'); createOptionsCache = await res.json(); document.getElementById('new-service').innerHTML = '<option value="">Selecione...</option>' + createOptionsCache.map(o => `<option value="${o.serviceId}" data-account="${o.accountId}">${o.serviceName} (${o.accountName})</option>`).join(''); } }
         async function onServiceChange() { const s = document.getElementById('new-service'), acc = s.options[s.selectedIndex].dataset.account; document.getElementById('new-account-id').value = acc||''; const c=document.getElementById('new-contact'); c.innerHTML='<option>Carregando...</option>'; c.disabled=true; if(acc) { const r=await fetch(`/api/ops/account/${acc}/contacts`); const d=await r.json(); c.innerHTML='<option value="">Sem contato</option>' + d.map(ct=>`<option value="${ct.Id}">${ct.Name}</option>`).join(''); c.disabled=false; } }
-        async function submitNewTicket() { try { toggleLoading(true); const p = { serviceId: document.getElementById('new-service').value, accountId: document.getElementById('new-account-id').value, contactId: document.getElementById('new-contact').value, subject: document.getElementById('new-subject').value, type: document.getElementById('new-type').value, priority: document.getElementById('new-priority').value, origin: document.getElementById('new-origin').value, expectationDate: document.getElementById('new-expectation').value, assignToMe: document.getElementById('new-assign').checked, desc: document.getElementById('new-desc').value }; const res = await fetch('/api/ops/tickets/create', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(p) }); const j = await res.json(); if(j.success) { if (document.getElementById('new-files').files.length > 0) { const fd = new FormData(); for(let f of document.getElementById('new-files').files) fd.append('files', f); await fetch(`/api/ops/tickets/${j.id}/upload`, { method: 'POST', body: fd }); } closeModal('new-ticket-modal'); changeFilter('my'); } } catch(e) { console.error(e); } finally { toggleLoading(false); } }
+        async function submitNewTicket() { try { toggleLoading(true); const p = { serviceId: document.getElementById('new-service').value, accountId: document.getElementById('new-account-id').value, contactId: document.getElementById('new-contact').value, subject: document.getElementById('new-subject').value, type: document.getElementById('new-type').value, priority: document.getElementById('new-priority').value, origin: document.getElementById('new-origin').value, expectationDate: document.getElementById('new-expectation').value, assignToMe: document.getElementById('new-assign').checked, desc: document.getElementById('new-desc').value }; if(!p.serviceId || !p.contactId || !p.subject || !p.desc) return alert("Preencha todos os campos obrigatórios (*)"); const res = await fetch('/api/ops/tickets/create', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(p) }); const j = await res.json(); if(j.success) { if (document.getElementById('new-files').files.length > 0) { const fd = new FormData(); for(let f of document.getElementById('new-files').files) fd.append('files', f); await fetch(`/api/ops/tickets/${j.id}/upload`, { method: 'POST', body: fd }); } closeModal('new-ticket-modal'); changeFilter('my'); } } catch(e) { console.error(e); } finally { toggleLoading(false); } }
         async function uploadFiles(id) { try { toggleLoading(true); const fd = new FormData(); for(let f of document.getElementById('attach-new-file').files) fd.append('files', f); await fetch(`/api/ops/tickets/${id}/upload`, { method: 'POST', body: fd }); loadTicketDetails(id); } catch(e) { console.error(e); } finally { toggleLoading(false); } }
         let globalSeconds = 0, globalInterval = null;
-        function startGlobalTimer() { if(!activeTicketId || globalInterval) return; document.getElementById('global-play').classList.add('hidden'); document.getElementById('global-stop').classList.remove('hidden'); globalInterval = setInterval(() => { globalSeconds++; const h = Math.floor(globalSeconds / 3600).toString().padStart(2,'0'), m = Math.floor((globalSeconds % 3600) / 60).toString().padStart(2,'0'), s = (globalSeconds % 60).toString().padStart(2,'0'); document.getElementById('global-timer').innerText = `${h}:${m}:${s}`; }, 1000); }
-        function stopGlobalTimer() { clearInterval(globalInterval); globalInterval = null; openLogModal(true); document.getElementById('global-stop').classList.add('hidden'); document.getElementById('global-play').classList.remove('hidden'); }
+        function startGlobalTimer() { if(!activeTicketId || globalInterval) return; document.getElementById('global-play').classList.add('hidden'); document.getElementById('global-stop').classList.remove('hidden'); document.getElementById('timer-container').classList.add('timer-active', 'border-blue-200', 'bg-blue-50/50'); globalInterval = setInterval(() => { globalSeconds++; const h = Math.floor(globalSeconds / 3600).toString().padStart(2,'0'), m = Math.floor((globalSeconds % 3600) / 60).toString().padStart(2,'0'), s = (globalSeconds % 60).toString().padStart(2,'0'); document.getElementById('global-timer').innerText = `${h}:${m}:${s}`; }, 1000); }
+        function stopGlobalTimer() { clearInterval(globalInterval); globalInterval = null; openLogModal(true); document.getElementById('global-stop').classList.add('hidden'); document.getElementById('global-play').classList.remove('hidden'); document.getElementById('timer-container').classList.remove('timer-active', 'border-blue-200', 'bg-blue-50/50'); }
         document.addEventListener('DOMContentLoaded', () => { changeFilter('my'); });
         function toggleNewActivityInput() { document.getElementById('modal-new-activity-name').classList.toggle('hidden', document.getElementById('modal-activity-select').value !== 'new'); }
     </script>
