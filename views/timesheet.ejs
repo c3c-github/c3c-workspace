@@ -229,6 +229,12 @@
 
     <script>
         lucide.createIcons();
+        function areIdsEqual(id1, id2) {
+            if (!id1 || !id2) return false;
+            const s1 = String(id1), s2 = String(id2);
+            if (s1 === s2) return true;
+            return s1.substring(0, 15) === s2.substring(0, 15);
+        }
         let currentPeriods=[], currentPeriodIndex=0, currentGridData={}, dayProjects=[], dayActivities=[], dayEntries=[], currentOpenDayId=null, currentOpenDate=null, projectAllocationMap={}, isNonBusinessDay=false;
         let DAILY_CONTRACT=8;
         const MAX_DAY_HOURS=24;
@@ -327,6 +333,14 @@
                 const d = await res.json(); 
                 if (d.limiteDiario) DAILY_CONTRACT = d.limiteDiario;
                 dayProjects=d.allocations||[]; dayActivities=d.activities||[]; dayEntries=d.entries||[];
+                
+                // Garantir que projetos de lançamentos existentes apareçam no select, mesmo sem alocação ativa
+                dayEntries.forEach(e => {
+                    if (e.projectId && !dayProjects.find(p => areIdsEqual(p.id, e.projectId))) {
+                        dayProjects.push({ id: e.projectId, name: e.project, alocacaoId: null });
+                    }
+                });
+
                 const projSel=document.getElementById('input-project'); projSel.innerHTML='<option value="" disabled selected>Selecione...</option>';
                 const allocL = document.getElementById('allocations-list'); allocL.innerHTML='';
                 if(dayProjects.length>0) {
@@ -358,8 +372,17 @@
 
         function editEntry(e) {
             if (!e || !e.id) return;
-            document.getElementById('input-entry-id').value = e.id; document.getElementById('form-title').innerText = 'Editar Registro';
-            document.getElementById('input-project').value = e.projectId; document.getElementById('input-activity-search').value = e.activity; document.getElementById('input-activity-id').value = e.activityId;
+            document.getElementById('input-entry-id').value = e.id; 
+            document.getElementById('form-title').innerText = 'Editar Registro';
+            
+            // Seleção segura do projeto (15 vs 18 chars)
+            const projSel = document.getElementById('input-project');
+            const matchingOpt = Array.from(projSel.options).find(opt => areIdsEqual(opt.value, e.projectId));
+            if (matchingOpt) projSel.value = matchingOpt.value;
+            else projSel.value = e.projectId;
+
+            document.getElementById('input-activity-search').value = e.activity; 
+            document.getElementById('input-activity-id').value = e.activityId;
             document.getElementById('input-normal').value = e.hours; document.getElementById('input-extra').value = e.hoursExtra || e.hoursBank || 0;
             document.getElementById('select-extra-type').value = e.hoursExtra > 0 ? 'Pagamento' : 'Banco'; document.getElementById('input-leave').value = e.hoursAbsence;
             document.getElementById('select-absence-type').value = e.hoursBank < 0 ? 'Banco' : (e.absenceType || 'Abonada');
@@ -436,7 +459,7 @@
             validateRules(el.id.replace('input-', '')); 
         }
         function calculateDayTotals(excludeId = null) { let totalNormal = 0, totalExtra = 0, totalAbsence = 0, totalAll = 0; dayEntries.forEach(e => { if (e.id !== excludeId) { totalNormal += e.hours; totalExtra += (e.hoursExtra + (e.hoursBank > 0 ? e.hoursBank : 0)); totalAbsence += e.hoursAbsence; totalAll += (e.hours + e.hoursExtra + Math.abs(e.hoursBank) + e.hoursAbsence); }}); return { totalNormal, totalExtra, totalAbsence, totalAll }; }
-        function filterActivities(force = false) { const pId=document.getElementById('input-project').value; const term=document.getElementById('input-activity-search').value.toLowerCase().trim(); const drp=document.getElementById('activity-dropdown'); if(!pId) return; document.getElementById('btn-clear-activity').classList.toggle('hidden', term.length === 0); if(term.length === 0 && !force) { drp.classList.add('hidden'); return; } const matches=dayActivities.filter(a=>String(a.projectId)===String(pId)&&a.name.toLowerCase().includes(term)); drp.innerHTML=''; matches.forEach(a=> drp.innerHTML+=`<li onclick="selectExistingActivity('${a.id}','${a.name}')" class="px-6 py-4 hover:bg-gray-50 cursor-pointer text-sm font-black text-gray-700 block transition-colors text-left uppercase tracking-tighter">${a.name}</li>`); if(term.length>0 && !matches.find(m=>m.name.toLowerCase()===term)) drp.innerHTML+=`<li onclick="selectNewActivity()" class="px-6 py-5 bg-blue-50 hover:bg-blue-100 cursor-pointer text-[10px] text-c3c-blue font-black border-t border-blue-100 block uppercase tracking-widest text-left">Criar: "${term}"</li>`; drp.classList.remove('hidden'); lucide.createIcons(); }
+        function filterActivities(force = false) { const pId=document.getElementById('input-project').value; const term=document.getElementById('input-activity-search').value.toLowerCase().trim(); const drp=document.getElementById('activity-dropdown'); if(!pId) return; document.getElementById('btn-clear-activity').classList.toggle('hidden', term.length === 0); if(term.length === 0 && !force) { drp.classList.add('hidden'); return; } const matches=dayActivities.filter(a=>areIdsEqual(a.projectId, pId)&&a.name.toLowerCase().includes(term)); drp.innerHTML=''; matches.forEach(a=> drp.innerHTML+=`<li onclick="selectExistingActivity('${a.id}','${a.name}')" class="px-6 py-4 hover:bg-gray-50 cursor-pointer text-sm font-black text-gray-700 block transition-colors text-left uppercase tracking-tighter">${a.name}</li>`); if(term.length>0 && !matches.find(m=>m.name.toLowerCase()===term)) drp.innerHTML+=`<li onclick="selectNewActivity()" class="px-6 py-5 bg-blue-50 hover:bg-blue-100 cursor-pointer text-[10px] text-c3c-blue font-black border-t border-blue-100 block uppercase tracking-widest text-left">Criar: "${term}"</li>`; drp.classList.remove('hidden'); lucide.createIcons(); }
         function selectExistingActivity(id,name) { document.getElementById('input-activity-search').value=name; document.getElementById('input-activity-id').value=id; document.getElementById('activity-dropdown').classList.add('hidden'); document.getElementById('btn-clear-activity').classList.remove('hidden'); }
         function selectNewActivity() { document.getElementById('input-activity-id').value='NEW'; document.getElementById('activity-dropdown').classList.add('hidden'); }
         function clearActivity() { document.getElementById('input-activity-search').value=''; document.getElementById('input-activity-id').value=''; document.getElementById('activity-dropdown').classList.add('hidden'); document.getElementById('btn-clear-activity').classList.add('hidden'); filterActivities(true); }
@@ -444,7 +467,14 @@
         function resetForm() { document.getElementById('input-entry-id').value = ''; document.getElementById('form-title').innerText = 'Registrar Atividade'; document.getElementById('input-normal').value = 0; document.getElementById('input-extra').value = 0; document.getElementById('input-leave').value = 0; document.getElementById('input-reason').value = ''; clearActivity(); document.getElementById('btn-add-entry').innerText = 'Salvar Registro'; document.getElementById('btn-cancel-edit').classList.add('hidden'); validateRules('init'); }
         async function addEntry() { const entryId = document.getElementById('input-entry-id').value; const pId = document.getElementById('input-project').value; const actId = document.getElementById('input-activity-id').value; const actName = document.getElementById('input-activity-search').value; const hN = parseFloat(document.getElementById('input-normal').value)||0; const hE = parseFloat(document.getElementById('input-extra').value)||0; const hA = parseFloat(document.getElementById('input-leave').value)||0; const reason = document.getElementById('input-reason').value.trim(); if(!pId || !actName || (hN+hE+hA)===0) return alert("Preencha projeto, atividade e horas."); if((hE>0 || hA>0) && reason.length < 5) return alert("Justificativa obrigatória."); const exType = hE > 0 ? document.getElementById('select-extra-type').value : ''; const abType = hA > 0 ? document.getElementById('select-absence-type').value : ''; const btn=document.getElementById('btn-add-entry'); btn.disabled=true; btn.innerText='Salvando...'; try { const payload = { entryId: entryId||null, diaPeriodoId: currentOpenDayId, projectId: pId, alocacaoId: projectAllocationMap[pId], activityId: actId==='NEW'?'':actId, activityName: actName, hoursNormal: hN, hoursExtra: hE, hoursAbsence: hA, reason: reason, extraType: exType, absenceType: abType, date: currentOpenDate }; const res = await fetch('/api/timesheet/entry', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload) }); if((await res.json()).success) { await loadCalendar(currentPeriods[currentPeriodIndex].Id); const resDay = await fetch(`/api/timesheet/day?date=${currentOpenDate}&diaPeriodoId=${currentOpenDayId}`); dayEntries = (await resDay.json()).entries; renderEntriesList(); resetForm(); setTimeout(() => { const wrapper = document.getElementById('entries-section-wrapper'); if (wrapper && !wrapper.classList.contains('hidden')) { wrapper.scrollIntoView({ behavior: 'smooth', block: 'start' }); } }, 100); } } catch(e) { console.error(e); } finally { btn.disabled=false; btn.innerText='Salvar Registro'; } }
         function closeDayPanel() { document.getElementById('day-panel').classList.remove('open'); document.getElementById('day-panel').classList.add('closed'); const ov=document.getElementById('slide-overlay'); ov.classList.add('opacity-0'); setTimeout(()=>ov.classList.add('hidden'),300); }
-        function selectProjectFromCard(id) { document.getElementById('input-project').value=id; resetActivitySearch(); validateRules('init'); }
+        function selectProjectFromCard(id) { 
+            const projSel = document.getElementById('input-project');
+            const matchingOpt = Array.from(projSel.options).find(opt => areIdsEqual(opt.value, id));
+            if (matchingOpt) projSel.value = matchingOpt.value;
+            else projSel.value = id;
+            resetActivitySearch(); 
+            validateRules('init'); 
+        }
         async function submitPeriod() { const p = currentPeriods[currentPeriodIndex]; if(!confirm(`Enviar folha de ${p.Name}?`)) return; try { const res = await fetch('/api/timesheet/submit-period', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ periodId: p.Id }) }); if(res.ok) location.reload(); } catch(e) { console.error(e); } }
         async function recallPeriod() { const p = currentPeriods[currentPeriodIndex]; if(!confirm(`Atenção: O Recall voltará todos os lançamentos para "Rascunho". Deseja continuar?`)) return; try { const res = await fetch('/api/timesheet/recall-period', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ periodId: p.Id }) }); if(res.ok) location.reload(); } catch(e) { console.error(e); } }
         window.addEventListener('resize', () => { renderGrid(currentGridData); updateSummary({ statusGeral: document.getElementById('card-status-label').innerText }); });
