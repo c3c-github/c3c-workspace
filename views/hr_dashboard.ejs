@@ -33,9 +33,34 @@
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #E2E8F0; border-radius: 10px; }
         .status-badge { @apply px-3 py-1 rounded-full text-[9px] font-black uppercase border tracking-widest text-center; }
+
+        /* STEPPER PATH STYLES */
+        .step-path { @apply relative flex items-center justify-between w-full gap-2 px-2; }
+        .step-item { @apply relative flex flex-col items-center flex-1 cursor-pointer transition-all duration-300; }
+        .step-node { @apply w-12 h-12 rounded-full border-4 border-white shadow-md flex items-center justify-center text-sm font-black transition-all duration-500 z-10; }
+        .step-line { @apply absolute top-6 left-[50%] w-full h-1 bg-gray-100 -z-0 transition-all duration-500; }
+        .step-item:last-child .step-line { @apply hidden; }
+        
+        .step-item.active .step-node { @apply bg-c3c-blue text-white scale-110 shadow-blue-200 shadow-xl border-blue-100; }
+        .step-item.active .step-line { @apply bg-c3c-blue; }
+        .step-item.active p { @apply text-c3c-blue font-black; }
+
+        /* TOAST STYLES */
+        #toast-container { position: fixed; top: 2rem; right: 2rem; z-index: 9999; display: flex; flex-direction: column; gap: 1rem; }
+        .toast { 
+            animation: toastIn 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55) forwards;
+            background-color: white; border: 1px solid #F1F5F9; border-radius: 24px; padding: 1rem; display: flex; align-items: center; gap: 1rem; min-width: 320px; max-width: 400px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+        }
+        @keyframes toastIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        .toast.hiding { animation: toastOut 0.5s ease-in forwards; }
+        @keyframes toastOut { from { transform: translateX(0); opacity: 1; } to { transform: translateX(100%); opacity: 0; } }
     </style>
 </head>
 <body class="h-screen flex overflow-hidden bg-[#F8FAFC]">
+
+    <!-- TOAST CONTAINER -->
+    <div id="toast-container"></div>
 
     <div id="mobile-overlay" onclick="toggleMenu()" class="fixed inset-0 bg-black/50 z-30 hidden md:hidden transition-opacity opacity-0 backdrop-blur-sm"></div>
     
@@ -71,13 +96,6 @@
         <!-- CONTEÚDO -->
         <div class="flex-1 overflow-y-auto p-4 md:p-8 fade-in custom-scrollbar text-left">
             
-            <!-- FUNIL DE STATUS -->
-            <div class="mb-10 overflow-x-auto pb-4 no-scrollbar">
-                <div class="flex gap-4 min-w-max" id="funnel-container">
-                    <!-- Cards de Funil injetados via JS -->
-                </div>
-            </div>
-
             <!-- KPIS FINANCEIROS -->
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
                 <div class="bg-white p-6 rounded-[32px] shadow-sm border border-gray-100 relative overflow-hidden group hover:shadow-md transition-all text-left">
@@ -104,6 +122,13 @@
                 </div>
             </div>
 
+            <!-- FUNIL DE STATUS (Caminho) -->
+            <div class="mb-10 overflow-x-auto pb-4 no-scrollbar">
+                <div class="flex gap-4 min-w-max" id="funnel-container">
+                    <!-- Cards de Funil injetados via JS -->
+                </div>
+            </div>
+
             <!-- TABELA PRINCIPAL -->
             <div class="bg-white rounded-[40px] shadow-sm border border-gray-100 overflow-hidden flex flex-col">
                 <div class="p-8 border-b border-gray-50 flex flex-col lg:flex-row lg:items-center justify-between gap-6 bg-gray-50/30">
@@ -119,12 +144,10 @@
                         </div>
                         <select id="status-periodo-filter" onchange="triggerDataLoad(document.getElementById('period-selector').value)" class="bg-white border border-gray-100 rounded-2xl px-5 py-3 text-xs font-black text-gray-500 uppercase tracking-widest outline-none focus:ring-4 focus:ring-blue-50 transition-all cursor-pointer">
                             <option value="">Todos os Status</option>
-                            <option value="Aberto">Aberto</option>
-                            <option value="Aguardando Aprovação Líder">Aguardando Líder</option>
-                            <option value="Aguardando Aprovação RH">Aguardando RH</option>
-                            <option value="Liberado para Nota Fiscal">Liberado p/ NF</option>
-                            <option value="Nota em Validação">Nota em Validação</option>
-                            <option value="Pronto para Pagamento">Pronto p/ Pagamento</option>
+                            <option value="Aberto">1. Ciclo Aberto</option>
+                            <option value="Em aprovação do serviço">2. Pendente Líder</option>
+                            <option value="Aguardando Aprovação RH">3. Pendente RH</option>
+                            <option value="Finalizado/Pago">4. Concluído</option>
                         </select>
                     </div>
                 </div>
@@ -240,13 +263,11 @@
         const API_URL = '/api'; 
         let allEmployees = []; 
         let currentModalPersonId = null;
+        let currentStatusFilter = '';
+
         const statusColors = { 
             'Aberto': 'bg-gray-100 text-gray-500 border-gray-200', 
-            'Aguardando Aprovação Líder': 'bg-blue-50 text-c3c-blue border-blue-100', 
-            'Aguardando Aprovação RH': 'bg-orange-50 text-orange-600 border-orange-100', 
-            'Liberado para Nota Fiscal': 'bg-teal-50 text-teal-600 border-teal-100', 
-            'Nota em Validação': 'bg-purple-50 text-purple-600 border-purple-100', 
-            'Pronto para Pagamento': 'bg-green-50 text-green-600 border-green-100', 
+            'Em aprovação do serviço': 'bg-blue-50 text-c3c-blue border-blue-100', 
             'Finalizado/Pago': 'bg-indigo-50 text-indigo-600 border-indigo-100' 
         };
 
@@ -264,15 +285,17 @@
                     return; 
                 }
                 
-                // Encontra o período não finalizado mais antigo
-                const nonFinalized = data.filter(p => p.Status__c !== 'Finalizado/Pago');
-                let suggestedId = nonFinalized.length > 0 ? nonFinalized[nonFinalized.length - 1].Id : data[0].Id;
+                // Tenta encontrar o sugerido pela API (isSuggestedDefault)
+                const suggested = data.find(p => p.isSuggestedDefault);
+                let suggestedId = suggested ? suggested.Id : (data.length > 0 ? data[0].Id : null);
 
                 data.forEach((c, i) => { 
                     const opt = document.createElement('option'); 
-                    opt.value = JSON.stringify({start: c.DataInicio__c, end: c.DataFim__c}); 
+                    const val = JSON.stringify({start: c.DataInicio__c, end: c.DataFim__c});
+                    opt.value = val; 
                     opt.text = c.Name; 
-                    if(c.Id === suggestedId) opt.selected = true; 
+                    // Compara com o Id retornado (que na API de RH é a string start_end)
+                    if(c.Id === suggestedId || c.isSuggestedDefault) opt.selected = true; 
                     selector.appendChild(opt); 
                 });
                 
@@ -307,36 +330,134 @@
         }
 
         function renderFunnel(data) {
-            const container = document.getElementById('funnel-container'); container.innerHTML = '';
-            const statuses = ['Aberto', 'Aguardando Aprovação Líder', 'Aguardando Aprovação RH', 'Liberado para Nota Fiscal', 'Nota em Validação', 'Pronto para Pagamento', 'Finalizado/Pago'];
-            statuses.forEach(st => { 
-                const item = data.find(d => d.Status__c === st) || { total: 0 }; 
-                container.innerHTML += `
-                    <div class="bg-white p-4 rounded-3xl border border-gray-100 text-center hover:border-c3c-blue hover:shadow-lg transition-all cursor-pointer min-w-[120px] group" onclick="filterByStatus('${st}')">
-                        <p class="text-[8px] font-black text-gray-400 uppercase truncate mb-1 group-hover:text-c3c-blue transition-colors">${st}</p>
-                        <p class="text-xl font-black text-gray-800">${item.total}</p>
-                    </div>`; 
+            const container = document.getElementById('funnel-container'); 
+            container.innerHTML = '';
+            // Força o container a ser horizontal e centralizado
+            container.className = 'relative flex flex-row justify-between items-start w-full py-8 px-4';
+
+            const pathSteps = [
+                { id: 'Aberto', label: 'Ciclo Aberto', icon: 'edit-3' },
+                { id: 'Em aprovação do serviço', label: 'Pendente Líder', icon: 'users' },
+                { id: 'Aguardando Aprovação RH', label: 'Pendente RH', icon: 'shield-check' },
+                { id: 'Finalizado/Pago', label: 'Concluído', icon: 'check-circle' }
+            ];
+
+            // Linha de fundo que conecta tudo
+            const backgroundLine = document.createElement('div');
+            backgroundLine.className = 'absolute top-[52px] left-[10%] right-[10%] h-1 bg-gray-100 -z-0';
+            container.appendChild(backgroundLine);
+
+            pathSteps.forEach((step, idx) => {
+                const item = data.find(d => d.Status__c === step.id) || { total: 0 };
+                const isActive = currentStatusFilter === step.id;
+                
+                const stepElement = document.createElement('div');
+                stepElement.className = `relative z-10 flex flex-col items-center cursor-pointer transition-all duration-300 flex-1 group`;
+                stepElement.onclick = () => filterByStatus(step.id);
+
+                stepElement.innerHTML = `
+                    <div class="w-12 h-12 rounded-full border-4 ${isActive ? 'bg-c3c-blue border-blue-100 text-white shadow-xl shadow-blue-200 scale-125' : 'bg-white border-gray-50 text-gray-300 group-hover:border-blue-50 group-hover:text-c3c-blue'} flex items-center justify-center transition-all duration-500">
+                        <i data-lucide="${step.icon}" class="w-5 h-5"></i>
+                    </div>
+                    <div class="mt-4 text-center">
+                        <p class="text-[9px] font-black uppercase tracking-widest ${isActive ? 'text-c3c-blue' : 'text-gray-400 group-hover:text-gray-600'} transition-colors">${step.label}</p>
+                        <p class="text-xl font-black ${isActive ? 'text-c3c-blue' : 'text-gray-800'} mt-0.5 tracking-tighter">${item.total}</p>
+                    </div>
+                `;
+                container.appendChild(stepElement);
             });
+            lucide.createIcons();
         }
 
         function renderTable() {
             const tbody = document.getElementById('hr-table-body'); const search = document.getElementById('search-input').value.toLowerCase(); tbody.innerHTML = '';
             allEmployees.sort((a, b) => a.name.localeCompare(b.name));
             const filtered = allEmployees.filter(p => p.name.toLowerCase().includes(search));
-            if (filtered.length === 0) { tbody.innerHTML = '<tr><td colspan="9" class="px-6 py-20 text-center text-gray-300 font-black uppercase text-[10px] tracking-widest italic">Nenhum registro encontrado.</td></tr>'; return; }
+            
+            if (filtered.length === 0) { 
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="9" class="py-32 px-6">
+                            <div class="flex flex-col items-center justify-center text-center fade-in">
+                                <div class="w-24 h-24 bg-gray-50 text-gray-200 rounded-full flex items-center justify-center mb-6 border border-gray-100 shadow-inner">
+                                    <i data-lucide="search-x" class="w-12 h-12"></i>
+                                </div>
+                                <h3 class="text-lg font-black text-gray-800 uppercase tracking-tighter mb-2">Nenhum colaborador encontrado</h3>
+                                <p class="text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em] max-w-xs mx-auto mb-8 leading-relaxed">Não encontramos registros para os filtros aplicados neste ciclo.</p>
+                                <button onclick="resetFilters()" class="px-8 py-3 bg-white border-2 border-gray-100 text-c3c-blue font-black uppercase text-[10px] tracking-widest rounded-2xl hover:bg-gray-50 transition-all flex items-center gap-2 shadow-sm active:scale-95">
+                                    <i data-lucide="refresh-cw" class="w-4 h-4"></i> Limpar Filtros
+                                </button>
+                            </div>
+                        </td>
+                    </tr>`;
+                lucide.createIcons();
+                return; 
+            }
+
             filtered.forEach(p => {
-                const pct = p.contract > 0 ? (p.total / p.contract) * 100 : 0; const barColor = pct > 110 ? 'bg-red-500' : (pct < 70 ? 'bg-orange-500' : 'bg-teal-500'); const compColor = p.incompleteDays === 0 ? 'text-teal-600' : 'text-red-500';
+                const pct = p.contract > 0 ? (p.total / p.contract) * 100 : 0; 
+                const barColor = pct > 110 ? 'bg-red-500' : (pct < 70 ? 'bg-orange-500' : 'bg-teal-500'); 
+                
+                // Lógica de Saúde (Health Check)
+                let healthIcon = 'check-circle';
+                let healthColor = 'text-teal-500';
+                let healthBg = 'bg-teal-50';
+                let healthStatus = 'Saudável';
+
+                if (p.incompleteDays > 0 || pct < 75) {
+                    healthIcon = 'alert-circle';
+                    healthColor = 'text-red-500';
+                    healthBg = 'bg-red-50';
+                    healthStatus = 'Crítico';
+                } else if (pct < 90) {
+                    healthIcon = 'help-circle';
+                    healthColor = 'text-orange-500';
+                    healthBg = 'bg-orange-50';
+                    healthStatus = 'Atenção';
+                }
+
                 let act = `<div class="flex justify-end gap-2"><button onclick="openModal('${p.id}','${p.name}')" class="p-2 text-gray-400 hover:text-c3c-blue bg-gray-50 rounded-xl transition-all shadow-sm"><i data-lucide="eye" class="w-4 h-4"></i></button>`;
                 if (p.statusPeriodo === 'Aguardando Aprovação RH') {
                     act += `<button onclick="performAction('${p.id}','${p.name}','approve')" class="px-4 py-2 bg-teal-600 text-white text-[9px] font-black uppercase tracking-widest rounded-xl shadow-lg shadow-teal-100 hover:opacity-90 active:scale-95 transition-all">Aprovar</button><button onclick="openRejectModal('${p.id}','${p.name}')" class="px-4 py-2 bg-white border-2 border-red-50 text-red-500 text-[9px] font-black uppercase tracking-widest rounded-xl hover:bg-red-50 transition-all">Reprovar</button>`;
                 }
                 act += `</div>`;
                 
-                tbody.innerHTML += `<tr class="hover:bg-gray-50/50 transition-colors">
+                tbody.innerHTML += `<tr class="hover:bg-gray-50/50 transition-colors group">
                     <td class="px-8 py-6 text-center"><input type="checkbox" name="period-check" value="${p.periodId}" onchange="updateBulkActions()" class="w-4 h-4 rounded border-gray-200 text-c3c-blue focus:ring-blue-100 transition-all"></td>
-                    <td class="px-6 py-6 text-left"><div class="flex items-center gap-4"><div class="w-10 h-10 rounded-2xl bg-blue-50 flex items-center justify-center text-c3c-blue font-black uppercase shadow-sm border border-blue-100">${p.name.charAt(0)}</div><div><p class="font-black text-gray-800 text-xs uppercase tracking-tighter">${p.name}</p><p class="text-[9px] font-bold text-gray-400 uppercase tracking-widest">${p.role}</p></div></div></td>
-                    <td class="px-4 py-6 text-center"><div class="flex flex-col items-center"><span class="text-[10px] font-black ${compColor} uppercase tracking-widest">${p.incompleteDays === 0 ? '✓ Completo' : p.incompleteDays + ' pend.'}</span></div></td>
-                    <td class="px-6 py-6"><div class="flex justify-between text-[9px] font-black uppercase mb-1"><span class="text-gray-700">${p.total.toFixed(1)}h</span><span class="text-gray-300">Meta: ${p.contract}h</span></div><div class="w-full bg-gray-100 rounded-full h-1.5 overflow-hidden"><div class="${barColor} h-1.5 transition-all duration-1000" style="width:${Math.min(pct, 100)}%"></div></div></td>
+                    <td class="px-6 py-6 text-left">
+                        <div class="flex items-center gap-4">
+                            <div class="relative shrink-0">
+                                ${p.photo 
+                                    ? `<div class="w-11 h-11 rounded-full overflow-hidden border-2 border-white shadow-sm bg-gray-100">
+                                         <img src="${p.photo}" class="w-full h-full object-cover">
+                                       </div>`
+                                    : `<div class="w-11 h-11 rounded-full bg-blue-50 flex items-center justify-center text-c3c-blue font-black uppercase shadow-sm border border-blue-100 text-sm">${p.name.charAt(0)}</div>`
+                                }
+                                <div class="absolute -bottom-0.5 -right-0.5 w-5 h-5 ${healthBg} ${healthColor} rounded-full border-2 border-white flex items-center justify-center shadow-sm z-10">
+                                    <i data-lucide="${healthIcon}" class="w-3 h-3"></i>
+                                </div>
+                            </div>
+                            <div>
+                                <p class="font-black text-gray-800 text-xs uppercase tracking-tighter">${p.name}</p>
+                                <p class="text-[9px] font-bold text-gray-400 uppercase tracking-widest">${p.role}</p>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="px-4 py-6 text-center">
+                        <div class="flex flex-col items-center gap-1">
+                            <span class="text-[9px] font-black ${healthColor} uppercase tracking-widest px-2 py-0.5 ${healthBg} rounded-lg">${healthStatus}</span>
+                            <span class="text-[8px] font-bold text-gray-300 uppercase tracking-widest">${p.incompleteDays === 0 ? 'Sem pendências' : p.incompleteDays + ' dias pend.'}</span>
+                        </div>
+                    </td>
+                    <td class="px-6 py-6">
+                        <div class="flex justify-between text-[9px] font-black uppercase mb-1">
+                            <span class="text-gray-700">${p.total.toFixed(1)}h</span>
+                            <span class="text-gray-300">Meta: ${p.contract}h</span>
+                        </div>
+                        <div class="w-full bg-gray-100 rounded-full h-1.5 overflow-hidden">
+                            <div class="${barColor} h-1.5 transition-all duration-1000" style="width:${Math.min(pct, 100)}%"></div>
+                        </div>
+                    </td>
                     <td class="px-4 py-6 text-right font-black text-xs text-gray-400">R$ ${p.valorHora.toFixed(2)}</td>
                     <td class="px-4 py-6 text-right font-black text-c3c-blue text-sm tracking-tighter">R$ ${p.valorTotalHoras.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</td>
                     <td class="px-4 py-6 text-right font-black text-teal-600 text-sm tracking-tighter">R$ ${p.valorTotalBeneficios.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</td>
@@ -347,15 +468,49 @@
             lucide.createIcons();
         }
 
+        function showToast(title, message, type = 'success') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+            
+            const icon = type === 'success' ? 'check-circle' : (type === 'error' ? 'alert-triangle' : 'info');
+            const iconColor = type === 'success' ? 'text-teal-500 bg-teal-50' : (type === 'error' ? 'text-red-500 bg-red-50' : 'text-blue-500 bg-blue-50');
+
+            toast.innerHTML = `
+                <div class="p-3 rounded-2xl ${iconColor}"><i data-lucide="${icon}" class="w-6 h-6"></i></div>
+                <div class="flex-1">
+                    <h4 class="text-xs font-black text-gray-800 uppercase tracking-widest">${title}</h4>
+                    <p class="text-[10px] font-bold text-gray-400 uppercase mt-0.5 tracking-tight">${message}</p>
+                </div>
+            `;
+            container.appendChild(toast);
+            lucide.createIcons();
+
+            setTimeout(() => {
+                toast.classList.add('hiding');
+                setTimeout(() => toast.remove(), 500);
+            }, 4000);
+        }
+
         async function performAction(pid, pname, type, reason=null, entryIds = null) {
             const dates = JSON.parse(document.getElementById('period-selector').value);
             try { 
                 const res = await fetch(`${API_URL}/hr/action`, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ personId: pid, action: type, inicio: dates.start, fim: dates.end, motivo: reason, entryIds: Array.isArray(entryIds) ? entryIds : (entryIds ? [entryIds] : null) }) }); 
-                if((await res.json()).success) { if(entryIds && currentModalPersonId) await openModal(currentModalPersonId, document.getElementById('modal-name').innerText); triggerDataLoad(document.getElementById('period-selector').value); } 
-            } catch(e) { console.error(e); }
+                const result = await res.json();
+                if(result.success) { 
+                    showToast(type === 'approve' ? 'Aprovação Concluída' : 'Reprovação Realizada', result.message || 'Lançamentos atualizados com sucesso.');
+                    if(entryIds && currentModalPersonId) await openModal(currentModalPersonId, document.getElementById('modal-name').innerText); 
+                    triggerDataLoad(document.getElementById('period-selector').value); 
+                } else {
+                    showToast('Erro na Operação', result.error || 'Não foi possível concluir a ação.', 'error');
+                }
+            } catch(e) { 
+                console.error(e); 
+                showToast('Erro Crítico', 'Falha na conexão com o servidor.', 'error');
+            }
         }
         function openRejectModal(id, name) { document.getElementById('reject-person-id').value = id; document.getElementById('reject-person-name').innerText = name; document.getElementById('reject-reason').value = ''; document.getElementById('modal-reject').classList.remove('hidden'); }
-        async function confirmReject() { const id = document.getElementById('reject-person-id').value, reason = document.getElementById('reject-reason').value.trim(); if(!reason) return alert("Motivo obrigatório"); if(id === 'MASS') await performAction(currentModalPersonId, 'Selecionados', 'reject', reason, getHrSelectedEntryIds()); else { const isLog = id.startsWith('a1D'); await performAction(isLog ? currentModalPersonId : id, '', 'reject', reason, isLog ? [id] : null); } document.getElementById('modal-reject').classList.add('hidden'); }
+        async function confirmReject() { const id = document.getElementById('reject-person-id').value, reason = document.getElementById('reject-reason').value.trim(); if(!reason) return showToast('Atenção', 'O motivo da reprovação é obrigatório.', 'error'); if(id === 'MASS') await performAction(currentModalPersonId, 'Selecionados', 'reject', reason, getHrSelectedEntryIds()); else { const isLog = id.startsWith('a1D'); await performAction(isLog ? currentModalPersonId : id, '', 'reject', reason, isLog ? [id] : null); } document.getElementById('modal-reject').classList.add('hidden'); }
         function toggleSelectAll() { const all = document.getElementById('select-all').checked; document.querySelectorAll('input[name="period-check"]').forEach(c => c.checked = all); updateBulkActions(); }
         function updateBulkActions() { const sel = document.querySelectorAll('input[name="period-check"]:checked'), bar = document.getElementById('bulk-actions'), lbl = document.getElementById('selected-count'); if (sel.length > 0) { bar.classList.remove('hidden'); lbl.innerText = `${sel.length} selecionados`; } else { bar.classList.add('hidden'); } }
         async function openModal(id, name) {
@@ -376,15 +531,37 @@
                     if (l.status === 'Em aprovação do RH') { badge = `<div class="flex justify-center gap-2"><button onclick="performAction('${id}','','approve','','${l.id}')" class="p-2 bg-teal-50 text-teal-600 rounded-xl border border-teal-100 hover:bg-teal-600 hover:text-white transition-all"><i data-lucide="check" class="w-3.5 h-3.5"></i></button><button onclick="openRejectModal('${l.id}','${l.activity}')" class="p-2 bg-red-50 text-red-500 rounded-xl border border-red-100 hover:bg-red-600 hover:text-white transition-all"><i data-lucide="x" class="w-3.5 h-3.5"></i></button></div>`; checkbox = `<div class="flex justify-center"><input type="checkbox" class="hr-entry-checkbox w-4 h-4 rounded border-gray-200 text-c3c-blue" value="${l.id}" onchange="updateHrMassActionButtons()"></div>`; }
                     tb.innerHTML += `<tr class="hover:bg-gray-50 transition-colors border-b border-gray-50 text-xs"><td class="px-8 py-4">${checkbox}</td><td class="px-4 py-4 uppercase font-black text-gray-400 text-[10px]">${date}</td><td class="px-4 py-4 font-black text-gray-800 uppercase tracking-tighter text-[10px]">${l.project || '-'}</td><td class="px-4 py-4 text-gray-600 font-medium leading-tight">${l.activity || '-'}</td><td class="px-4 py-4 text-right font-black text-gray-700">${l.normal?.toFixed(1) || '-'}</td><td class="px-4 py-4 text-right font-black text-orange-500">${l.extraPgto?.toFixed(1) || '-'}</td><td class="px-4 py-4 text-right font-black text-purple-500">${l.banco?.toFixed(1) || '-'}</td><td class="px-4 py-4 text-right font-black text-red-400">${l.ausencia?.toFixed(1) || '-'}</td><td class="px-8 py-4 text-center">${badge}</td></tr>`;
                 }); lucide.createIcons();
-            } catch(e) { console.error(e); }
+            } catch(e) { console.error(e); showToast('Erro de Carregamento', 'Falha ao buscar detalhes do colaborador.', 'error'); }
         }
         function updateHrMassActionButtons() { const sel = document.querySelectorAll('.hr-entry-checkbox:checked').length, bA = document.getElementById('btn-mass-approve'), bR = document.getElementById('btn-mass-reject'); if(sel > 0) { bA.classList.remove('hidden'); bR.classList.remove('hidden'); bA.innerText = `Aprovar (${sel})`; bR.innerText = `Reprovar (${sel})`; } else { bA.classList.add('hidden'); bR.classList.add('hidden'); } }
         function getHrSelectedEntryIds() { return Array.from(document.querySelectorAll('.hr-entry-checkbox:checked')).map(cb => cb.value); }
         function toggleAllHr(master) { document.querySelectorAll('.hr-entry-checkbox').forEach(c => c.checked = master.checked); updateHrMassActionButtons(); }
-        async function confirmHrMassApprove() { const ids = getHrSelectedEntryIds(); if(!confirm(`Aprovar ${ids.length} item(s)?`)) return; await performAction(currentModalPersonId, 'Selecionados', 'approve', null, ids); }
+        async function confirmHrMassApprove() { 
+            const ids = getHrSelectedEntryIds(); 
+            // Para confirmações críticas, usei um modal ou mantive confirm nativo se quiser segurança extrema. 
+            // Mas para este rebranding, o Toasts de feedback de sucesso é o foco.
+            if(!confirm(`Deseja aprovar em massa ${ids.length} lançamento(s)?`)) return; 
+            await performAction(currentModalPersonId, 'Selecionados', 'approve', null, ids); 
+        }
         function openHrMassRejectModal() { const ids = getHrSelectedEntryIds(); document.getElementById('reject-person-name').innerText = `${ids.length} lançamento(s)`; document.getElementById('reject-person-id').value = 'MASS'; document.getElementById('modal-reject').classList.remove('hidden'); }
         function closeModal() { const m=document.getElementById('logs-modal'); m.querySelector('div').classList.add('scale-95'); setTimeout(()=>m.classList.add('hidden'),200); }
-        function filterByStatus(st) { document.getElementById('status-periodo-filter').value = st; triggerDataLoad(document.getElementById('period-selector').value); }
+        function filterByStatus(st) { 
+            if (currentStatusFilter === st) {
+                currentStatusFilter = ''; 
+            } else {
+                currentStatusFilter = st;
+            }
+            document.getElementById('status-periodo-filter').value = currentStatusFilter; 
+            triggerDataLoad(document.getElementById('period-selector').value); 
+        }
+
+        function resetFilters() {
+            document.getElementById('search-input').value = '';
+            document.getElementById('status-periodo-filter').value = '';
+            currentStatusFilter = '';
+            showToast('Filtros Limpos', 'Exibindo todos os colaboradores do ciclo.', 'info');
+            triggerDataLoad(document.getElementById('period-selector').value);
+        }
         function filterTable() { renderTable(); }
         function toggleMenu() { const s=document.getElementById('sidebar'), o=document.getElementById('mobile-overlay'); s.classList.toggle('-translate-x-full'); o.classList.toggle('hidden'); setTimeout(()=>o.classList.toggle('opacity-0'),10); }
     </script>
