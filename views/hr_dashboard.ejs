@@ -34,6 +34,9 @@
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #E2E8F0; border-radius: 10px; }
         .status-badge { @apply px-3 py-1 rounded-full text-[9px] font-black uppercase border tracking-widest text-center; }
 
+        /* DEMO MODE STYLES */
+        .demo-mode-active .demo-blur { filter: blur(6px); pointer-events: none; user-select: none; transition: all 0.3s ease; }
+
         /* STEPPER PATH STYLES */
         .step-path { @apply relative flex items-center justify-between w-full gap-2 px-2; }
         .step-item { @apply relative flex flex-col items-center flex-1 cursor-pointer transition-all duration-300; }
@@ -103,21 +106,21 @@
                         <div class="p-2.5 bg-blue-50 text-c3c-blue rounded-2xl"><i data-lucide="clock" class="w-5 h-5"></i></div>
                         <span class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Total em Horas</span>
                     </div>
-                    <p class="text-3xl font-black text-gray-800 tracking-tighter" id="total-financeiro-horas">R$ 0,00</p>
+                    <p class="text-3xl font-black text-gray-800 tracking-tighter demo-blur" id="total-financeiro-horas">R$ 0,00</p>
                 </div>
                 <div class="bg-white p-6 rounded-[32px] shadow-sm border border-gray-100 relative overflow-hidden group hover:shadow-md transition-all text-left">
                     <div class="flex items-center gap-3 mb-4">
                         <div class="p-2.5 bg-teal-50 text-c3c-teal rounded-2xl"><i data-lucide="gift" class="w-5 h-5"></i></div>
                         <span class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Total Benefícios</span>
                     </div>
-                    <p class="text-3xl font-black text-gray-800 tracking-tighter" id="total-financeiro-beneficios">R$ 0,00</p>
+                    <p class="text-3xl font-black text-gray-800 tracking-tighter demo-blur" id="total-financeiro-beneficios">R$ 0,00</p>
                 </div>
                 <div class="bg-c3c-gradient p-6 rounded-[32px] shadow-xl shadow-blue-100 relative overflow-hidden group hover:scale-[1.02] transition-all text-left text-white">
                     <div class="flex items-center gap-3 mb-4 relative z-10">
                         <div class="p-2.5 bg-white/20 text-white rounded-2xl backdrop-blur-sm"><i data-lucide="wallet" class="w-5 h-5"></i></div>
                         <span class="text-[10px] font-black text-blue-50 uppercase tracking-widest">Custo Total Ciclo</span>
                     </div>
-                    <p class="text-3xl font-black text-white tracking-tighter relative z-10" id="total-financeiro-periodo">R$ 0,00</p>
+                    <p class="text-3xl font-black text-white tracking-tighter relative z-10 demo-blur" id="total-financeiro-periodo">R$ 0,00</p>
                     <div class="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-3xl -mr-10 -mt-10"></div>
                 </div>
             </div>
@@ -458,9 +461,9 @@
                             <div class="${barColor} h-1.5 transition-all duration-1000" style="width:${Math.min(pct, 100)}%"></div>
                         </div>
                     </td>
-                    <td class="px-4 py-6 text-right font-black text-xs text-gray-400">R$ ${p.valorHora.toFixed(2)}</td>
-                    <td class="px-4 py-6 text-right font-black text-c3c-blue text-sm tracking-tighter">R$ ${p.valorTotalHoras.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</td>
-                    <td class="px-4 py-6 text-right font-black text-teal-600 text-sm tracking-tighter">R$ ${p.valorTotalBeneficios.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</td>
+                    <td class="px-4 py-6 text-right font-black text-xs text-gray-400 demo-blur">R$ ${p.valorHora.toFixed(2)}</td>
+                    <td class="px-4 py-6 text-right font-black text-c3c-blue text-sm tracking-tighter demo-blur">R$ ${p.valorTotalHoras.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</td>
+                    <td class="px-4 py-6 text-right font-black text-teal-600 text-sm tracking-tighter demo-blur">R$ ${p.valorTotalBeneficios.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</td>
                     <td class="px-6 py-6 text-center"><span class="status-badge ${statusColors[p.statusPeriodo]}">${p.statusPeriodo}</span></td>
                     <td class="px-8 py-6 text-right">${act}</td>
                 </tr>`;
