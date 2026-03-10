@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Portal de Notas - C3C Workspace</title>
+    <title>Portal de Notas - C3C Workplace</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
@@ -32,9 +32,34 @@
         .custom-scrollbar::-webkit-scrollbar { width: 4px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #E2E8F0; border-radius: 10px; }
+        
+        /* STEPPER PATH STYLES */
+        .step-path { @apply relative flex items-center justify-between w-full gap-2 px-2; }
+        .step-item { @apply relative flex flex-col items-center flex-1 cursor-pointer transition-all duration-300; }
+        .step-node { @apply w-12 h-12 rounded-full border-4 border-white shadow-md flex items-center justify-center text-sm font-black transition-all duration-500 z-10; }
+        .step-line { @apply absolute top-6 left-[50%] w-full h-1 bg-gray-100 -z-0 transition-all duration-500; }
+        .step-item:last-child .step-line { @apply hidden; }
+        
+        .step-item.active .step-node { @apply bg-c3c-blue text-white scale-110 shadow-blue-200 shadow-xl border-blue-100; }
+        .step-item.active .step-line { @apply bg-c3c-blue; }
+        .step-item.active p { @apply text-c3c-blue font-black; }
+
+        /* TOAST STYLES */
+        #toast-container { position: fixed; top: 2rem; right: 2rem; z-index: 9999; display: flex; flex-direction: column; gap: 1rem; }
+        .toast { 
+            animation: toastIn 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55) forwards;
+            background-color: white; border: 1px solid #F1F5F9; border-radius: 24px; padding: 1rem; display: flex; align-items: center; gap: 1rem; min-width: 320px; max-width: 400px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+        }
+        @keyframes toastIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        .toast.hiding { animation: toastOut 0.5s ease-in forwards; }
+        @keyframes toastOut { from { transform: translateX(0); opacity: 1; } to { transform: translateX(100%); opacity: 0; } }
     </style>
 </head>
 <body class="h-screen flex overflow-hidden bg-[#F8FAFC]">
+
+    <!-- TOAST CONTAINER -->
+    <div id="toast-container"></div>
 
     <%- include('partials/sidebar', { page: 'billing_portal' }) %>
 
@@ -56,8 +81,41 @@
         <!-- CONTEÚDO -->
         <div class="flex-1 overflow-y-auto p-4 md:p-8 fade-in custom-scrollbar text-left">
             
+            <!-- KPIS FINANCEIROS -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+                <div class="bg-white p-6 rounded-[32px] shadow-sm border border-gray-100 relative overflow-hidden group hover:shadow-md transition-all text-left">
+                    <div class="flex items-center gap-3 mb-4">
+                        <div class="p-2.5 bg-blue-50 text-c3c-blue rounded-2xl"><i data-lucide="send" class="w-5 h-5"></i></div>
+                        <span class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Liberado p/ Envio</span>
+                    </div>
+                    <p class="text-3xl font-black text-gray-800 tracking-tighter" id="kpi-liberado">R$ 0,00</p>
+                </div>
+                <div class="bg-white p-6 rounded-[32px] shadow-sm border border-gray-100 relative overflow-hidden group hover:shadow-md transition-all text-left">
+                    <div class="flex items-center gap-3 mb-4">
+                        <div class="p-2.5 bg-orange-50 text-orange-500 rounded-2xl"><i data-lucide="clock" class="w-5 h-5"></i></div>
+                        <span class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Em Validação</span>
+                    </div>
+                    <p class="text-3xl font-black text-gray-800 tracking-tighter" id="kpi-validacao">R$ 0,00</p>
+                </div>
+                <div class="bg-c3c-gradient p-6 rounded-[32px] shadow-xl shadow-blue-100 relative overflow-hidden group hover:scale-[1.02] transition-all text-left text-white">
+                    <div class="flex items-center gap-3 mb-4 relative z-10">
+                        <div class="p-2.5 bg-white/20 text-white rounded-2xl backdrop-blur-sm"><i data-lucide="wallet" class="w-5 h-5"></i></div>
+                        <span class="text-[10px] font-black text-blue-50 uppercase tracking-widest">Saldo Total</span>
+                    </div>
+                    <p class="text-3xl font-black text-white tracking-tighter relative z-10" id="kpi-total">R$ 0,00</p>
+                    <div class="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-3xl -mr-10 -mt-10"></div>
+                </div>
+            </div>
+
+            <!-- STEPPER PATH (Jornada da Nota) -->
+            <div class="mb-10 bg-white p-8 rounded-[40px] shadow-sm border border-gray-100 overflow-hidden">
+                <div id="funnel-container">
+                    <!-- Gerado via JS -->
+                </div>
+            </div>
+
             <div class="mb-10">
-                <h2 class="text-2xl font-black text-gray-800 tracking-tighter uppercase leading-tight">Ciclos de Faturamento</h2>
+                <h2 class="text-2xl font-black text-gray-800 tracking-tighter uppercase leading-tight">Meus Ciclos</h2>
                 <p class="text-xs font-bold text-gray-400 uppercase tracking-widest mt-1">Acompanhe a liberação e realize o envio das suas Notas Fiscais</p>
             </div>
 
@@ -177,23 +235,111 @@
 
     <script>
         lucide.createIcons();
-        
+        let allPeriods = [];
+        let currentStatusFilter = '';
+
         document.addEventListener('DOMContentLoaded', loadPeriods);
+
+        function showToast(title, message, type = 'success') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+            const icon = type === 'success' ? 'check-circle' : (type === 'error' ? 'alert-triangle' : 'info');
+            const iconColor = type === 'success' ? 'text-teal-500 bg-teal-50' : (type === 'error' ? 'text-red-500 bg-red-50' : 'text-blue-500 bg-blue-50');
+            toast.innerHTML = `<div class="p-3 rounded-2xl ${iconColor}"><i data-lucide="${icon}" class="w-6 h-6"></i></div><div class="flex-1"><h4 class="text-xs font-black text-gray-800 uppercase tracking-widest">${title}</h4><p class="text-[10px] font-bold text-gray-400 uppercase mt-0.5 tracking-tight">${message}</p></div>`;
+            container.appendChild(toast);
+            lucide.createIcons();
+            setTimeout(() => { toast.classList.add('hiding'); setTimeout(() => toast.remove(), 500); }, 4000);
+        }
 
         async function loadPeriods() {
             try {
                 const res = await fetch('/api/billing/periods');
-                const data = await res.json();
-                renderTable(data);
-            } catch(e) { console.error(e); }
+                allPeriods = await res.json();
+                
+                // Cálculo de KPIs
+                let lib = 0, val = 0, tot = 0;
+                allPeriods.forEach(p => {
+                    tot += (p.valorHoras || 0);
+                    if (p.statusPeriodo === 'Liberado para Nota Fiscal' && !p.hasNF) lib += (p.valorHoras || 0);
+                    if (p.hasNF && p.nfStatus !== 'Aprovada') val += (p.valorHoras || 0);
+                });
+                document.getElementById('kpi-liberado').innerText = lib.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+                document.getElementById('kpi-validacao').innerText = val.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+                document.getElementById('kpi-total').innerText = tot.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+
+                renderFunnel();
+                renderTable();
+            } catch(e) { console.error(e); showToast('Erro de Conexão', 'Não foi possível carregar seus ciclos.', 'error'); }
         }
 
-        function renderTable(periods) {
+        function renderFunnel() {
+            const container = document.getElementById('funnel-container');
+            container.innerHTML = '';
+            container.className = 'relative flex flex-row justify-between items-start w-full py-4';
+
+            const steps = [
+                { id: 'Em apuração', label: '1. Em Apuração', icon: 'clock', filter: 'Em apuração' },
+                { id: 'Liberado', label: '2. Liberado', icon: 'send', filter: 'Liberado para Nota Fiscal' },
+                { id: 'Validacao', label: '3. Em Validação', icon: 'shield-check', filter: 'VALIDACAO' },
+                { id: 'Pago', label: '4. Concluído', icon: 'check-circle', filter: 'Finalizado/Pago' }
+            ];
+
+            const backgroundLine = document.createElement('div');
+            backgroundLine.className = 'absolute top-[38px] left-[10%] right-[10%] h-1 bg-gray-100 -z-0';
+            container.appendChild(backgroundLine);
+
+            steps.forEach(step => {
+                let count = 0;
+                if (step.id === 'Validacao') count = allPeriods.filter(p => p.hasNF && p.nfStatus !== 'Aprovada').length;
+                else if (step.id === 'Liberado') count = allPeriods.filter(p => p.statusPeriodo === 'Liberado para Nota Fiscal' && !p.hasNF).length;
+                else count = allPeriods.filter(p => p.statusPeriodo === step.filter).length;
+
+                const isActive = currentStatusFilter === step.id;
+                const stepEl = document.createElement('div');
+                stepEl.className = 'relative z-10 flex flex-col items-center cursor-pointer transition-all duration-300 flex-1 group';
+                stepEl.onclick = () => filterByStatus(step.id);
+                stepEl.innerHTML = `
+                    <div class="w-10 h-10 rounded-full border-4 ${isActive ? 'bg-c3c-blue border-blue-100 text-white shadow-xl scale-125' : 'bg-white border-gray-50 text-gray-300 group-hover:text-c3c-blue'} flex items-center justify-center transition-all duration-500">
+                        <i data-lucide="${step.icon}" class="w-4 h-4"></i>
+                    </div>
+                    <div class="mt-3 text-center">
+                        <p class="text-[8px] font-black uppercase tracking-widest ${isActive ? 'text-c3c-blue' : 'text-gray-400'}">${step.label}</p>
+                        <p class="text-lg font-black ${isActive ? 'text-c3c-blue' : 'text-gray-800'} tracking-tighter">${count}</p>
+                    </div>
+                `;
+                container.appendChild(stepEl);
+            });
+            lucide.createIcons();
+        }
+
+        function filterByStatus(st) {
+            currentStatusFilter = (currentStatusFilter === st) ? '' : st;
+            renderFunnel();
+            renderTable();
+        }
+
+        function renderTable() {
+            const periods = allPeriods.filter(p => {
+                if (!currentStatusFilter) return true;
+                if (currentStatusFilter === 'Validacao') return p.hasNF && p.nfStatus !== 'Aprovada';
+                if (currentStatusFilter === 'Liberado') return p.statusPeriodo === 'Liberado para Nota Fiscal' && !p.hasNF;
+                if (currentStatusFilter === 'Em apuração') return p.statusPeriodo === 'Em apuração';
+                if (currentStatusFilter === 'Pago') return p.statusPeriodo === 'Finalizado/Pago';
+                return true;
+            });
+
             const tbody = document.getElementById('period-table-body');
             tbody.innerHTML = '';
 
             if (periods.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="6" class="text-center py-20 text-gray-300 font-bold uppercase text-[10px] tracking-widest italic">Nenhum ciclo pendente no momento.</td></tr>';
+                tbody.innerHTML = `<tr><td colspan="6" class="py-32 px-6">
+                    <div class="flex flex-col items-center justify-center text-center fade-in">
+                        <div class="w-20 h-20 bg-gray-50 text-gray-200 rounded-full flex items-center justify-center mb-6 border border-gray-100 shadow-inner"><i data-lucide="file-x" class="w-10 h-10"></i></div>
+                        <h3 class="text-lg font-black text-gray-800 uppercase tracking-tighter mb-2">Nada por aqui</h3>
+                        <p class="text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em] max-w-xs mx-auto italic">Você não possui ciclos nesta etapa no momento.</p>
+                    </div></td></tr>`;
+                lucide.createIcons();
                 return;
             }
 
@@ -351,10 +497,21 @@
                 formData.append('dataEmissao', document.getElementById('nf-data-emissao').value);
                 formData.append('nomeEmitente', document.getElementById('nf-emitente').value);
                 formData.append('preenchimento', isManualFill ? 'Manual' : 'Automático');
+                
                 const res = await fetch('/api/billing/upload', { method: 'POST', body: formData });
                 const result = await res.json();
-                if (result.success) { closeUploadModal(); loadPeriods(); } else { alert('Erro: ' + result.error); }
-            } catch(e) { console.error(e); } finally { btn.innerText = oldText; btn.disabled = false; validateForm(); }
+
+                if (result.success) { 
+                    showToast('Sucesso!', 'Nota Fiscal enviada com sucesso.');
+                    closeUploadModal(); 
+                    loadPeriods(); 
+                } else { 
+                    showToast('Erro no Envio', result.error || 'Não foi possível enviar a nota.', 'error');
+                }
+            } catch(e) { 
+                console.error(e); 
+                showToast('Erro Crítico', 'Falha ao processar o upload.', 'error');
+            } finally { btn.innerText = oldText; btn.disabled = false; validateForm(); }
         }
     </script>
 </body>
