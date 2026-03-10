@@ -224,17 +224,23 @@
         function renderFunnel() {
             const container = document.getElementById('funnel-container');
             container.innerHTML = '';
-            // Removida a linha de fundo para o modo compacto
 
             const steps = [
-                { id: 'Nota em Validação', label: 'Validação', icon: 'shield-check', color: 'text-orange-500' },
-                { id: 'Pronto para Pagamento', label: 'Pronto', icon: 'check-circle', color: 'text-teal-500' },
-                { id: 'Pagamento Agendado', label: 'Agendado', icon: 'calendar-clock', color: 'text-purple-500' },
-                { id: 'Finalizado/Pago', label: 'Pago', icon: 'wallet', color: 'text-c3c-blue' }
+                { id: 'Nota em Validação', label: '1. Validação', icon: 'shield-check', color: 'text-orange-500' },
+                { id: 'Reprovados', label: '2. Reprovados', icon: 'x-circle', color: 'text-red-500' },
+                { id: 'Pronto para Pagamento', label: '3. Pronto', icon: 'check-circle', color: 'text-teal-500' },
+                { id: 'Pagamento Agendado', label: '4. Agendado', icon: 'calendar-clock', color: 'text-purple-500' },
+                { id: 'Finalizado/Pago', label: '5. Pago', icon: 'wallet', color: 'text-c3c-blue' }
             ];
 
             steps.forEach((step, idx) => {
-                const count = allPeriods.filter(p => p.status === step.id).length;
+                let count = 0;
+                if (step.id === 'Reprovados') {
+                    count = allPeriods.filter(p => p.status === 'Liberado para Nota Fiscal' && p.nf && p.nf.status === 'Reprovada').length;
+                } else {
+                    count = allPeriods.filter(p => p.status === step.id).length;
+                }
+
                 const isActive = currentStatusFilter === step.id;
                 
                 const stepEl = document.createElement('div');
@@ -247,11 +253,6 @@
                     <span class="text-[10px] font-black ${isActive ? 'bg-white/20' : 'bg-gray-100 text-gray-600'} px-1.5 py-0.5 rounded-md">${count}</span>
                 `;
                 container.appendChild(stepEl);
-                if(idx < steps.length - 1 && !isActive) {
-                    const sep = document.createElement('div');
-                    sep.className = 'w-px h-4 bg-gray-200 mx-1';
-                    // container.appendChild(sep); // Separador opcional
-                }
             });
             lucide.createIcons();
         }
@@ -259,12 +260,18 @@
         function filterLocalData() {
             const term = document.getElementById('search-input').value.toLowerCase();
             const tbody = document.getElementById('finance-table-body');
-
+            
             // Se for uma busca local rápida, não precisa de loading pesado, 
             // mas como loadFinancePeriods é chamado ao mudar status, vamos garantir feedback.
-
+            
             const filtered = allPeriods.filter(p => {
-                const matchesStatus = !currentStatusFilter || p.status === currentStatusFilter;
+                let matchesStatus = true;
+                if (currentStatusFilter === 'Reprovados') {
+                    matchesStatus = p.status === 'Liberado para Nota Fiscal' && p.nf && p.nf.status === 'Reprovada';
+                } else if (currentStatusFilter) {
+                    matchesStatus = p.status === currentStatusFilter;
+                }
+                
                 const matchesTerm = !term || (p.employeeName.toLowerCase().includes(term) || p.name.toLowerCase().includes(term) || (p.nf && p.nf.nomeEmitente && p.nf.nomeEmitente.toLowerCase().includes(term)));
                 return matchesStatus && matchesTerm;
             });
@@ -441,6 +448,10 @@
                 if(r.success) { 
                     showToast('Operação Concluída', ids.length + ' nota(s) reprovada(s).'); 
                     closeReproveModal(); 
+                    // Limpa seleção
+                    document.querySelectorAll('.period-checkbox').forEach(cb => cb.checked = false);
+                    document.getElementById('select-all').checked = false;
+                    updateSelection();
                     loadFinancePeriods(); 
                 } 
             } catch(e) { console.error(e); } 
