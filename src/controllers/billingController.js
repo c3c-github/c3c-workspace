@@ -488,13 +488,15 @@ exports.getFinancePeriods = async (req, res) => {
         if (status) filters.push(`Status__c = '${status}'`);
 
         const query = `
-            SELECT Id, Name, Status__c, ContratoPessoa__r.Pessoa__r.Name, 
+            SELECT Id, Name, Status__c, ContratoPessoa__r.Pessoa__r.Name,
+                   ContratoPessoa__r.Pessoa__r.URL_Foto__c,
                    ValorTotalHoras__c, ValorTotalBeneficios__c, ValorTotalPeriodo__c,
                    (SELECT Id, Status__c, Valor__c, DocumentoId__c, CNPJ_Emissor__c, CNPJ_Receptor__c, NomeEmitente__c, NumeroNota__c, Preenchimento__c, DataEmissao__c FROM NotasFiscais__r WHERE Tipo__c = 'Entrada' LIMIT 1)
             FROM Periodo__c
             WHERE ${filters.join(' AND ')}
             ORDER BY ContratoPessoa__r.Pessoa__r.Name ASC
         `;
+
         const result = await conn.query(query);
         
         res.json(result.records.map(p => {
@@ -504,6 +506,7 @@ exports.getFinancePeriods = async (req, res) => {
                 name: p.Name,
                 status: p.Status__c,
                 employeeName: p.ContratoPessoa__r?.Pessoa__r?.Name || 'N/A',
+                employeePhoto: p.ContratoPessoa__r?.Pessoa__r?.URL_Foto__c || null,
                 valueHoras: p.ValorTotalHoras__c || 0,
                 valueBeneficios: p.ValorTotalBeneficios__c || 0,
                 valueTotal: p.ValorTotalPeriodo__c || 0,
