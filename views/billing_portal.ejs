@@ -88,21 +88,21 @@
                         <div class="p-2.5 bg-blue-50 text-c3c-blue rounded-2xl"><i data-lucide="send" class="w-5 h-5"></i></div>
                         <span class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Liberado p/ Envio</span>
                     </div>
-                    <p class="text-3xl font-black text-gray-800 tracking-tighter" id="kpi-liberado">R$ 0,00</p>
+                    <p class="text-3xl font-black text-gray-800 tracking-tighter demo-blur" id="kpi-liberado">R$ 0,00</p>
                 </div>
                 <div class="bg-white p-6 rounded-[32px] shadow-sm border border-gray-100 relative overflow-hidden group hover:shadow-md transition-all text-left">
                     <div class="flex items-center gap-3 mb-4">
                         <div class="p-2.5 bg-orange-50 text-orange-500 rounded-2xl"><i data-lucide="clock" class="w-5 h-5"></i></div>
                         <span class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Em Validação</span>
                     </div>
-                    <p class="text-3xl font-black text-gray-800 tracking-tighter" id="kpi-validacao">R$ 0,00</p>
+                    <p class="text-3xl font-black text-gray-800 tracking-tighter demo-blur" id="kpi-validacao">R$ 0,00</p>
                 </div>
                 <div class="bg-c3c-gradient p-6 rounded-[32px] shadow-xl shadow-blue-100 relative overflow-hidden group hover:scale-[1.02] transition-all text-left text-white">
                     <div class="flex items-center gap-3 mb-4 relative z-10">
                         <div class="p-2.5 bg-white/20 text-white rounded-2xl backdrop-blur-sm"><i data-lucide="wallet" class="w-5 h-5"></i></div>
                         <span class="text-[10px] font-black text-blue-50 uppercase tracking-widest">Saldo Total</span>
                     </div>
-                    <p class="text-3xl font-black text-white tracking-tighter relative z-10" id="kpi-total">R$ 0,00</p>
+                    <p class="text-3xl font-black text-white tracking-tighter relative z-10 demo-blur" id="kpi-total">R$ 0,00</p>
                     <div class="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-3xl -mr-10 -mt-10"></div>
                 </div>
             </div>
@@ -220,7 +220,7 @@
                         <label class="block text-[10px] font-black text-gray-400 uppercase mb-2 tracking-widest px-2">Valor da Nota</label>
                         <div class="relative">
                             <span class="absolute left-5 top-1/2 -translate-y-1/2 text-sm font-black text-c3c-blue">R$</span>
-                            <input type="number" id="nf-valor" step="0.01" disabled oninput="validateForm()" class="w-full bg-blue-50 border-2 border-blue-100 rounded-2xl px-12 py-4 text-xl font-black text-c3c-blue focus:ring-4 focus:ring-blue-100 outline-none transition-all disabled:opacity-80">
+                            <input type="number" id="nf-valor" step="0.01" disabled oninput="validateForm()" class="w-full bg-blue-50 border-2 border-blue-100 rounded-2xl px-12 py-4 text-xl font-black text-c3c-blue focus:ring-4 focus:ring-blue-100 outline-none transition-all disabled:opacity-80 demo-blur">
                         </div>
                     </div>
                 </div>
@@ -378,7 +378,7 @@
                         <td class="px-8 py-6">
                             <span class="text-[10px] font-black text-gray-500 uppercase tracking-widest">${p.statusPeriodo}</span>
                         </td>
-                        <td class="px-8 py-6 text-right font-black text-gray-800 text-sm tracking-tighter">${vHoras}</td>
+                        <td class="px-8 py-6 text-right font-black text-gray-800 text-sm tracking-tighter demo-blur">${vHoras}</td>
                         <td class="px-8 py-6 text-center">${nfStatusBadge}</td>
                         <td class="px-8 py-6 text-center">${nfFile}</td>
                         <td class="px-8 py-6 text-right">${actions}</td>

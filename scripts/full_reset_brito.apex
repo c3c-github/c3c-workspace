@@ -1,17 +1,18 @@
+String periodId = 'a1EN50000026mNRMAY';
 
-Periodo__c p = [SELECT Id FROM Periodo__c WHERE Name = 'Fevereiro 2026 - Arthur Brito' LIMIT 1];
-p.Status__c = 'Aberto';
-update p;
-
-List<LancamentoHora__c> logs = [SELECT Id FROM LancamentoHora__c WHERE DiaPeriodo__r.Periodo__c = :p.Id];
-for(LancamentoHora__c l : logs) {
-    l.Status__c = 'Rascunho';
-    l.MotivoReprovacao__c = null;
+// 1. Restaurar Notas Fiscais deletadas
+List<NotaFiscal__c> deletedNFs = [SELECT Id FROM NotaFiscal__c WHERE Periodo__c = :periodId AND IsDeleted = true ALL ROWS];
+if(!deletedNFs.isEmpty()) {
+    undelete deletedNFs;
 }
-update logs;
 
-List<NotaFiscal__c> nfs = [SELECT Id FROM NotaFiscal__c WHERE Periodo__c = :p.Id];
-delete nfs;
+// 2. Restaurar status do período e logs
+update new Periodo__c(Id = periodId, Status__c = 'Nota em Validação');
 
-System.debug('Reset completo para Arthur Brito realizado com sucesso.');
+List<LancamentoHora__c> logs = [SELECT Id FROM LancamentoHora__c WHERE DiaPeriodo__r.Periodo__c = :periodId];
+for(LancamentoHora__c l : logs) {
+    l.Status__c = 'Aprovado';
+}
+if(!logs.isEmpty()) update logs;
 
+System.debug('Dados restaurados com sucesso.');
