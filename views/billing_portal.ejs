@@ -359,7 +359,7 @@
 
                 let actions = '';
                 if (p.statusPeriodo === 'Liberado para Nota Fiscal' || p.nfStatus === 'Reprovada') {
-                    actions = `<button onclick="openUploadModal('${p.id}', '${p.name}', ${p.valorHoras})" class="bg-c3c-gradient hover:opacity-90 text-white px-5 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-blue-100 flex items-center gap-2 transition-all active:scale-95"><i data-lucide="upload-cloud" class="w-3.5 h-3.5"></i> Enviar Nota</button>`;
+                    actions = `<button onclick="openNfUploadModal('${p.id}', '${p.name}', ${p.valorHoras})" class="bg-c3c-gradient hover:opacity-90 text-white px-5 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-blue-100 flex items-center gap-2 transition-all active:scale-95"><i data-lucide="upload-cloud" class="w-3.5 h-3.5"></i> Enviar Nota</button>`;
                 } else if (p.hasNF) {
                     actions = `<div class="flex items-center justify-end gap-2 text-[10px] font-black text-gray-400 uppercase tracking-widest"><i data-lucide="clock" class="w-3.5 h-3.5 text-c3c-blue animate-pulse"></i> Em validação</div>`;
                 }
@@ -515,6 +515,14 @@
                 showToast('Erro Crítico', 'Falha ao processar o upload.', 'error');
             } finally { btn.innerText = oldText; btn.disabled = false; validateForm(); }
         }
+
+        // ALIAS PARA RETROCOMPATIBILIDADE (Evita erros de cache ou extensões)
+        function openUploadModal(id, name, val) { 
+            console.warn('[Portal de Notas] Chamada legada detectada. Redirecionando para openNfUploadModal.');
+            openNfUploadModal(id, name, val); 
+        }
+        function closeUploadModal() { closeNfUploadModal(); }
+        function processUpload() { processNfUpload(); }
     </script>
 </body>
 </html>
