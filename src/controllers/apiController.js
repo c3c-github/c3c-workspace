@@ -303,7 +303,8 @@ exports.getProjectResources = async (req, res) => {
         horasExtrasPgto: 0,
         horasExtrasBanco: 0,
         horasAusenciaBanco: 0,
-        horasAusenciaOutras: 0,
+        horasAusenciaRem: 0,
+        horasAusenciaNaoRem: 0,
         countPending: 0,
         countApproved: 0,
         countRejected: 0
@@ -324,7 +325,8 @@ exports.getProjectResources = async (req, res) => {
           horasExtrasPgto: 0,
           horasExtrasBanco: 0,
           horasAusenciaBanco: 0,
-          horasAusenciaOutras: 0,
+          horasAusenciaRem: 0,
+          horasAusenciaNaoRem: 0,
           countPending: 0,
           countApproved: 0,
           countRejected: 0
@@ -342,7 +344,8 @@ exports.getProjectResources = async (req, res) => {
         r.horasExtrasPgto += hExt;
         if (hBanco > 0) r.horasExtrasBanco += hBanco;
         else r.horasAusenciaBanco += Math.abs(hBanco);
-        r.horasAusenciaOutras += hAusRem + hAusNao;
+        r.horasAusenciaRem += hAusRem;
+        r.horasAusenciaNaoRem += hAusNao;
 
         // CÁLCULO TOTAL: Normal + (Extra Pago * 2)
         r.totalRealizado += hNorm + hExt * 2;
@@ -419,9 +422,8 @@ exports.getResourceActivities = async (req, res) => {
       extraPgto: r.HorasExtras__c || 0,
       extraBanco: r.HorasBanco__c > 0 ? r.HorasBanco__c : 0,
       ausenciaBanco: r.HorasBanco__c < 0 ? Math.abs(r.HorasBanco__c) : 0,
-      ausenciaOutras:
-        (r.HorasAusenciaRemunerada__c || 0) +
-        (r.HorasAusenciaNaoRemunerada__c || 0)
+      ausenciaRem: r.HorasAusenciaRemunerada__c || 0,
+      ausenciaNaoRem: r.HorasAusenciaNaoRemunerada__c || 0
     }));
     res.json(activities);
   } catch (e) {
