@@ -165,7 +165,7 @@
                     <h3 class="text-2xl font-black text-gray-800 tracking-tighter uppercase leading-tight">Enviar Nota Fiscal</h3>
                     <p id="modal-period-name" class="text-[10px] font-black text-c3c-blue uppercase tracking-[0.2em] mt-1 italic">Ciclo...</p>
                 </div>
-                <button onclick="closeUploadModal()" class="p-3 text-gray-400 hover:bg-white hover:text-red-500 rounded-full shadow-sm transition-all"><i data-lucide="x"></i></button>
+                <button onclick="closeNfUploadModal()" class="p-3 text-gray-400 hover:bg-white hover:text-red-500 rounded-full shadow-sm transition-all"><i data-lucide="x"></i></button>
             </header>
             
             <div class="p-8 overflow-y-auto custom-scrollbar flex-1">
@@ -227,8 +227,8 @@
             </div>
 
             <footer class="p-8 border-t border-gray-100 bg-gray-50/50 flex justify-end gap-4 shrink-0">
-                <button onclick="closeUploadModal()" class="px-6 py-3 text-gray-400 font-black uppercase text-[10px] hover:text-gray-600 transition-colors tracking-widest">Cancelar</button>
-                <button id="btn-process-upload" onclick="processUpload()" disabled class="px-10 py-4 bg-c3c-gradient text-white font-black uppercase text-xs tracking-widest rounded-2xl shadow-xl hover:opacity-90 active:scale-95 transition-all disabled:bg-gray-200 disabled:text-gray-400 disabled:shadow-none disabled:bg-none">Enviar Nota Fiscal</button>
+                <button onclick="closeNfUploadModal()" class="px-6 py-3 text-gray-400 font-black uppercase text-[10px] hover:text-gray-600 transition-colors tracking-widest">Cancelar</button>
+                <button id="btn-process-upload" onclick="processNfUpload()" disabled class="px-10 py-4 bg-c3c-gradient text-white font-black uppercase text-xs tracking-widest rounded-2xl shadow-xl hover:opacity-90 active:scale-95 transition-all disabled:bg-gray-200 disabled:text-gray-400 disabled:shadow-none disabled:bg-none">Enviar Nota Fiscal</button>
             </footer>
         </div>
     </div>
@@ -359,7 +359,7 @@
 
                 let actions = '';
                 if (p.statusPeriodo === 'Liberado para Nota Fiscal' || p.nfStatus === 'Reprovada') {
-                    actions = `<button onclick="openUploadModal('${p.id}', '${p.name}', ${p.valorHoras})" class="bg-c3c-gradient hover:opacity-90 text-white px-5 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-blue-100 flex items-center gap-2 transition-all active:scale-95"><i data-lucide="upload-cloud" class="w-3.5 h-3.5"></i> Enviar Nota</button>`;
+                    actions = `<button onclick="openNfUploadModal('${p.id}', '${p.name}', ${p.valorHoras})" class="bg-c3c-gradient hover:opacity-90 text-white px-5 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-blue-100 flex items-center gap-2 transition-all active:scale-95"><i data-lucide="upload-cloud" class="w-3.5 h-3.5"></i> Enviar Nota</button>`;
                 } else if (p.hasNF) {
                     actions = `<div class="flex items-center justify-end gap-2 text-[10px] font-black text-gray-400 uppercase tracking-widest"><i data-lucide="clock" class="w-3.5 h-3.5 text-c3c-blue animate-pulse"></i> Em validação</div>`;
                 }
@@ -388,7 +388,8 @@
             lucide.createIcons();
         }
 
-        function openUploadModal(id, name, val) {
+        function openNfUploadModal(id, name, val) {
+            console.log('[Portal de Notas] Abertura manual solicitada para:', name);
             document.getElementById('upload-period-id').value = id;
             document.getElementById('modal-period-name').innerText = name;
             
@@ -411,7 +412,9 @@
             setTimeout(() => document.getElementById('modal-upload').querySelector('div').classList.remove('scale-95'), 10);
         }
 
-        function closeUploadModal() {
+        function closeNfUploadModal() {
+            console.log('[Portal de Notas] Fechando modal e resetando estado.');
+            document.getElementById('nf-file').value = ''; 
             document.getElementById('modal-upload').querySelector('div').classList.add('scale-95');
             setTimeout(() => document.getElementById('modal-upload').classList.add('hidden'), 200);
         }
@@ -423,8 +426,10 @@
             const cnpjE = document.getElementById('cnpj-emissor').value;
             const cnpjR = document.getElementById('cnpj-receptor').value;
             const valor = document.getElementById('nf-valor').value;
-            const file = document.getElementById('nf-file').files[0];
-            const isValid = numero && data && emitente && cnpjE && cnpjR && valor && parseFloat(valor) > 0 && file;
+            const fileInput = document.getElementById('nf-file');
+            const hasFile = fileInput && fileInput.files && fileInput.files.length > 0;
+            
+            const isValid = numero && data && emitente && cnpjE && cnpjR && valor && parseFloat(valor) > 0 && hasFile;
             document.getElementById('btn-process-upload').disabled = !isValid;
         }
 
@@ -447,28 +452,17 @@
                     Object.keys(mapping).forEach(id => {
                         const el = document.getElementById(id);
                         let val = mapping[id];
-                        
-                        // Verifica se é nulo, undefined, string "null", string "n/a" ou vazio
                         const isNullString = typeof val === 'string' && (val.toLowerCase() === 'null' || val.toLowerCase() === 'n/a' || val.trim() === '');
-                        const isInvalidValue = !val || isNullString;
-                        const isInvalidPrice = id === 'nf-valor' && (parseFloat(val) <= 0 || isNaN(parseFloat(val)));
+                        const isInvalid = !val || isNullString || (id === 'nf-valor' && (parseFloat(val) <= 0 || isNaN(parseFloat(val))));
                         
-                        const isInvalid = isInvalidValue || isInvalidPrice;
-                        
-                        console.log(`[IA Analysis] Field: ${id}, Value: ${val}, isInvalid: ${isInvalid}`);
-
                         el.classList.remove('border-teal-500', 'bg-teal-50/30');
-                        
                         if (!isInvalid) {
-                            el.value = val; 
-                            el.disabled = true;
+                            el.value = val; el.disabled = true;
                             el.classList.add('border-teal-500', 'bg-teal-50/30');
                         } else {
                             if (id !== 'nf-valor') el.value = '';
-                            el.disabled = false; 
-                            el.removeAttribute('disabled'); // Força a remoção do atributo
-                            isManualFill = true; 
-                            el.placeholder = "Preencha manualmente";
+                            el.disabled = false; el.removeAttribute('disabled');
+                            isManualFill = true; el.placeholder = "Preencha manualmente";
                         }
                     });
                 } else { throw new Error("IA falhou"); }
@@ -476,19 +470,24 @@
                 isManualFill = true;
                 ['nf-numero', 'nf-data-emissao', 'nf-emitente', 'cnpj-emissor', 'cnpj-receptor', 'nf-valor'].forEach(f => {
                     const el = document.getElementById(f);
-                    el.disabled = false; 
-                    el.classList.remove('border-teal-500', 'bg-teal-50/30');
+                    el.disabled = false; el.classList.remove('border-teal-500', 'bg-teal-50/30');
                     el.placeholder = "Preencha manualmente";
                 });
             } finally { loader.classList.add('hidden'); validateForm(); }
         }
 
-        async function processUpload() {
+        async function processNfUpload() {
+            const fileInput = document.getElementById('nf-file');
+            if (!fileInput.files[0]) {
+                showToast('Atenção', 'Selecione o arquivo da nota fiscal antes de enviar.', 'error');
+                return;
+            }
+
             const btn = document.getElementById('btn-process-upload');
             const oldText = btn.innerText; btn.innerText = 'Enviando...'; btn.disabled = true;
             try {
                 const formData = new FormData();
-                formData.append('file', document.getElementById('nf-file').files[0]);
+                formData.append('file', fileInput.files[0]);
                 formData.append('periodId', document.getElementById('upload-period-id').value);
                 formData.append('valor', document.getElementById('nf-valor').value);
                 formData.append('cnpjEmissor', document.getElementById('cnpj-emissor').value);
@@ -503,7 +502,7 @@
 
                 if (result.success) { 
                     showToast('Sucesso!', 'Nota Fiscal enviada com sucesso.');
-                    closeUploadModal(); 
+                    closeNfUploadModal(); 
                     loadPeriods(); 
                 } else { 
                     showToast('Erro no Envio', result.error || 'Não foi possível enviar a nota.', 'error');
