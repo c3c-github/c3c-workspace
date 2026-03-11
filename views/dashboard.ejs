@@ -145,7 +145,7 @@
                             <span class="text-xs font-bold text-gray-400 uppercase tracking-wider">Eficiência</span>
                         </div>
                         <div class="flex items-baseline gap-1 mt-4">
-                            <span id="kpi-eficiencia" class="text-4xl font-extrabold text-gray-800">--</span>
+                            <span id="kpi-eficiencia" class="text-4xl font-extrabold text-gray-800 demo-blur">--</span>
                             <span class="text-sm text-gray-400 font-medium">%</span>
                         </div>
                     </div>
@@ -159,7 +159,7 @@
                             <span class="text-xs font-bold text-gray-400 uppercase tracking-wider">Banco de Horas</span>
                         </div>
                         <div class="flex items-baseline gap-1 mt-4">
-                            <span id="kpi-banco" class="text-4xl font-extrabold text-gray-800">--</span>
+                            <span id="kpi-banco" class="text-4xl font-extrabold text-gray-800 demo-blur">--</span>
                             <span class="text-sm text-gray-400 font-medium">h</span>
                         </div>
                     </div>
@@ -173,7 +173,7 @@
                             <span class="text-xs font-bold text-gray-400 uppercase tracking-wider">Pendências</span>
                         </div>
                         <div class="flex items-baseline gap-1 mt-4">
-                            <span id="kpi-pendentes" class="text-4xl font-extrabold text-gray-800">--</span>
+                            <span id="kpi-pendentes" class="text-4xl font-extrabold text-gray-800 demo-blur">--</span>
                             <span class="text-sm text-gray-400 font-medium">h</span>
                         </div>
                     </div>
@@ -187,7 +187,7 @@
                             <span class="text-xs font-bold text-gray-400 uppercase tracking-wider">Meta do Período</span>
                         </div>
                         <div class="flex items-baseline gap-1 mt-4">
-                            <span id="kpi-alocadas" class="text-4xl font-extrabold text-gray-800">--</span>
+                            <span id="kpi-alocadas" class="text-4xl font-extrabold text-gray-800 demo-blur">--</span>
                             <span class="text-sm text-gray-400 font-medium">h</span>
                         </div>
                     </div>
@@ -267,7 +267,7 @@
 
         async function loadPeriods() {
             try {
-                const res = await fetch(`${API_URL}/periods?type=user`);
+                const res = await fetch('/api/periods?type=user');
                 const data = await res.json();
                 const selector = document.getElementById('period-selector');
                 selector.innerHTML = '';
@@ -277,19 +277,10 @@
                     return; 
                 }
                 
-                // Encontra o período não finalizado mais antigo
-                // Como a lista vem ordenada DESC (recentes primeiro), 
-                // o mais antigo não finalizado é o último do array filtrado.
                 const nonFinalized = data.filter(p => p.Status__c !== 'Finalizado/Pago');
-                
-                let suggestedId = null;
-                if (nonFinalized.length > 0) {
-                    suggestedId = nonFinalized[nonFinalized.length - 1].Id;
-                } else if (data.length > 0) {
-                    suggestedId = data[0].Id;
-                }
+                let suggestedId = nonFinalized.length > 0 ? nonFinalized[nonFinalized.length - 1].Id : (data.length > 0 ? data[0].Id : null);
 
-                data.forEach((p, i) => {
+                data.forEach(p => {
                     const opt = document.createElement('option');
                     opt.value = JSON.stringify({id: p.Id, start: p.DataInicio__c, end: p.DataFim__c});
                     opt.text = p.Name;

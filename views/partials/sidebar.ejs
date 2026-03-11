@@ -89,8 +89,8 @@
     <!-- FOOTER PERFIL -->
     <div class="p-4 border-t border-gray-100 bg-gray-50/50 flex flex-col gap-4">
         
+        <!-- MODO APRESENTAÇÃO (Visível para Admins ou durante Simulação) -->
         <% if ((user.grupos && user.grupos.includes('LOGIN_AS')) || user.isImpersonating) { %>
-            <!-- TOGGLE MODO DEMO GLOBAL -->
             <div class="flex items-center justify-between px-3 py-3 bg-white rounded-2xl border border-gray-100 shadow-sm mb-1">
                 <div class="flex items-center gap-2">
                     <i data-lucide="presentation" class="w-4 h-4 text-[#2978FF]"></i>
@@ -101,12 +101,13 @@
                     <div class="w-8 h-4 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-[#2978FF]"></div>
                 </label>
             </div>
+        <% } %>
 
-            <% if (!user.isImpersonating) { %>
-                <button onclick="openImpersonateModal()" class="w-full flex items-center justify-center gap-2 bg-blue-50 text-[#2978FF] text-[10px] font-black uppercase py-2.5 rounded-xl border border-blue-100 hover:bg-blue-100 transition-colors shadow-sm">
-                    <i data-lucide="venetian-mask" class="w-3.5 h-3.5"></i> Simular Acesso
-                </button>
-            <% } %>
+        <!-- BOTÃO SIMULAR ACESSO (Apenas para Admins que NÃO estão simulando) -->
+        <% if (user.grupos && user.grupos.includes('LOGIN_AS') && !user.isImpersonating) { %>
+            <button onclick="openImpersonateModal()" class="w-full flex items-center justify-center gap-2 bg-blue-50 text-[#2978FF] text-[10px] font-black uppercase py-2.5 rounded-xl border border-blue-100 hover:bg-blue-100 transition-colors shadow-sm">
+                <i data-lucide="venetian-mask" class="w-3.5 h-3.5"></i> Simular Acesso
+            </button>
         <% } %>
 
         <div class="flex items-center gap-3 px-2">
@@ -143,6 +144,7 @@
 </aside>
 
 <!-- MODAL SIMULAR ACESSO -->
+<% if (user.grupos && user.grupos.includes('LOGIN_AS')) { %>
 <div id="impersonate-modal" class="fixed inset-0 bg-black/60 z-[9999] hidden flex items-center justify-center p-4 backdrop-blur-md">
     <div class="bg-white rounded-[40px] shadow-2xl w-full max-w-lg transform transition-all flex flex-col overflow-hidden max-h-[80vh]">
         <header class="p-8 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
@@ -164,11 +166,17 @@
                 <div class="py-12 text-center text-gray-300 font-bold uppercase text-[10px] tracking-[0.2em]">Aguardando colaboradores...</div>
             </div>
         </div>
+        
+        <!-- FOOTER DE EMERGÊNCIA -->
+        <footer class="p-4 bg-gray-50 border-t border-gray-100 flex justify-center">
+            <button onclick="closeImpersonateModal()" class="text-[10px] font-black text-gray-400 uppercase tracking-widest hover:text-gray-600 transition-colors">Fechar Janela</button>
+        </footer>
     </div>
 </div>
+<% } %>
 
 <script>
-    // LÓGICA MODO DEMO GLOBAL
+    // LÓGICA MODO DEMO GLOBAL (Acessível a todos)
     function toggleDemoMode(active) {
         document.body.classList.toggle('demo-mode-active', active);
         localStorage.setItem('demoMode', active);
@@ -191,11 +199,15 @@
         }
     })();
 
+    // LÓGICA DE SIMULAÇÃO (Restrita via EJS no servidor)
+    <% if (user.grupos && user.grupos.includes('LOGIN_AS')) { %>
     window.allUsersCache = [];
     window.isLoadingUsers = false;
 
     function openImpersonateModal() {
-        document.getElementById('impersonate-modal').classList.remove('hidden');
+        const modal = document.getElementById('impersonate-modal');
+        if(!modal) return;
+        modal.classList.remove('hidden');
         if (window.allUsersCache.length === 0 && !window.isLoadingUsers) {
             fetchUsersInBatches();
         } else {
@@ -204,60 +216,39 @@
     }
 
     function closeImpersonateModal() {
-        document.getElementById('impersonate-modal').classList.add('hidden');
+        const modal = document.getElementById('impersonate-modal');
+        if(modal) modal.classList.add('hidden');
     }
 
     async function fetchUsersInBatches(offset = 0) {
         window.isLoadingUsers = true;
         const countLabel = document.getElementById('impersonate-count');
-        
         try {
             const res = await fetch(`/api/admin/users?limit=200&offset=${offset}`);
             const data = await res.json();
-            
             const newUsers = data.users || [];
             window.allUsersCache = window.allUsersCache.concat(newUsers);
-
             if (countLabel) countLabel.innerText = `Carregados: ${window.allUsersCache.length} de ${data.total}`;
-            
-            const currentSearch = document.getElementById('impersonate-search').value;
-            if (!currentSearch) renderImpersonateList(window.allUsersCache);
-
-            if (data.hasMore) {
-                await fetchUsersInBatches(offset + 200);
-            } else {
+            if (!document.getElementById('impersonate-search').value) renderImpersonateList(window.allUsersCache);
+            if (data.hasMore) await fetchUsersInBatches(offset + 200);
+            else {
                 window.isLoadingUsers = false;
                 if (countLabel) countLabel.innerText = `${window.allUsersCache.length} colaboradores ativos`;
             }
-        } catch (e) {
-            console.error("Erro busca:", e);
-            window.isLoadingUsers = false;
-        }
+        } catch (e) { window.isLoadingUsers = false; }
     }
 
     function handleImpersonateFilter(term) {
         const t = term.toLowerCase().trim();
-        if (!t) {
-            renderImpersonateList(window.allUsersCache);
-            return;
-        }
-        const filtered = window.allUsersCache.filter(u => {
-            const name = u.name ? u.name.toLowerCase() : "";
-            const email = u.email ? u.email.toLowerCase() : "";
-            return name.includes(t) || email.includes(t);
-        });
+        if (!t) { renderImpersonateList(window.allUsersCache); return; }
+        const filtered = window.allUsersCache.filter(u => (u.name || "").toLowerCase().includes(t) || (u.email || "").toLowerCase().includes(t));
         renderImpersonateList(filtered);
     }
 
     function renderImpersonateList(users) {
         const results = document.getElementById('impersonate-results');
         if (!results) return;
-
-        if (!users || users.length === 0) {
-            results.innerHTML = '<div class="py-12 text-center text-gray-300 font-bold uppercase text-[10px]">Nenhum colaborador encontrado.</div>';
-            return;
-        }
-
+        if (!users || users.length === 0) { results.innerHTML = '<div class="py-12 text-center text-gray-300 font-bold uppercase text-[10px]">Nenhum colaborador encontrado.</div>'; return; }
         results.innerHTML = users.map(u => {
             const safeName = u.name ? u.name.replace(/'/g, "\\'") : "N/A";
             return `
@@ -270,25 +261,20 @@
                         <p class="text-[10px] font-bold text-gray-400 uppercase truncate">${u.email || 'N/A'}</p>
                     </div>
                     <i data-lucide="chevron-right" class="w-5 h-5 text-gray-200 group-hover:text-[#2978FF] transition-all"></i>
-                </div>
-            `;
+                </div>`;
         }).join('');
-        
         if (typeof lucide !== 'undefined') lucide.createIcons();
     }
 
     async function confirmImpersonate(id, name) {
         if (!confirm(`Deseja simular o acesso de ${name}?`)) return;
         try {
-            const res = await fetch('/auth/impersonate', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ targetId: id })
-            });
+            const res = await fetch('/auth/impersonate', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ targetId: id }) });
             if (res.ok) window.location.href = '/dashboard';
             else alert('Erro ao simular acesso.');
         } catch (e) { alert('Erro de conexão.'); }
     }
+    <% } %>
 </script>
 
 <style>

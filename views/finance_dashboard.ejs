@@ -412,13 +412,11 @@
                 bar.classList.add('flex'); 
                 lbl.innerText = sel.length; 
                 
-                // Controle de visibilidade dos botões baseado no filtro
-                const isValidation = currentStatusFilter === 'Nota em Validação';
-                document.getElementById('btn-bulk-reprove').classList.toggle('hidden', !isValidation);
-                document.getElementById('btn-bulk-ready').classList.toggle('hidden', !isValidation);
-                
-                document.getElementById('btn-bulk-schedule').classList.toggle('hidden', currentStatusFilter !== 'Pronto para Pagamento');
-                document.getElementById('btn-bulk-pay').classList.toggle('hidden', currentStatusFilter !== 'Pagamento Agendado');
+                // Mostra os botões de ação em massa sempre que houver seleção
+                document.getElementById('btn-bulk-reprove').classList.remove('hidden');
+                document.getElementById('btn-bulk-ready').classList.remove('hidden');
+                document.getElementById('btn-bulk-schedule').classList.remove('hidden');
+                document.getElementById('btn-bulk-pay').classList.remove('hidden');
             } else { 
                 bar.classList.add('hidden'); 
                 bar.classList.remove('flex'); 

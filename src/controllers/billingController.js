@@ -532,25 +532,35 @@ exports.getFinancePeriods = async (req, res) => {
 
 exports.reproveNotaFiscal = async (req, res) => {
     try {
-        const { periodId, nfId, motivo } = req.body;
+        const { periodId, periodIds, motivo } = req.body;
         const conn = await getSfConnection();
 
-        // 1. Atualizar Nota Fiscal
-        await conn.sobject('NotaFiscal__c').update({
-            Id: nfId,
+        // Normaliza para array de IDs
+        const ids = periodIds || [periodId];
+        if (!ids || ids.length === 0) return res.status(400).json({ error: 'Nenhum período informado.' });
+
+        // 1. Buscar Notas Fiscais ativas vinculadas a esses períodos
+        const nfs = await conn.query(`SELECT Id FROM NotaFiscal__c WHERE Periodo__c IN ('${ids.join("','")}') AND Status__c != 'Reprovada'`);
+        
+        // 2. Preparar atualizações em massa
+        const nfUpdates = nfs.records.map(nf => ({
+            Id: nf.Id,
             Status__c: 'Reprovada',
             MotivoReprovacao__c: motivo
-        });
+        }));
 
-        // 2. Voltar Período para "Liberado para Nota Fiscal"
-        await conn.sobject('Periodo__c').update({
-            Id: periodId,
+        const periodUpdates = ids.map(id => ({
+            Id: id,
             Status__c: 'Liberado para Nota Fiscal'
-        });
+        }));
 
-        res.json({ success: true });
+        // 3. Executar atualizações
+        if (nfUpdates.length > 0) await conn.sobject('NotaFiscal__c').update(nfUpdates);
+        await conn.sobject('Periodo__c').update(periodUpdates);
+
+        res.json({ success: true, count: ids.length });
     } catch (e) {
-        console.error("❌ Erro ao reprovar NF:", e);
+        console.error("❌ Erro ao reprovar NF em massa:", e);
         res.status(500).json({ error: e.message });
     }
 };
