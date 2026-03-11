@@ -1,17 +1,11 @@
 <aside id="sidebar" class="fixed inset-y-0 left-0 w-64 bg-white border-r border-gray-100 flex flex-col z-40 transform -translate-x-full md:translate-x-0 transition-transform duration-300 shadow-xl md:shadow-none">
 
-    <!-- BADGE DE AMBIENTE (Visível apenas em DEV) -->
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const isProd = window.location.hostname.includes('herokuapp.com');
-            if (!isProd) {
-                const badge = document.createElement('div');
-                badge.className = 'bg-orange-500 text-white text-[8px] font-black uppercase tracking-[0.3em] py-1.5 text-center w-full sticky top-0 z-50 shadow-sm';
-                badge.innerText = 'Ambiente de Desenvolvimento';
-                document.getElementById('sidebar').prepend(badge);
-            }
-        });
-    </script>
+    <!-- BADGE DE AMBIENTE (Controlada via Servidor) -->
+    <% if (process.env.NODE_ENV !== 'production') { %>
+        <div class="bg-orange-500 text-white text-[8px] font-black uppercase tracking-[0.3em] py-1.5 text-center w-full sticky top-0 z-50 shadow-sm shrink-0">
+            Ambiente de Desenvolvimento
+        </div>
+    <% } %>
 
     <!-- TOPO / LOGO -->
 
