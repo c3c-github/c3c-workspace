@@ -126,10 +126,9 @@
                 <!-- ACTIONS -->
                 <div id="bulk-actions" class="hidden items-center gap-2 pr-2 border-l border-gray-100 pl-4">
                     <span class="text-[9px] font-black text-c3c-blue uppercase tracking-widest mr-2"><span id="selected-count" class="text-xs">0</span> itens:</span>
-                    <button id="btn-bulk-reprove" onclick="openMassReproveModal()" class="bg-white text-red-500 border border-red-100 px-4 py-2 rounded-lg text-[9px] font-black uppercase tracking-widest shadow-sm hover:bg-red-50 transition-all">Reprovar Nota</button>
-                    <button id="btn-bulk-ready" onclick="updateBulkStatus('Pronto para Pagamento')" class="bg-white text-teal-600 border border-teal-100 px-4 py-2 rounded-lg text-[9px] font-black uppercase tracking-widest shadow-sm hover:bg-teal-50 transition-all">Aprovar Nota</button>
-                    <button id="btn-bulk-schedule" onclick="updateBulkStatus('Pagamento Agendado')" class="bg-white text-c3c-blue border border-blue-100 px-4 py-2 rounded-lg text-[9px] font-black uppercase tracking-widest shadow-sm hover:bg-blue-50 transition-all">Agendar</button>
-                    <button id="btn-bulk-pay" onclick="updateBulkStatus('Finalizado/Pago')" class="bg-c3c-gradient text-white px-4 py-2 rounded-lg text-[9px] font-black uppercase tracking-widest shadow-lg shadow-blue-100 hover:opacity-90 transition-all">Pago</button>
+                    <div id="bulk-buttons-container" class="flex items-center">
+                        <!-- Botões injetados via JS baseado no status do filtro -->
+                    </div>
                 </div>
             </div>
 
@@ -234,23 +233,18 @@
             ];
 
             steps.forEach((step, idx) => {
-                let count = 0;
-                if (step.id === 'Reprovados') {
-                    count = allPeriods.filter(p => p.status === 'Liberado para Nota Fiscal' && p.nf && p.nf.status === 'Reprovada').length;
-                } else {
-                    count = allPeriods.filter(p => p.status === step.id).length;
-                }
-
                 const isActive = currentStatusFilter === step.id;
-                
                 const stepEl = document.createElement('div');
                 stepEl.className = `flex items-center gap-2 px-3 h-8 rounded-lg cursor-pointer transition-all duration-300 ${isActive ? 'bg-c3c-blue text-white shadow-md scale-105' : 'hover:bg-white text-gray-400'}`;
-                stepEl.onclick = () => { currentStatusFilter = (currentStatusFilter === step.id) ? '' : step.id; renderFunnel(); filterLocalData(); };
+                
+                stepEl.onclick = () => { 
+                    const nextStatus = (currentStatusFilter === step.id) ? '' : step.id;
+                    loadFinancePeriods(nextStatus);
+                };
                 
                 stepEl.innerHTML = `
                     <i data-lucide="${step.icon}" class="w-3.5 h-3.5 ${isActive ? 'text-white' : step.color}"></i>
                     <span class="text-[10px] font-black uppercase tracking-widest">${step.label}</span>
-                    <span class="text-[10px] font-black ${isActive ? 'bg-white/20' : 'bg-gray-100 text-gray-600'} px-1.5 py-0.5 rounded-md">${count}</span>
                 `;
                 container.appendChild(stepEl);
             });
@@ -259,53 +253,55 @@
 
         function filterLocalData() {
             const term = document.getElementById('search-input').value.toLowerCase();
-            const tbody = document.getElementById('finance-table-body');
-            
-            // Se for uma busca local rápida, não precisa de loading pesado, 
-            // mas como loadFinancePeriods é chamado ao mudar status, vamos garantir feedback.
-            
-            const filtered = allPeriods.filter(p => {
-                let matchesStatus = true;
-                if (currentStatusFilter === 'Reprovados') {
-                    matchesStatus = p.status === 'Liberado para Nota Fiscal' && p.nf && p.nf.status === 'Reprovada';
-                } else if (currentStatusFilter) {
-                    matchesStatus = p.status === currentStatusFilter;
-                }
-                
-                const matchesTerm = !term || (p.employeeName.toLowerCase().includes(term) || p.name.toLowerCase().includes(term) || (p.nf && p.nf.nomeEmitente && p.nf.nomeEmitente.toLowerCase().includes(term)));
-                return matchesStatus && matchesTerm;
-            });
+            const filtered = allPeriods.filter(p => (p.employeeName.toLowerCase().includes(term) || p.name.toLowerCase().includes(term) || (p.nf && p.nf.nomeEmitente && p.nf.nomeEmitente.toLowerCase().includes(term))));
             renderTable(filtered);
         }
 
-        async function loadFinancePeriods() {
+        async function loadFinancePeriods(statusOverride = null) {
             const tbody = document.getElementById('finance-table-body');
             tbody.innerHTML = `<tr><td colspan="7" class="py-32 px-6 text-center text-gray-300 font-black uppercase text-[10px] tracking-widest animate-pulse italic">
                 <i data-lucide="loader-2" class="w-10 h-10 animate-spin mx-auto mb-4 opacity-40 text-c3c-blue"></i>
-                Processando dados do Salesforce...
+                Consultando Salesforce...
             </td></tr>`;
             lucide.createIcons();
 
-            const url = '/api/finance/periods?status='; 
+            // Reset da seleção ao trocar de lote/status
+            document.querySelectorAll('.period-checkbox').forEach(cb => cb.checked = false);
+            const selectAll = document.getElementById('select-all');
+            if(selectAll) selectAll.checked = false;
+            updateSelection(); // Esconde a barra de ações
+
+            // Se um status for passado, atualiza o filtro global
+            if (statusOverride !== null) {
+                currentStatusFilter = statusOverride;
+                document.getElementById('search-input').value = '';
+            }
+
+            const url = '/api/finance/periods?status=' + (currentStatusFilter || ''); 
             try {
                 const res = await fetch(url);
-                allPeriods = await res.json();
+                const data = await res.json();
                 
-                // Cálculo de KPIs
-                let aValidar = 0, agendado = 0, divergencias = 0;
-                allPeriods.forEach(p => {
-                    const vHoras = p.valueHoras || 0, vNF = p.nf ? (p.nf.valor || 0) : 0;
-                    if (p.status === 'Nota em Validação') aValidar += vNF;
-                    if (p.status === 'Pagamento Agendado') agendado += vNF;
-                    if (p.status === 'Nota em Validação' && Math.abs(vHoras - vNF) > 0.05) divergencias++;
-                });
-                document.getElementById('kpi-validar').innerText = aValidar.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-                document.getElementById('kpi-agendado').innerText = agendado.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-                document.getElementById('kpi-divergencias').innerText = divergencias;
+                // allPeriods agora conterá apenas o lote atual
+                allPeriods = data;
 
-                renderFunnel();
-                filterLocalData();
-            } catch(e) { console.error(e); showToast('Erro de Conexão', 'Não foi possível carregar os dados financeiros.', 'error'); }
+                renderFunnel(); // Re-renderiza o funil para atualizar o destaque
+                renderTable(allPeriods);
+                updateSelectedKPIs(); // Atualiza os números do topo
+            } catch(e) { console.error(e); showToast('Erro de Conexão', 'Não foi possível carregar os dados.', 'error'); }
+        }
+
+        function updateSelectedKPIs() {
+            let aValidar = 0, agendado = 0, divergencias = 0;
+            allPeriods.forEach(p => {
+                const vHoras = p.valueHoras || 0, vNF = p.nf ? (p.nf.valor || 0) : 0;
+                if (p.status === 'Nota em Validação') aValidar += vNF;
+                if (p.status === 'Pagamento Agendado') agendado += vNF;
+                if (p.status === 'Nota em Validação' && Math.abs(vHoras - vNF) > 0.05) divergencias++;
+            });
+            document.getElementById('kpi-validar').innerText = aValidar.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+            document.getElementById('kpi-agendado').innerText = agendado.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+            document.getElementById('kpi-divergencias').innerText = divergencias;
         }
 
         function renderTable(periods) {
@@ -322,7 +318,15 @@
                 return;
             }
 
-            periods.forEach(p => {
+            // PERFORMANCE: Limita a renderização a 150 itens para não travar o navegador
+            const displayLimit = 150;
+            const toRender = periods.slice(0, displayLimit);
+            
+            if (periods.length > displayLimit) {
+                showToast('Aviso de Performance', `Exibindo apenas os primeiros ${displayLimit} registros de ${periods.length}. Use a busca para filtrar mais.`, 'info');
+            }
+
+            toRender.forEach(p => {
                 const vHoras = p.valueHoras || 0, vNF = p.nf ? (p.nf.valor || 0) : 0, diff = Math.abs(vHoras - vNF), hasDiscrepancy = diff > 0.05; 
                 const c3cCNPJ = "34268618000159", nfReceptorRaw = p.nf && p.nf.cnpjReceptor ? p.nf.cnpjReceptor.replace(/\D/g, '') : '', isC3C = nfReceptorRaw === c3cCNPJ;
                 const statusColors = { 'Nota em Validação': 'bg-orange-50 text-orange-600 border-orange-100', 'Pronto para Pagamento': 'bg-blue-50 text-c3c-blue border-blue-100', 'Pagamento Agendado': 'bg-purple-50 text-purple-600 border-purple-100', 'Finalizado/Pago': 'bg-teal-50 text-teal-600 border-teal-100', 'Liberado para Nota Fiscal': 'bg-gray-50 text-gray-400 border-gray-100' };
@@ -406,17 +410,34 @@
 
         function toggleSelectAll(master) { document.querySelectorAll('.period-checkbox').forEach(cb => cb.checked = master.checked); updateSelection(); }
         function updateSelection() { 
-            const sel = document.querySelectorAll('.period-checkbox:checked'), bar = document.getElementById('bulk-actions'), lbl = document.getElementById('selected-count'); 
+            const sel = document.querySelectorAll('.period-checkbox:checked');
+            const bar = document.getElementById('bulk-actions');
+            const lbl = document.getElementById('selected-count');
+            const btnContainer = document.getElementById('bulk-buttons-container');
+            
             if(sel.length > 0) { 
                 bar.classList.remove('hidden'); 
                 bar.classList.add('flex'); 
                 lbl.innerText = sel.length; 
                 
-                // Mostra os botões de ação em massa sempre que houver seleção
-                document.getElementById('btn-bulk-reprove').classList.remove('hidden');
-                document.getElementById('btn-bulk-ready').classList.remove('hidden');
-                document.getElementById('btn-bulk-schedule').classList.remove('hidden');
-                document.getElementById('btn-bulk-pay').classList.remove('hidden');
+                // Limpa botões anteriores
+                btnContainer.innerHTML = '';
+
+                // Injeta apenas o que faz sentido para o filtro atual
+                if (currentStatusFilter === 'Nota em Validação') {
+                    btnContainer.innerHTML = `
+                        <button onclick="openMassReproveModal()" class="bg-white text-red-500 border border-red-100 px-4 py-2 rounded-lg text-[9px] font-black uppercase tracking-widest shadow-sm hover:bg-red-50 transition-all">Reprovar Nota</button>
+                        <button onclick="updateBulkStatus('Pronto para Pagamento')" class="bg-white text-teal-600 border border-teal-100 px-4 py-2 rounded-lg text-[9px] font-black uppercase tracking-widest shadow-sm hover:bg-teal-50 transition-all ml-2">Aprovar Nota</button>
+                    `;
+                } else if (currentStatusFilter === 'Pronto para Pagamento') {
+                    btnContainer.innerHTML = `
+                        <button onclick="updateBulkStatus('Pagamento Agendado')" class="bg-white text-c3c-blue border border-blue-100 px-4 py-2 rounded-lg text-[9px] font-black uppercase tracking-widest shadow-sm hover:bg-blue-50 transition-all">Agendar Pagamento</button>
+                    `;
+                } else if (currentStatusFilter === 'Pagamento Agendado') {
+                    btnContainer.innerHTML = `
+                        <button onclick="updateBulkStatus('Finalizado/Pago')" class="bg-c3c-gradient text-white px-4 py-2 rounded-lg text-[9px] font-black uppercase tracking-widest shadow-lg shadow-blue-100 hover:opacity-90 transition-all">Confirmar Pagamento (Pago)</button>
+                    `;
+                }
             } else { 
                 bar.classList.add('hidden'); 
                 bar.classList.remove('flex'); 

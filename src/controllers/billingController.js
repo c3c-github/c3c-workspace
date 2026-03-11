@@ -479,15 +479,26 @@ exports.renderFinanceDashboard = (req, res) => {
 
 exports.getFinancePeriods = async (req, res) => {
     try {
-        const { startDate, endDate, status } = req.query;
+        const { status, startDate, endDate } = req.query;
         const conn = await getSfConnection();
 
-        let filters = [`Status__c IN ('Liberado para Nota Fiscal', 'Nota em Validação', 'Pronto para Pagamento', 'Pagamento Agendado', 'Finalizado/Pago')`];
+        let filters = [`ContratoPessoa__r.Pessoa__c != null`];
+
+        if (status === 'Reprovados') {
+            filters.push(`Status__c = 'Liberado para Nota Fiscal'`);
+            filters.push(`Id IN (SELECT Periodo__c FROM NotaFiscal__c WHERE Status__c = 'Reprovada')`);
+        } else if (status) {
+            filters.push(`Status__c = '${status}'`);
+        } else {
+            // Default: Mostra o que precisa de atenção imediata
+            filters.push(`Status__c IN ('Nota em Validação', 'Pronto para Pagamento', 'Pagamento Agendado')`);
+        }
+
         if (startDate) filters.push(`DataInicio__c >= ${startDate}`);
         if (endDate) filters.push(`DataFim__c <= ${endDate}`);
-        if (status) filters.push(`Status__c = '${status}'`);
 
         const query = `
+
             SELECT Id, Name, Status__c, ContratoPessoa__r.Pessoa__r.Name,
                    ContratoPessoa__r.Pessoa__r.URL_Foto__c,
                    ValorTotalHoras__c, ValorTotalBeneficios__c, ValorTotalPeriodo__c,
@@ -495,6 +506,7 @@ exports.getFinancePeriods = async (req, res) => {
             FROM Periodo__c
             WHERE ${filters.join(' AND ')}
             ORDER BY ContratoPessoa__r.Pessoa__r.Name ASC
+            LIMIT 500
         `;
 
         const result = await conn.query(query);
