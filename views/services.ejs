@@ -38,6 +38,10 @@
         .input-inline { background: transparent; border: 1px solid transparent; width: 100%; border-radius: 8px; padding: 4px 8px; transition: all 0.2s; }
         .input-inline:hover { border-color: #E2E8F0; background: white; }
         .input-inline:focus { border-color: #2978FF; background: white; outline: none; box-shadow: 0 0 0 4px rgba(41, 120, 255, 0.05); }
+        .table-dense th, .table-dense td { padding: 8px 12px; font-size: 11px; vertical-align: middle; }
+        .readonly-field { background-color: #F3F4F6; color: #6B7280; cursor: not-allowed; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
 </head>
 <body class="h-screen flex overflow-hidden bg-[#F8FAFC]">
@@ -148,20 +152,513 @@
 
             <!-- CONTEÚDO TABS -->
             <div class="flex-1 overflow-y-auto p-10 custom-scrollbar bg-gray-50/30">
-                <!-- Conteúdo mantido conforme lógica original, apenas estilizado -->
-                <div id="view-general" class="fade-in max-w-5xl mx-auto">...</div>
-                <div id="view-commercial" class="hidden fade-in">...</div>
-                <div id="view-execution" class="hidden fade-in">...</div>
-                <div id="view-billing" class="hidden fade-in">...</div>
-                <div id="view-realized" class="hidden fade-in">...</div>
+                <!-- 1. GERAL -->
+                <div id="view-general" class="fade-in max-w-5xl mx-auto space-y-8 text-left">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-12">
+                        <div class="space-y-6">
+                            <h4 class="text-xs font-black text-c3c-blue uppercase tracking-[0.3em] border-b border-blue-50 pb-3 flex items-center gap-2"><i data-lucide="info" class="w-4 h-4"></i> Dados do Contrato</h4>
+                            <div class="space-y-4">
+                                <div><label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Nome do Serviço</label><input type="text" id="input-svc-name" class="w-full bg-white border border-gray-200 rounded-2xl px-5 py-3 text-xs font-bold focus:ring-4 focus:ring-blue-50 focus:border-c3c-blue outline-none transition-all"></div>
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div><label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Cliente (SF)</label><div class="relative"><input list="sf-accounts-list" id="input-sf-account" class="w-full bg-white border border-gray-200 rounded-2xl px-5 py-3 text-xs font-bold focus:ring-4 focus:ring-blue-50 focus:border-c3c-blue outline-none transition-all pr-10"><i data-lucide="search" class="w-4 h-4 text-gray-300 absolute right-4 top-1/2 -translate-y-1/2"></i></div><datalist id="sf-accounts-list"></datalist></div>
+                                    <div><label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Cliente (Conta Azul)</label><div class="relative"><input list="ca-clients-list" id="input-ca-client" class="w-full bg-white border border-gray-200 rounded-2xl px-5 py-3 text-xs font-bold focus:ring-4 focus:ring-blue-50 focus:border-c3c-blue outline-none transition-all pr-10" placeholder="Vincular CNPJ..."><i data-lucide="link" class="w-4 h-4 text-gray-300 absolute right-4 top-1/2 -translate-y-1/2"></i></div><datalist id="ca-clients-list"></datalist></div>
+                                </div>
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div><label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Tipo de Serviço</label><select id="input-svc-type" class="w-full bg-white border border-gray-200 rounded-2xl px-5 py-3 text-xs font-bold focus:ring-4 focus:ring-blue-50 focus:border-c3c-blue outline-none transition-all cursor-pointer"><option>Suporte</option><option>Projeto</option><option>Alocação</option></select></div>
+                                    <div><label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Data Início</label><input type="date" id="input-svc-start" class="w-full bg-white border border-gray-200 rounded-2xl px-5 py-3 text-xs font-bold focus:ring-4 focus:ring-blue-50 focus:border-c3c-blue outline-none transition-all"></div>
+                                </div>
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div><label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Data Fim Original</label><input type="date" id="input-svc-end-orig" class="w-full bg-white border border-gray-200 rounded-2xl px-5 py-3 text-xs font-bold focus:ring-4 focus:ring-blue-50 focus:border-c3c-blue outline-none transition-all"></div>
+                                    <div><label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Data Fim Real</label><input type="date" id="input-svc-end-real" class="w-full bg-white border border-gray-200 rounded-2xl px-5 py-3 text-xs font-bold focus:ring-4 focus:ring-blue-50 focus:border-c3c-blue outline-none transition-all"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="space-y-6">
+                            <h4 class="text-xs font-black text-c3c-blue uppercase tracking-[0.3em] border-b border-blue-50 pb-3 flex items-center gap-2"><i data-lucide="users" class="w-4 h-4"></i> Governança e Liderança</h4>
+                            <div class="space-y-4">
+                                <div><label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Líder de Projeto</label><div class="relative"><input list="people-list" id="input-lead-project" class="w-full bg-white border border-gray-200 rounded-2xl px-5 py-3 text-xs font-bold focus:ring-4 focus:ring-blue-50 focus:border-c3c-blue outline-none transition-all pr-10"><i data-lucide="user" class="w-4 h-4 text-gray-300 absolute right-4 top-1/2 -translate-y-1/2"></i></div></div>
+                                <div><label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Coordenador</label><div class="relative"><input list="people-list" id="input-coordinator" class="w-full bg-white border border-gray-200 rounded-2xl px-5 py-3 text-xs font-bold focus:ring-4 focus:ring-blue-50 focus:border-c3c-blue outline-none transition-all pr-10"><i data-lucide="user" class="w-4 h-4 text-gray-300 absolute right-4 top-1/2 -translate-y-1/2"></i></div></div>
+                                <div><label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Líder Técnico</label><div class="relative"><input list="people-list" id="input-tech-lead" class="w-full bg-white border border-gray-200 rounded-2xl px-5 py-3 text-xs font-bold focus:ring-4 focus:ring-blue-50 focus:border-c3c-blue outline-none transition-all pr-10"><i data-lucide="user" class="w-4 h-4 text-gray-300 absolute right-4 top-1/2 -translate-y-1/2"></i></div></div>
+                                <datalist id="people-list"></datalist>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mt-12 bg-white rounded-3xl border border-gray-100 p-8 shadow-sm">
+                        <h4 class="text-xs font-black text-gray-800 uppercase tracking-widest mb-6 flex items-center gap-2"><i data-lucide="file-text" class="w-4 h-4 text-c3c-blue"></i> Documentação do Projeto</h4>
+                        <div id="docs-list-container" class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                            <!-- Documentos injetados via JS -->
+                            <p class="text-[10px] font-bold text-gray-300 uppercase tracking-widest italic col-span-full py-8 text-center bg-gray-50/50 rounded-2xl border border-dashed border-gray-100">Nenhum documento anexado.</p>
+                        </div>
+                        <button onclick="openUploadModal()" class="w-full bg-gray-50 hover:bg-blue-50 text-c3c-blue text-[10px] font-black uppercase tracking-widest px-6 py-4 rounded-2xl border border-dashed border-blue-100 transition-all flex items-center justify-center gap-2 active:scale-[0.99]"><i data-lucide="upload-cloud" class="w-4 h-4"></i> Anexar Proposta ou Contrato</button>
+                    </div>
+                </div>
+
+                <!-- 2. BASELINE COMERCIAL -->
+                <div id="view-commercial" class="hidden fade-in space-y-8 text-left">
+                    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-c3c-blue/5 p-6 rounded-3xl border border-blue-50">
+                        <div><h4 class="text-sm font-black text-c3c-blue uppercase tracking-widest">Orçamento Vendido (Baseline)</h4><p class="text-[10px] font-bold text-blue-400 uppercase tracking-widest mt-1">Defina os itens da proposta comercial aceita pelo cliente.</p></div>
+                        <div class="flex items-center gap-4 bg-white px-4 py-2 rounded-2xl border border-blue-100 shadow-sm"><label class="text-[9px] font-black text-gray-400 uppercase tracking-widest">Tabela de Preços:</label><select id="select-pricebook" onchange="onPricebookChange()" class="text-xs font-black text-c3c-blue uppercase outline-none bg-transparent cursor-pointer pr-4"></select></div>
+                    </div>
+                    
+                    <div class="bg-white rounded-[32px] border border-gray-100 shadow-xl overflow-hidden">
+                        <table class="w-full text-left table-dense">
+                            <thead class="bg-gray-50/80 border-b border-gray-100">
+                                <tr>
+                                    <th class="text-[10px] font-black text-gray-400 uppercase tracking-widest py-5 px-6">Produto / Perfil</th>
+                                    <th class="text-[10px] font-black text-gray-400 uppercase tracking-widest text-right">Taxa Venda</th>
+                                    <th class="text-[10px] font-black text-gray-400 uppercase tracking-widest text-right">Custo Est.</th>
+                                    <th class="text-[10px] font-black text-gray-400 uppercase tracking-widest text-center">Início</th>
+                                    <th class="text-[10px] font-black text-gray-400 uppercase tracking-widest text-center">Fim</th>
+                                    <th class="text-[10px] font-black text-gray-400 uppercase tracking-widest text-center">Dias</th>
+                                    <th class="text-[10px] font-black text-gray-400 uppercase tracking-widest text-center">%</th>
+                                    <th class="text-[10px] font-black text-gray-400 uppercase tracking-widest text-right">Hrs Totais</th>
+                                    <th class="text-[10px] font-black text-gray-400 uppercase tracking-widest text-right bg-blue-50/50">Receita Total</th>
+                                    <th class="text-[10px] font-black text-gray-400 uppercase tracking-widest text-right">Custo Total</th>
+                                    <th class="text-[10px] font-black text-gray-400 uppercase tracking-widest text-center px-6">Ação</th>
+                                </tr>
+                            </thead>
+                            <tbody id="commercial-rows" class="divide-y divide-gray-50"></tbody>
+                            <tfoot class="bg-gray-50/50 border-t border-gray-100 font-black text-gray-800">
+                                <tr class="h-16">
+                                    <td colspan="7" class="text-right uppercase text-[10px] tracking-widest pr-8 text-gray-400">Totais Baseline:</td>
+                                    <td class="text-right text-xs" id="comm-total-hours">0h</td>
+                                    <td class="text-right text-xs text-c3c-blue bg-blue-50/50" id="comm-total-rev">R$ 0,00</td>
+                                    <td class="text-right text-xs text-red-600" id="comm-total-cost">R$ 0,00</td>
+                                    <td class="px-6 text-center text-xs text-indigo-600" id="comm-total-margin">0%</td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                        <div class="p-4 bg-gray-50/30 border-t border-gray-50"><button onclick="addCommercialRow()" class="w-full py-4 bg-white border border-gray-100 hover:border-blue-100 hover:bg-blue-50 text-[10px] font-black text-c3c-blue uppercase tracking-[0.2em] rounded-2xl transition-all flex items-center justify-center gap-2 active:scale-[0.99] shadow-sm"><i data-lucide="plus" class="w-4 h-4"></i> Adicionar Item Comercial</button></div>
+                    </div>
+                </div>
+
+                <!-- 3. PREVISÃO ALOCAÇÃO -->
+                <div id="view-execution" class="hidden fade-in space-y-8 text-left">
+                    <div class="bg-indigo-600 rounded-3xl p-8 text-white shadow-xl shadow-indigo-100 flex justify-between items-center overflow-hidden relative">
+                        <div class="relative z-10">
+                            <h4 class="text-lg font-black uppercase tracking-tighter">Planejamento de Alocação</h4>
+                            <p class="text-indigo-100 text-[10px] font-bold uppercase tracking-widest mt-1">Defina quais consultores realizarão os itens vendidos e o custo hora real.</p>
+                        </div>
+                        <i data-lucide="user-check" class="w-32 h-32 absolute -right-4 -bottom-4 opacity-10"></i>
+                    </div>
+
+                    <div class="bg-white rounded-[32px] border border-gray-100 shadow-xl overflow-hidden">
+                        <table class="w-full text-left table-dense">
+                            <thead class="bg-gray-50/80 border-b border-gray-100">
+                                <tr>
+                                    <th class="text-[10px] font-black text-gray-400 uppercase tracking-widest py-5 px-6">Vínculo Baseline</th>
+                                    <th class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Consultor</th>
+                                    <th class="text-[10px] font-black text-gray-400 uppercase tracking-widest text-right">Taxa (P)</th>
+                                    <th class="text-[10px] font-black text-gray-400 uppercase tracking-widest text-right">Custo (R)</th>
+                                    <th class="text-[10px] font-black text-gray-400 uppercase tracking-widest text-center">Início</th>
+                                    <th class="text-[10px] font-black text-gray-400 uppercase tracking-widest text-center">Fim</th>
+                                    <th class="text-[10px] font-black text-gray-400 uppercase tracking-widest text-center">%</th>
+                                    <th class="text-[10px] font-black text-gray-400 uppercase tracking-widest text-right">Hrs</th>
+                                    <th class="text-[10px] font-black text-gray-400 uppercase tracking-widest text-right bg-indigo-50/50">Receita Prev.</th>
+                                    <th class="text-[10px] font-black text-gray-400 uppercase tracking-widest text-right">Custo Prev.</th>
+                                    <th class="text-[10px] font-black text-gray-400 uppercase tracking-widest text-center px-6">Ação</th>
+                                </tr>
+                            </thead>
+                            <tbody id="execution-rows" class="divide-y divide-gray-50"></tbody>
+                            <tfoot class="bg-gray-50/50 border-t border-gray-100 font-black text-gray-800">
+                                <tr class="h-16">
+                                    <td colspan="7" class="text-right uppercase text-[10px] tracking-widest pr-8 text-gray-400">Totais Previstos:</td>
+                                    <td class="text-right text-xs" id="exec-total-hours">0h</td>
+                                    <td class="text-right text-xs text-indigo-600 bg-indigo-50/50" id="exec-total-rev">R$ 0,00</td>
+                                    <td class="text-right text-xs text-red-600" id="exec-total-cost">R$ 0,00</td>
+                                    <td class="px-6 text-center text-xs text-indigo-600" id="exec-total-margin">0%</td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                        <div class="p-4 bg-gray-50/30 border-t border-gray-50"><button onclick="addExecutionRow()" class="w-full py-4 bg-white border border-gray-100 hover:border-indigo-100 hover:bg-indigo-50 text-[10px] font-black text-indigo-600 uppercase tracking-[0.2em] rounded-2xl transition-all flex items-center justify-center gap-2 active:scale-[0.99] shadow-sm"><i data-lucide="user-plus" class="w-4 h-4"></i> Adicionar Alocação de Recurso</button></div>
+                    </div>
+                </div>
+
+                <!-- 4. FATURAMENTO -->
+                <div id="view-billing" class="hidden fade-in space-y-8 text-left">
+                    <div class="bg-white rounded-3xl border border-gray-100 p-8 shadow-sm flex flex-col md:flex-row justify-between items-center gap-8">
+                        <div class="flex-1">
+                            <h4 class="text-sm font-black text-gray-800 uppercase tracking-widest flex items-center gap-2"><i data-lucide="layout-grid" class="w-5 h-5 text-teal-500"></i> Plano de Faturamento</h4>
+                            <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">Projeção de parcelas conforme o ERP Conta Azul.</p>
+                        </div>
+                        <div class="flex items-center gap-4 bg-gray-50 px-6 py-4 rounded-3xl border border-gray-100 shadow-inner">
+                            <div><label class="block text-[8px] font-black text-gray-400 uppercase tracking-widest mb-1">Modelo de Negócio</label><select class="bg-transparent text-[10px] font-black text-gray-600 uppercase outline-none"><option>Recorrente</option><option>Horas</option><option>Fixo</option></select></div>
+                            <div class="w-px h-8 bg-gray-200"></div>
+                            <div><label class="block text-[8px] font-black text-gray-400 uppercase tracking-widest mb-1">Condição de Pagto</label><select class="bg-transparent text-[10px] font-black text-gray-600 uppercase outline-none"><option>30 Dias</option><option>15 Dias</option><option>À Vista</option></select></div>
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-[32px] border border-gray-100 shadow-xl overflow-hidden">
+                        <table class="w-full text-left table-dense">
+                            <thead class="bg-gray-50/80 border-b border-gray-100">
+                                <tr>
+                                    <th class="text-[10px] font-black text-gray-400 uppercase tracking-widest py-5 px-8 w-10">#</th>
+                                    <th class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Descrição da Parcela</th>
+                                    <th class="text-[10px] font-black text-gray-400 uppercase tracking-widest text-center">Competência</th>
+                                    <th class="text-[10px] font-black text-gray-400 uppercase tracking-widest text-center">Vencimento</th>
+                                    <th class="text-[10px] font-black text-gray-400 uppercase tracking-widest text-right">Valor Bruto</th>
+                                    <th class="text-[10px] font-black text-gray-400 uppercase tracking-widest text-center px-8">Ação</th>
+                                </tr>
+                            </thead>
+                            <tbody id="svc-billing-list" class="divide-y divide-gray-50"></tbody>
+                        </table>
+                        <div class="p-4 bg-gray-50/30 border-t border-gray-50"><button onclick="addBillingRow()" class="w-full py-4 bg-white border border-gray-100 hover:border-teal-100 hover:bg-teal-50 text-[10px] font-black text-teal-600 uppercase tracking-[0.2em] rounded-2xl transition-all flex items-center justify-center gap-2 active:scale-[0.99] shadow-sm"><i data-lucide="plus" class="w-4 h-4"></i> Adicionar Parcela de Faturamento</button></div>
+                    </div>
+                </div>
+
+                <!-- 5. EXTRATO REAL -->
+                <div id="view-realized" class="hidden fade-in space-y-8 text-left">
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                        <div class="lg:col-span-2 space-y-8">
+                            <h4 class="text-xs font-black text-gray-800 uppercase tracking-[0.3em] flex items-center gap-2"><i data-lucide="activity" class="w-4 h-4 text-teal-500"></i> Execução Real (Timesheet YTD)</h4>
+                            <div class="bg-white rounded-[32px] border border-gray-100 shadow-xl overflow-hidden">
+                                <table class="w-full text-left table-dense">
+                                    <thead class="bg-gray-50/80 border-b border-gray-100">
+                                        <tr>
+                                            <th class="text-[10px] font-black text-gray-400 uppercase tracking-widest py-5 px-6">Consultor</th>
+                                            <th class="text-[10px] font-black text-gray-400 uppercase tracking-widest text-right">Hrs Lançadas</th>
+                                            <th class="text-[10px] font-black text-gray-400 uppercase tracking-widest text-right">Custo Incorrido</th>
+                                            <th class="text-[10px] font-black text-gray-400 uppercase tracking-widest text-right">Preço Venda</th>
+                                            <th class="text-[10px] font-black text-gray-400 uppercase tracking-widest text-right">Rec. Medida</th>
+                                            <th class="text-[10px] font-black text-gray-400 uppercase tracking-widest text-center px-6">Margem</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="realized-rows" class="divide-y divide-gray-50"></tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <div class="space-y-6">
+                            <h4 class="text-xs font-black text-gray-800 uppercase tracking-[0.3em] flex items-center gap-2"><i data-lucide="pie-chart" class="w-4 h-4 text-indigo-500"></i> Saúde Financeira</h4>
+                            <div class="bg-white p-8 rounded-[32px] border border-gray-100 shadow-xl space-y-8">
+                                <div class="space-y-2">
+                                    <div class="flex justify-between items-end"><span class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Burn Rate Alocação</span><span class="text-xs font-black text-indigo-600" id="burn-rate-pct">0%</span></div>
+                                    <div class="w-full h-3 bg-gray-50 rounded-full overflow-hidden border border-gray-100"><div class="h-full bg-indigo-500 transition-all duration-1000" style="width: 0%" id="burn-rate-bar"></div></div>
+                                </div>
+                                <div class="space-y-2">
+                                    <div class="flex justify-between items-end"><span class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Aderência ao Baseline</span><span class="text-xs font-black text-teal-600" id="baseline-pct">0%</span></div>
+                                    <div class="w-full h-3 bg-gray-50 rounded-full overflow-hidden border border-gray-100"><div class="h-full bg-teal-500 transition-all duration-1000" style="width: 0%" id="baseline-bar"></div></div>
+                                </div>
+                                <div class="pt-6 border-t border-gray-50 flex flex-col gap-4">
+                                    <div class="flex items-center gap-3"><div class="w-2 h-2 rounded-full bg-teal-500"></div><p class="text-[10px] font-bold text-gray-500 uppercase">Receita YTD: <span class="text-gray-800 font-black" id="act-rev-summary">R$ 0,00</span></p></div>
+                                    <div class="flex items-center gap-3"><div class="w-2 h-2 rounded-full bg-red-400"></div><p class="text-[10px] font-bold text-gray-500 uppercase">Custo YTD: <span class="text-gray-800 font-black" id="act-cost-summary">R$ 0,00</span></p></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 
-    <!-- Scripts e Lógica (Mantidos Integramente) -->
+    <!-- MODAL UPLOAD -->
+    <div id="upload-modal" class="fixed inset-0 bg-black/40 backdrop-blur-sm hidden flex items-center justify-center p-4 z-[120]">
+        <div class="bg-white rounded-[40px] shadow-2xl p-10 w-full max-w-sm transform transition-all border border-gray-100">
+            <div class="flex justify-between items-center mb-8">
+                <h3 class="font-black text-gray-800 uppercase text-xs tracking-widest flex items-center gap-2"><i data-lucide="upload" class="w-5 h-5 text-c3c-blue"></i> Anexar Arquivo</h3>
+                <button onclick="document.getElementById('upload-modal').classList.add('hidden')" class="text-gray-300 hover:text-gray-600"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            <div class="space-y-6">
+                <div><label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Tipo de Documento</label><select id="doc-type-select" class="w-full bg-gray-50 border border-gray-100 rounded-2xl px-5 py-3.5 text-xs font-bold focus:ring-4 focus:ring-blue-50 focus:border-c3c-blue outline-none transition-all cursor-pointer"><option>Proposta Comercial</option><option>Contrato</option><option>Pricing</option><option>Outros</option></select></div>
+                <div><label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Selecione o Arquivo</label><input type="file" id="file-input" class="w-full text-xs text-gray-400 font-bold file:mr-4 file:py-3 file:px-6 file:rounded-2xl file:border-0 file:text-[10px] file:font-black file:uppercase file:tracking-widest file:bg-blue-50 file:text-c3c-blue hover:file:bg-blue-100 transition-all"></div>
+                <div class="flex justify-end gap-3 pt-6 border-t border-gray-50"><button onclick="document.getElementById('upload-modal').classList.add('hidden')" class="px-6 py-3 text-[10px] font-black text-gray-400 hover:text-gray-600 uppercase tracking-widest">Cancelar</button><button onclick="uploadFile()" class="px-8 py-3 bg-c3c-gradient text-white text-[10px] font-black uppercase tracking-widest rounded-2xl shadow-xl shadow-blue-100 transition-all active:scale-95">Enviar Agora</button></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- TOAST -->
+    <div id="toast" class="fixed bottom-10 right-10 bg-gray-900/90 backdrop-blur-md text-white px-8 py-5 rounded-[24px] shadow-2xl translate-y-20 opacity-0 transition-all duration-500 flex items-center gap-4 z-[200] border border-white/10">
+        <div class="w-10 h-10 rounded-full bg-teal-500/20 flex items-center justify-center text-teal-400 shadow-inner"><i data-lucide="check-circle" class="w-5 h-5"></i></div>
+        <div><p class="text-xs font-black uppercase tracking-widest" id="toast-title">Sucesso</p><p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-0.5" id="toast-message">Operação realizada com êxito.</p></div>
+    </div>
+
+    <!-- SCRIPTS -->
     <script>
         lucide.createIcons();
-        // ... (resto do JS original restaurado abaixo)
+        let services = <%- JSON.stringify(services) %>;
+        let currentServiceData = null; let metadata = {}; 
+        let attachedDocIds = []; 
+
+        const money = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
+        const moneyValue = (val) => money.format(val || 0);
+        const holidays = ["01/01", "21/04", "01/05", "07/09", "12/10", "02/11", "15/11", "25/12"];
+
+        // --- GLOBAL HELPERS & CALCS ---
+        function countBusinessDays(startDate, endDate) {
+            if(!startDate || !endDate) return 0;
+            const s = startDate.split('-'); const e = endDate.split('-');
+            const start = new Date(s[0], s[1]-1, s[2]); const end = new Date(e[0], e[1]-1, e[2]);
+            if(start > end) return 0;
+            let days = 0; let cur = new Date(start);
+            while(cur <= end) {
+                const d = cur.getDay();
+                const dStr = String(cur.getDate()).padStart(2,'0') + '/' + String(cur.getMonth()+1).padStart(2,'0');
+                if(d !== 0 && d !== 6 && !holidays.includes(dStr)) days++;
+                cur.setDate(cur.getDate() + 1);
+            }
+            return days;
+        }
+
+        function updateSummaryCards(cRev, cMargin, fRev, fMargin, aRev, aMargin) {
+            document.getElementById('card-prop-rev').innerText = moneyValue(cRev); document.getElementById('card-prop-margin').innerText = Math.round(cMargin) + '%';
+            document.getElementById('card-fcst-rev').innerText = moneyValue(fRev); document.getElementById('card-fcst-margin').innerText = Math.round(fMargin) + '%';
+            document.getElementById('card-act-rev').innerText = moneyValue(aRev); document.getElementById('card-act-margin').innerText = Math.round(aMargin) + '%';
+        }
+
+        function calculateAllTotals() {
+            let cRev=0, cCost=0, cHours=0;
+            document.querySelectorAll('.comm-row').forEach(tr => {
+                cRev += parseFloat(tr.cells[8].innerText.replace(/[^0-9,-]+/g,"").replace(",",".")||0);
+                cCost += parseFloat(tr.cells[9].innerText.replace(/[^0-9,-]+/g,"").replace(",",".")||0);
+                cHours += parseFloat(tr.cells[7].innerText.replace('h','')||0);
+            });
+            document.getElementById('comm-total-hours').innerText = cHours.toFixed(1) + 'h';
+            document.getElementById('comm-total-rev').innerText = moneyValue(cRev);
+            document.getElementById('comm-total-cost').innerText = moneyValue(cCost);
+            document.getElementById('comm-total-margin').innerText = cRev > 0 ? Math.round(((cRev-cCost)/cRev)*100) + '%' : '0%';
+
+            let aRev=0, aCost=0, aHours=0;
+            document.querySelectorAll('.exec-row').forEach(tr => {
+                 aRev += parseFloat(tr.cells[8].innerText.replace(/[^0-9,-]+/g,"").replace(",",".")||0);
+                 aCost += parseFloat(tr.cells[9].innerText.replace(/[^0-9,-]+/g,"").replace(",",".")||0);
+                 aHours += parseFloat(tr.cells[7].innerText.replace('h','')||0);
+            });
+            document.getElementById('exec-total-hours').innerText = aHours.toFixed(1) + 'h';
+            document.getElementById('exec-total-rev').innerText = moneyValue(aRev); 
+            document.getElementById('exec-total-cost').innerText = moneyValue(aCost);
+            document.getElementById('exec-total-margin').innerText = aRev > 0 ? Math.round(((aRev-aCost)/aRev)*100) + '%' : '0%';
+
+            updateSummaryCards(cRev, cRev>0?((cRev-cCost)/cRev)*100:0, aRev, aRev>0?((aRev-aCost)/aRev)*100:0, 0, 0);
+        }
+
+        function recalcDistribution() {
+            const distributionMap = {};
+            document.querySelectorAll('.exec-row').forEach(tr => {
+                const commId = tr.cells[0].querySelector('select').value;
+                const costRate = parseFloat(tr.cells[3].querySelector('input').value) || 0;
+                const start = tr.cells[4].querySelector('input').value;
+                const end = tr.cells[5].querySelector('input').value;
+                const alloc = parseFloat(tr.cells[6].querySelector('input').value) || 0;
+                const days = countBusinessDays(start, end);
+                const totalHours = days * 8 * (alloc / 100); 
+                const totalCost = totalHours * costRate;
+                tr.dataset.tempCost = totalCost; tr.dataset.tempHours = totalHours; tr.dataset.tempDays = days; 
+                
+                const cellDays = tr.querySelector('.cell-days');
+                const cellHours = tr.querySelector('.cell-hours');
+                const cellCost = tr.querySelector('.cell-cost');
+                
+                if(cellDays) cellDays.innerText = days; 
+                if(cellHours) cellHours.innerText = totalHours.toFixed(1) + 'h';
+                if(cellCost) cellCost.innerText = moneyValue(totalCost);
+
+                if(commId) {
+                    if(!distributionMap[commId]) distributionMap[commId] = { totalCostIncurred: 0, rows: [] };
+                    distributionMap[commId].totalCostIncurred += totalCost; distributionMap[commId].rows.push(tr);
+                } else {
+                    tr.cells[2].querySelector('input').value = '0.00';
+                    const cellRev = tr.querySelector('.cell-rev');
+                    const cellMargin = tr.querySelector('.cell-margin');
+                    if(cellRev) cellRev.innerText = moneyValue(0);
+                    if(cellMargin) cellMargin.innerText = '-100%';
+                }
+            });
+            Object.keys(distributionMap).forEach(commId => {
+                const group = distributionMap[commId];
+                const commRow = document.querySelector(`.comm-row[data-id="${commId}"]`);
+                const commRev = commRow ? parseFloat(commRow.querySelector('.cell-rev').innerText.replace(/[^0-9,-]+/g,"").replace(",",".") || 0) : 0;
+                group.rows.forEach(tr => {
+                    const myCost = parseFloat(tr.dataset.tempCost); const myHours = parseFloat(tr.dataset.tempHours);
+                    let myShareRev = (group.totalCostIncurred > 0) ? (commRev * myCost) / group.totalCostIncurred : 0;
+                    tr.cells[2].querySelector('input').value = myHours > 0 ? (myShareRev / myHours).toFixed(2) : '0.00';
+                    const cellRev = tr.querySelector('.cell-rev');
+                    const cellMargin = tr.querySelector('.cell-margin');
+                    if(cellRev) cellRev.innerText = moneyValue(myShareRev);
+                    if(cellMargin) cellMargin.innerText = myShareRev > 0 ? Math.round(((myShareRev - myCost) / myShareRev) * 100) + '%' : '0%';
+                });
+            });
+            calculateAllTotals();
+        }
+
+        // --- CORE FUNCTIONS ---
+        function renderServices(list = services) {
+            const grid = document.getElementById('services-grid'); grid.innerHTML = '';
+            if (list.length === 0) { document.getElementById('no-results').classList.remove('hidden'); document.getElementById('no-results').classList.add('flex'); }
+            else {
+                document.getElementById('no-results').classList.add('hidden'); document.getElementById('no-results').classList.remove('flex');
+                list.forEach(s => {
+                    const statusClass = s.status === 'Ativo' ? 'bg-teal-50 text-teal-600 border-teal-100' : 'bg-red-50 text-red-600 border-red-100';
+                    const formatDateBR = (dateStr) => { if(!dateStr) return '-'; const [y, m, d] = dateStr.split('-'); return `${d}/${m}/${y.substr(2)}`; };
+                    grid.innerHTML += `<div class="bg-white rounded-[32px] border border-gray-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer group overflow-hidden" onclick="openServiceModal('${s.id}')"><div class="p-6 border-b border-gray-100 flex justify-between items-start"><div class="flex-1"><div class="flex items-center gap-2 mb-2"><span class="bg-blue-50 text-c3c-blue text-[9px] font-black px-3 py-1 rounded-full border border-blue-100 uppercase tracking-widest">${s.type || 'Projeto'}</span><span class="${statusClass} text-[9px] font-black px-3 py-1 rounded-full border uppercase tracking-widest">${s.status}</span></div><h3 class="text-xl font-black text-gray-800 group-hover:text-c3c-blue transition-colors leading-tight">${s.name || 'Sem Nome'}</h3><p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">${s.client || 'Novo Cliente'}</p></div><div class="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center text-gray-300 group-hover:bg-blue-50 group-hover:text-c3c-blue transition-all"><i data-lucide="chevron-right" class="w-5 h-5"></i></div></div><div class="p-6 grid grid-cols-3 gap-2 text-center text-xs divide-x divide-gray-50 bg-gray-50/30"><div><p class="text-gray-400 font-black uppercase text-[9px] tracking-widest">Baseline</p><p class="font-black text-gray-800 mt-1">${moneyValue(s.prop?.rev)}</p><p class="text-[9px] text-c3c-blue font-black mt-0.5">${s.prop?.margin||0}% MG</p></div><div><p class="text-gray-400 font-black uppercase text-[9px] tracking-widest">Previsto</p><p class="font-black text-gray-800 mt-1">${moneyValue(s.fcst?.rev)}</p><p class="text-[9px] text-indigo-600 font-black mt-0.5">${s.fcst?.margin||0}% MG</p></div><div><p class="text-gray-400 font-black uppercase text-[9px] tracking-widest">YTD Real</p><p class="font-black text-gray-800 mt-1">${moneyValue(s.act?.rev)}</p><p class="text-[9px] text-teal-600 font-black mt-0.5">${s.act?.margin||0}% MG</p></div></div><div class="px-6 py-4 bg-gray-50 border-t border-gray-100 flex justify-between items-center text-[9px] font-black text-gray-400 uppercase tracking-widest"><span>INÍCIO: ${formatDateBR(s.dataInicio)}</span><span>TÉRMINO: ${formatDateBR(s.dataFim)}</span></div></div>`;
+                });
+            }
+            lucide.createIcons();
+        }
+
+        function filterServices() {
+            const query = document.getElementById('search-input').value.toLowerCase();
+            const status = document.getElementById('status-filter').value;
+            fetch(`/api/services?status=${status}`).then(res => res.json()).then(data => {
+                services = data;
+                const filtered = services.filter(s => (s.name||'').toLowerCase().includes(query) || (s.client||'').toLowerCase().includes(query));
+                renderServices(filtered);
+            });
+        }
+
+        function openServiceModal(id = null) {
+            document.getElementById('service-modal').classList.remove('hidden');
+            document.getElementById('modal-loader').classList.remove('hidden');
+            
+            const title = id ? "Editar Serviço" : "Novo Serviço";
+            document.getElementById('modal-svc-title').innerText = title;
+            document.getElementById('badge-status').innerText = id ? "Em Edição" : "Novo";
+            switchTab('general');
+
+            const endpoint = id ? `/api/services/${id}` : `/api/services/new`;
+            
+            fetch(endpoint).then(res => res.json()).then(data => {
+                currentServiceData = data;
+                metadata = data.metadata || {};
+                populateDatalist('sf-accounts-list', metadata.salesforceAccounts);
+                populateDatalist('ca-clients-list', metadata.contaAzulClients);
+                populateDatalist('people-list', metadata.people);
+                
+                const pbSelect = document.getElementById('select-pricebook');
+                if(pbSelect) pbSelect.innerHTML = (metadata.pricebooks||[]).map(pb => `<option value="${pb.id}">${pb.name}</option>`).join('');
+                
+                if(id) {
+                    document.getElementById('input-svc-name').value = data.name;
+                    document.getElementById('input-sf-account').value = getMetadataName(metadata.salesforceAccounts, data.sf_account_id) || data.client;
+                    document.getElementById('input-ca-client').value = getMetadataName(metadata.contaAzulClients, data.ca_client_id) || '';
+                    document.getElementById('input-svc-type').value = data.type || 'Projeto';
+                    document.getElementById('input-svc-start').value = data.dataInicio || '';
+                    document.getElementById('input-svc-end-orig').value = data.dataFimOriginal || '';
+                    document.getElementById('input-svc-end-real').value = data.dataFim || '';
+                    document.getElementById('input-lead-project').value = getMetadataName(metadata.people, data.lead_project) || '';
+                    document.getElementById('input-coordinator').value = getMetadataName(metadata.people, data.coordinator) || '';
+                    document.getElementById('input-tech-lead').value = getMetadataName(metadata.people, data.tech_lead) || '';
+                    updateSummaryCards(data.prop?.rev, data.prop?.margin, data.fcst?.rev, data.fcst?.margin, data.act?.rev, data.act?.margin);
+                } else {
+                    ['input-svc-name', 'input-sf-account', 'input-ca-client', 'input-lead-project', 'input-coordinator', 'input-tech-lead', 'input-svc-start', 'input-svc-end-orig', 'input-svc-end-real'].forEach(i => {
+                        const el = document.getElementById(i); if(el) el.value = '';
+                    });
+                    updateSummaryCards(0,0,0,0,0,0);
+                }
+
+                const docContainer = document.getElementById('docs-list-container'); docContainer.innerHTML = ''; attachedDocIds = []; 
+                if (data.documents && data.documents.length > 0) {
+                    data.documents.forEach(doc => {
+                        attachedDocIds.push(doc.docId);
+                        docContainer.insertAdjacentHTML('beforeend', `<div class="flex items-center justify-between p-4 border border-gray-100 rounded-2xl bg-gray-50/50 group" id="doc-${doc.docId}"><div class="flex items-center gap-3"><i data-lucide="file-text" class="w-4 h-4 text-c3c-blue"></i><span class="text-[10px] font-black uppercase tracking-widest truncate max-w-[150px]">${doc.name}</span><a href="/api/services/doc/${doc.docId}" target="_blank" class="text-gray-300 hover:text-c3c-blue transition-all"><i data-lucide="download" class="w-4 h-4"></i></a></div><button onclick="deleteDocument('${doc.docId}')" class="text-gray-200 hover:text-red-500 transition-all"><i data-lucide="trash-2" class="w-4 h-4"></i></button></div>`);
+                    });
+                } else { docContainer.innerHTML = '<p class="text-[10px] font-bold text-gray-300 uppercase tracking-widest italic col-span-full py-8 text-center bg-gray-50/50 rounded-2xl border border-dashed border-gray-100">Nenhum documento anexado.</p>'; }
+                
+                const commRows = document.getElementById('commercial-rows'); commRows.innerHTML = '';
+                (data.commercial && data.commercial.length > 0 ? data.commercial : [{}]).forEach(row => addCommercialRow(row));
+                
+                const execRows = document.getElementById('execution-rows'); execRows.innerHTML = '';
+                (data.execution && data.execution.length > 0 ? data.execution : [{}]).forEach(row => addExecutionRow(row));
+
+                const billingList = document.getElementById('svc-billing-list'); billingList.innerHTML = '';
+                (data.installments && data.installments.length > 0 ? data.installments : []).forEach(inst => addBillingRow(inst));
+
+                calculateAllTotals();
+                document.getElementById('modal-loader').classList.add('hidden');
+                lucide.createIcons();
+            });
+        }
+
+        function onPricebookChange() {
+            const opts = getProductOptions(null);
+            document.querySelectorAll('.comm-row select').forEach(sel => {
+                const currentVal = sel.value; sel.innerHTML = opts; sel.value = currentVal;
+            });
+        }
+
+        function addCommercialRow(data = {}) {
+            const tbody = document.getElementById('commercial-rows'); const tr = document.createElement('tr');
+            tr.className = "comm-row group hover:bg-gray-50"; tr.dataset.id = data.id || `new-${Date.now()}`;
+            tr.innerHTML = `<td class="px-6 py-4"><select class="input-inline font-black text-gray-700 uppercase" onchange="onProductChange(this)">${getProductOptions(data.productName)}</select></td><td><input type="number" class="input-inline text-right font-black" placeholder="0.00" value="${data.saleRate || ''}" oninput="calcRow(this)"></td><td><input type="number" class="input-inline text-right font-black" placeholder="0.00" value="${data.costEst || ''}" oninput="calcRow(this)"></td><td><input type="date" class="input-inline text-center" value="${data.start || ''}" onchange="calcRow(this)"></td><td><input type="date" class="input-inline text-center" value="${data.end || ''}" onchange="calcRow(this)"></td><td class="text-center text-[10px] font-black text-gray-400 cell-days">0</td><td><input type="number" class="input-inline text-center font-black" value="${data.alloc || 100}" oninput="calcRow(this)"></td><td class="text-right font-black text-xs cell-hours">0h</td><td class="text-right font-black text-xs text-c3c-blue bg-blue-50/50 cell-rev">R$ 0,00</td><td class="text-right font-black text-xs text-red-600 cell-cost">R$ 0,00</td><td class="text-center"><button class="text-gray-200 hover:text-red-500" onclick="removeRow(this)"><i data-lucide="trash-2" class="w-4 h-4"></i></button></td>`;
+            tbody.appendChild(tr); if(data.productName) calcRow(tr.querySelector('select')); lucide.createIcons();
+        }
+
+        function onProductChange(select) {
+            const opt = select.options[select.selectedIndex];
+            if(opt && opt.value) {
+                select.closest('tr').cells[1].querySelector('input').value = parseFloat(opt.dataset.price || 0).toFixed(2);
+                select.closest('tr').cells[2].querySelector('input').value = parseFloat(opt.dataset.cost || 0).toFixed(2);
+                calcRow(select);
+            }
+        }
+
+        function calcRow(el) {
+            const tr = el.closest('tr'); const saleRate = parseFloat(tr.cells[1].querySelector('input').value) || 0; const costRate = parseFloat(tr.cells[2].querySelector('input').value) || 0;
+            const start = tr.cells[3].querySelector('input').value; const end = tr.cells[4].querySelector('input').value; const alloc = parseFloat(tr.cells[6].querySelector('input').value) || 0;
+            const days = countBusinessDays(start, end); const totalHours = days * 8 * (alloc / 100);
+            const rev = totalHours * saleRate; const cost = totalHours * costRate;
+            tr.querySelector('.cell-days').innerText = days; tr.querySelector('.cell-hours').innerText = totalHours.toFixed(1) + 'h';
+            tr.querySelector('.cell-rev').innerText = moneyValue(rev); tr.querySelector('.cell-cost').innerText = moneyValue(cost);
+            calculateAllTotals(); recalcDistribution(); 
+        }
+
+        function addExecutionRow(data = {}) {
+            const tbody = document.getElementById('execution-rows'); const tr = document.createElement('tr');
+            tr.className = "exec-row group hover:bg-gray-50";
+            tr.innerHTML = `<td class="px-6 py-4"><select class="input-inline text-[10px] font-black text-indigo-700 uppercase" onfocus="this.innerHTML = getCommLinkOptions(this.value)" onchange="onAllocLinkChange(this)">${getCommLinkOptions(data.commercialLinkId)}</select></td><td><select class="input-inline font-black text-gray-700 uppercase" onchange="onPersonChange(this)">${getPeopleOptions(data.person)}</select></td><td><input class="input-inline text-right font-black readonly-field" readonly value="${data.saleApplied || '0.00'}"></td><td><input class="input-inline text-right font-black readonly-field" readonly value="${data.costReal || '0.00'}"></td><td><input type="date" class="input-inline text-center" value="${data.start || ''}" onchange="recalcDistribution()"></td><td><input type="date" class="input-inline text-center" value="${data.end || ''}" onchange="recalcDistribution()"></td><td><input type="number" class="input-inline text-center font-black" value="${data.alloc || 100}" oninput="recalcDistribution()"></td><td class="text-center text-[10px] font-black text-gray-400 cell-days">0</td><td class="text-right font-black text-xs cell-hours">0h</td><td class="text-right font-black text-xs text-indigo-600 bg-indigo-50/50 cell-rev">R$ 0,00</td><td class="text-right font-black text-xs text-red-600 cell-cost">R$ 0,00</td><td class="text-right font-black text-xs pt-2 cell-margin">0%</td><td class="text-center"><button class="text-gray-200 hover:text-red-500" onclick="removeRow(this)"><i data-lucide="trash-2" class="w-4 h-4"></i></button></td>`;
+            tbody.appendChild(tr); if(data.person) onPersonChange(tr.cells[1].querySelector('select')); lucide.createIcons();
+        }
+
+        function onPersonChange(select) { select.closest('tr').cells[3].querySelector('input').value = select.selectedOptions[0].dataset.cost || 0; recalcDistribution(); }
+        function onAllocLinkChange(select) { recalcDistribution(); }
+
+        function addBillingRow(d={}) { const t=document.getElementById('svc-billing-list'); const r=t.children.length+1; t.insertAdjacentHTML('beforeend', `<tr><td class="px-8 py-5 text-center text-gray-300 font-black text-[10px]">${r}</td><td class="px-3 py-2"><input class="input-inline font-black text-gray-700 uppercase" value="${d.desc||''}" placeholder="Ex: Parcela 01"></td><td class="px-3 py-2"><input class="input-inline text-center font-black" type="month" value="${d.month||''}"></td><td class="px-3 py-2"><input class="input-inline text-center font-black" type="date" value="${d.date||''}"></td><td class="px-3 py-2 text-right"><input class="input-inline text-right font-black text-gray-800" value="${d.value||''}" placeholder="0,00"></td><td class="px-8 py-2 text-center"><button onclick="removeRow(this)"><i data-lucide="trash-2" class="w-4 h-4 text-red-300 hover:text-red-500 transition-all"></i></button></td></tr>`); lucide.createIcons(); }
+        function removeRow(btn) { btn.closest('tr').remove(); recalcDistribution(); }
+        function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+        function switchTab(t) { ['general','commercial','execution','billing','realized'].forEach(x => { document.getElementById(`view-${x}`).classList.add('hidden'); document.getElementById(`tab-${x}`).className = 'modal-tab-inactive py-5 text-[10px] font-black uppercase tracking-[0.2em] whitespace-nowrap transition-all'; }); document.getElementById(`view-${t}`).classList.remove('hidden'); document.getElementById(`tab-${t}`).className = 'modal-tab-active py-5 text-[10px] font-black uppercase tracking-[0.2em] whitespace-nowrap transition-all'; }
+        
+        function saveService() {
+            if (!currentServiceData) return;
+            const getDatalistId = (inputId, listId) => {
+                const val = document.getElementById(inputId).value;
+                const opt = document.querySelector(`#${listId} option[value="${val}"]`);
+                return opt ? opt.dataset.id : val; 
+            };
+            const payload = {
+                id: currentServiceData.id,
+                name: document.getElementById('input-svc-name').value,
+                sf_account_id: getDatalistId('input-sf-account', 'sf-accounts-list'),
+                ca_client_id: getDatalistId('input-ca-client', 'ca-clients-list'),
+                type: document.getElementById('input-svc-type').value,
+                lead_project: getDatalistId('input-lead-project', 'people-list'),
+                coordinator: getDatalistId('input-coordinator', 'people-list'),
+                tech_lead: getDatalistId('input-tech-lead', 'people-list'),
+                start: document.getElementById('input-svc-start').value,
+                end_original: document.getElementById('input-svc-end-orig').value,
+                end_real: document.getElementById('input-svc-end-real').value,
+                docIds: attachedDocIds,
+                commercial: Array.from(document.querySelectorAll('.comm-row')).map(tr => ({
+                    id: tr.dataset.id, productName: tr.cells[0].querySelector('select').value, saleRate: parseFloat(tr.cells[1].querySelector('input').value)||0, costEst: parseFloat(tr.cells[2].querySelector('input').value)||0, start: tr.cells[3].querySelector('input').value, end: tr.cells[4].querySelector('input').value, alloc: parseFloat(tr.cells[6].querySelector('input').value)||0, totalRev: parseFloat(tr.querySelector('.cell-rev').innerText.replace(/[^0-9,-]+/g,"").replace(",",".")), totalCost: parseFloat(tr.querySelector('.cell-cost').innerText.replace(/[^0-9,-]+/g,"").replace(",",".")), totalHours: parseFloat(tr.querySelector('.cell-hours').innerText.replace('h',''))
+                })),
+                execution: Array.from(document.querySelectorAll('.exec-row')).map(tr => ({
+                    id: tr.dataset.id, personId: tr.cells[1].querySelector('select').selectedOptions[0].dataset.id, commercialLinkId: tr.cells[0].querySelector('select').value, start: tr.cells[4].querySelector('input').value, end: tr.cells[5].querySelector('input').value, alloc: parseFloat(tr.cells[6].querySelector('input').value)||0
+                }))
+            };
+            if (!payload.name || !payload.sf_account_id || !payload.start) return alert('Campos obrigatórios ausentes.');
+            document.getElementById('modal-loader').classList.remove('hidden');
+            fetch('/api/services', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
+            .then(res => res.json()).then(data => { document.getElementById('modal-loader').classList.add('hidden'); if (data.success) { closeModal('service-modal'); filterServices(); } else alert(data.message); });
+        }
+
+        // --- DOM HELPERS ---
+        function getProductOptions(selectedName) { const pbId = document.getElementById('select-pricebook').value; const pb = (metadata.pricebooks || []).find(p => p.id === pbId); if (!pb) return '<option value="">Tabela...</option>'; return '<option value="">Selecione...</option>' + (pb.products || []).map(p => `<option value="${p.name}" data-price="${p.price}" data-cost="${p.cost}" ${p.name === selectedName ? 'selected' : ''}>${p.name}</option>`).join(''); }
+        function getCommLinkOptions(selectedId) { let opts = '<option value="">Vínculo...</option>'; document.querySelectorAll('.comm-row').forEach((tr, index) => { opts += `<option value="${tr.dataset.id}" ${tr.dataset.id === selectedId ? 'selected' : ''}>#${index + 1} - ${tr.cells[0].querySelector('select').value}</option>`; }); return opts; }
+        function getPeopleOptions(selectedName) { return '<option value="">Selecione...</option>' + (metadata.people || []).map(p => `<option value="${p.name}" data-id="${p.id}" data-cost="${p.costRate}" ${p.name === selectedName ? 'selected' : ''}>${p.name}</option>`).join(''); }
+        function populateDatalist(id, list) { document.getElementById(id).innerHTML = (list||[]).map(item => `<option value="${item.name}" data-id="${item.id}">`).join(''); }
+        function getMetadataName(list, id) { return (list || []).find(i => i.id === id)?.name || null; }
+
+        renderServices();
     </script>
 </body>
 </html>

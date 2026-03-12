@@ -73,4 +73,67 @@ private class PeriodoBatchTest {
 
         System.assertEquals(expectedName, periodo.Name, 'Nome do período deve estar no formato correto.');
     }
+
+    @isTest static void testHolidayOverVacationPriority() {
+        // Setup - Holiday on a specific date
+        Date testDate = Date.newInstance(2025, 12, 25);
+        
+        // Find default Business Hours
+        BusinessHours bh = [SELECT Id FROM BusinessHours WHERE IsDefault = true LIMIT 1];
+
+        Holiday h = new Holiday(
+            Name = 'Natal Teste Prioridade',
+            ActivityDate = testDate
+        );
+        insert h;
+
+        // Note: In some orgs, the relationship between Holiday and BusinessHours 
+        // is automatic if the holiday is global. If it requires explicit link, 
+        // we'd insert BusinessHoursHoliday, but it's a restricted object in many contexts.
+        // The isWithin check will naturally return false for global holidays.
+
+        // Base data
+        Estado__c estado = new Estado__c(Name='São Paulo Priority', Sigla__c = 'SP');
+        insert estado;
+        
+        Municipio__c municipio = new Municipio__c (Name='São Paulo Priority', Estado__c = estado.Id);
+        insert municipio;
+
+        Pessoa__c p = new Pessoa__c(Name = 'Teste Priority', Municipio__c = municipio.Id);
+        insert p;
+
+        ContratoPessoa__c cp = new ContratoPessoa__c(
+            Pessoa__c = p.Id,
+            DataInicio__c = testDate.addMonths(-1),
+            ValorHora__c = 100,
+            Hora__c = 8
+        );
+        insert cp;
+
+        // Vacation (Agendada) on the same date
+        Ferias__c f = new Ferias__c(
+            Pessoa__c = p.Id,
+            DataInicio__c = testDate,
+            DataFim__c = testDate,
+            Status__c = 'Agendada'
+        );
+        insert f;
+
+        Test.startTest();
+        // Create Period covering the date
+        Periodo__c per = new Periodo__c(
+            ContratoPessoa__c = cp.Id,
+            DataInicio__c = testDate.toStartOfMonth(),
+            DataFim__c = testDate.toStartOfMonth().addMonths(1).addDays(-1)
+        );
+        insert per;
+        Test.stopTest();
+
+        // Verify DiaPeriodo for that date
+        DiaPeriodo__c dp = [SELECT Tipo__c, Name FROM DiaPeriodo__c WHERE Periodo__c = :per.Id AND Data__c = :testDate LIMIT 1];
+        
+        // Should be Feriado, not Férias
+        System.assertEquals('Feriado', dp.Tipo__c, 'Holidays should have higher priority than vacations.');
+        System.assert(dp.Name.contains('(Feriado)'), 'Name should indicate it is a holiday.');
+    }
 }
