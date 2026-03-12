@@ -150,7 +150,11 @@
                             <option value="Aberto">1. Ciclo Aberto</option>
                             <option value="Em aprovação do serviço">2. Pendente Líder</option>
                             <option value="Aguardando Aprovação RH">3. Pendente RH</option>
-                            <option value="Finalizado/Pago">4. Concluído</option>
+                            <option value="Anexo de Notas">4. Anexo de Notas</option>
+                            <option value="Nota em Validação">5. Nota em Validação</option>
+                            <option value="Pronto para Pagamento">6. Pronto para Pagamento</option>
+                            <option value="Pagamento Agendado">7. Pagamento Agendado</option>
+                            <option value="Finalizado/Pago">8. Concluído</option>
                         </select>
                     </div>
                 </div>
@@ -271,7 +275,12 @@
         const statusColors = { 
             'Aberto': 'bg-gray-100 text-gray-500 border-gray-200', 
             'Em aprovação do serviço': 'bg-blue-50 text-c3c-blue border-blue-100', 
-            'Finalizado/Pago': 'bg-indigo-50 text-indigo-600 border-indigo-100' 
+            'Aguardando Aprovação RH': 'bg-orange-50 text-orange-600 border-orange-100',
+            'Liberado para Nota Fiscal': 'bg-purple-50 text-purple-600 border-purple-100',
+            'Nota em Validação': 'bg-teal-50 text-teal-600 border-teal-100',
+            'Pronto para Pagamento': 'bg-blue-50 text-blue-600 border-blue-100',
+            'Pagamento Agendado': 'bg-indigo-50 text-indigo-600 border-indigo-100',
+            'Finalizado/Pago': 'bg-green-50 text-green-600 border-green-100' 
         };
 
         document.addEventListener('DOMContentLoaded', () => { loadAvailableCycles(); });
@@ -314,8 +323,8 @@
             try {
                 const url = `${API_URL}/hr/employees?inicio=${start}&fim=${end}${stFilter ? '&statusPeriodo='+stFilter : ''}`;
                 const res = await fetch(url); const r = await res.json(); 
-                renderFunnel(r.funnel); 
                 allEmployees = r.data; 
+                renderFunnel(r.funnel); 
                 
                 let sumHoras = 0, sumBen = 0, sumTotal = 0;
                 allEmployees.forEach(emp => {
@@ -335,19 +344,21 @@
         function renderFunnel(data) {
             const container = document.getElementById('funnel-container'); 
             container.innerHTML = '';
-            // Força o container a ser horizontal e centralizado
             container.className = 'relative flex flex-row justify-between items-start w-full py-8 px-4';
 
             const pathSteps = [
                 { id: 'Aberto', label: 'Ciclo Aberto', icon: 'edit-3' },
                 { id: 'Em aprovação do serviço', label: 'Pendente Líder', icon: 'users' },
                 { id: 'Aguardando Aprovação RH', label: 'Pendente RH', icon: 'shield-check' },
+                { id: 'Anexo de Notas', label: 'Anexo de Notas', icon: 'file-plus' },
+                { id: 'Nota em Validação', label: 'Nota em Validação', icon: 'file-search' },
+                { id: 'Pronto para Pagamento', label: 'Pronto Pagto', icon: 'landmark' },
+                { id: 'Pagamento Agendado', label: 'Agendado', icon: 'calendar-clock' },
                 { id: 'Finalizado/Pago', label: 'Concluído', icon: 'check-circle' }
             ];
 
-            // Linha de fundo que conecta tudo
             const backgroundLine = document.createElement('div');
-            backgroundLine.className = 'absolute top-[52px] left-[10%] right-[10%] h-1 bg-gray-100 -z-0';
+            backgroundLine.className = 'absolute top-[52px] left-[5%] right-[5%] h-1 bg-gray-100 -z-0';
             container.appendChild(backgroundLine);
 
             pathSteps.forEach((step, idx) => {
@@ -363,8 +374,8 @@
                         <i data-lucide="${step.icon}" class="w-5 h-5"></i>
                     </div>
                     <div class="mt-4 text-center">
-                        <p class="text-[9px] font-black uppercase tracking-widest ${isActive ? 'text-c3c-blue' : 'text-gray-400 group-hover:text-gray-600'} transition-colors">${step.label}</p>
-                        <p class="text-xl font-black ${isActive ? 'text-c3c-blue' : 'text-gray-800'} mt-0.5 tracking-tighter">${item.total}</p>
+                        <p class="text-[8px] font-black uppercase tracking-widest ${isActive ? 'text-c3c-blue' : 'text-gray-400 group-hover:text-gray-600'} transition-colors leading-tight">${step.label}</p>
+                        <p class="text-lg font-black ${isActive ? 'text-c3c-blue' : 'text-gray-800'} mt-0.5 tracking-tighter">${item.total}</p>
                     </div>
                 `;
                 container.appendChild(stepElement);
@@ -375,7 +386,15 @@
         function renderTable() {
             const tbody = document.getElementById('hr-table-body'); const search = document.getElementById('search-input').value.toLowerCase(); tbody.innerHTML = '';
             allEmployees.sort((a, b) => a.name.localeCompare(b.name));
-            const filtered = allEmployees.filter(p => p.name.toLowerCase().includes(search));
+            
+            let filtered = allEmployees.filter(p => p.name.toLowerCase().includes(search));
+            
+            // Aplicar filtro de status especial "Anexo de Notas"
+            if (currentStatusFilter === 'Anexo de Notas') {
+                filtered = filtered.filter(p => p.statusPeriodo === 'Liberado para Nota Fiscal' && !p.hasNota);
+            } else if (currentStatusFilter) {
+                filtered = filtered.filter(p => p.statusPeriodo === currentStatusFilter);
+            }
             
             if (filtered.length === 0) { 
                 tbody.innerHTML = `
@@ -425,6 +444,14 @@
                 }
                 act += `</div>`;
                 
+                let displayStatus = p.statusPeriodo;
+                let badgeClass = statusColors[p.statusPeriodo] || 'bg-gray-50 text-gray-400 border-gray-100';
+
+                if (p.statusPeriodo === 'Liberado para Nota Fiscal' && !p.hasNota) {
+                    displayStatus = 'Pendente Nota';
+                    badgeClass = 'bg-red-50 text-red-600 border-red-100';
+                }
+
                 tbody.innerHTML += `<tr class="hover:bg-gray-50/50 transition-colors group">
                     <td class="px-8 py-6 text-center"><input type="checkbox" name="period-check" value="${p.periodId}" onchange="updateBulkActions()" class="w-4 h-4 rounded border-gray-200 text-c3c-blue focus:ring-blue-100 transition-all"></td>
                     <td class="px-6 py-6 text-left">
@@ -464,7 +491,7 @@
                     <td class="px-4 py-6 text-right font-black text-xs text-gray-400 demo-blur">R$ ${p.valorHora.toFixed(2)}</td>
                     <td class="px-4 py-6 text-right font-black text-c3c-blue text-sm tracking-tighter demo-blur">R$ ${p.valorTotalHoras.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</td>
                     <td class="px-4 py-6 text-right font-black text-teal-600 text-sm tracking-tighter demo-blur">R$ ${p.valorTotalBeneficios.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</td>
-                    <td class="px-6 py-6 text-center"><span class="status-badge ${statusColors[p.statusPeriodo]}">${p.statusPeriodo}</span></td>
+                    <td class="px-6 py-6 text-center"><span class="status-badge ${badgeClass}">${displayStatus}</span></td>
                     <td class="px-8 py-6 text-right">${act}</td>
                 </tr>`;
             });

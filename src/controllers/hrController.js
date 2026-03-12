@@ -19,14 +19,21 @@ exports.getHrEmployees = async (req, res) => {
     const { inicio, fim, statusPeriodo } = req.query;
 
     let wherePeriodo = `WHERE DataInicio__c = ${inicio} AND DataFim__c = ${fim}`;
-    if (statusPeriodo) wherePeriodo += ` AND Status__c = '${statusPeriodo}'`;
+    if (statusPeriodo) {
+      if (statusPeriodo === "Anexo de Notas") {
+        wherePeriodo += ` AND Status__c = 'Liberado para Nota Fiscal' AND Id NOT IN (SELECT Periodo__c FROM NotaFiscal__c WHERE Tipo__c = 'Entrada')`;
+      } else {
+        wherePeriodo += ` AND Status__c = '${statusPeriodo}'`;
+      }
+    }
 
     const soqlPeriodos = `
             SELECT Id, Name, Status__c, ContratoPessoa__r.Pessoa__c, ContratoPessoa__r.Pessoa__r.Name, 
                    ContratoPessoa__r.Pessoa__r.URL_Foto__c,
                    ContratoPessoa__r.Cargo__c, QuantidadeDiasUteis__c, ContratoPessoa__r.Hora__c,
                    ValorTotalHoras__c, ValorTotalBeneficios__c, ValorTotalPeriodo__c, ValorHora__c, TotalHoras__c,
-                   (SELECT Id FROM DiasPeriodo__r WHERE Tipo__c = 'Útil' AND DiaCompleto__c = false)
+                   (SELECT Id FROM DiasPeriodo__r WHERE Tipo__c = 'Útil' AND DiaCompleto__c = false),
+                   (SELECT Id FROM NotasFiscais__r WHERE Tipo__c = 'Entrada' LIMIT 1)
             FROM Periodo__c
             ${wherePeriodo}
         `;
@@ -53,7 +60,8 @@ exports.getHrEmployees = async (req, res) => {
       periodDataMap[p.Id] = {
         pendingRH: 0,
         pendingService: 0,
-        totalRealizado: 0
+        totalRealizado: 0,
+        hasNota: p.NotasFiscais__r && (p.NotasFiscais__r.totalSize > 0 || (p.NotasFiscais__r.records && p.NotasFiscais__r.records.length > 0))
       };
     });
 
@@ -92,6 +100,7 @@ exports.getHrEmployees = async (req, res) => {
         total: data ? data.totalRealizado : 0,
         contract: contractHours,
         statusPeriodo: per.Status__c,
+        hasNota: data ? data.hasNota : false,
         incompleteDays: incompleteDays,
         hasLogsPendingRH: data ? data.pendingRH > 0 : false,
         valorHora: per.ValorHora__c || 0,
@@ -102,10 +111,21 @@ exports.getHrEmployees = async (req, res) => {
       };
     });
 
+    // Funil Global (sempre calculado sobre o período total)
     const funnelQuery = `SELECT Status__c, COUNT(Id) total FROM Periodo__c WHERE DataInicio__c = ${inicio} AND DataFim__c = ${fim} GROUP BY Status__c`;
-    const resFunnel = await conn.query(funnelQuery);
+    
+    // Contagem específica para Anexo de Notas (Pendente de nota)
+    const anexoQuery = `SELECT COUNT(Id) total FROM Periodo__c WHERE DataInicio__c = ${inicio} AND DataFim__c = ${fim} AND Status__c = 'Liberado para Nota Fiscal' AND Id NOT IN (SELECT Periodo__c FROM NotaFiscal__c WHERE Tipo__c = 'Entrada')`;
 
-    res.json({ funnel: resFunnel.records, data: tableData });
+    const [resFunnel, resAnexo] = await Promise.all([
+      conn.query(funnelQuery),
+      conn.query(anexoQuery)
+    ]);
+
+    const funnelData = resFunnel.records.map(r => ({ Status__c: r.Status__c, total: r.total || r.expr0 || 0 }));
+    funnelData.push({ Status__c: 'Anexo de Notas', total: resAnexo.records[0].total || resAnexo.records[0].expr0 || 0 });
+
+    res.json({ funnel: funnelData, data: tableData });
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
