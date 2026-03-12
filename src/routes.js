@@ -129,6 +129,7 @@ router.post('/api/billing/analyze', requireAuth, upload.single('file'), billingC
 // --- COCKPIT FINANCEIRO (V1) ---
 router.get('/finance-dashboard', requireAuth, requireGroup('GESTOR_FINANCEIRO'), billingController.renderFinanceDashboard);
 router.get('/api/finance/periods', requireAuth, requireGroup('GESTOR_FINANCEIRO'), billingController.getFinancePeriods);
+router.get('/api/finance/counts', requireAuth, requireGroup('GESTOR_FINANCEIRO'), billingController.getFinanceCounts);
 router.post('/api/finance/update-status', requireAuth, requireGroup('GESTOR_FINANCEIRO'), billingController.updateFinanceStatus);
 router.post('/api/finance/reprove-nf', requireAuth, requireGroup('GESTOR_FINANCEIRO'), billingController.reproveNotaFiscal);
 router.get('/api/billing/download/:docId', requireAuth, billingController.downloadDocument);

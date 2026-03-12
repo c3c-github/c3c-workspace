@@ -542,6 +542,39 @@ exports.getFinancePeriods = async (req, res) => {
     }
 };
 
+exports.getFinanceCounts = async (req, res) => {
+    try {
+        const conn = await getSfConnection();
+        
+        // 1. Busca contagem dos status padrão
+        const query = `
+            SELECT Status__c, count(Id) total 
+            FROM Periodo__c 
+            WHERE ContratoPessoa__r.Pessoa__c != null 
+            AND Status__c IN ('Nota em Validação', 'Pronto para Pagamento', 'Pagamento Agendado', 'Finalizado/Pago')
+            GROUP BY Status__c
+        `;
+        const result = await conn.query(query);
+        
+        // 2. Busca contagem específica de 'Reprovados'
+        const qReproved = `
+            SELECT count(Id) total 
+            FROM Periodo__c 
+            WHERE Status__c = 'Liberado para Nota Fiscal' 
+            AND Id IN (SELECT Periodo__c FROM NotaFiscal__c WHERE Status__c = 'Reprovada')
+        `;
+        const resReproved = await conn.query(qReproved);
+
+        const data = result.records.map(r => ({ status: r.Status__c, total: r.total }));
+        data.push({ status: 'Reprovados', total: resReproved.records[0].total });
+
+        res.json(data);
+    } catch (e) {
+        console.error("❌ Erro em getFinanceCounts:", e.message);
+        res.status(500).json({ error: e.message });
+    }
+};
+
 exports.reproveNotaFiscal = async (req, res) => {
     try {
         const { periodId, periodIds, motivo } = req.body;
@@ -610,8 +643,31 @@ exports.updateFinanceStatus = async (req, res) => {
     try {
         const { periodIds, newStatus } = req.body;
         const conn = await getSfConnection();
-        const updates = periodIds.map(id => ({ Id: id, Status__c: newStatus }));
-        await conn.sobject('Periodo__c').update(updates);
-        res.json({ success: true });
-    } catch (e) { res.status(500).json({ error: e.message }); }
+
+        if (!periodIds || periodIds.length === 0) return res.status(400).json({ error: 'Nenhum período selecionado.' });
+
+        // 1. Mapeia o status da Nota Fiscal equivalente ao status do Período
+        let nfStatus = null;
+        if (newStatus === 'Pronto para Pagamento') nfStatus = 'Aprovada';
+        else if (newStatus === 'Pagamento Agendado') nfStatus = 'Pagamento Agendado';
+        else if (newStatus === 'Finalizado/Pago') nfStatus = 'Pago';
+
+        // 2. Atualiza os Períodos
+        const periodUpdates = periodIds.map(id => ({ Id: id, Status__c: newStatus }));
+        await conn.sobject('Periodo__c').update(periodUpdates);
+
+        // 3. Busca e atualiza as Notas Fiscais vinculadas (Entrada)
+        if (nfStatus) {
+            const nfs = await conn.query(`SELECT Id FROM NotaFiscal__c WHERE Periodo__c IN ('${periodIds.join("','")}') AND Tipo__c = 'Entrada'`);
+            if (nfs.records.length > 0) {
+                const nfUpdates = nfs.records.map(nf => ({ Id: nf.Id, Status__c: nfStatus }));
+                await conn.sobject('NotaFiscal__c').update(nfUpdates);
+            }
+        }
+
+        res.json({ success: true, updatedPeriods: periodIds.length });
+    } catch (e) {
+        console.error("❌ Erro ao atualizar status financeiro:", e.message);
+        res.status(500).json({ error: e.message });
+    }
 };

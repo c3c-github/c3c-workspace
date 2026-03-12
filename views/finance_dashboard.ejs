@@ -180,9 +180,11 @@
     <script>
         lucide.createIcons();
         let allPeriods = [];
-        let currentStatusFilter = 'Nota em Validação'; // Default inicial
+        let currentStatusFilter = 'Nota em Validação'; 
 
-        document.addEventListener('DOMContentLoaded', loadFinancePeriods);
+        document.addEventListener('DOMContentLoaded', () => {
+            loadFinancePeriods(currentStatusFilter);
+        });
 
         function showToast(title, message, type = 'success') {
             const container = document.getElementById('toast-container');
@@ -245,10 +247,23 @@
                 stepEl.innerHTML = `
                     <i data-lucide="${step.icon}" class="w-3.5 h-3.5 ${isActive ? 'text-white' : step.color}"></i>
                     <span class="text-[10px] font-black uppercase tracking-widest">${step.label}</span>
+                    <span id="count-${step.id.replace(/ /g, '-')}" class="text-[9px] font-black ${isActive ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-600'} px-1.5 py-0.5 rounded-md min-w-[18px] text-center">--</span>
                 `;
                 container.appendChild(stepEl);
             });
             lucide.createIcons();
+            fetchFunnelCounts();
+        }
+
+        async function fetchFunnelCounts() {
+            try {
+                const res = await fetch('/api/finance/counts');
+                const counts = await res.json();
+                counts.forEach(c => {
+                    const el = document.getElementById(`count-${c.status.replace(/ /g, '-')}`);
+                    if(el) el.innerText = c.total;
+                });
+            } catch(e) { console.error('Erro contagem:', e); }
         }
 
         function filterLocalData() {
@@ -345,6 +360,14 @@
                     actions = `<div class="flex items-center justify-center gap-2">
                         <button onclick="openReproveModal('${p.id}', '${nfId}')" class="p-2 text-red-500 bg-red-50 hover:bg-red-500 hover:text-white rounded-xl transition-all shadow-sm" title="Reprovar Nota"><i data-lucide="x-circle" class="w-4 h-4"></i></button>
                         <button onclick="updateStatus('${p.id}', 'Pronto para Pagamento')" class="bg-teal-600 text-white px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest shadow-lg shadow-teal-100 hover:bg-teal-700 transition-all active:scale-95">Validar</button>
+                    </div>`;
+                } else if (p.status === 'Pronto para Pagamento') {
+                    actions = `<div class="flex items-center justify-center">
+                        <button onclick="updateStatus('${p.id}', 'Pagamento Agendado')" class="bg-blue-600 text-white px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest shadow-lg shadow-blue-100 hover:bg-blue-700 transition-all active:scale-95">Agendar</button>
+                    </div>`;
+                } else if (p.status === 'Pagamento Agendado') {
+                    actions = `<div class="flex items-center justify-center">
+                        <button onclick="updateStatus('${p.id}', 'Finalizado/Pago')" class="bg-c3c-gradient text-white px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest shadow-lg shadow-blue-100 hover:bg-indigo-700 transition-all active:scale-95">Pago</button>
                     </div>`;
                 }
 
