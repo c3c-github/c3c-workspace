@@ -59,6 +59,42 @@ async function calculateDailyStats(conn, userId, targetDate) {
     }
 }
 
+async function syncDiaPeriodoTotals(conn, diaPeriodoId) {
+    if (!diaPeriodoId) return;
+    
+    const query = `
+        SELECT Horas__c, HorasExtras__c, HorasBanco__c, HorasAusenciaRemunerada__c, HorasAusenciaNaoRemunerada__c 
+        FROM LancamentoHora__c 
+        WHERE DiaPeriodo__c = '${diaPeriodoId}'
+        AND ${FILTRO_OPS}
+    `;
+    
+    const result = await conn.query(query);
+    
+    let totalNormal = 0;
+    let totalExtra = 0;
+    let totalBanco = 0;
+    let totalAusRem = 0;
+    let totalAusNaoRem = 0;
+    
+    result.records.forEach(r => {
+        totalNormal += (r.Horas__c || 0);
+        totalExtra += (r.HorasExtras__c || 0);
+        totalBanco += (r.HorasBanco__c || 0);
+        totalAusRem += (r.HorasAusenciaRemunerada__c || 0);
+        totalAusNaoRem += (r.HorasAusenciaNaoRemunerada__c || 0);
+    });
+    
+    await conn.sobject('DiaPeriodo__c').update({
+        Id: diaPeriodoId,
+        Hora__c: totalNormal,
+        HoraExtra__c: totalExtra,
+        HoraBanco__c: totalBanco,
+        HoraLicencaRemunerada__c: totalAusRem,
+        HoraLicencaNaoRemunerada__c: totalAusNaoRem
+    });
+}
+
 // ==============================================================================
 // CONTROLLERS
 // ==============================================================================
@@ -429,7 +465,7 @@ exports.saveLog = async (req, res) => {
             logEntry.Id = logId;
             const ret = await conn.sobject('LancamentoHora__c').update(logEntry);
             if (ret.success) {
-                // CORREÇÃO: Passando 'desc' como último parâmetro
+                await syncDiaPeriodoTotals(conn, diaPeriodoId);
                 await createCaseLog(conn, caseId, 'Hora Editada', userId, 'Operacao', desc);
                 return res.json({ success: true });
             } else return res.status(400).json({ success: false, errors: ret.errors });
@@ -467,7 +503,7 @@ exports.saveLog = async (req, res) => {
 
             const ret = await conn.sobject('LancamentoHora__c').create(logEntry);
             if (ret.success) {
-                // CORREÇÃO: Passando 'desc' como último parâmetro
+                await syncDiaPeriodoTotals(conn, diaPeriodoId);
                 await createCaseLog(conn, caseId, 'Hora Lançada', userId, 'Operacao', desc);
                 return res.json({ success: true });
             } else return res.status(400).json({ success: false, errors: ret.errors });
@@ -490,8 +526,12 @@ exports.deleteLog = async (req, res) => {
             return res.status(400).json({ error: `Este lançamento (${log.Status__c}) não permite exclusão.` });
         }
 
+        const diaPeriodoId = log.DiaPeriodo__c;
         const ret = await conn.sobject('LancamentoHora__c').destroy(logId);
-        if (ret.success) res.json({ success: true }); else res.status(400).json({ success: false });
+        if (ret.success) {
+            await syncDiaPeriodoTotals(conn, diaPeriodoId);
+            res.json({ success: true });
+        } else res.status(400).json({ success: false });
 
     } catch(e) { res.status(500).json({ error: e.message }); }
 };
