@@ -19,11 +19,16 @@ const requireAuth = (req, res, next) => {
     next();
 };
 
-const requireGroup = (groupCode) => {
+const requireGroup = (groupCodes) => {
     return (req, res, next) => {
         const user = req.session.user;
-        if (user && user.grupos && user.grupos.includes(groupCode)) { next(); } 
-        else { res.status(403).render('negado', { mensagem: `Requer: ${groupCode}` }); }
+        const codes = Array.isArray(groupCodes) ? groupCodes : [groupCodes];
+        
+        if (user && user.grupos && codes.some(code => user.grupos.includes(code))) { 
+            next(); 
+        } else { 
+            res.status(403).render('negado', { mensagem: `Acesso restrito. Requer um dos grupos: ${codes.join(', ')}` }); 
+        }
     };
 };
 
@@ -99,16 +104,16 @@ router.post('/api/ops/tickets/transfer', requireAuth, operationsController.trans
 router.post('/api/ops/tickets/:id/upload', requireAuth, upload.array('files'), operationsController.uploadAttachments);
 
 // --- GESTÃO DE SUPORTE (NOVO MÓDULO) ---
-router.get('/support-management', requireAuth, requireGroup('GESTAO_SUPORTE'), supportController.renderPage);
-router.get('/api/support/metrics', requireAuth, requireGroup('GESTAO_SUPORTE'), supportController.getGlobalMetrics);
-router.get('/api/support/contracts', requireAuth, requireGroup('GESTAO_SUPORTE'), supportController.getContractsPerformance);
-router.get('/api/support/team', requireAuth, requireGroup('GESTAO_SUPORTE'), supportController.getTeamPerformance);
-router.get('/api/support/allocations', requireAuth, requireGroup('GESTAO_SUPORTE'), supportController.getAllocations);
-router.get('/api/support/extract', requireAuth, requireGroup('GESTAO_SUPORTE'), supportController.getContractExtract);
-router.get('/api/support/search-people', requireAuth, requireGroup('GESTAO_SUPORTE'), supportController.searchPeople);
-router.get('/api/support/my-services', requireAuth, requireGroup('GESTAO_SUPORTE'), supportController.getMyServices); 
-router.post('/api/support/allocation', requireAuth, requireGroup('GESTAO_SUPORTE'), supportController.saveAllocation);
-router.delete('/api/support/allocation/:id', requireAuth, requireGroup('GESTAO_SUPORTE'), supportController.deleteAllocation);
+router.get('/support-management', requireAuth, requireGroup(['GESTAO_SUPORTE', 'DIRETOR']), supportController.renderPage);
+router.get('/api/support-management/metrics', requireAuth, requireGroup(['GESTAO_SUPORTE', 'DIRETOR']), supportController.getGlobalMetrics);
+router.get('/api/support-management/contracts', requireAuth, requireGroup(['GESTAO_SUPORTE', 'DIRETOR']), supportController.getContractsPerformance);
+router.get('/api/support-management/team', requireAuth, requireGroup(['GESTAO_SUPORTE', 'DIRETOR']), supportController.getTeamPerformance);
+router.get('/api/support-management/allocations', requireAuth, requireGroup(['GESTAO_SUPORTE', 'DIRETOR']), supportController.getAllocations);
+router.get('/api/support-management/extract', requireAuth, requireGroup(['GESTAO_SUPORTE', 'DIRETOR']), supportController.getContractExtract);
+router.get('/api/support-management/search-people', requireAuth, requireGroup(['GESTAO_SUPORTE', 'DIRETOR']), supportController.searchPeople);
+router.get('/api/support-management/my-services', requireAuth, requireGroup(['GESTAO_SUPORTE', 'DIRETOR']), supportController.getMyServices); 
+router.post('/api/support-management/allocation', requireAuth, requireGroup(['GESTAO_SUPORTE', 'DIRETOR']), supportController.saveAllocation);
+router.delete('/api/support-management/allocation/:id', requireAuth, requireGroup(['GESTAO_SUPORTE', 'DIRETOR']), supportController.deleteAllocation);
 
 // --- RH ---
 router.get('/hr', requireAuth, requireGroup('ADMIN_RH'), hrController.renderHrDashboard);

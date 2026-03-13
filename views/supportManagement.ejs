@@ -33,8 +33,10 @@
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #E2E8F0; border-radius: 10px; }
         .sub-nav-link.active { color: #2978FF; border-bottom: 3px solid #2978FF; font-weight: 800; }
+        .sub-nav-link:not(.active) { color: #94A3B8; border-bottom: 3px solid transparent; }
         .progress-bar-bg { background-color: #F1F5F9; border-radius: 100px; height: 8px; overflow: hidden; }
         select { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/xml' fill='none' viewBox='0 0 24 24' stroke='%232978FF'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 0.75rem center; background-size: 1rem; }
+        .status-badge { @apply px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border; }
     </style>
 </head>
 <body class="h-screen flex overflow-hidden bg-[#F8FAFC]">
@@ -51,23 +53,23 @@
                         <i data-lucide="menu" class="w-6 h-6"></i>
                     </button>
                     <div>
-                        <h1 class="text-lg md:text-xl font-bold text-gray-800 flex items-center gap-2 tracking-tight">Command Center Suporte <span class="text-c3c-blue">📡</span></h1>
-                        <p class="text-[10px] text-gray-400 font-bold uppercase tracking-widest hidden sm:block">Monitoramento e Gestão de Contratos</p>
+                        <h1 class="text-lg md:text-xl font-black text-gray-800 flex items-center gap-2 tracking-tighter uppercase">Command Center <span class="text-c3c-blue">📡</span></h1>
+                        <p class="text-[9px] text-gray-400 font-black uppercase tracking-[0.2em] hidden sm:block">Monitoramento e Gestão de Contratos</p>
                     </div>
                 </div>
                 
-                <nav class="hidden lg:flex space-x-8 ml-8">
-                    <a href="#dashboard-top" class="sub-nav-link active py-7 text-[10px] font-black uppercase tracking-widest transition-all" onclick="setActiveLink(this)">Geral</a>
-                    <a href="#contracts-section" class="sub-nav-link text-gray-400 py-7 text-[10px] font-black uppercase tracking-widest transition-all hover:text-gray-600" onclick="setActiveLink(this)">Contratos</a>
-                    <a href="#team-section" class="sub-nav-link text-gray-400 py-7 text-[10px] font-black uppercase tracking-widest transition-all hover:text-gray-600" onclick="setActiveLink(this)">Equipe</a>
-                    <a href="#allocation-section" class="sub-nav-link text-gray-400 py-7 text-[10px] font-black uppercase tracking-widest transition-all hover:text-gray-600" onclick="setActiveLink(this)">Alocação</a>
+                <nav class="hidden lg:flex space-x-8 ml-8 h-20 items-center">
+                    <a href="#dashboard-top" class="sub-nav-link active h-full flex items-center px-2 text-[10px] font-black uppercase tracking-widest transition-all" onclick="setActiveLink(this)">Overview</a>
+                    <a href="#contracts-section" class="sub-nav-link h-full flex items-center px-2 text-[10px] font-black uppercase tracking-widest transition-all hover:text-gray-600" onclick="setActiveLink(this)">Contratos</a>
+                    <a href="#team-section" class="sub-nav-link h-full flex items-center px-2 text-[10px] font-black uppercase tracking-widest transition-all hover:text-gray-600" onclick="setActiveLink(this)">Equipe</a>
+                    <a href="#allocation-section" class="sub-nav-link h-full flex items-center px-2 text-[10px] font-black uppercase tracking-widest transition-all hover:text-gray-600" onclick="setActiveLink(this)">Alocação</a>
                 </nav>
             </div>
 
             <div class="flex items-center gap-3">
-                <div class="flex items-center bg-gray-50 border border-gray-200 rounded-xl px-3 py-1.5 gap-2 shadow-sm focus-within:ring-2 focus-within:ring-c3c-blue transition-all">
+                <div class="flex items-center bg-gray-50 border border-gray-100 rounded-2xl px-4 py-2 gap-2 shadow-sm focus-within:ring-4 focus-within:ring-blue-50 transition-all">
                     <i data-lucide="calendar" class="w-4 h-4 text-c3c-blue"></i>
-                    <select onchange="onDateChange(this)" class="bg-transparent text-sm font-bold text-gray-700 outline-none cursor-pointer min-w-[180px] pr-8">
+                    <select onchange="onDateChange(this)" class="bg-transparent text-xs font-black text-gray-600 uppercase tracking-widest outline-none cursor-pointer min-w-[160px] pr-8">
                         <% periods.forEach(p => { %>
                             <option value='<%= JSON.stringify(p.value) %>'><%= p.label %></option>
                         <% }); %>
@@ -77,81 +79,84 @@
         </header>
 
         <!-- CONTEÚDO -->
-        <div class="flex-1 overflow-y-auto p-4 md:p-8 fade-in custom-scrollbar text-left" id="dashboard-top">
+        <div class="flex-1 overflow-y-auto p-4 md:p-10 fade-in custom-scrollbar text-left bg-gray-50/30" id="dashboard-top">
             
             <!-- KPIS -->
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
-                <div class="bg-white p-6 rounded-[32px] shadow-sm border border-gray-100 relative overflow-hidden group hover:shadow-md transition-all">
-                    <div class="flex justify-between items-start mb-4">
-                        <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Saúde Contratos</p>
-                        <div class="p-2 bg-blue-50 text-c3c-blue rounded-xl shadow-sm"><i data-lucide="pie-chart" class="w-4 h-4"></i></div>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-12">
+                <!-- KPI 1: Saúde Contratos -->
+                <div class="bg-white p-8 rounded-[40px] shadow-sm border border-gray-100 relative overflow-hidden group hover:shadow-xl hover:-translate-y-1 transition-all duration-500">
+                    <div class="flex justify-between items-start mb-6">
+                        <p class="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Saúde Contratos</p>
+                        <div class="w-10 h-10 bg-blue-50 text-c3c-blue rounded-2xl flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform"><i data-lucide="activity" class="w-5 h-5"></i></div>
                     </div>
-                    <div class="flex items-baseline gap-1">
-                        <span class="text-3xl font-black text-gray-800 tracking-tighter" id="kpi-health">--</span>
-                        <span class="text-xs text-gray-400 font-bold uppercase">Consumo</span>
+                    <div class="flex items-baseline gap-2">
+                        <span class="text-4xl font-black text-gray-800 tracking-tighter" id="kpi-health">--</span>
+                        <span class="text-[10px] text-gray-400 font-black uppercase tracking-widest">Consumo</span>
                     </div>
-                    <div class="mt-4 progress-bar-bg"><div class="h-full bg-c3c-blue rounded-full transition-all duration-1000" id="kpi-health-bar" style="width: 0%"></div></div>
+                    <div class="mt-6 progress-bar-bg h-2"><div class="h-full bg-c3c-gradient transition-all duration-1000 rounded-full" id="kpi-health-bar" style="width: 0%"></div></div>
                 </div>
 
-                <div class="bg-white p-6 rounded-[32px] shadow-sm border border-gray-100 relative overflow-hidden group hover:shadow-md transition-all">
-                    <div class="flex justify-between items-start mb-4">
-                        <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest">SLA Crítico</p>
-                        <div class="p-2 bg-red-50 text-red-500 rounded-xl shadow-sm"><i data-lucide="alert-octagon" class="w-4 h-4"></i></div>
+                <!-- KPI 2: SLA -->
+                <div class="bg-white p-8 rounded-[40px] shadow-sm border border-gray-100 relative overflow-hidden group hover:shadow-xl hover:-translate-y-1 transition-all duration-500">
+                    <div class="flex justify-between items-start mb-6">
+                        <p class="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">SLA Crítico</p>
+                        <div class="w-10 h-10 bg-red-50 text-red-500 rounded-2xl flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform"><i data-lucide="alert-circle" class="w-5 h-5"></i></div>
                     </div>
-                    <div class="flex items-baseline gap-1">
-                        <span class="text-3xl font-black text-red-600 tracking-tighter" id="kpi-sla">--</span>
-                        <span class="text-xs text-gray-400 font-bold uppercase">Chamados</span>
-                    </div>
-                </div>
-
-                <div class="bg-white p-6 rounded-[32px] shadow-sm border border-gray-100 relative overflow-hidden group hover:shadow-md transition-all">
-                    <div class="flex justify-between items-start mb-4">
-                        <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Estagnados</p>
-                        <div class="p-2 bg-orange-50 text-orange-500 rounded-xl shadow-sm"><i data-lucide="clock" class="w-4 h-4"></i></div>
-                    </div>
-                    <div class="flex items-baseline gap-1">
-                        <span class="text-3xl font-black text-orange-600 tracking-tighter" id="kpi-idle">--</span>
-                        <span class="text-xs text-gray-400 font-bold uppercase">> 3 dias</span>
+                    <div class="flex items-baseline gap-2">
+                        <span class="text-4xl font-black text-red-600 tracking-tighter" id="kpi-sla">--</span>
+                        <span class="text-[10px] text-gray-400 font-black uppercase tracking-widest">Tickets</span>
                     </div>
                 </div>
 
-                <div class="bg-white p-6 rounded-[32px] shadow-sm border border-teal-50 relative overflow-hidden group hover:shadow-md transition-all">
-                    <div class="flex justify-between items-start mb-4">
-                        <p class="text-[10px] font-black text-teal-600 uppercase tracking-widest">CSAT Médio</p>
-                        <div class="p-2 bg-teal-50 text-teal-500 rounded-xl shadow-sm"><i data-lucide="smile" class="w-4 h-4"></i></div>
+                <!-- KPI 3: Estagnados -->
+                <div class="bg-white p-8 rounded-[40px] shadow-sm border border-gray-100 relative overflow-hidden group hover:shadow-xl hover:-translate-y-1 transition-all duration-500">
+                    <div class="flex justify-between items-start mb-6">
+                        <p class="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Estagnados</p>
+                        <div class="w-10 h-10 bg-orange-50 text-orange-500 rounded-2xl flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform"><i data-lucide="clock" class="w-5 h-5"></i></div>
                     </div>
-                    <div class="flex items-baseline gap-1">
-                        <span class="text-3xl font-black text-teal-700 tracking-tighter" id="kpi-csat">--</span>
-                        <span class="text-xs text-teal-400 font-bold uppercase">/ 5.0</span>
+                    <div class="flex items-baseline gap-2">
+                        <span class="text-4xl font-black text-orange-600 tracking-tighter" id="kpi-idle">--</span>
+                        <span class="text-[10px] text-gray-400 font-black uppercase tracking-widest">> 3 dias</span>
+                    </div>
+                </div>
+
+                <!-- KPI 4: CSAT -->
+                <div class="bg-white p-8 rounded-[40px] shadow-sm border border-teal-50 relative overflow-hidden group hover:shadow-xl hover:-translate-y-1 transition-all duration-500">
+                    <div class="flex justify-between items-start mb-6">
+                        <p class="text-[10px] font-black text-teal-600 uppercase tracking-[0.2em]">CSAT Médio</p>
+                        <div class="w-10 h-10 bg-teal-50 text-teal-500 rounded-2xl flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform"><i data-lucide="thumbs-up" class="w-5 h-5"></i></div>
+                    </div>
+                    <div class="flex items-baseline gap-2">
+                        <span class="text-4xl font-black text-teal-700 tracking-tighter" id="kpi-csat">--</span>
+                        <span class="text-[10px] text-teal-400 font-black uppercase tracking-widest">Score</span>
                     </div>
                 </div>
             </div>
 
             <!-- CONTRATOS -->
-            <section id="contracts-section" class="mb-16">
-                <div class="flex justify-between items-end mb-6 px-2">
+            <section id="contracts-section" class="mb-20">
+                <div class="flex justify-between items-end mb-8 px-4">
                     <div class="text-left">
-                        <h3 class="text-[10px] font-black text-gray-800 uppercase tracking-[0.2em] mb-1 flex items-center gap-2"><i data-lucide="file-text" class="w-4 h-4 text-c3c-blue"></i> Saúde de Contratos</h3>
-                        <p class="text-xs text-gray-400 font-bold uppercase">Visão por franquia e volumetria operacional</p>
+                        <h3 class="text-xs font-black text-gray-800 uppercase tracking-[0.3em] mb-2 flex items-center gap-3"><i data-lucide="shield-check" class="w-5 h-5 text-c3c-blue"></i> Operação de Contratos</h3>
+                        <p class="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Monitoramento de volumetria e SLAs por cliente</p>
                     </div>
                 </div>
-                <div class="bg-white rounded-[32px] shadow-sm border border-gray-100 overflow-hidden">
+                <div class="bg-white rounded-[48px] shadow-sm border border-gray-100 overflow-hidden">
                     <div class="overflow-x-auto">
                         <table class="w-full text-left">
                             <thead class="bg-gray-50/50 border-b border-gray-100">
-                                <tr class="text-[9px] font-black text-gray-400 uppercase tracking-widest">
-                                    <th class="px-8 py-5">Serviço / Cliente</th>
-                                    <th class="px-4 py-5 w-48 text-center">Consumo Franquia</th>
-                                    <th class="px-2 py-5 text-center bg-blue-50/30">Nov</th>
-                                    <th class="px-2 py-5 text-center bg-blue-50/30">And</th>
-                                    <th class="px-2 py-5 text-center bg-orange-50/30">Pau</th>
-                                    <th class="px-2 py-5 text-center bg-orange-50/30">Agu</th>
-                                    <th class="px-2 py-5 text-center bg-gray-50/30">Fec</th>
-                                    <th class="px-4 py-5 text-center text-red-500">SLA</th>
-                                    <th class="px-4 py-5 text-center text-orange-500">Idle</th>
-                                    <th class="px-4 py-5 text-center text-teal-600">CSAT</th>
-                                    <th class="px-4 py-5 text-center">Time</th>
-                                    <th class="px-8 py-5 text-right">Ações</th>
+                                <tr class="text-[10px] font-black text-gray-400 uppercase tracking-widest">
+                                    <th class="px-10 py-6">Serviço / Cliente</th>
+                                    <th class="px-6 py-6 w-56 text-center">Consumo Mês</th>
+                                    <th class="px-3 py-6 text-center bg-blue-50/20">NOV</th>
+                                    <th class="px-3 py-6 text-center bg-blue-50/20">AND</th>
+                                    <th class="px-3 py-6 text-center bg-orange-50/20">PAU</th>
+                                    <th class="px-3 py-6 text-center bg-orange-50/20">AGU</th>
+                                    <th class="px-3 py-6 text-center bg-gray-50/30">FEC</th>
+                                    <th class="px-6 py-6 text-center text-red-500">SLA</th>
+                                    <th class="px-6 py-6 text-center text-teal-600">CSAT</th>
+                                    <th class="px-6 py-6 text-center">Time</th>
+                                    <th class="px-10 py-6 text-right">Ações</th>
                                 </tr>
                             </thead>
                             <tbody id="contracts-table" class="divide-y divide-gray-50">
@@ -163,24 +168,23 @@
             </section>
 
             <!-- EQUIPE -->
-            <section id="team-section" class="mb-16">
-                <div class="flex justify-between items-end mb-6 px-2">
+            <section id="team-section" class="mb-20">
+                <div class="flex justify-between items-end mb-8 px-4">
                     <div class="text-left">
-                        <h3 class="text-[10px] font-black text-gray-800 uppercase tracking-[0.2em] mb-1 flex items-center gap-2"><i data-lucide="users" class="w-4 h-4 text-c3c-blue"></i> Squad Suporte</h3>
-                        <p class="text-xs text-gray-400 font-bold uppercase">Desempenho e conformidade de apontamentos</p>
+                        <h3 class="text-xs font-black text-gray-800 uppercase tracking-[0.3em] mb-2 flex items-center gap-3"><i data-lucide="users" class="w-5 h-5 text-c3c-blue"></i> Squad Suporte</h3>
+                        <p class="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Engajamento e produtividade do time</p>
                     </div>
                 </div>
-                <div class="bg-white rounded-[32px] shadow-sm border border-gray-100 overflow-hidden">
+                <div class="bg-white rounded-[48px] shadow-sm border border-gray-100 overflow-hidden">
                     <div class="overflow-x-auto">
                         <table class="w-full text-left">
                             <thead class="bg-gray-50/50 border-b border-gray-100">
-                                <tr class="text-[9px] font-black text-gray-400 uppercase tracking-widest">
-                                    <th class="px-8 py-5">Profissional</th>
-                                    <th class="px-4 py-5 text-center">Foco</th>
-                                    <th class="px-4 py-5 text-center">Hoje</th>
-                                    <th class="px-8 py-5">Consumo Mês (vs Meta)</th>
-                                    <th class="px-4 py-5 text-center">Status</th>
-                                    <th class="px-8 py-5 text-right">Ações</th>
+                                <tr class="text-[10px] font-black text-gray-400 uppercase tracking-widest">
+                                    <th class="px-10 py-6">Profissional</th>
+                                    <th class="px-6 py-6 text-center">Hoje</th>
+                                    <th class="px-10 py-6">Consumo Mês (Realizado vs Meta)</th>
+                                    <th class="px-6 py-6 text-center">Performance</th>
+                                    <th class="px-10 py-6 text-right">Ações</th>
                                 </tr>
                             </thead>
                             <tbody id="team-table-body" class="divide-y divide-gray-50"></tbody>
@@ -190,22 +194,22 @@
             </section>
 
             <!-- ALOCAÇÃO -->
-            <section id="allocation-section" class="mb-16">
-                <div class="flex justify-between items-end mb-6 px-2">
+            <section id="allocation-section" class="mb-20">
+                <div class="flex justify-between items-end mb-8 px-4">
                     <div class="text-left">
-                        <h3 class="text-[10px] font-black text-gray-800 uppercase tracking-[0.2em] mb-1 flex items-center gap-2"><i data-lucide="layout-grid" class="w-4 h-4 text-c3c-blue"></i> Distribuição de Carga</h3>
-                        <p class="text-xs text-gray-400 font-bold uppercase">Gerencie a ocupação dos recursos entre projetos</p>
+                        <h3 class="text-xs font-black text-gray-800 uppercase tracking-[0.3em] mb-2 flex items-center gap-3"><i data-lucide="layout-grid" class="w-5 h-5 text-c3c-blue"></i> Distribuição de Carga</h3>
+                        <p class="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Gestão de ocupação e capacity planning</p>
                     </div>
                 </div>
-                <div class="bg-white rounded-[32px] shadow-sm border border-gray-100 overflow-hidden">
+                <div class="bg-white rounded-[48px] shadow-sm border border-gray-100 overflow-hidden">
                     <div class="overflow-x-auto">
                         <table class="w-full text-left">
                             <thead class="bg-gray-50/50 border-b border-gray-100">
-                                <tr class="text-[9px] font-black text-gray-400 uppercase tracking-widest">
-                                    <th class="px-8 py-5">Recurso</th>
-                                    <th class="px-4 py-5 text-center">Alocações</th>
-                                    <th class="px-4 py-5 text-center">Total Ocupado</th>
-                                    <th class="px-8 py-5 text-right">Gestão</th>
+                                <tr class="text-[10px] font-black text-gray-400 uppercase tracking-widest">
+                                    <th class="px-10 py-6">Profissional</th>
+                                    <th class="px-6 py-6 text-center">Projetos</th>
+                                    <th class="px-6 py-6 text-center">Ocupação Atual</th>
+                                    <th class="px-10 py-6 text-right">Gestão</th>
                                 </tr>
                             </thead>
                             <tbody id="allocation-table-body" class="divide-y divide-gray-50"></tbody>
@@ -216,33 +220,53 @@
         </div>
     </main>
 
-    <!-- MODAIS -->
+    <!-- MEGA MODAL EXTRATO -->
     <div id="extract-modal" class="fixed inset-0 bg-black/60 backdrop-blur-md hidden z-[100] flex items-center justify-center p-4">
-        <div class="bg-white rounded-[40px] shadow-2xl w-full max-w-6xl overflow-hidden transform scale-95 transition-all flex flex-col max-h-[90vh]">
-            <header class="p-8 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center shrink-0">
-                <div class="text-left"><h3 id="modal-title" class="text-2xl font-black text-gray-800 tracking-tighter uppercase">Extrato</h3><p id="modal-subtitle" class="text-[10px] font-black text-c3c-blue uppercase tracking-widest mt-1">Histórico Detalhado</p></div>
-                <button onclick="closeModal('extract-modal')" class="p-3 text-gray-400 hover:bg-white hover:text-red-500 rounded-full shadow-sm transition-all"><i data-lucide="x"></i></button>
+        <div class="bg-white rounded-[48px] shadow-2xl w-full max-w-6xl overflow-hidden transform scale-95 transition-all flex flex-col max-h-[90vh]">
+            <header class="p-10 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center shrink-0">
+                <div class="text-left">
+                    <h3 id="modal-title" class="text-3xl font-black text-gray-800 tracking-tighter uppercase leading-tight">Extrato</h3>
+                    <p id="modal-subtitle" class="text-[10px] font-black text-c3c-blue uppercase tracking-[0.2em] mt-2">Detalhamento Operacional</p>
+                </div>
+                <button onclick="closeModal('extract-modal')" class="p-4 bg-white text-gray-400 hover:text-red-500 rounded-full shadow-sm transition-all hover:scale-110 active:scale-95"><i data-lucide="x" class="w-6 h-6"></i></button>
             </header>
-            <div class="flex-1 overflow-y-auto custom-scrollbar p-8 bg-white text-left">
+            <div class="flex-1 overflow-y-auto custom-scrollbar p-10 bg-white text-left">
                 <table class="w-full text-left border-collapse">
-                    <thead><tr class="text-[9px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-100"></tr></thead>
+                    <thead class="sticky top-0 bg-white z-10">
+                        <tr class="text-[10px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-100">
+                            <th class="py-4 px-4">Data</th>
+                            <th class="py-4 px-4">Cliente / Serviço</th>
+                            <th class="py-4 px-4">Atividade</th>
+                            <th class="py-4 px-4 text-right">Normais</th>
+                            <th class="py-4 px-4 text-right text-red-500">Extras</th>
+                        </tr>
+                    </thead>
                     <tbody id="modal-rows" class="divide-y divide-gray-50 text-sm"></tbody>
                 </table>
             </div>
         </div>
     </div>
 
-    <!-- MODAL ALOCAÇÃO -->
+    <!-- MEGA MODAL ALOCAÇÃO -->
     <div id="allocation-modal" class="fixed inset-0 bg-black/60 backdrop-blur-md hidden z-[100] flex items-center justify-center p-4">
-        <div class="bg-white rounded-[40px] shadow-2xl w-full max-w-2xl overflow-hidden transform scale-95 transition-all flex flex-col max-h-[90vh]">
-            <header class="p-8 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center shrink-0">
-                <div class="text-left"><h3 class="text-2xl font-black text-gray-800 tracking-tighter uppercase leading-tight">Ajustar Alocação</h3><p id="alloc-modal-name" class="text-[10px] font-black text-c3c-blue uppercase tracking-widest mt-1">Pessoa...</p></div>
-                <button onclick="closeModal('allocation-modal')" class="p-3 text-gray-400 hover:bg-white hover:text-red-500 rounded-full shadow-sm transition-all"><i data-lucide="x"></i></button>
+        <div class="bg-white rounded-[48px] shadow-2xl w-full max-w-2xl overflow-hidden transform scale-95 transition-all flex flex-col max-h-[90vh]">
+            <header class="p-10 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center shrink-0">
+                <div class="text-left">
+                    <h3 class="text-3xl font-black text-gray-800 tracking-tighter uppercase leading-tight">Ajustar Capacity</h3>
+                    <p id="alloc-modal-name" class="text-[10px] font-black text-c3c-blue uppercase tracking-[0.2em] mt-2">Gestão de Recurso</p>
+                </div>
+                <button onclick="closeModal('allocation-modal')" class="p-4 bg-white text-gray-400 hover:text-red-500 rounded-full shadow-sm transition-all hover:scale-110 active:scale-95"><i data-lucide="x" class="w-6 h-6"></i></button>
             </header>
-            <div class="p-8 overflow-y-auto custom-scrollbar flex-1 bg-white space-y-6" id="alloc-inputs-container"></div>
-            <footer class="p-8 border-t border-gray-100 bg-gray-50/50 flex justify-between items-center shrink-0">
-                <div class="flex flex-col text-left"><span class="text-[9px] font-black text-gray-400 uppercase tracking-widest">Ocupação Total</span><span id="alloc-total-display" class="text-xl font-black text-gray-800">0%</span></div>
-                <div class="flex gap-4"><button onclick="addAllocationRow()" class="px-6 py-3 text-c3c-blue font-black uppercase text-[10px] tracking-widest hover:underline">+ Novo Projeto</button><button onclick="saveAllocations()" class="px-10 py-4 bg-c3c-gradient text-white font-black uppercase text-xs tracking-widest rounded-2xl shadow-xl hover:opacity-90 transition-all active:scale-95">Salvar Alterações</button></div>
+            <div class="p-10 overflow-y-auto custom-scrollbar flex-1 bg-white space-y-8" id="alloc-inputs-container"></div>
+            <footer class="p-10 border-t border-gray-100 bg-gray-50/50 flex justify-between items-center shrink-0">
+                <div class="flex flex-col text-left">
+                    <span class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Ocupação Agregada</span>
+                    <span id="alloc-total-display" class="text-3xl font-black text-gray-800 tracking-tighter">0%</span>
+                </div>
+                <div class="flex gap-4">
+                    <button onclick="addAllocationRow()" class="px-6 py-4 text-c3c-blue font-black uppercase text-[10px] tracking-widest hover:bg-blue-50 rounded-2xl transition-all">+ Novo Projeto</button>
+                    <button onclick="saveAllocations()" class="px-10 py-4 bg-c3c-gradient text-white font-black uppercase text-xs tracking-widest rounded-2xl shadow-2xl shadow-blue-100 hover:opacity-90 transition-all active:scale-95 flex items-center gap-2"><i data-lucide="check" class="w-4 h-4"></i> Salvar</button>
+                </div>
             </footer>
         </div>
     </div>
@@ -250,13 +274,14 @@
     <script>
         lucide.createIcons();
         const API_URL = '/api/support-management';
-        let currentMonth = <%= currentMonth %>, currentYear = <%= currentYear %>, teamData = [], contractsData = [], myServices = [];
+        const initialPeriod = <%- JSON.stringify(periods[0].value) %>;
+        let currentMonth = initialPeriod.month, currentYear = initialPeriod.year, teamData = [], contractsData = [], myServices = [];
 
         async function loadMyServices() { try { const res = await fetch(`${API_URL}/my-services`); myServices = await res.json(); } catch(e) { console.error(e); } }
         function onDateChange(sel) { const v = JSON.parse(sel.value); currentMonth = v.month; currentYear = v.year; loadDashboard(); }
 
         async function loadDashboard() {
-            document.getElementById('contracts-table').innerHTML = '<tr><td colspan="12" class="py-20 text-center text-gray-300 font-black uppercase text-[10px] tracking-widest italic animate-pulse">Sincronizando contratos...</td></tr>';
+            document.getElementById('contracts-table').innerHTML = '<tr><td colspan="11" class="py-32 text-center text-gray-300 font-black uppercase text-[10px] tracking-[0.3em] italic animate-pulse">Sincronizando operação...</td></tr>';
             await Promise.all([loadGlobalMetrics(), loadContracts(), loadTeam()]); lucide.createIcons();
         }
 
@@ -281,22 +306,83 @@
 
         function renderContracts(data) {
             const tb = document.getElementById('contracts-table'); tb.innerHTML = '';
-            if(!data || data.length === 0) { tb.innerHTML = '<tr><td colspan="12" class="py-10 text-center text-gray-300 font-black uppercase text-[10px]">Sem dados</td></tr>'; return; }
+            if(!data || data.length === 0) { tb.innerHTML = '<tr><td colspan="11" class="py-20 text-center text-gray-300 font-black uppercase text-[10px] tracking-widest">Nenhum contrato ativo neste período</td></tr>'; return; }
             data.forEach(c => {
                 const pct = c.total > 0 ? (c.used / c.total) * 100 : 0;
-                let bCls = pct > 90 ? 'bg-red-500' : (pct > 75 ? 'bg-orange-500' : 'bg-c3c-blue');
-                tb.innerHTML += `<tr class="hover:bg-gray-50/50 transition-colors border-b border-gray-50"><td class="px-8 py-5 text-left"><p class="font-black text-gray-800 text-xs uppercase tracking-tighter mb-1">${c.name}</p><p class="text-[9px] font-bold text-gray-400 uppercase tracking-widest truncate w-40" title="${c.client}">${c.client}</p></td><td class="px-4 py-5"><div class="flex justify-between text-[9px] font-black uppercase mb-1"><span>${c.used.toFixed(0)}h</span><span class="text-gray-300">/ ${c.total.toFixed(0)}h</span></div><div class="progress-bar-bg"><div class="h-full rounded-full ${bCls} transition-all duration-700" style="width: ${Math.min(pct, 100)}%"></div></div></td><td class="px-2 py-5 text-center text-xs font-black text-c3c-blue bg-blue-50/20">${c.open}</td><td class="px-2 py-5 text-center text-xs font-black text-c3c-blue bg-blue-50/20">${c.inProg}</td><td class="px-2 py-5 text-center text-xs font-black text-orange-500 bg-orange-50/20">${c.pause}</td><td class="px-2 py-5 text-center text-xs font-black text-orange-500 bg-orange-50/20">${c.waiting}</td><td class="px-2 py-5 text-center text-xs text-gray-300">${c.closed}</td><td class="px-4 py-5 text-center font-black ${c.sla > 0 ? 'text-red-500' : 'text-gray-200'}">${c.sla}</td><td class="px-4 py-5 text-center font-black ${c.estagnados > 0 ? 'text-orange-500' : 'text-gray-200'}">${c.estagnados || 0}</td><td class="px-4 py-5 text-center font-black text-xs text-teal-600">${c.csat || '-'}</td><td class="px-4 py-5 text-center"><button onclick="openContractTeam('${c.id}', '${c.name}')" class="text-[9px] font-black text-c3c-blue hover:underline bg-blue-50 px-3 py-1.5 rounded-xl border border-blue-100 uppercase tracking-widest">${c.teamCount} Recursos</button></td><td class="px-8 py-5 text-right"><button onclick="openExtract('${c.name}')" class="text-[10px] font-black text-indigo-600 uppercase tracking-widest hover:underline">Extrato</button></td></tr>`;
+                let barColor = pct > 95 ? 'bg-red-500' : (pct > 80 ? 'bg-orange-500' : 'bg-c3c-blue');
+                let healthColor = pct > 100 ? 'text-red-600' : 'text-gray-800';
+                
+                tb.innerHTML += `<tr class="hover:bg-gray-50/50 transition-colors group">
+                    <td class="px-10 py-6 text-left">
+                        <p class="font-black text-gray-800 text-xs uppercase tracking-tighter mb-1 group-hover:text-c3c-blue transition-colors">${c.name}</p>
+                        <p class="text-[9px] font-bold text-gray-400 uppercase tracking-widest truncate w-48" title="${c.client}">${c.client}</p>
+                    </td>
+                    <td class="px-6 py-6">
+                        <div class="flex justify-between text-[9px] font-black uppercase mb-1.5">
+                            <span class="${healthColor}">${c.used.toFixed(1)}h</span>
+                            <span class="text-gray-300">/ ${c.total.toFixed(0)}h</span>
+                        </div>
+                        <div class="progress-bar-bg h-1.5"><div class="h-full rounded-full ${barColor} transition-all duration-1000 shadow-sm" style="width: ${Math.min(pct, 100)}%"></div></div>
+                    </td>
+                    <td class="px-3 py-6 text-center text-xs font-black text-c3c-blue bg-blue-50/10">${c.open}</td>
+                    <td class="px-3 py-6 text-center text-xs font-black text-c3c-blue bg-blue-50/10">${c.inProg}</td>
+                    <td class="px-3 py-6 text-center text-xs font-black text-orange-500 bg-orange-50/10">${c.pause}</td>
+                    <td class="px-3 py-6 text-center text-xs font-black text-orange-500 bg-orange-50/10">${c.waiting}</td>
+                    <td class="px-3 py-6 text-center text-xs font-bold text-gray-300">${c.closed}</td>
+                    <td class="px-6 py-6 text-center font-black ${c.sla > 0 ? 'text-red-500 bg-red-50/30' : 'text-gray-200'}">${c.sla}</td>
+                    <td class="px-6 py-6 text-center font-black text-xs text-teal-600">${c.csat || '-'}</td>
+                    <td class="px-6 py-6 text-center">
+                        <button onclick="openContractTeam('${c.id}', '${c.name}')" class="text-[9px] font-black text-c3c-blue bg-blue-50 px-3 py-1.5 rounded-xl border border-blue-100 uppercase tracking-widest hover:bg-blue-100 transition-all">${c.teamCount} <i data-lucide="users" class="w-3 h-3 inline ml-1"></i></button>
+                    </td>
+                    <td class="px-10 py-6 text-right">
+                        <button onclick="openExtract('${c.name}')" class="bg-white border border-gray-100 text-[10px] font-black text-indigo-600 uppercase tracking-widest px-4 py-2 rounded-xl shadow-sm hover:shadow-md hover:bg-indigo-50 transition-all">Extrato</button>
+                    </td>
+                </tr>`;
             });
+            lucide.createIcons();
         }
 
         async function loadTeam() { try { const res = await fetch(`${API_URL}/team?month=${currentMonth}&year=${currentYear}`); teamData = await res.json(); renderTeam(teamData); renderScale(teamData); } catch(e) { console.error(e); } }
+        
         function renderTeam(data) {
             const tb = document.getElementById('team-table-body'); tb.innerHTML = '';
-            if(!data || data.length === 0) { tb.innerHTML = '<tr><td colspan="6" class="py-10 text-center text-gray-300 font-black uppercase text-[10px]">Sem equipe</td></tr>'; return; }
+            if(!data || data.length === 0) { tb.innerHTML = '<tr><td colspan="5" class="py-20 text-center text-gray-300 font-black uppercase text-[10px]">Sem registros de equipe</td></tr>'; return; }
             data.forEach(r => {
-                const pct = Math.min((r.hoursMonth / (r.expectedMonthTotal || 1)) * 100, 100), mPct = (r.expectedToDate / (r.expectedMonthTotal || 1)) * 100;
-                let sCls = r.status === 'Atrasado' ? 'bg-red-500' : (r.status === 'Pendente Hoje' ? 'bg-orange-500' : 'bg-teal-500');
-                tb.innerHTML += `<tr class="hover:bg-gray-50/50 transition-colors border-b border-gray-50"><td class="px-8 py-5 text-left"><div class="flex items-center gap-4"><div class="w-10 h-10 rounded-2xl bg-blue-50 flex items-center justify-center text-c3c-blue font-black uppercase shadow-sm border border-blue-100">${r.name.charAt(0)}</div><div><p class="font-black text-gray-800 text-xs uppercase tracking-tighter">${r.name}</p><p class="text-[9px] font-bold text-gray-400 uppercase tracking-widest">${r.role}</p></div></div></td><td class="px-4 py-5 text-center"><button onclick="openProjectsList('${r.name}', '${r.id}')" class="text-[9px] font-black text-c3c-blue bg-blue-50 px-3 py-1.5 rounded-xl border border-blue-100 uppercase tracking-widest">${r.allocations.length} Projetos</button></td><td class="px-4 py-5 text-center font-black ${r.hoursToday < 8 ? 'text-orange-500' : 'text-teal-600'} text-sm">${r.hoursToday.toFixed(1)}h</td><td class="px-8 py-5"><div class="flex justify-between text-[9px] font-black uppercase mb-1"><span class="${sCls.replace('bg-','text-')}">${r.hoursMonth.toFixed(1)}h Realizado</span><span class="text-gray-300">Meta: ${r.expectedToDate.toFixed(0)}h</span></div><div class="progress-bar-bg relative"><div class="absolute top-0 bottom-0 w-0.5 bg-gray-800/20 z-10" style="left: ${Math.min(mPct, 100)}%"></div><div class="h-full rounded-full ${sCls} transition-all duration-1000" style="width: ${pct}%"></div></div></td><td class="px-4 py-5 text-center"><span class="inline-flex items-center gap-2 text-[8px] font-black uppercase text-gray-500 bg-gray-50 px-3 py-1 rounded-full border border-gray-100 tracking-widest"><div class="w-2 h-2 rounded-full ${sCls}"></div> ${r.status}</span></td><td class="px-8 py-5 text-right"><button onclick="openExtract('${r.name}', '${r.id}')" class="text-[10px] font-black text-indigo-600 uppercase tracking-widest hover:underline">Ver Detalhes</button></td></tr>`;
+                const pct = Math.min((r.hoursMonth / (r.expectedMonthTotal || 1)) * 100, 100);
+                const mPct = (r.expectedToDate / (r.expectedMonthTotal || 1)) * 100;
+                let sCls = r.status === 'Atrasado' ? 'bg-red-500' : 'bg-teal-500';
+                let tCls = r.status === 'Atrasado' ? 'text-red-600' : 'text-teal-600';
+                
+                tb.innerHTML += `<tr class="hover:bg-gray-50/50 transition-colors group border-b border-gray-50">
+                    <td class="px-10 py-6 text-left">
+                        <div class="flex items-center gap-4">
+                            <div class="w-12 h-12 rounded-[18px] bg-c3c-blue/5 flex items-center justify-center text-c3c-blue font-black uppercase border border-blue-50 shadow-sm text-lg">${r.name.charAt(0)}</div>
+                            <div>
+                                <p class="font-black text-gray-800 text-xs uppercase tracking-tighter">${r.name}</p>
+                                <p class="text-[9px] font-bold text-gray-400 uppercase tracking-widest">${r.role}</p>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="px-6 py-6 text-center font-black ${r.hoursToday < 8 ? 'text-orange-500' : 'text-teal-600'} text-sm">${r.hoursToday.toFixed(1)}h</td>
+                    <td class="px-10 py-6">
+                        <div class="flex justify-between text-[9px] font-black uppercase mb-2">
+                            <span class="${tCls}">${r.hoursMonth.toFixed(1)}h realizados</span>
+                            <span class="text-gray-300">Target: ${r.expectedToDate.toFixed(0)}h</span>
+                        </div>
+                        <div class="progress-bar-bg relative h-2">
+                            <div class="absolute top-0 bottom-0 w-0.5 bg-gray-800/30 z-10" style="left: ${Math.min(mPct, 100)}%"></div>
+                            <div class="h-full rounded-full ${sCls} transition-all duration-1000 shadow-sm" style="width: ${pct}%"></div>
+                        </div>
+                    </td>
+                    <td class="px-6 py-6 text-center">
+                        <span class="inline-flex items-center gap-2 text-[9px] font-black uppercase ${tCls} bg-white px-4 py-1.5 rounded-full border border-gray-100 tracking-widest shadow-sm">
+                            <div class="w-2 h-2 rounded-full ${sCls} animate-pulse"></div> ${r.status}
+                        </span>
+                    </td>
+                    <td class="px-10 py-6 text-right">
+                        <button onclick="openExtract('${r.name}', '${r.id}')" class="bg-white border border-gray-100 text-[10px] font-black text-indigo-600 uppercase tracking-widest px-5 py-2.5 rounded-xl shadow-sm hover:shadow-md transition-all">Detalhes</button>
+                    </td>
+                </tr>`;
             });
         }
 
@@ -305,43 +391,68 @@
             if(!data || data.length === 0) return;
             data.forEach(r => {
                 let t = 0; r.allocations.forEach(a => t += (a.Percentual__c || 0));
-                let c = t > 100 ? 'text-red-500' : (t < 80 ? 'text-orange-500' : 'text-teal-600');
-                tb.innerHTML += `<tr class="hover:bg-gray-50/50 transition-colors border-b border-gray-50"><td class="px-8 py-5 text-left"><div class="flex items-center gap-4"><div class="w-10 h-10 rounded-2xl bg-gray-50 flex items-center justify-center text-gray-400 font-black uppercase shadow-inner border border-gray-100">${r.name.charAt(0)}</div><div><p class="font-black text-gray-800 text-xs uppercase tracking-tighter">${r.name}</p><p class="text-[9px] font-bold text-gray-400 uppercase tracking-widest">${r.role}</p></div></div></td><td class="px-4 py-5 text-center"><button onclick="openAllocationModal('${r.id}', '${r.name}')" class="text-[9px] font-black text-c3c-blue bg-blue-50 px-4 py-2 rounded-xl border border-blue-100 uppercase tracking-widest shadow-sm hover:bg-blue-100 transition-all">${r.allocations.length} Ativas</button></td><td class="px-4 py-5 text-center"><span class="text-lg font-black ${c} tracking-tighter">${t}%</span></td><td class="px-8 py-5 text-right"><button onclick="openAllocationModal('${r.id}', '${r.name}')" class="bg-white border-2 border-gray-50 text-gray-400 px-6 py-2.5 rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-sm hover:bg-gray-50 transition-all">Gerenciar</button></td></tr>`;
+                let c = t > 105 ? 'text-red-600' : (t < 80 ? 'text-orange-500' : 'text-teal-600');
+                let bg = t > 105 ? 'bg-red-50' : (t < 80 ? 'bg-orange-50' : 'bg-teal-50');
+                
+                tb.innerHTML += `<tr class="hover:bg-gray-50/50 transition-colors border-b border-gray-50">
+                    <td class="px-10 py-6 text-left">
+                        <div class="flex items-center gap-4">
+                            <div class="w-12 h-12 rounded-[18px] bg-gray-50 flex items-center justify-center text-gray-300 font-black uppercase border border-gray-100 shadow-inner text-lg">${r.name.charAt(0)}</div>
+                            <div>
+                                <p class="font-black text-gray-800 text-xs uppercase tracking-tighter">${r.name}</p>
+                                <p class="text-[9px] font-bold text-gray-400 uppercase tracking-widest">${r.role}</p>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="px-6 py-6 text-center">
+                        <button onclick="openProjectsList('${r.name}', '${r.id}')" class="text-[10px] font-black text-c3c-blue bg-blue-50 px-5 py-2 rounded-xl border border-blue-100 uppercase tracking-widest hover:bg-blue-100 transition-all">${r.allocations.length} Ativas</button>
+                    </td>
+                    <td class="px-6 py-6 text-center">
+                        <div class="inline-block px-6 py-2 rounded-2xl ${bg} border border-white shadow-sm">
+                            <span class="text-xl font-black ${c} tracking-tighter">${t}%</span>
+                        </div>
+                    </td>
+                    <td class="px-10 py-6 text-right">
+                        <button onclick="openAllocationModal('${r.id}', '${r.name}')" class="bg-c3c-gradient text-white px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-blue-100 transition-all active:scale-95">Gerenciar</button>
+                    </td>
+                </tr>`;
             });
         }
 
         async function openExtract(title, personId = null) {
-            document.getElementById('modal-title').innerText = title; const tr = document.querySelector('#extract-modal thead tr');
-            tr.innerHTML = `<th class="px-8 py-5 w-32">Data</th><th class="px-4 py-5">Cliente / Serviço</th><th class="px-4 py-5">Atividade</th><th class="px-4 py-5 text-right w-24">Normais</th><th class="px-8 py-5 text-right w-24 text-red-500">Extras</th>`;
-            const tb = document.getElementById('modal-rows'); tb.innerHTML = '<tr><td colspan="5" class="py-20 text-center"><div class="w-8 h-8 border-4 border-blue-50 border-t-c3c-blue rounded-full animate-spin mx-auto"></div></td></tr>';
+            document.getElementById('modal-title').innerText = title; 
+            const tr = document.querySelector('#extract-modal thead tr');
+            tr.innerHTML = `<th class="py-6 px-4">Data</th><th class="py-6 px-4">Cliente / Serviço</th><th class="py-6 px-4">Atividade</th><th class="py-6 px-4 text-right">Normais</th><th class="py-6 px-4 text-right text-red-500">Extras</th>`;
+            const tb = document.getElementById('modal-rows'); tb.innerHTML = '<tr><td colspan="5" class="py-32 text-center"><div class="w-12 h-12 border-4 border-blue-50 border-t-c3c-blue rounded-full animate-spin mx-auto"></div><p class="mt-4 text-[10px] font-black text-gray-300 uppercase tracking-widest">Carregando histórico...</p></td></tr>';
             openModal('extract-modal');
             try {
                 let url = `${API_URL}/extract?serviceName=${encodeURIComponent(title)}&month=${currentMonth}&year=${currentYear}`;
                 if (personId) url += `&personId=${personId}`;
                 const res = await fetch(url); const data = await res.json(); tb.innerHTML = '';
-                if(data.length === 0) { tb.innerHTML = '<tr><td colspan="5" class="py-10 text-center text-gray-300 font-black uppercase text-[10px]">Sem lançamentos</td></tr>'; return; }
+                if(data.length === 0) { tb.innerHTML = '<tr><td colspan="5" class="py-20 text-center text-gray-300 font-black uppercase text-[10px] tracking-widest italic">Nenhum lançamento encontrado para este período</td></tr>'; return; }
                 let sN=0, sE=0; data.forEach(r => {
                     sN += r.horasNormais; sE += r.horasExtras;
-                    tb.innerHTML += `<tr class="border-b border-gray-50 hover:bg-gray-50/30 transition-colors"><td class="px-8 py-4 text-[10px] font-black text-gray-400 uppercase">${r.data.split('-').reverse().join('/')}</td><td class="px-4 py-4 text-xs font-black text-gray-700 uppercase tracking-tighter">${r.cliente || '-'} <br><span class="text-[9px] text-gray-400 font-bold">${r.servico || '-'}</span></td><td class="px-4 py-4 text-xs text-gray-600 font-medium leading-tight">${r.atividade || '-'}</td><td class="px-4 py-4 text-right font-black text-c3c-blue text-sm">${r.horasNormais.toFixed(1)}h</td><td class="px-8 py-4 text-right font-black text-red-500 text-sm">${r.horasExtras.toFixed(1)}h</td></tr>`;
+                    tb.innerHTML += `<tr class="border-b border-gray-50 hover:bg-gray-50/30 transition-colors"><td class="px-4 py-5 text-[10px] font-black text-gray-400 uppercase">${r.data.split('-').reverse().join('/')}</td><td class="px-4 py-5 text-xs font-black text-gray-700 uppercase tracking-tighter">${r.cliente || '-'} <br><span class="text-[9px] text-gray-400 font-bold">${r.servico || '-'}</span></td><td class="px-4 py-5 text-xs text-gray-600 font-medium leading-tight max-w-xs">${r.atividade || '-'}</td><td class="px-4 py-5 text-right font-black text-c3c-blue text-sm">${r.horasNormais.toFixed(1)}h</td><td class="px-4 py-5 text-right font-black text-red-500 text-sm">${r.horasExtras.toFixed(1)}h</td></tr>`;
                 });
-                tb.innerHTML += `<tr class="bg-gray-50/50 font-black border-t-2 border-gray-100"><td colspan="3" class="px-8 py-6 text-right uppercase text-[10px] text-gray-400 tracking-widest">Total</td><td class="px-4 py-6 text-right text-c3c-blue text-lg tracking-tighter">${sN.toFixed(1)}h</td><td class="px-8 py-6 text-right text-red-600 text-lg tracking-tighter">${sE.toFixed(1)}h</td></tr>`;
+                tb.innerHTML += `<tr class="bg-gray-50/50 font-black border-t-2 border-gray-100"><td colspan="3" class="px-4 py-8 text-right uppercase text-[10px] text-gray-400 tracking-[0.2em]">Total Acumulado</td><td class="px-4 py-8 text-right text-c3c-blue text-2xl tracking-tighter">${sN.toFixed(1)}h</td><td class="px-4 py-8 text-right text-red-600 text-2xl tracking-tighter">${sE.toFixed(1)}h</td></tr>`;
             } catch(e) { console.error(e); }
         }
 
         function openContractTeam(id, name) {
-            document.getElementById('modal-title').innerText = "Recursos Alocados"; document.getElementById('modal-subtitle').innerText = name;
-            const tr = document.querySelector('#extract-modal thead tr'); tr.innerHTML = `<th class="px-8 py-5">Recurso</th><th class="px-8 py-5 text-right">Percentual</th>`;
+            document.getElementById('modal-title').innerText = "Squad Ativo"; document.getElementById('modal-subtitle').innerText = name;
+            const tr = document.querySelector('#extract-modal thead tr'); tr.innerHTML = `<th class="py-6 px-10">Profissional</th><th class="py-6 px-10 text-right">Alocação</th>`;
             const tb = document.getElementById('modal-rows'); tb.innerHTML = '';
             const id15 = id.substring(0, 15); const members = teamData.filter(r => r.allocations && r.allocations.some(a => a.Servico__c.substring(0, 15) === id15));
-            members.forEach(m => { const a = m.allocations.find(x => x.Servico__c.substring(0, 15) === id15); tb.innerHTML += `<tr class="border-b border-gray-50"><td class="px-8 py-5 font-black text-gray-800 uppercase text-xs tracking-tighter">${m.name}</td><td class="px-8 py-5 text-right text-c3c-blue font-black">${a ? a.Percentual__c : '?'}%</td></tr>`; });
+            if(members.length === 0) { tb.innerHTML = '<tr><td colspan="2" class="py-20 text-center text-gray-300 font-black uppercase text-[10px] tracking-widest">Nenhum recurso alocado diretamente</td></tr>'; }
+            members.forEach(m => { const a = m.allocations.find(x => x.Servico__c.substring(0, 15) === id15); tb.innerHTML += `<tr class="border-b border-gray-50 hover:bg-gray-50/30 transition-colors"><td class="px-10 py-6 font-black text-gray-800 uppercase text-xs tracking-tighter">${m.name}</td><td class="px-10 py-6 text-right text-c3c-blue font-black text-lg tracking-tighter">${a ? a.Percentual__c : '?'}%</td></tr>`; });
             openModal('extract-modal');
         }
 
         function openProjectsList(name, id) {
             const res = teamData.find(r => r.id === id); document.getElementById('modal-title').innerText = name; document.getElementById('modal-subtitle').innerText = "Projetos Ativos";
-            const tr = document.querySelector('#extract-modal thead tr'); tr.innerHTML = `<th class="px-8 py-5">Projeto</th><th class="px-8 py-5 text-right">Alocação</th>`;
+            const tr = document.querySelector('#extract-modal thead tr'); tr.innerHTML = `<th class="py-6 px-10">Projeto / Serviço</th><th class="py-6 px-10 text-right">Alocação</th>`;
             const tb = document.getElementById('modal-rows'); tb.innerHTML = '';
-            if (res && res.allocations) res.allocations.forEach(a => { tb.innerHTML += `<tr class="border-b border-gray-50"><td class="px-8 py-5 font-black text-gray-800 uppercase text-xs tracking-tighter">${a.Servico__r ? a.Servico__r.Name : 'Projeto'}</td><td class="px-8 py-5 text-right text-c3c-blue font-black">${a.Percentual__c}%</td></tr>`; });
+            if (res && res.allocations) res.allocations.forEach(a => { tb.innerHTML += `<tr class="border-b border-gray-50 hover:bg-gray-50/30 transition-colors"><td class="px-10 py-6 font-black text-gray-800 uppercase text-xs tracking-tighter">${a.Servico__r ? a.Servico__r.Name : 'Projeto'}</td><td class="px-10 py-6 text-right text-c3c-blue font-black text-lg tracking-tighter">${a.Percentual__c}%</td></tr>`; });
             openModal('extract-modal');
         }
 
@@ -351,23 +462,56 @@
             if (res && res.allocations) res.allocations.forEach(a => {
                 const sId = a.Servico__c, sName = a.Servico__r ? a.Servico__r.Name : 'Serviço', isM = myServices.some(s => s.id === sId);
                 if(isM) container.innerHTML += createAllocRow(a.Id, sId, a.Percentual__c, a.DataInicio__c, a.DataFim__c, a.DataFimOriginal__c);
-                else container.innerHTML += `<div class="flex flex-col bg-gray-50 p-5 rounded-[24px] border border-gray-100 opacity-60 text-left"><p class="text-[8px] font-black text-gray-400 uppercase tracking-widest mb-1">Outro Gestor</p><div class="flex justify-between items-center"><p class="text-xs font-black text-gray-600 uppercase tracking-tighter">${sName}</p><span class="font-black text-gray-600 text-sm">${a.Percentual__c}%</span></div></div>`;
+                else container.innerHTML += `<div class="flex flex-col bg-gray-50 p-6 rounded-[32px] border border-gray-100 opacity-60 text-left shadow-inner"><p class="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Gerenciado por outro líder</p><div class="flex justify-between items-center"><p class="text-xs font-black text-gray-600 uppercase tracking-tighter">${sName}</p><span class="font-black text-gray-600 text-lg tracking-tighter">${a.Percentual__c}%</span></div></div>`;
             });
             updateTotalDisplay(); lucide.createIcons(); openModal('allocation-modal');
         }
 
         function createAllocRow(aId, sId, pct, s, e, oE) {
             const today = new Date().toISOString().split('T')[0], isF = s > today;
-            return `<div class="bg-gray-50 p-6 rounded-[32px] border border-gray-100 alloc-row space-y-5 text-left" data-alloc-id="${aId || ''}"><div class="flex items-center gap-4"><div class="flex-1 text-left"><label class="text-[9px] font-black text-gray-400 uppercase tracking-widest px-2 mb-1 block">Projeto</label><select class="w-full bg-white border-2 border-gray-100 rounded-2xl px-4 py-2.5 text-xs font-bold focus:ring-4 focus:ring-blue-50 outline-none service-select">${myServices.map(x => `<option value="${x.id}" ${x.id === sId ? 'selected' : ''}>${x.name}</option>`).join('')}</select></div><div class="w-24 text-left"><label class="text-[9px] font-black text-gray-400 uppercase tracking-widest px-2 mb-1 block">Percentual</label><div class="flex items-center bg-white border-2 border-gray-100 rounded-2xl overflow-hidden px-3"><input type="number" value="${pct}" oninput="updateTotalDisplay()" class="w-full text-center text-xs py-2.5 border-none outline-none font-black text-c3c-blue pct-input"><span class="text-[10px] font-black text-gray-300">%</span></div></div><button class="text-gray-300 hover:text-red-500 p-2 mt-4" onclick="removeAllocRow(this, '${aId}')"><i data-lucide="trash-2" class="w-4 h-4"></i></button></div><div class="flex gap-4 pt-4 border-t border-gray-100"><div class="flex-1"><label class="text-[8px] font-black text-gray-400 uppercase tracking-widest block mb-1">Início</label><input type="date" value="${s}" class="w-full bg-white border border-gray-100 rounded-xl px-3 py-1.5 text-[10px] font-bold outline-none start-date-input"></div><div class="flex-1"><label class="text-[8px] font-black text-gray-400 uppercase tracking-widest block mb-1">Fim (Opc)</label><input type="date" value="${e}" class="w-full bg-white border border-gray-100 rounded-xl px-3 py-1.5 text-[10px] font-bold outline-none end-date-input"></div><div class="flex-1"><label class="text-[8px] font-black text-gray-400 uppercase tracking-widest block mb-1">Fim Orig ${isF?'(Bloq)':''}</label><input type="date" value="${oE}" ${isF?'disabled':''} class="w-full ${isF?'bg-gray-100':'bg-white'} border border-gray-100 rounded-xl px-3 py-1.5 text-[10px] font-bold outline-none original-end-input"></div></div></div>`;
+            return `<div class="bg-gray-50 p-8 rounded-[40px] border border-gray-100 alloc-row space-y-6 text-left shadow-sm group hover:shadow-md transition-all" data-alloc-id="${aId || ''}">
+                <div class="flex items-center gap-6">
+                    <div class="flex-1 text-left">
+                        <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest px-2 mb-2 block">Projeto de Suporte</label>
+                        <select class="w-full bg-white border border-gray-200 rounded-[20px] px-5 py-3.5 text-xs font-bold focus:ring-4 focus:ring-blue-50 outline-none service-select transition-all cursor-pointer">
+                            ${myServices.map(x => `<option value="${x.id}" ${x.id === sId ? 'selected' : ''}>${x.name}</option>`).join('')}
+                        </select>
+                    </div>
+                    <div class="w-28 text-left">
+                        <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest px-2 mb-2 block">Carga %</label>
+                        <div class="flex items-center bg-white border border-gray-200 rounded-[20px] overflow-hidden px-4">
+                            <input type="number" value="${pct}" oninput="updateTotalDisplay()" class="w-full text-center text-xs py-3.5 border-none outline-none font-black text-c3c-blue pct-input">
+                            <span class="text-[10px] font-black text-gray-300">%</span>
+                        </div>
+                    </div>
+                    <button class="w-12 h-12 bg-white text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-2xl flex items-center justify-center transition-all mt-6 shadow-sm group-hover:scale-105" onclick="removeAllocRow(this, '${aId}')"><i data-lucide="trash-2" class="w-5 h-5"></i></button>
+                </div>
+                <div class="grid grid-cols-3 gap-4 pt-6 border-t border-gray-100">
+                    <div>
+                        <label class="text-[9px] font-black text-gray-400 uppercase tracking-widest block mb-2 px-1">Data Início</label>
+                        <input type="date" value="${s}" class="w-full bg-white border border-gray-200 rounded-xl px-4 py-2 text-[10px] font-bold outline-none focus:ring-2 focus:ring-blue-50 start-date-input">
+                    </div>
+                    <div>
+                        <label class="text-[9px] font-black text-gray-400 uppercase tracking-widest block mb-2 px-1">Fim Planejado</label>
+                        <input type="date" value="${e}" class="w-full bg-white border border-gray-200 rounded-xl px-4 py-2 text-[10px] font-bold outline-none focus:ring-2 focus:ring-blue-50 end-date-input">
+                    </div>
+                    <div>
+                        <label class="text-[9px] font-black text-gray-400 uppercase tracking-widest block mb-2 px-1">Baseline Original</label>
+                        <input type="date" value="${oE}" ${isF ? 'readonly' : ''} class="w-full ${isF ? 'bg-gray-100 text-gray-400' : 'bg-white'} border border-gray-200 rounded-xl px-4 py-2 text-[10px] font-bold outline-none original-end-input">
+                    </div>
+                </div>
+            </div>`;
         }
 
-        async function removeAllocRow(btn, id) { if (!id || id === 'null') { btn.closest('.alloc-row').remove(); updateTotalDisplay(); return; } if (!confirm('Remover permanentemente?')) return; const res = await fetch(`${API_URL.replace('/support-management','')}/allocation/${id}`, { method: 'DELETE' }); if ((await res.json()).success) { btn.closest('.alloc-row').remove(); updateTotalDisplay(); } }
-        function updateTotalDisplay() { let t = 0; document.querySelectorAll('.pct-input').forEach(i => t += parseFloat(i.value || 0)); document.getElementById('alloc-total-display').innerText = t + "%"; }
-        function addAllocationRow() { const c = document.getElementById('alloc-inputs-container'); c.innerHTML += createAllocRow(null, myServices[0]?.id, 0, new Date().toISOString().split('T')[0], '', ''); lucide.createIcons(); }
-        async function saveAllocations() { const rows = document.querySelectorAll('.alloc-row'); const p = { personId: currentEditingPersonId, allocations: [] }; let err = false; rows.forEach(r => { if(err) return; const oE = r.querySelector('.original-end-input').value; if (!oE) { alert("Fim Original obrigatório"); err = true; return; } p.allocations.push({ allocationId: r.getAttribute('data-alloc-id'), serviceId: r.querySelector('.service-select').value, percent: parseFloat(r.querySelector('.pct-input').value) || 0, startDate: r.querySelector('.start-date-input').value, endDate: r.querySelector('.end-date-input').value, originalEndDate: oE }); }); if(err) return; try { const res = await fetch(`${API_URL.replace('/support-management','')}/allocation`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(p) }); if((await res.json()).success) { closeModal('allocation-modal'); loadDashboard(); } } catch(e) { console.error(e); } }
-        function openModal(id) { const m = document.getElementById(id); m.classList.remove('hidden'); setTimeout(() => m.classList.remove('scale-95'), 10); }
-        function closeModal(id) { const m = document.getElementById(id); m.classList.add('opacity-0'); setTimeout(() => m.classList.add('hidden'), 300); }
-        function setActiveLink(c) { document.querySelectorAll('.sub-nav-link').forEach(l => { l.classList.remove('active'); l.classList.add('text-gray-400'); }); c.classList.add('active'); c.classList.remove('text-gray-400'); }
+        async function removeAllocRow(btn, id) { if (!id || id === 'null' || id === 'undefined') { btn.closest('.alloc-row').remove(); updateTotalDisplay(); return; } if (!confirm('Remover esta alocação permanentemente?')) return; const res = await fetch(`${API_URL.replace('/support-management','')}/allocation/${id}`, { method: 'DELETE' }); const data = await res.json(); if (data.success) { btn.closest('.alloc-row').remove(); updateTotalDisplay(); } else alert(data.error); }
+        function updateTotalDisplay() { let t = 0; document.querySelectorAll('.pct-input').forEach(i => t += parseFloat(i.value || 0)); document.getElementById('alloc-total-display').innerText = t + "%"; document.getElementById('alloc-total-display').className = t > 105 ? 'text-3xl font-black text-red-600 tracking-tighter' : 'text-3xl font-black text-gray-800 tracking-tighter'; }
+        function addAllocationRow() { const c = document.getElementById('alloc-inputs-container'); c.insertAdjacentHTML('beforeend', createAllocRow(null, myServices[0]?.id, 0, new Date().toISOString().split('T')[0], '', '')); lucide.createIcons(); }
+        async function saveAllocations() { const rows = document.querySelectorAll('.alloc-row'); const p = { personId: currentEditingPersonId, allocations: [] }; let err = false; rows.forEach(r => { if(err) return; const oE = r.querySelector('.original-end-input').value; if (!oE) { alert("Data de baseline original é obrigatória."); err = true; return; } p.allocations.push({ allocationId: r.getAttribute('data-alloc-id'), serviceId: r.querySelector('.service-select').value, percent: parseFloat(r.querySelector('.pct-input').value) || 0, startDate: r.querySelector('.start-date-input').value, endDate: r.querySelector('.end-date-input').value, originalEndDate: oE }); }); if(err) return; try { const res = await fetch(`${API_URL.replace('/support-management','')}/allocation`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(p) }); if((await res.json()).success) { closeModal('allocation-modal'); loadDashboard(); } } catch(e) { console.error(e); } }
+        
+        function openModal(id) { const m = document.getElementById(id); m.classList.remove('hidden'); m.classList.remove('opacity-0'); setTimeout(() => m.classList.remove('scale-95'), 10); }
+        function closeModal(id) { const m = document.getElementById(id); m.classList.add('opacity-0'); m.classList.add('scale-95'); setTimeout(() => m.classList.add('hidden'), 300); }
+        function setActiveLink(c) { document.querySelectorAll('.sub-nav-link').forEach(l => { l.classList.remove('active'); }); c.classList.add('active'); }
+        
         document.addEventListener('DOMContentLoaded', async () => { await loadMyServices(); const s = document.querySelector('header select'); if (s) onDateChange(s); else loadDashboard(); });
     </script>
 </body>

@@ -15,18 +15,21 @@ const getDateRange = (month, year) => {
     };
 };
 
-const getServicesScope = async (conn, userId, dates) => {
-    // Retorna os serviços de SUPORTE onde o usuário tem papel de liderança e que estavam ativos no período
+const getServicesScope = async (conn, user, dates) => {
+    // Se for Diretoria, traz todos os serviços de suporte sem filtrar por líder
+    let filter = `Tipo__c = 'Suporte' AND DataInicio__c <= ${dates.end} AND (DataFim__c >= ${dates.start} OR DataFim__c = NULL)`;
+    
+    const isDirector = user.grupos && user.grupos.includes('DIRETOR');
+    
+    if (!isDirector) {
+        filter += ` AND (Lider__c = '${user.id}' OR LiderTecnico__c = '${user.id}' OR Coordenador__c = '${user.id}')`;
+    }
+
     const soql = `
         SELECT Id, Name, Conta__c, Conta__r.Name, 
                Contrato__c, Contrato__r.StartDate, Contrato__r.EndDate, Contrato__r.HorasContratadas__c 
         FROM Servico__c 
-        WHERE (Lider__c = '${userId}' 
-           OR LiderTecnico__c = '${userId}' 
-           OR Coordenador__c = '${userId}')
-        AND Tipo__c = 'Suporte'
-        AND DataInicio__c <= ${dates.end}
-        AND (DataFim__c >= ${dates.start} OR DataFim__c = NULL)
+        WHERE ${filter}
     `;
     const res = await conn.query(soql);
     return res.records;
@@ -70,7 +73,7 @@ exports.getGlobalMetrics = async (req, res) => {
     const conn = await getSfConnection();
 
     try {
-        const services = await getServicesScope(conn, req.session.user.id, dates);
+        const services = await getServicesScope(conn, req.session.user, dates);
         if (services.length === 0) return res.json({ saudeContratos: 0, slaEstourado: 0, estagnados: 0, csat: 0 });
 
         const serviceIds = services.map(s => `'${s.Id}'`).join(',');
@@ -148,7 +151,7 @@ exports.getContractsPerformance = async (req, res) => {
     const conn = await getSfConnection();
 
     try {
-        const services = await getServicesScope(conn, req.session.user.id, dates);
+        const services = await getServicesScope(conn, req.session.user, dates);
         const result = [];
 
         for (const s of services) {
@@ -226,7 +229,7 @@ exports.getTeamPerformance = async (req, res) => {
     const conn = await getSfConnection();
 
     try {
-        const services = await getServicesScope(conn, req.session.user.id, dates);
+        const services = await getServicesScope(conn, req.session.user, dates);
         const myServiceIds = services.map(s => s.Id);
         const myServiceIdsQuery = services.map(s => `'${s.Id}'`).join(',');
         
@@ -376,7 +379,7 @@ exports.getContractExtract = async (req, res) => {
             
             if (personId) {
                 // Se for busca por Pessoa, precisamos garantir que só traga horas dos serviços que o usuário lidera
-                const services = await getServicesScope(conn, req.session.user.id, dates);
+                const services = await getServicesScope(conn, req.session.user, dates);
                 if (services.length === 0) return res.json([]);
                 
                 const serviceIds = services.map(s => `'${s.Id}'`).join(',');
@@ -431,7 +434,7 @@ exports.getMyServices = async (req, res) => {
     const today = moment().format('YYYY-MM-DD');
     const dates = { start: today, end: today }; // Para o seletor de alocação, olha o 'agora'
     try {
-        const services = await getServicesScope(conn, req.session.user.id, dates);
+        const services = await getServicesScope(conn, req.session.user, dates);
         const simplified = services.map(s => ({ id: s.Id, name: s.Name }));
         res.json(simplified);
     } catch (e) { res.status(500).json([]); }
