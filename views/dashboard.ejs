@@ -384,7 +384,7 @@
             } else if (status === 'Liberado para Nota Fiscal') {
                 activeStep = 3; statusText = "Tudo aprovado! Já pode enviar sua Nota Fiscal."; if(compBadge) compBadge.classList.add('hidden');
             } else if (status === 'Nota em Validação' || status === 'Pronto para Pagamento' || status === 'Pagamento Agendado' || status === 'Finalizado/Pago') {
-                activeStep = 4; statusText = status === 'Finalizado/Pago' ? "Ciclo concluído com sucesso!" : "Nota recebida. Pagamento em processamento."; if(compBadge) compBadge.classList.add('hidden');
+                activeStep = 4; statusText = status === 'Finalizado/Pago' ? "Ciclo concluído com sucesso!" : "Pagamento em processamento."; if(compBadge) compBadge.classList.add('hidden');
             }
             if(desc) desc.innerText = statusText;
             for(let i=1; i<=activeStep; i++) {
