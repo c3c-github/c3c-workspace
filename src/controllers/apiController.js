@@ -535,7 +535,7 @@ exports.getDashboardMetrics = async (req, res) => {
     if (scope === "personal") {
       // 1. Busca Dados do Período (Carga Horária, Status e ID) + Nota Fiscal
       const qPeriodo = `
-                SELECT Id, Status__c, ContratoPessoa__r.Hora__c,
+                SELECT Id, Status__c, ContratoPessoa__r.Hora__c, ContratoPessoa__r.PJ__c,
                        (SELECT Id, Status__c, MotivoReprovacao__c FROM NotasFiscais__r WHERE Tipo__c = 'Entrada' LIMIT 1)
                 FROM Periodo__c 
                 WHERE ContratoPessoa__r.Pessoa__c = '${userId}' 
@@ -550,6 +550,7 @@ exports.getDashboardMetrics = async (req, res) => {
           ? periodoRecord.ContratoPessoa__r.Hora__c
           : 8;
       const statusPeriodo = periodoRecord ? periodoRecord.Status__c : "Aberto";
+      const isPJ = periodoRecord?.ContratoPessoa__r?.PJ__c !== false; // Default true if null
 
       const nfRecord =
         periodoRecord &&
@@ -629,6 +630,7 @@ exports.getDashboardMetrics = async (req, res) => {
         totalReprovadas: totalReprovadas,
         saldoBanco: saldoBanco,
         statusPeriodo: statusPeriodo,
+        isPJ: isPJ,
         compliance: {
           total: diasUteis,
           completed: diasCompletos

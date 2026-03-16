@@ -315,7 +315,7 @@
                     document.getElementById('kpi-banco').innerText = data.saldoBanco.toFixed(2);
 
                     // --- STEPPER ---
-                    updateCicloStepper(data.statusPeriodo, data.compliance, data.nf, data.totalReprovadas);
+                    updateCicloStepper(data.statusPeriodo, data.compliance, data.nf, data.totalReprovadas, data.isPJ);
 
                     // Cores dinâmicas para Eficiência
                     const elEfic = document.getElementById('kpi-eficiencia');
@@ -355,10 +355,15 @@
             finally { els.forEach(el => el.classList.remove('animate-pulse')); }
         }
 
-        function updateCicloStepper(status, compliance, nf, totalReprovadas = 0) {
+        function updateCicloStepper(status, compliance, nf, totalReprovadas = 0, isPJ = true) {
             const desc = document.getElementById('ciclo-status-desc');
             const compBadge = document.getElementById('ciclo-compliance-badge');
             const compText = document.getElementById('ciclo-compliance-text');
+
+            // Mostrar/Ocultar etapa de Nota Fiscal baseada no perfil PJ
+            const step3 = document.getElementById('step-3');
+            if (step3) step3.classList.toggle('hidden', !isPJ);
+
             for(let i=1; i<=4; i++) {
                 const circle = document.getElementById(`step-${i}-circle`);
                 if (!circle) continue;

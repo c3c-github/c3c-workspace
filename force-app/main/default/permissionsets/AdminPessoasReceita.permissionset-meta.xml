@@ -152,6 +152,11 @@
     </fieldPermissions>
     <fieldPermissions>
         <editable>true</editable>
+        <field>ContratoPessoa__c.PJ__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
         <field>ContratoPessoa__c.StatusTexto__c</field>
         <readable>true</readable>
     </fieldPermissions>

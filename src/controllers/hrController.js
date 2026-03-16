@@ -29,7 +29,7 @@ exports.getHrEmployees = async (req, res) => {
 
     const soqlPeriodos = `
             SELECT Id, Name, Status__c, ContratoPessoa__r.Pessoa__c, ContratoPessoa__r.Pessoa__r.Name, 
-                   ContratoPessoa__r.Pessoa__r.URL_Foto__c,
+                   ContratoPessoa__r.Pessoa__r.URL_Foto__c, ContratoPessoa__r.PJ__c,
                    ContratoPessoa__r.Cargo__c, QuantidadeDiasUteis__c, ContratoPessoa__r.Hora__c,
                    ValorTotalHoras__c, ValorTotalBeneficios__c, ValorTotalPeriodo__c, ValorHora__c, TotalHoras__c,
                    (SELECT Id FROM DiasPeriodo__r WHERE Tipo__c = 'Útil' AND DiaCompleto__c = false),
@@ -97,6 +97,7 @@ exports.getHrEmployees = async (req, res) => {
         name: per.ContratoPessoa__r?.Pessoa__r?.Name || "Desconhecido",
         photo: per.ContratoPessoa__r?.Pessoa__r?.URL_Foto__c || null,
         role: per.ContratoPessoa__r?.Cargo__c || "Consultor",
+        isPJ: per.ContratoPessoa__r?.PJ__c !== false, // Assume true se nulo, ou usa o valor do checkbox
         total: data ? data.totalRealizado : 0,
         contract: contractHours,
         statusPeriodo: per.Status__c,
@@ -269,9 +270,18 @@ exports.handleHrAction = async (req, res) => {
 
             // Se TUDO do período está aprovado (independente de serviço), ele avança
             if (totalPending === 0) {
+              const periodData = await conn.query(
+                `SELECT ContratoPessoa__r.PJ__c FROM Periodo__c WHERE Id = '${pId}' LIMIT 1`
+              );
+              const isPJ =
+                periodData.records[0]?.ContratoPessoa__r?.PJ__c !== false;
+              const nextStatus = isPJ
+                ? "Liberado para Nota Fiscal"
+                : "Pronto para Pagamento";
+
               await conn
                 .sobject("Periodo__c")
-                .update({ Id: pId, Status__c: "Liberado para Nota Fiscal" });
+                .update({ Id: pId, Status__c: nextStatus });
             }
           }
         }

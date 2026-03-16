@@ -448,8 +448,13 @@
                 let badgeClass = statusColors[p.statusPeriodo] || 'bg-gray-50 text-gray-400 border-gray-100';
 
                 if (p.statusPeriodo === 'Liberado para Nota Fiscal' && !p.hasNota) {
-                    displayStatus = 'Pendente Nota';
-                    badgeClass = 'bg-red-50 text-red-600 border-red-100';
+                    if (p.isPJ) {
+                        displayStatus = 'Pendente Nota';
+                        badgeClass = 'bg-red-50 text-red-600 border-red-100';
+                    } else {
+                        // Fallback case: if somehow a non-PJ is in this status, show original or adjust
+                        displayStatus = p.statusPeriodo;
+                    }
                 }
 
                 tbody.innerHTML += `<tr class="hover:bg-gray-50/50 transition-colors group">
