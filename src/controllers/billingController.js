@@ -1,6 +1,70 @@
 const { getSfConnection } = require('../config/salesforce');
 const fs = require('fs');
 const extractionService = require('../services/extractionService');
+const microsoftGraphService = require('../services/microsoftGraphService');
+
+/**
+ * Helper para sincronizar NF com SharePoint
+ */
+async function syncNfToSharePoint(conn, periodId) {
+    console.log(`[SharePoint] 🔄 Iniciando sincronização para o período: ${periodId}`);
+    try {
+        // 1. Busca detalhes do período e colaborador
+        const periodQuery = `
+            SELECT Name, DataInicio__c, DataFim__c, ContratoPessoa__r.Pessoa__r.Name, 
+                   (SELECT Id, DocumentoId__c, NumeroNota__c FROM NotasFiscais__r WHERE Tipo__c = 'Entrada' LIMIT 1)
+            FROM Periodo__c WHERE Id = '${periodId}' LIMIT 1
+        `;
+        const resPeriod = await conn.query(periodQuery);
+        const p = resPeriod.records[0];
+        const nf = (p.NotasFiscais__r && p.NotasFiscais__r.records) ? p.NotasFiscais__r.records[0] : null;
+
+        if (!nf) {
+            console.log(`[SharePoint] ⚠️ Nenhuma Nota Fiscal encontrada para o período ${periodId}`);
+            return;
+        }
+        if (!nf.DocumentoId__c) {
+            console.log(`[SharePoint] ⚠️ Nota Fiscal ${nf.Id} não possui DocumentoId__c vinculado.`);
+            return;
+        }
+
+        console.log(`[SharePoint] 📄 Nota localizada: ${nf.Id} (Doc: ${nf.DocumentoId__c}) para ${p.ContratoPessoa__r.Pessoa__r.Name}`);
+
+        // 2. Busca o arquivo no Salesforce
+        const cv = await conn.sobject('ContentVersion').find({ ContentDocumentId: nf.DocumentoId__c, IsLatest: true }).limit(1).execute();
+        if (cv.length === 0) {
+            console.log(`[SharePoint] ❌ ContentVersion não encontrado para DocId: ${nf.DocumentoId__c}`);
+            return;
+        }
+
+        console.log(`[SharePoint] 📥 Baixando arquivo do Salesforce: ${cv[0].Title}`);
+        const fileData = await conn.sobject('ContentVersion').record(cv[0].Id).blob('VersionData');
+        
+        const chunks = [];
+        for await (let chunk of fileData) { chunks.push(chunk); }
+        const buffer = Buffer.concat(chunks);
+        console.log(`[SharePoint] ✅ Arquivo baixado (${buffer.length} bytes)`);
+
+        // 3. Define caminho: "Mes Ano - DataInicio - DataFim"
+        // Pega apenas "Fevereiro 2026" do nome "Fevereiro 2026 - Nome Colaborador"
+        const periodBaseName = p.Name.split(' - ')[0];
+        const fmt = (d) => d ? d.split('-').reverse().map((v, i) => i === 2 ? v.substring(2) : v).join('-') : '';
+        const folderName = `${periodBaseName} - ${fmt(p.DataInicio__c)} - ${fmt(p.DataFim__c)}`;
+        
+        // Nome do arquivo: "Nome Colaborador - ID_Nota.pdf"
+        const fileName = `${p.ContratoPessoa__r.Pessoa__r.Name} - ${nf.Id}.${cv[0].FileExtension}`;
+
+        console.log(`[SharePoint] 📂 Destino: ${folderName}/${fileName}`);
+
+        // 4. Garante pasta e faz upload
+        const targetPath = await microsoftGraphService.ensureFolderExists(folderName);
+        await microsoftGraphService.uploadFile(targetPath, fileName, buffer);
+        console.log(`[SharePoint] ✨ Sincronização concluída com sucesso para ${p.ContratoPessoa__r.Pessoa__r.Name}`);
+
+    } catch (e) {
+        console.error(`[SharePoint] ❌ ERRO CRÍTICO no período ${periodId}:`, e.message);
+    }
+}
 
 /**
  * ============================================================================
@@ -663,6 +727,20 @@ exports.updateFinanceStatus = async (req, res) => {
                 const nfUpdates = nfs.records.map(nf => ({ Id: nf.Id, Status__c: nfStatus }));
                 await conn.sobject('NotaFiscal__c').update(nfUpdates);
             }
+        }
+
+        // 4. Sincronização assíncrona com SharePoint para Notas Pagas
+        if (newStatus === 'Finalizado/Pago') {
+            // Executa em background mas sequencialmente para evitar gargalos na API do Graph/Salesforce
+            (async () => {
+                for (const id of periodIds) {
+                    try {
+                        await syncNfToSharePoint(conn, id);
+                    } catch (err) {
+                        console.error(`[SharePoint] Falha na sincronização do lote para o ID ${id}:`, err.message);
+                    }
+                }
+            })();
         }
 
         res.json({ success: true, updatedPeriods: periodIds.length });
