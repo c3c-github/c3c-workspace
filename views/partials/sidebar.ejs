@@ -60,7 +60,7 @@
                 </a>
             <% } %>
 
-            <% if (user.grupos.includes('GESTAO_SUPORTE')) { %>
+            <% if (user.grupos.includes('GESTAO_SUPORTE') || user.grupos.includes('DIRETOR') || user.grupos.includes('GESTOR')) { %>
                 <a href="/support-management" class="nav-item <%= (typeof page !== 'undefined' && page === 'support_management') ? 'active-nav' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900' %> flex items-center gap-3 px-6 py-3 transition-all">
                     <i data-lucide="monitor" class="w-5 h-5"></i>
                     <span class="font-medium text-sm">Gestão de Suporte</span>

@@ -71,6 +71,7 @@ exports.getGlobalMetrics = async (req, res) => {
     const { month, year } = req.query;
     const dates = getDateRange(month, year);
     const conn = await getSfConnection();
+    const isDirector = req.session.user.grupos && req.session.user.grupos.includes('DIRETOR');
 
     try {
         const services = await getServicesScope(conn, req.session.user, dates);
@@ -131,11 +132,22 @@ exports.getGlobalMetrics = async (req, res) => {
             } catch (ignore) {}
         }
 
+        // D. Vencimentos (Próximos 90 dias)
+        const ninetyDaysFromNow = moment().add(90, 'days').format('YYYY-MM-DD');
+        const todayStr = moment().format('YYYY-MM-DD');
+        let expiringFilter = `Tipo__c = 'Suporte' AND DataFim__c >= ${todayStr} AND DataFim__c <= ${ninetyDaysFromNow}`;
+        
+        if (!isDirector) {
+            expiringFilter += ` AND (Lider__c = '${req.session.user.id}' OR LiderTecnico__c = '${req.session.user.id}' OR Coordenador__c = '${req.session.user.id}')`;
+        }
+        const expiringRes = await conn.query(`SELECT Count() FROM Servico__c WHERE ${expiringFilter}`);
+
         res.json({
             saudeContratos: saude.toFixed(1),
             slaEstourado: slaCount,
             estagnados: estagnadosCount,
-            csat: csatAvg.toFixed(1)
+            csat: csatAvg.toFixed(1),
+            expiringSoon: expiringRes.totalSize
         });
 
     } catch (e) {
@@ -149,6 +161,7 @@ exports.getContractsPerformance = async (req, res) => {
     const { month, year } = req.query;
     const dates = getDateRange(month, year);
     const conn = await getSfConnection();
+    const isDirector = req.session.user.grupos && req.session.user.grupos.includes('DIRETOR');
 
     try {
         const services = await getServicesScope(conn, req.session.user, dates);
@@ -163,15 +176,20 @@ exports.getContractsPerformance = async (req, res) => {
                 if (startedBeforeEnd && endedAfterStart) franquia = c.HorasContratadas__c || 0;
             }
 
+            // Buscar DataFim__c do serviço para o indicador de vencimento na tabela
+            const servInfo = await conn.query(`SELECT DataFim__c FROM Servico__c WHERE Id = '${s.Id}' LIMIT 1`);
+            const expirationDate = servInfo.records[0]?.DataFim__c || null;
+
             const hRes = await conn.query(`SELECT SUM(Horas__c) tot, SUM(HorasExtras__c) ext FROM LancamentoHora__c WHERE Servico__c = '${s.Id}' AND DiaPeriodo__r.Data__c >= ${dates.start} AND DiaPeriodo__r.Data__c <= ${dates.end} AND (Horas__c > 0 OR HorasExtras__c > 0)`);
             const used = (hRes.records[0].tot || 0) + (hRes.records[0].ext || 0);
 
             // Tickets
             let tickets = { open: 0, inProg: 0, pause: 0, waiting: 0, closed: 0, sla: 0, csat: 0, estagnados: 0 };
-            if (s.Conta__c) {
+            let accountId = s.Conta__c;
+            if (accountId) {
                 const cases = await conn.query(`
                     SELECT Status, CreatedDate, IsClosed, CSAT__c, LastModifiedDate 
-                    FROM Case WHERE AccountId = '${s.Conta__c}' 
+                    FROM Case WHERE AccountId = '${accountId}' 
                     AND ((IsClosed = false) OR (ClosedDate >= ${dates.start}T00:00:00Z AND ClosedDate <= ${dates.end}T23:59:59Z))
                 `);
                 
@@ -186,10 +204,7 @@ exports.getContractsPerformance = async (req, res) => {
                         else tickets.waiting++;
                         
                         if (moment().diff(moment(c.CreatedDate), 'days') > 7) tickets.sla++;
-                        
-                        // Estagnados (Lógica simplificada LastModified)
                         if (moment(c.LastModifiedDate).isBefore(threeDaysAgo)) tickets.estagnados++;
-
                     } else {
                         tickets.closed++;
                         if (c.CSAT__c) { csatSum += c.CSAT__c; csatCount++; }
@@ -207,15 +222,59 @@ exports.getContractsPerformance = async (req, res) => {
 
             result.push({
                 id: s.Id,
+                accountId: accountId,
                 name: s.Name,
                 client: s.Conta__r ? s.Conta__r.Name : 'N/A',
+                expirationDate: expirationDate,
                 total: franquia,
                 used: used,
-                ...tickets, // Inclui estagnados
+                ...tickets,
                 teamCount: teamQ.totalSize
             });
         }
         res.json(result);
+    } catch (e) {
+        console.error(e);
+        res.status(500).json([]);
+    }
+};
+
+exports.getContractCases = async (req, res) => {
+    const { accountId, statusType } = req.query;
+    const conn = await getSfConnection();
+
+    try {
+        let statusFilter = '';
+        if (statusType === 'NOV') statusFilter = "AND Status IN ('New', 'Open')";
+        else if (statusType === 'AND') statusFilter = "AND Status = 'In Progress'";
+        else if (statusType === 'PAU') statusFilter = "AND Status = 'On Hold'";
+        else if (statusType === 'AGU') statusFilter = "AND IsClosed = false AND Status NOT IN ('New', 'Open', 'In Progress', 'On Hold')";
+        else if (statusType === 'FEC') statusFilter = "AND IsClosed = true";
+        else if (statusType === 'SLA') statusFilter = "AND IsClosed = false AND CreatedDate < N_DAYS_AGO:7";
+
+        const soql = `
+            SELECT Id, CaseNumber, Subject, Status, Priority, CreatedDate, LastModifiedDate, Pessoa__r.Name, CSAT__c 
+            FROM Case 
+            WHERE AccountId = '${accountId}' ${statusFilter}
+            ORDER BY CreatedDate DESC LIMIT 100
+        `;
+        const result = await conn.query(soql);
+        
+        const threeDaysAgo = moment().subtract(3, 'days');
+        const mapped = result.records.map(c => ({
+            id: c.Id,
+            number: c.CaseNumber,
+            subject: c.Subject,
+            status: c.Status,
+            priority: c.Priority,
+            owner: (c.Pessoa__r && c.Pessoa__r.Name) ? c.Pessoa__r.Name : 'Ninguém assumiu',
+            created: c.CreatedDate,
+            csat: c.CSAT__c || null,
+            isSlaCritical: moment().diff(moment(c.CreatedDate), 'days') > 7,
+            isStagnant: moment(c.LastModifiedDate).isBefore(threeDaysAgo) && c.Status !== 'Closed'
+        }));
+
+        res.json(mapped);
     } catch (e) {
         console.error(e);
         res.status(500).json([]);
@@ -270,7 +329,7 @@ exports.getTeamPerformance = async (req, res) => {
                     id: pid,
                     name: a.Pessoa__r.Name,
                     role: 'Colaborador', 
-                    contractHours: a.Pessoa__r.HorasContrato__c || 168,
+                    contractHours: a.Pessoa__r.HorasContrato__c || 8,
                     totalAlloc: 0,
                     allocations: []
                 };
@@ -404,6 +463,7 @@ exports.getContractExtract = async (req, res) => {
             
             const mapped = resQ.records.map(r => ({
                 data: r.DiaPeriodo__r.Data__c,
+                profissional: r.Pessoa__r ? r.Pessoa__r.Name : 'N/A',
                 cliente: (r.Servico__r && r.Servico__r.Conta__r) ? r.Servico__r.Conta__r.Name : (personId ? (r.Servico__r ? r.Servico__r.Name : serviceName) : serviceName), 
                 servico: r.Servico__r ? r.Servico__r.Name : serviceName,
                 atividade: r.Atividade__r ? r.Atividade__r.Name : 'Atividade sem nome',
@@ -483,8 +543,10 @@ exports.saveAllocation = async (req, res) => {
         const today = moment().format('YYYY-MM-DD');
 
         for (const a of allocations) {
-            // Só atualiza se tiver ID válido (não vazio)
-            if (a.allocationId && a.allocationId.trim() !== '') {
+            // Só atualiza se tiver ID válido (não vazio e não 'null' string)
+            const isValidId = a.allocationId && a.allocationId.trim() !== '' && a.allocationId !== 'null' && a.allocationId !== 'undefined';
+            
+            if (isValidId) {
                 // UPDATE
                 const payloadUpdate = {
                     Id: a.allocationId,
