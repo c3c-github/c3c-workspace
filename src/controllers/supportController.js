@@ -142,13 +142,59 @@ exports.getGlobalMetrics = async (req, res) => {
         }
         const expiringRes = await conn.query(`SELECT Count() FROM Servico__c WHERE ${expiringFilter}`);
 
+        // E. Colaboradores Atrasados (Nova Lógica)
+        let lateCount = 0;
+        try {
+            const myServiceIdsQuery = services.map(s => `'${s.Id}'`).join(',');
+            const peopleInScopeRes = await conn.query(`
+                SELECT Pessoa__c FROM Alocacao__c 
+                WHERE Servico__c IN (${myServiceIdsQuery}) 
+                AND DataInicio__c <= ${dates.end} 
+                AND (DataFim__c >= ${dates.start} OR DataFim__c = null)
+                GROUP BY Pessoa__c
+            `);
+
+            if (peopleInScopeRes.records.length > 0) {
+                const peopleIds = peopleInScopeRes.records.map(r => `'${r.Pessoa__c}'`).join(',');
+                
+                const [daysRes, hoursRes] = await Promise.all([
+                    conn.query(`SELECT Pessoa__c, Data__c, Hora__c, Periodo__r.ContratoPessoa__r.Hora__c FROM DiaPeriodo__c WHERE Pessoa__c IN (${peopleIds}) AND Data__c >= ${dates.start} AND Data__c <= ${dates.end} AND Tipo__c = 'Útil'`),
+                    conn.query(`SELECT Pessoa__c, Horas__c, HorasExtras__c FROM LancamentoHora__c WHERE Pessoa__c IN (${peopleIds}) AND DiaPeriodo__r.Data__c >= ${dates.start} AND DiaPeriodo__r.Data__c <= ${dates.end} AND (Horas__c > 0 OR HorasExtras__c > 0)`)
+                ]);
+
+                const targetMap = {};
+                daysRes.records.forEach(d => {
+                    if (!targetMap[d.Pessoa__c]) targetMap[d.Pessoa__c] = 0;
+                    if (moment(d.Data__c).isSameOrBefore(moment(), 'day')) {
+                        const hDia = d.Hora__c || 0;
+                        const hContrato = (d.Periodo__r && d.Periodo__r.ContratoPessoa__r) ? d.Periodo__r.ContratoPessoa__r.Hora__c : 0;
+                        targetMap[d.Pessoa__c] += (hDia > 0 ? hDia : hContrato);
+                    }
+                });
+
+                const realMap = {};
+                hoursRes.records.forEach(h => {
+                    if (!realMap[h.Pessoa__c]) realMap[h.Pessoa__c] = 0;
+                    realMap[h.Pessoa__c] += (h.Horas__c || 0) + (2 * (h.HorasExtras__c || 0));
+                });
+
+                peopleInScopeRes.records.forEach(r => {
+                    const target = targetMap[r.Pessoa__c] || 0;
+                    const real = realMap[r.Pessoa__c] || 0;
+                    if (real < (target - 4)) lateCount++;
+                });
+            }
+        } catch (err) { console.error("Late professionals count error:", err); }
+
         res.json({
             saudeContratos: saude.toFixed(1),
             slaEstourado: slaCount,
             estagnados: estagnadosCount,
             csat: csatAvg.toFixed(1),
-            expiringSoon: expiringRes.totalSize
+            expiringSoon: expiringRes.totalSize,
+            lateProfessionals: lateCount
         });
+
 
     } catch (e) {
         console.error("Metrics Error:", e);
