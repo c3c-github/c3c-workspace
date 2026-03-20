@@ -135,45 +135,54 @@ exports.getLimits = async (req, res) => {
 
 exports.getTickets = async (req, res) => {
     try {
-        const { filter } = req.query; 
+        const { filter, offset = 0, limit = 200 } = req.query; 
         const userId = req.session.user.id;
         const conn = await getSfConnection();
-        let soql = `SELECT Id, CaseNumber, Subject, Status, Priority, Description, CreatedDate, Account.Name, Pessoa__c, Pessoa__r.Name, Type, Origin, IsClosed FROM Case WHERE Id != null`;
+        const today = new Date().toISOString().split('T')[0];
+
+        // PASSO 1: Definir o escopo de Contas permitidas (Apenas com Alocação de Suporte Vigente)
+        const soqlAlocScope = `SELECT Servico__r.Conta__c FROM Alocacao__c WHERE Pessoa__c = '${userId}' AND Servico__r.Tipo__c = 'Suporte' AND DataInicio__c <= ${today} AND (DataFim__c >= ${today} OR DataFim__c = NULL)`;
+        const alocResScope = await conn.query(soqlAlocScope);
+        const accountIds = [...new Set(alocResScope.records.map(a => a.Servico__r ? a.Servico__r.Conta__c : null).filter(id => id !== null))];
+        
+        if (accountIds.length === 0) {
+            return res.json({ 
+                tickets: [], 
+                stats: { totalInQueue: 0, criticalInQueue: 0, myActive: 0, slaPercent: 100 },
+                hasMore: false
+            });
+        }
+        
+        const idsFormatados = accountIds.map(id => `'${id}'`).join(',');
+
+        // PASSO 2: Montar a Query de Tickets com base no Filtro e no Escopo de Contas
+        let baseWhere = `AccountId IN (${idsFormatados})`;
 
         if (filter === 'my') {
-            soql += ` AND Pessoa__c = '${userId}' AND IsClosed = false`;
-        } else {
-            const today = new Date().toISOString().split('T')[0];
-            const soqlAloc = `SELECT Servico__r.Conta__c FROM Alocacao__c WHERE Pessoa__c = '${userId}' AND DataInicio__c <= ${today} AND (DataFim__c >= ${today} OR DataFim__c = NULL)`;
-            const alocacoes = await conn.query(soqlAloc);
-            const accountIds = [...new Set(alocacoes.records.map(a => a.Servico__r ? a.Servico__r.Conta__c : null).filter(id => id !== null))];
-            
-            if (accountIds.length === 0) return res.json([]); 
-            
-            const idsFormatados = accountIds.map(id => `'${id}'`).join(',');
-            soql += ` AND AccountId IN (${idsFormatados})`;
-            
-            if (filter === 'queue') soql += ` AND Pessoa__c = null AND IsClosed = false`;
-            else if (filter === 'team') soql += ` AND Pessoa__c != null AND Pessoa__c != '${userId}' AND IsClosed = false`;
-            else if (filter === 'all') soql += ` LIMIT 200`;
+            baseWhere += ` AND Pessoa__c = '${userId}' AND IsClosed = false`;
+        } else if (filter === 'queue') {
+            baseWhere += ` AND Pessoa__c = null AND IsClosed = false`;
+        } else if (filter === 'team') {
+            baseWhere += ` AND Pessoa__c != null AND Pessoa__c != '${userId}' AND IsClosed = false`;
         }
 
-        if (!soql.includes('LIMIT')) soql += ` ORDER BY CreatedDate DESC LIMIT 100`; 
+        const soql = `SELECT Id, CaseNumber, Subject, Status, Priority, Description, CreatedDate, Account.Name, Pessoa__c, Pessoa__r.Name, Type, Origin, IsClosed 
+                      FROM Case 
+                      WHERE ${baseWhere} 
+                      ORDER BY CreatedDate DESC 
+                      LIMIT ${limit} OFFSET ${offset}`;
         
         const result = await conn.query(soql);
         let records = result.records;
 
-        // BUSCA ESCOPO DE CONTAS PARA ESTATÍSTICAS PRECISAS
-        const today = new Date().toISOString().split('T')[0];
-        const soqlAloc = `SELECT Servico__r.Conta__c FROM Alocacao__c WHERE Pessoa__c = '${userId}' AND DataInicio__c <= ${today} AND (DataFim__c >= ${today} OR DataFim__c = NULL)`;
-        const alocRes = await conn.query(soqlAloc);
-        const accountIds = [...new Set(alocRes.records.map(a => a.Servico__r ? a.Servico__r.Conta__c : null).filter(id => id !== null))];
-        const idsList = accountIds.map(id => `'${id}'`).join(',');
+        // Verifica se tem mais registros
+        const hasMore = records.length === parseInt(limit);
 
-        let stats = { totalInQueue: 0, criticalInQueue: 0, myActive: 0, slaPercent: 100 };
-
-        if (accountIds.length > 0) {
-            const statsQuery = `SELECT Priority, Pessoa__c, IsClosed, DataEstimativaEntrega__c, LastModifiedDate FROM Case WHERE AccountId IN (${idsList}) LIMIT 2000`;
+        // PASSO 3: Estatísticas (apenas no primeiro carregamento - offset 0)
+        let stats = null;
+        if (parseInt(offset) === 0) {
+            stats = { totalInQueue: 0, criticalInQueue: 0, myActive: 0, slaPercent: 100 };
+            const statsQuery = `SELECT Priority, Pessoa__c, IsClosed, DataEstimativaEntrega__c, LastModifiedDate FROM Case WHERE AccountId IN (${idsFormatados}) LIMIT 2000`;
             const statsRes = await conn.query(statsQuery);
             const sRecs = statsRes.records;
 
@@ -181,12 +190,11 @@ exports.getTickets = async (req, res) => {
             stats.criticalInQueue = sRecs.filter(x => !x.Pessoa__c && !x.IsClosed && (x.Priority === 'High' || x.Priority === 'Critical')).length;
             stats.myActive = sRecs.filter(x => x.Pessoa__c && areIdsEqual(x.Pessoa__c, userId) && !x.IsClosed).length;
 
-            // SLA: (Fechados no prazo) / (Total fechados com previsão)
             const closedWithPrev = sRecs.filter(x => x.IsClosed && x.DataEstimativaEntrega__c);
             const onTime = closedWithPrev.filter(x => {
                 const closing = new Date(x.LastModifiedDate);
-                const limit = new Date(x.DataEstimativaEntrega__c);
-                return closing <= limit;
+                const limitDate = new Date(x.DataEstimativaEntrega__c);
+                return closing <= limitDate;
             }).length;
             stats.slaPercent = closedWithPrev.length > 0 ? Math.round((onTime / closedWithPrev.length) * 100) : 100;
         }
@@ -209,7 +217,8 @@ exports.getTickets = async (req, res) => {
                 status: c.Status, priority: c.Priority, type: c.Type, desc: c.Description, ownerName: c.Pessoa__r ? c.Pessoa__r.Name : null,
                 date: new Date(c.CreatedDate).toLocaleDateString('pt-BR'), rawDate: c.CreatedDate, isClosed: c.IsClosed
             })),
-            stats: stats
+            stats: stats,
+            hasMore: hasMore
         });
     } catch (err) { res.status(500).json({ error: 'Erro ao buscar chamados: ' + err.message }); }
 };
@@ -282,7 +291,34 @@ exports.getTicketDetails = async (req, res) => {
 };
 
 exports.getTicketActivities = async (req, res) => { try { const { id } = req.params; const conn = await getSfConnection(); const activities = await conn.sobject('Atividade__c').find({ Caso__c: id }, 'Id, Name, Servico__c').sort({ CreatedDate: -1 }).execute(); res.json(activities); } catch (err) { res.status(500).json({ error: 'Erro ao buscar atividades.' }); } };
-exports.getCreateOptions = async (req, res) => { try { const userId = req.session.user.id; const conn = await getSfConnection(); const today = new Date().toISOString().split('T')[0]; const soql = `SELECT Servico__c, Servico__r.Name, Servico__r.Conta__c, Servico__r.Conta__r.Name FROM Alocacao__c WHERE Pessoa__c = '${userId}' AND DataInicio__c <= ${today} AND (DataFim__c >= ${today} OR DataFim__c = NULL) ORDER BY Servico__r.Name ASC`; const result = await conn.query(soql); const options = result.records.map(r => ({ serviceId: r.Servico__c, serviceName: r.Servico__r ? r.Servico__r.Name : 'Serviço', accountId: r.Servico__r ? r.Servico__r.Conta__c : null, accountName: (r.Servico__r && r.Servico__r.Conta__r) ? r.Servico__r.Conta__r.Name : 'Conta' })); res.json(options); } catch (err) { res.status(500).json({ error: 'Erro ao buscar serviços.' }); } };
+exports.getCreateOptions = async (req, res) => {
+    try {
+        const userId = req.session.user.id;
+        const conn = await getSfConnection();
+        const today = new Date().toISOString().split('T')[0];
+        
+        const soql = `
+            SELECT Servico__c, Servico__r.Name, Servico__r.Conta__c, Servico__r.Conta__r.Name 
+            FROM Alocacao__c 
+            WHERE Pessoa__c = '${userId}' 
+            AND Servico__r.Tipo__c = 'Suporte'
+            AND DataInicio__c <= ${today} 
+            AND (DataFim__c >= ${today} OR DataFim__c = NULL) 
+            ORDER BY Servico__r.Name ASC
+        `;
+        
+        const result = await conn.query(soql);
+        const options = result.records.map(r => ({
+            serviceId: r.Servico__c,
+            serviceName: r.Servico__r ? r.Servico__r.Name : 'Serviço',
+            accountId: r.Servico__r ? r.Servico__r.Conta__c : null,
+            accountName: (r.Servico__r && r.Servico__r.Conta__r) ? r.Servico__r.Conta__r.Name : 'Conta'
+        }));
+        res.json(options);
+    } catch (err) {
+        res.status(500).json({ error: 'Erro ao buscar serviços.' });
+    }
+};
 exports.getAccountContacts = async (req, res) => { try { const { id } = req.params; const conn = await getSfConnection(); const soql = `SELECT Id, Name, Email FROM Contact WHERE AccountId = '${id}' ORDER BY Name ASC`; const result = await conn.query(soql); res.json(result.records); } catch (err) { res.status(500).json({ error: 'Erro ao buscar contatos.' }); } };
 
 exports.downloadAttachment = async (req, res) => {
@@ -474,22 +510,40 @@ exports.saveLog = async (req, res) => {
             let finalActivityId = activityId;
             let serviceId = null, alocacaoId = null;
 
+            // BUSCA SEMPRE A ALOCAÇÃO DE SUPORTE VIGENTE PARA A CONTA DO CHAMADO
+            const caseRes = await conn.sobject('Case').retrieve(caseId);
+            const alocQuery = `
+                SELECT Id, Servico__c 
+                FROM Alocacao__c 
+                WHERE Pessoa__c = '${userId}' 
+                AND Servico__r.Conta__c = '${caseRes.AccountId}' 
+                AND Servico__r.Tipo__c = 'Suporte'
+                AND DataInicio__c <= ${targetDate} 
+                AND (DataFim__c >= ${targetDate} OR DataFim__c = NULL) 
+                ORDER BY CreatedDate DESC 
+                LIMIT 1
+            `;
+            const alocRes = await conn.query(alocQuery);
+            
+            if (alocRes.totalSize === 0) {
+                return res.status(400).json({ error: `Você não possui uma alocação de Suporte vigente para este cliente na data ${targetDate.split('-').reverse().join('/')}.` });
+            }
+
+            serviceId = alocRes.records[0].Servico__c; 
+            alocacaoId = alocRes.records[0].Id;
+
             if (activityId === 'new') {
                 if (!newActivityName) return res.status(400).json({ error: 'Nome obrigatório.' });
-                const caseRes = await conn.sobject('Case').retrieve(caseId);
-                const alocQuery = `SELECT Id, Servico__c FROM Alocacao__c WHERE Pessoa__c = '${userId}' AND Servico__r.Conta__c = '${caseRes.AccountId}' AND DataInicio__c <= ${targetDate} AND (DataFim__c >= ${targetDate} OR DataFim__c = NULL) LIMIT 1`;
-                const alocRes = await conn.query(alocQuery);
-                if (alocRes.totalSize === 0) return res.status(400).json({ error: `Sem alocação.` });
-                serviceId = alocRes.records[0].Servico__c; alocacaoId = alocRes.records[0].Id;
-                const newAct = await conn.sobject('Atividade__c').create({ Name: `${caseRes.CaseNumber} - ${newActivityName}`.substring(0, 80), Caso__c: caseId, Servico__c: serviceId });
+                const newAct = await conn.sobject('Atividade__c').create({ 
+                    Name: `${caseRes.CaseNumber} - ${newActivityName}`.substring(0, 80), 
+                    Caso__c: caseId, 
+                    Servico__c: serviceId 
+                });
                 finalActivityId = newAct.id;
             } else {
-                const actRes = await conn.sobject('Atividade__c').retrieve(finalActivityId);
-                serviceId = actRes.Servico__c;
-                const alocQuery = `SELECT Id FROM Alocacao__c WHERE Pessoa__c = '${userId}' AND Servico__c = '${serviceId}' AND DataInicio__c <= ${targetDate} AND (DataFim__c >= ${targetDate} OR DataFim__c = NULL) LIMIT 1`;
-                const alocRes = await conn.query(alocQuery);
-                if (alocRes.totalSize === 0) return res.status(400).json({ error: `Alocação inválida.` });
-                alocacaoId = alocRes.records[0].Id;
+                // Se a atividade já existe mas pertence a um serviço antigo, 
+                // o lançamento ainda assim será feito no serviço da alocação vigente (serviceId definido acima)
+                finalActivityId = activityId;
             }
 
             const responsavelId = await getOrCreateResponsavel(conn, finalActivityId, alocacaoId);
