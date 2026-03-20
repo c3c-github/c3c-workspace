@@ -289,12 +289,11 @@ exports.getTeamPerformance = async (req, res) => {
 
     try {
         const services = await getServicesScope(conn, req.session.user, dates);
-        const myServiceIds = services.map(s => s.Id);
         const myServiceIdsQuery = services.map(s => `'${s.Id}'`).join(',');
         
         if (!myServiceIdsQuery) return res.json([]);
 
-        // PASSO 1: Descobrir QUEM são as pessoas que eu gerencio (estão alocadas em meus serviços neste período)
+        // PASSO 1: Descobrir QUEM são as pessoas que eu gerencio
         const peopleInScopeRes = await conn.query(`
             SELECT Pessoa__c 
             FROM Alocacao__c 
@@ -308,10 +307,10 @@ exports.getTeamPerformance = async (req, res) => {
 
         const peopleIds = peopleInScopeRes.records.map(r => `'${r.Pessoa__c}'`).join(',');
 
-        // PASSO 2: Buscar TODAS as alocações dessas pessoas (Independentemente do serviço)
+        // PASSO 2: Buscar informações das pessoas e suas alocações
         const allocs = await conn.query(`
-            SELECT Id, Pessoa__c, Pessoa__r.Name, Pessoa__r.HorasContrato__c, 
-                   Percentual__c, Servico__c, Servico__r.Name, DataInicio__c, DataFim__c, DataFimOriginal__c
+            SELECT Id, Pessoa__c, Pessoa__r.Name, Pessoa__r.URL_Foto__c, 
+                   Percentual__c, Servico__c, Servico__r.Name
             FROM Alocacao__c 
             WHERE Pessoa__c IN (${peopleIds}) 
             AND DataInicio__c <= ${dates.end} 
@@ -319,59 +318,53 @@ exports.getTeamPerformance = async (req, res) => {
         `);
 
         const people = {};
-
         allocs.records.forEach(a => {
             if (!a.Pessoa__r) return;
             const pid = a.Pessoa__c;
-            
             if (!people[pid]) {
                 people[pid] = {
                     id: pid,
                     name: a.Pessoa__r.Name,
-                    role: 'Colaborador', 
-                    contractHours: a.Pessoa__r.HorasContrato__c || 8,
-                    totalAlloc: 0,
-                    allocations: []
+                    photo: a.Pessoa__r.URL_Foto__c,
+                    totalAlloc: 0
                 };
             }
-            
             people[pid].totalAlloc += (a.Percentual__c || 0);
-            
-            // Flag para o Frontend saber se pode editar
-            const isManaged = myServiceIds.includes(a.Servico__c);
-
-            people[pid].allocations.push({
-                ...a,
-                isManaged: isManaged
-            });
         });
 
-        const pIdsStr = peopleIds; // Reuso
-        if (!pIdsStr) return res.json([]);
+        // PASSO 3: Buscar Dias do Período para Target e 100%
+        const daysRes = await conn.query(`
+            SELECT Pessoa__c, Data__c, Hora__c, 
+                   Periodo__r.ContratoPessoa__r.Hora__c 
+            FROM DiaPeriodo__c 
+            WHERE Pessoa__c IN (${peopleIds}) 
+            AND Data__c >= ${dates.start} 
+            AND Data__c <= ${dates.end} 
+            AND Tipo__c = 'Útil'
+        `);
 
-        const daysRes = await conn.query(`SELECT Pessoa__c, Data__c FROM DiaPeriodo__c WHERE Pessoa__c IN (${pIdsStr}) AND Data__c >= ${dates.start} AND Data__c <= ${dates.end} AND Tipo__c = 'Útil'`);
-        const wdMap = {};
-        
-        // Cálculo Algorítmico de Dias Úteis do Mês (Fallback/Projeção)
-        let projectedWorkingDays = 0;
-        let iterDate = moment(dates.momentStart);
-        while (iterDate.isSameOrBefore(dates.momentEnd)) {
-            if (iterDate.isoWeekday() <= 5) projectedWorkingDays++; // Seg-Sex
-            iterDate.add(1, 'day');
-        }
-
+        const targetMap = {};
         daysRes.records.forEach(d => {
             const pid = d.Pessoa__c;
-            if (!wdMap[pid]) wdMap[pid] = { total: 0, past: 0 };
-            wdMap[pid].total++;
-            if (moment(d.Data__c).isSameOrBefore(moment())) wdMap[pid].past++;
+            if (!targetMap[pid]) targetMap[pid] = { totalMonth: 0, targetToDate: 0 };
+            
+            // Lógica de fallback: se Hora__c do Dia estiver zerada, usa a do contrato
+            const hDia = d.Hora__c || 0;
+            const hContrato = (d.Periodo__r && d.Periodo__r.ContratoPessoa__r) ? d.Periodo__r.ContratoPessoa__r.Hora__c : 0;
+            const hours = hDia > 0 ? hDia : hContrato;
+
+            targetMap[pid].totalMonth += hours;
+            
+            if (moment(d.Data__c).isSameOrBefore(moment(), 'day')) {
+                targetMap[pid].targetToDate += hours;
+            }
         });
 
-        // Buscar Horas Realizadas (LancamentoHora__c) para popular realMap
+        // PASSO 4: Buscar Horas Realizadas (Consumo = Horas + 2 * HorasExtras)
         const hoursRes = await conn.query(`
             SELECT Pessoa__c, DiaPeriodo__r.Data__c, Horas__c, HorasExtras__c 
             FROM LancamentoHora__c 
-            WHERE Pessoa__c IN (${pIdsStr}) 
+            WHERE Pessoa__c IN (${peopleIds}) 
             AND DiaPeriodo__r.Data__c >= ${dates.start} 
             AND DiaPeriodo__r.Data__c <= ${dates.end}
             AND (Horas__c > 0 OR HorasExtras__c > 0)
@@ -382,40 +375,29 @@ exports.getTeamPerformance = async (req, res) => {
             const pid = h.Pessoa__c;
             if (!realMap[pid]) realMap[pid] = { month: 0, today: 0 };
             
-            const val = (h.Horas__c || 0) + (h.HorasExtras__c || 0);
-            realMap[pid].month += val;
+            const normal = h.Horas__c || 0;
+            const extra = h.HorasExtras__c || 0;
+            const val = normal + (2 * extra);
             
+            realMap[pid].month += val;
             if (h.DiaPeriodo__r && h.DiaPeriodo__r.Data__c === dates.today) {
                 realMap[pid].today += val;
             }
         });
 
         const result = Object.values(people).map(p => {
-            const wd = wdMap[p.id] || { total: 0, past: 0 };
-            
-            // Híbrido: Usa o maior valor entre Banco e Projeção para o Total
-            const totalDays = Math.max(wd.total, projectedWorkingDays);
-            
+            const target = targetMap[p.id] || { totalMonth: 0, targetToDate: 0 };
             const real = realMap[p.id] || { month: 0, today: 0 };
-            const allocationFactor = p.totalAlloc / 100;
-
-            // Total Mês = HorasDiarias * DiasUteisTotal(Híbrido) * Alocação
-            const expectedMonthTotal = p.contractHours * totalDays * allocationFactor;
             
-            // Meta Hoje = HorasDiarias * DiasUteisPassados(Banco) * Alocação
-            const meta = p.contractHours * wd.past * allocationFactor;
-
             return {
                 id: p.id,
                 name: p.name,
-                role: p.role,
-                allocations: p.allocations,
+                photo: p.photo,
                 hoursToday: real.today,
                 hoursMonth: real.month,
-                contractMonth: expectedMonthTotal,
-                expectedMonthTotal: Math.round(expectedMonthTotal),
-                expectedToDate: Math.round(meta),
-                status: real.month >= (meta - (p.contractHours * allocationFactor)) ? 'Em Dia' : 'Atrasado'
+                expectedMonthTotal: Math.round(target.totalMonth),
+                expectedToDate: Math.round(target.targetToDate),
+                status: real.month >= (target.targetToDate - 4) ? 'Em Dia' : 'Atrasado'
             };
         });
 
@@ -426,8 +408,6 @@ exports.getTeamPerformance = async (req, res) => {
         res.status(500).json([]);
     }
 };
-
-exports.getAllocations = exports.getTeamPerformance;
 
 exports.getContractExtract = async (req, res) => {
     const { serviceName, month, year, personId } = req.query;
@@ -489,104 +469,3 @@ exports.searchPeople = async (req, res) => {
     } catch (e) { res.status(500).json([]); }
 };
 
-exports.getMyServices = async (req, res) => {
-    const conn = await getSfConnection();
-    const today = moment().format('YYYY-MM-DD');
-    const dates = { start: today, end: today }; // Para o seletor de alocação, olha o 'agora'
-    try {
-        const services = await getServicesScope(conn, req.session.user, dates);
-        const simplified = services.map(s => ({ id: s.Id, name: s.Name }));
-        res.json(simplified);
-    } catch (e) { res.status(500).json([]); }
-};
-
-exports.deleteAllocation = async (req, res) => {
-    const { id } = req.params;
-    const conn = await getSfConnection();
-
-    try {
-        // Validação: Verificar se existem lançamentos de horas vinculados a esta alocação via Responsavel__c
-        const hoursCheck = await conn.query(`
-            SELECT Count() 
-            FROM LancamentoHora__c 
-            WHERE Responsavel__r.Alocacao__c = '${id}' 
-            LIMIT 1
-        `);
-
-        if (hoursCheck.totalSize > 0) {
-            return res.status(400).json({ 
-                success: false, 
-                error: 'Não é possível excluir esta alocação pois existem lançamentos de horas associados.' 
-            });
-        }
-
-        // Se não houver impedimentos, exclui
-        await conn.sobject('Alocacao__c').destroy(id);
-        res.json({ success: true });
-
-    } catch (e) {
-        console.error("[DeleteAllocation] Error:", e);
-        res.status(500).json({ success: false, error: e.message });
-    }
-};
-
-exports.saveAllocation = async (req, res) => { 
-    const { personId, allocations } = req.body;
-    console.log(`[SaveAllocation] Iniciando para Pessoa: ${personId}`);
-    console.log(`[SaveAllocation] Payload recebido:`, JSON.stringify(allocations, null, 2));
-
-    const conn = await getSfConnection();
-    
-    try {
-        const toUpdate = [];
-        const toInsert = [];
-        const today = moment().format('YYYY-MM-DD');
-
-        for (const a of allocations) {
-            // Só atualiza se tiver ID válido (não vazio e não 'null' string)
-            const isValidId = a.allocationId && a.allocationId.trim() !== '' && a.allocationId !== 'null' && a.allocationId !== 'undefined';
-            
-            if (isValidId) {
-                // UPDATE
-                const payloadUpdate = {
-                    Id: a.allocationId,
-                    Percentual__c: a.percent,
-                    DataInicio__c: a.startDate || today,
-                    DataFim__c: a.endDate || null,
-                    DataFimOriginal__c: a.originalEndDate || null
-                };
-                toUpdate.push(payloadUpdate);
-            } else {
-                // INSERT
-                const payloadInsert = {
-                    Pessoa__c: personId,
-                    Servico__c: a.serviceId,
-                    Percentual__c: a.percent,
-                    DataInicio__c: a.startDate || today,
-                    DataFim__c: a.endDate || null,
-                    DataFimOriginal__c: a.originalEndDate || null
-                };
-                toInsert.push(payloadInsert);
-            }
-        }
-
-        console.log(`[SaveAllocation] Qtd Update: ${toUpdate.length}, Qtd Insert: ${toInsert.length}`);
-
-        if (toUpdate.length > 0) {
-            const resUpd = await conn.sobject('Alocacao__c').update(toUpdate);
-            const errors = resUpd.filter(r => !r.success);
-            if (errors.length > 0) throw new Error(`Erro no Update: ${JSON.stringify(errors)}`);
-        }
-
-        if (toInsert.length > 0) {
-            const resIns = await conn.sobject('Alocacao__c').create(toInsert);
-            const errors = resIns.filter(r => !r.success);
-            if (errors.length > 0) throw new Error(`Erro no Insert: ${JSON.stringify(errors)}`);
-        }
-
-        res.json({ success: true });
-    } catch (e) {
-        console.error("[SaveAllocation] Erro Crítico:", e);
-        res.status(500).json({ error: e.message });
-    }
-};

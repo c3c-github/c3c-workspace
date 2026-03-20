@@ -166,41 +166,12 @@
                             <thead class="bg-gray-50/50 border-b border-gray-100">
                                 <tr class="text-[10px] font-black text-gray-400 uppercase tracking-widest">
                                     <th class="px-10 py-6">Profissional</th>
-                                    <th class="px-6 py-6 text-center">Hoje</th>
-                                    <th class="px-10 py-6">Status Período</th>
-                                    <th class="px-6 py-6 text-center">Status</th>
-                                    <th class="px-10 py-6 text-right">Ação</th>
+                                    <th class="px-6 py-6 text-center cursor-pointer hover:text-gray-800 transition-colors" onclick="askCapivorce('team_today')">Hoje</th>
+                                    <th class="px-10 py-6 cursor-pointer hover:text-gray-800 transition-colors" onclick="askCapivorce('team_status_period')">Status Período</th>
+                                    <th class="px-6 py-6 text-center cursor-pointer hover:text-gray-800 transition-colors" onclick="askCapivorce('team_status')">Status</th>
                                 </tr>
                             </thead>
                             <tbody id="team-table-body" class="divide-y divide-gray-50">
-                                <!-- Injetado via JS -->
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </section>
-
-            <!-- ESCALONAMENTO -->
-            <section id="scale-section" class="mb-20">
-                <div class="flex justify-between items-end mb-8 px-4">
-                    <div class="text-left">
-                        <h2 class="text-xl font-black text-gray-800 tracking-tighter uppercase">Ocupação & Capacity</h2>
-                        <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mt-1">Distribuição de Recursos entre Contratos</p>
-                    </div>
-                </div>
-
-                <div class="bg-white rounded-[40px] shadow-sm border border-gray-100 overflow-hidden">
-                    <div class="overflow-x-auto custom-scrollbar">
-                        <table class="w-full text-left">
-                            <thead class="bg-gray-50/50 border-b border-gray-100">
-                                <tr class="text-[10px] font-black text-gray-400 uppercase tracking-widest">
-                                    <th class="px-10 py-6">Profissional</th>
-                                    <th class="px-6 py-6 text-center">Frentes Ativas</th>
-                                    <th class="px-6 py-6 text-center">Carga Total</th>
-                                    <th class="px-10 py-6 text-right">Gestão</th>
-                                </tr>
-                            </thead>
-                            <tbody id="allocation-table-body" class="divide-y divide-gray-50">
                                 <!-- Injetado via JS -->
                             </tbody>
                         </table>
@@ -211,6 +182,7 @@
     </main>
 
     <!-- MEGA MODAL EXTRATO -->
+
     <div id="extract-modal" class="fixed inset-0 bg-black/60 backdrop-blur-md hidden z-[100] flex items-center justify-center p-4 modal-overlay" onclick="handleOverlayClick(event, 'extract-modal')">
         <div class="bg-white rounded-[48px] shadow-2xl w-full max-w-6xl overflow-hidden transform scale-95 transition-all flex flex-col max-h-[90vh]" onclick="event.stopPropagation()">
             <header class="p-10 border-b border-gray-100 bg-white flex justify-between items-center shrink-0 gap-10 z-20">
@@ -240,34 +212,8 @@
         </div>
     </div>
 
-    <!-- MEGA MODAL ALOCAÇÃO -->
-    <div id="allocation-modal" class="fixed inset-0 bg-black/60 backdrop-blur-md hidden z-[100] flex items-center justify-center p-4 modal-overlay" onclick="handleOverlayClick(event, 'allocation-modal')">
-        <div class="bg-white rounded-[48px] shadow-2xl w-full max-w-2xl overflow-hidden transform scale-95 transition-all flex flex-col max-h-[90vh]" onclick="event.stopPropagation()">
-            <header class="p-10 border-b border-gray-100 bg-white flex justify-between items-center shrink-0 z-20 gap-6">
-                <div class="text-left min-w-0 flex-1">
-                    <h3 class="text-3xl font-black text-gray-800 tracking-tighter uppercase leading-tight">Ajustar Capacity</h3>
-                    <p id="alloc-modal-name" class="text-[10px] font-black text-c3c-blue uppercase tracking-[0.2em] mt-2 truncate">Gestão de Recurso</p>
-                </div>
-                <div class="shrink-0">
-                    <button onclick="closeModal('allocation-modal')" class="p-4 bg-white text-gray-400 hover:text-red-500 rounded-full shadow-sm transition-all hover:scale-110 active:scale-95 border border-gray-50"><i data-lucide="x" class="w-6 h-6"></i></button>
-                </div>
-            </header>
-
-            <div class="p-10 overflow-y-auto custom-scrollbar flex-1 bg-white space-y-8" id="alloc-inputs-container"></div>
-            <footer class="p-10 border-t border-gray-100 bg-gray-50/50 flex justify-between items-center shrink-0">
-                <div class="flex flex-col text-left">
-                    <span class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Ocupação Agregada</span>
-                    <span id="alloc-total-display" class="text-3xl font-black text-gray-800 tracking-tighter">0%</span>
-                </div>
-                <div class="flex gap-4">
-                    <button onclick="addAllocationRow()" class="px-6 py-4 text-c3c-blue font-black uppercase text-[10px] tracking-widest hover:bg-blue-50 rounded-2xl transition-all">+ Novo Projeto</button>
-                    <button onclick="saveAllocations()" class="px-10 py-4 bg-c3c-gradient text-white font-black uppercase text-xs tracking-widest rounded-2xl shadow-2xl shadow-blue-100 hover:opacity-90 transition-all active:scale-95 flex items-center gap-2"><i data-lucide="check" class="w-4 h-4"></i> Salvar</button>
-                </div>
-            </footer>
-        </div>
-    </div>
-
     <!-- CAPIVORCE INSIGHTS (SPEECH BUBBLE REPOSICIONADO) -->
+
     <div id="capivorce-bubble" class="fixed left-64 top-20 z-[100] hidden transform -translate-x-10 opacity-0 transition-all duration-500 ease-out max-w-sm pointer-events-none">
         <div class="bg-gray-900 text-white p-8 rounded-[40px] rounded-tl-none shadow-2xl relative border-2 border-c3c-blue/30 backdrop-blur-xl bg-opacity-95 text-left">
             <div class="flex items-center gap-3 mb-4">
@@ -297,7 +243,10 @@
             st_and: "Aqui estão os chamados em <b>Andamento</b>. Significa que um consultor já assumiu a demanda e está trabalhando nela neste momento.",
             st_pau: "Chamados <b>Pausados</b> são aqueles que dependem de uma ação externa (como uma atualização de sistema ou fornecedor) para prosseguir.",
             st_agu: "<b>Aguardando</b> indica que o chamado está parado com o cliente. Pode ser uma dúvida que enviamos ou uma validação que ele precisa fazer.",
-            st_fec: "Estes são os <b>Fechados</b>! Indica o volume de demandas concluídas com sucesso dentro do mês que você selecionou."
+            st_fec: "Estes são os <b>Fechados</b>! Indica o volume de demandas concluídas com sucesso dentro do mês que você selecionou.",
+            team_today: "A coluna <b>Hoje</b> mostra o total de horas consumidas pelo profissional no dia atual. É a soma das horas normais mais o dobro das horas extras (regra de peso 2x para extras).",
+            team_status_period: "O <b>Status do Período</b> compara o consumo real (horas normais + 2x extras) com o esperado. O <b>Target</b> é a soma das horas contratuais dos dias úteis até hoje. O 100% da barra é o total esperado para o mês completo.",
+            team_status: "O <b>Status</b> indica se o profissional está 'Em Dia' ou 'Atrasado' em relação ao Target acumulado até hoje, considerando uma margem de tolerância."
         };
 
         function askCapivorce(key) {
@@ -328,8 +277,10 @@
 
         function hideCapivorce() {
             const bubble = document.getElementById('capivorce-bubble');
-            bubble.classList.add('-translate-x-10', 'opacity-0');
-            setTimeout(() => bubble.classList.add('hidden'), 500);
+            if (bubble) {
+                bubble.classList.add('-translate-x-10', 'opacity-0');
+                setTimeout(() => bubble.classList.add('hidden'), 500);
+            }
         }
 
         document.addEventListener('click', (e) => {
@@ -339,9 +290,8 @@
         });
 
         const initialPeriod = <%- JSON.stringify(periods[0].value) %>;
-        let currentMonth = initialPeriod.month, currentYear = initialPeriod.year, teamData = [], contractsData = [], myServices = [];
+        let currentMonth = initialPeriod.month, currentYear = initialPeriod.year, teamData = [], contractsData = [];
 
-        async function loadMyServices() { try { const res = await fetch(`${API_URL}/my-services`); myServices = await res.json(); } catch(e) { console.error(e); } }
         function onDateChange(sel) { const v = JSON.parse(sel.value); currentMonth = v.month; currentYear = v.year; loadDashboard(); }
 
         async function loadDashboard() {
@@ -373,14 +323,6 @@
             const tb = document.getElementById('contracts-table'); tb.innerHTML = '';
             if(!data || data.length === 0) { tb.innerHTML = '<tr><td colspan="10" class="py-20 text-center text-gray-300 font-black uppercase text-[10px] tracking-widest">Nenhum contrato ativo neste período</td></tr>'; return; }
             
-            console.log("--- DEBUG: CÁLCULO DE CONSUMO ---");
-            console.table(data.map(c => ({ 
-                servico: c.name, 
-                franquia: c.total, 
-                realizado: c.used, 
-                percentual: (c.total > 0 ? (c.used / c.total) * 100 : 0).toFixed(2) + '%' 
-            })));
-
             data.forEach(c => {
                 const pct = c.total > 0 ? (c.used / c.total) * 100 : 0;
                 const cappedPct = Math.min(pct, 100);
@@ -394,7 +336,6 @@
                     expInfo = `<p class="text-[8px] font-black uppercase tracking-widest mt-1 ${expColor}">Vence em: ${c.expirationDate.split('-').reverse().join('/')}</p>`;
                 }
 
-                // Escapar aspas simples para não quebrar o onclick
                 const escapedName = c.name.replace(/'/g, "\\'");
 
                 tb.innerHTML += `<tr class="hover:bg-gray-50/50 transition-colors group">
@@ -429,78 +370,45 @@
             lucide.createIcons();
         }
 
-        async function loadTeam() { try { const res = await fetch(`${API_URL}/team?month=${currentMonth}&year=${currentYear}`); teamData = await res.json(); renderTeam(teamData); renderScale(teamData); } catch(e) { console.error(e); } }
+        async function loadTeam() { try { const res = await fetch(`${API_URL}/team?month=${currentMonth}&year=${currentYear}`); teamData = await res.json(); renderTeam(teamData); } catch(e) { console.error(e); } }
         
         function renderTeam(data) {
             const tb = document.getElementById('team-table-body'); tb.innerHTML = '';
-            if(!data || data.length === 0) { tb.innerHTML = '<tr><td colspan="5" class="py-20 text-center text-gray-300 font-black uppercase text-[10px]">Sem registros de equipe</td></tr>'; return; }
+            if(!data || data.length === 0) { tb.innerHTML = '<tr><td colspan="4" class="py-20 text-center text-gray-300 font-black uppercase text-[10px]">Sem registros de equipe</td></tr>'; return; }
             data.forEach(r => {
                 const pct = Math.min((r.hoursMonth / (r.expectedMonthTotal || 1)) * 100, 100);
                 const mPct = (r.expectedToDate / (r.expectedMonthTotal || 1)) * 100;
                 let sCls = r.status === 'Atrasado' ? 'bg-red-500' : 'bg-teal-500';
                 let tCls = r.status === 'Atrasado' ? 'text-red-600' : 'text-teal-600';
                 
+                const photoHtml = r.photo 
+                    ? `<img src="${r.photo}" class="w-12 h-12 rounded-[18px] object-cover border border-blue-50 shadow-sm">`
+                    : `<div class="w-12 h-12 rounded-[18px] bg-c3c-blue/5 flex items-center justify-center text-c3c-blue font-black uppercase border border-blue-50 shadow-sm text-lg">${r.name.charAt(0)}</div>`;
+
                 tb.innerHTML += `<tr class="hover:bg-gray-50/50 transition-colors group border-b border-gray-50">
                     <td class="px-10 py-6 text-left">
                         <div class="flex items-center gap-4">
-                            <div class="w-12 h-12 rounded-[18px] bg-c3c-blue/5 flex items-center justify-center text-c3c-blue font-black uppercase border border-blue-50 shadow-sm text-lg">${r.name.charAt(0)}</div>
+                            ${photoHtml}
                             <div>
                                 <p class="font-black text-gray-800 text-xs uppercase tracking-tighter">${r.name}</p>
-                                <p class="text-[9px] font-bold text-gray-400 uppercase tracking-widest">${r.role}</p>
                             </div>
                         </div>
                     </td>
-                    <td class="px-6 py-6 text-center font-black ${r.hoursToday < 8 ? 'text-orange-500' : 'text-teal-600'} text-sm">${r.hoursToday.toFixed(1)}h</td>
-                    <td class="px-10 py-6">
+                    <td class="px-6 py-6 text-center font-black ${r.hoursToday < 8 ? 'text-orange-500' : 'text-teal-600'} text-sm cursor-pointer hover:bg-gray-100/50 transition-all rounded-2xl" onclick="askCapivorce('team_today')">${r.hoursToday.toFixed(1)}h</td>
+                    <td class="px-10 py-6 cursor-pointer hover:bg-gray-100/50 transition-all rounded-2xl" onclick="askCapivorce('team_status_period')">
                         <div class="flex justify-between text-[9px] font-black uppercase mb-2">
                             <span class="${tCls}">${r.hoursMonth.toFixed(1)}h realizados</span>
-                            <span class="text-gray-300">Target: ${r.expectedToDate.toFixed(0)}h</span>
+                            <span class="text-gray-300">Target Meta: ${r.expectedToDate.toFixed(0)}h / 100%: ${r.expectedMonthTotal.toFixed(0)}h</span>
                         </div>
                         <div class="progress-bar-bg relative h-2">
-                            <div class="absolute top-0 bottom-0 w-0.5 bg-gray-800/30 z-10" style="left: ${Math.min(mPct, 100)}%"></div>
+                            <div class="absolute top-0 bottom-0 w-0.5 bg-gray-800/30 z-10" style="left: ${Math.min(mPct, 100)}%" title="Meta até hoje"></div>
                             <div class="h-full rounded-full ${sCls} transition-all duration-1000 shadow-sm" style="width: ${pct}%"></div>
                         </div>
                     </td>
-                    <td class="px-6 py-6 text-center">
+                    <td class="px-6 py-6 text-center cursor-pointer hover:bg-gray-100/50 transition-all rounded-2xl" onclick="askCapivorce('team_status')">
                         <span class="inline-flex items-center gap-2 text-[9px] font-black uppercase ${tCls} bg-white px-4 py-1.5 rounded-full border border-gray-100 tracking-widest shadow-sm">
                             <div class="w-2 h-2 rounded-full ${sCls} animate-pulse"></div> ${r.status}
                         </span>
-                    </td>
-                    <td class="px-10 py-6 text-right">
-                        <button onclick="openExtract('${r.name}', '${r.id}')" class="bg-white border border-gray-100 text-[10px] font-black text-indigo-600 uppercase tracking-widest px-5 py-2.5 rounded-xl shadow-sm hover:shadow-md transition-all">Detalhes</button>
-                    </td>
-                </tr>`;
-            });
-        }
-
-        function renderScale(data) {
-            const tb = document.getElementById('allocation-table-body'); tb.innerHTML = '';
-            if(!data || data.length === 0) return;
-            data.forEach(r => {
-                let t = 0; r.allocations.forEach(a => t += (a.Percentual__c || 0));
-                let c = t > 105 ? 'text-red-600' : (t < 80 ? 'text-orange-500' : 'text-teal-600');
-                let bg = t > 105 ? 'bg-red-50' : (t < 80 ? 'bg-orange-50' : 'bg-teal-50');
-                
-                tb.innerHTML += `<tr class="hover:bg-gray-50/50 transition-colors border-b border-gray-50">
-                    <td class="px-10 py-6 text-left">
-                        <div class="flex items-center gap-4">
-                            <div class="w-12 h-12 rounded-[18px] bg-gray-50 flex items-center justify-center text-gray-300 font-black uppercase border border-gray-100 shadow-inner text-lg">${r.name.charAt(0)}</div>
-                            <div>
-                                <p class="font-black text-gray-800 text-xs uppercase tracking-tighter">${r.name}</p>
-                                <p class="text-[9px] font-bold text-gray-400 uppercase tracking-widest">${r.role}</p>
-                            </div>
-                        </div>
-                    </td>
-                    <td class="px-6 py-6 text-center">
-                        <button onclick="openProjectsList('${r.name}', '${r.id}')" class="text-[10px] font-black text-c3c-blue bg-blue-50 px-5 py-2 rounded-xl border border-blue-100 uppercase tracking-widest hover:bg-blue-100 transition-all">${r.allocations.length} Ativas</button>
-                    </td>
-                    <td class="px-6 py-6 text-center">
-                        <div class="inline-block px-6 py-2 rounded-2xl ${bg} border border-white shadow-sm">
-                            <span class="text-xl font-black ${c} tracking-tighter">${t}%</span>
-                        </div>
-                    </td>
-                    <td class="px-10 py-6 text-right">
-                        <button onclick="openAllocationModal('${r.id}', '${r.name}')" class="bg-c3c-gradient text-white px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-blue-100 transition-all active:scale-95">Gerenciar</button>
                     </td>
                 </tr>`;
             });
@@ -611,73 +519,18 @@
             document.getElementById('modal-title').innerText = "Squad Ativo"; document.getElementById('modal-subtitle').innerText = name;
             const tr = document.querySelector('#extract-modal thead tr'); tr.innerHTML = `<th class="py-6 px-10">Profissional</th><th class="py-6 px-10 text-right">Alocação</th>`;
             const tb = document.getElementById('modal-rows'); tb.innerHTML = '';
-            const id15 = id.substring(0, 15); const members = teamData.filter(r => r.allocations && r.allocations.some(a => a.Servico__c.substring(0, 15) === id15));
-            if(members.length === 0) { tb.innerHTML = '<tr><td colspan="2" class="py-20 text-center text-gray-300 font-black uppercase text-[10px] tracking-widest">Nenhum recurso alocado diretamente</td></tr>'; }
-            members.forEach(m => { const a = m.allocations.find(x => x.Servico__c.substring(0, 15) === id15); tb.innerHTML += `<tr class="border-b border-gray-50 hover:bg-gray-50/30 transition-colors"><td class="px-10 py-6 font-black text-gray-800 uppercase text-xs tracking-tighter">${m.name}</td><td class="px-10 py-6 text-right text-c3c-blue font-black text-lg tracking-tighter">${a ? a.Percentual__c : '?'}%</td></tr>`; });
+            
+            // Filtro simplificado já que removemos as alocações da view de equipe
+            tb.innerHTML = '<tr><td colspan="2" class="py-20 text-center text-gray-300 font-black uppercase text-[10px] tracking-widest">Consulte o gestor para detalhes da squad</td></tr>';
             openModal('extract-modal');
         }
 
-        function openProjectsList(name, id) {
-            const res = teamData.find(r => r.id === id); document.getElementById('modal-title').innerText = name; document.getElementById('modal-subtitle').innerText = "Projetos Ativos";
-            const tr = document.querySelector('#extract-modal thead tr'); tr.innerHTML = `<th class="py-6 px-10">Projeto / Serviço</th><th class="py-6 px-10 text-right">Alocação</th>`;
-            const tb = document.getElementById('modal-rows'); tb.innerHTML = '';
-            if (res && res.allocations) res.allocations.forEach(a => { tb.innerHTML += `<tr class="border-b border-gray-50 hover:bg-gray-50/30 transition-colors"><td class="px-10 py-6 font-black text-gray-800 uppercase text-xs tracking-tighter">${a.Servico__r ? a.Servico__r.Name : 'Projeto'}</td><td class="px-10 py-6 text-right text-c3c-blue font-black text-lg tracking-tighter">${a.Percentual__c}%</td></tr>`; });
-            openModal('extract-modal');
+        function openModal(id) { 
+            const m = document.getElementById(id); 
+            if (!m) return;
+            m.classList.remove('hidden'); m.classList.remove('opacity-0'); 
+            setTimeout(() => m.classList.remove('scale-95'), 10); 
         }
-
-        function openAllocationModal(id, name) {
-            currentEditingPersonId = id; const res = teamData.find(r => r.id === id); document.getElementById('alloc-modal-name').innerText = name;
-            const container = document.getElementById('alloc-inputs-container'); container.innerHTML = '';
-            if (res && res.allocations) res.allocations.forEach(a => {
-                const sId = a.Servico__c, sName = a.Servico__r ? a.Servico__r.Name : 'Serviço', isM = myServices.some(s => s.id === sId);
-                if(isM) container.innerHTML += createAllocRow(a.Id, sId, a.Percentual__c, a.DataInicio__c, a.DataFim__c, a.DataFimOriginal__c);
-                else container.innerHTML += `<div class="flex flex-col bg-gray-50 p-6 rounded-[32px] border border-gray-100 opacity-60 text-left shadow-inner"><p class="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Gerenciado por outro líder</p><div class="flex justify-between items-center"><p class="text-xs font-black text-gray-600 uppercase tracking-tighter">${sName}</p><span class="font-black text-gray-600 text-lg tracking-tighter">${a.Percentual__c}%</span></div></div>`;
-            });
-            updateTotalDisplay(); lucide.createIcons(); openModal('allocation-modal');
-        }
-
-        function createAllocRow(aId, sId, pct, s, e, oE) {
-            const today = new Date().toISOString().split('T')[0], isF = s > today;
-            return `<div class="bg-gray-50 p-8 rounded-[40px] border border-gray-100 alloc-row space-y-6 text-left shadow-sm group hover:shadow-md transition-all" data-alloc-id="${aId || ''}">
-                <div class="flex items-center gap-6">
-                    <div class="flex-1 text-left">
-                        <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest px-2 mb-2 block">Projeto de Suporte</label>
-                        <select class="w-full bg-white border border-gray-200 rounded-[20px] px-5 py-3.5 text-xs font-bold focus:ring-4 focus:ring-blue-50 outline-none service-select transition-all cursor-pointer">
-                            ${myServices.map(x => `<option value="${x.id}" ${x.id === sId ? 'selected' : ''}>${x.name}</option>`).join('')}
-                        </select>
-                    </div>
-                    <div class="w-28 text-left">
-                        <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest px-2 mb-2 block">Carga %</label>
-                        <div class="flex items-center bg-white border border-gray-200 rounded-[20px] overflow-hidden px-4">
-                            <input type="number" value="${pct}" oninput="updateTotalDisplay()" class="w-full text-center text-xs py-3.5 border-none outline-none font-black text-c3c-blue pct-input">
-                            <span class="text-[10px] font-black text-gray-300">%</span>
-                        </div>
-                    </div>
-                    <button class="w-12 h-12 bg-white text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-2xl flex items-center justify-center transition-all mt-6 shadow-sm group-hover:scale-105" onclick="removeAllocRow(this, '${aId}')"><i data-lucide="trash-2" class="w-5 h-5"></i></button>
-                </div>
-                <div class="grid grid-cols-3 gap-4 pt-6 border-t border-gray-100">
-                    <div>
-                        <label class="text-[9px] font-black text-gray-400 uppercase tracking-widest block mb-2 px-1">Data Início</label>
-                        <input type="date" value="${s}" class="w-full bg-white border border-gray-200 rounded-xl px-4 py-2 text-[10px] font-bold outline-none focus:ring-2 focus:ring-blue-50 start-date-input">
-                    </div>
-                    <div>
-                        <label class="text-[9px] font-black text-gray-400 uppercase tracking-widest block mb-2 px-1">Fim Planejado</label>
-                        <input type="date" value="${e}" class="w-full bg-white border border-gray-200 rounded-xl px-4 py-2 text-[10px] font-bold outline-none focus:ring-2 focus:ring-blue-50 end-date-input">
-                    </div>
-                    <div>
-                        <label class="text-[9px] font-black text-gray-400 uppercase tracking-widest block mb-2 px-1">Baseline Original</label>
-                        <input type="date" value="${oE}" ${isF ? 'readonly' : ''} class="w-full ${isF ? 'bg-gray-100 text-gray-400' : 'bg-white'} border border-gray-200 rounded-xl px-4 py-2 text-[10px] font-bold outline-none original-end-input">
-                    </div>
-                </div>
-            </div>`;
-        }
-
-        async function removeAllocRow(btn, id) { if (!id || id === 'null' || id === 'undefined') { btn.closest('.alloc-row').remove(); updateTotalDisplay(); return; } if (!confirm('Remover esta alocação permanentemente?')) return; const res = await fetch(`${API_URL}/allocation/${id}`, { method: 'DELETE' }); const data = await res.json(); if (data.success) { btn.closest('.alloc-row').remove(); updateTotalDisplay(); } else alert(data.error); }
-        function updateTotalDisplay() { let t = 0; document.querySelectorAll('.pct-input').forEach(i => t += parseFloat(i.value || 0)); document.getElementById('alloc-total-display').innerText = t + "%"; document.getElementById('alloc-total-display').className = t > 105 ? 'text-3xl font-black text-red-600 tracking-tighter' : 'text-3xl font-black text-gray-800 tracking-tighter'; }
-        function addAllocationRow() { const c = document.getElementById('alloc-inputs-container'); c.insertAdjacentHTML('beforeend', createAllocRow(null, myServices[0]?.id, 0, new Date().toISOString().split('T')[0], '', '')); lucide.createIcons(); }
-        async function saveAllocations() { const rows = document.querySelectorAll('.alloc-row'); const p = { personId: currentEditingPersonId, allocations: [] }; let err = false; rows.forEach(r => { if(err) return; const oE = r.querySelector('.original-end-input').value; if (!oE) { alert("Data de baseline original é obrigatória."); err = true; return; } p.allocations.push({ allocationId: r.getAttribute('data-alloc-id'), serviceId: r.querySelector('.service-select').value, percent: parseFloat(r.querySelector('.pct-input').value) || 0, startDate: r.querySelector('.start-date-input').value, endDate: r.querySelector('.end-date-input').value, originalEndDate: oE }); }); if(err) return; try { const res = await fetch(`${API_URL}/allocation`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(p) }); if((await res.json()).success) { closeModal('allocation-modal'); loadDashboard(); } } catch(e) { console.error(e); } }
-        
-        function openModal(id) { const m = document.getElementById(id); m.classList.remove('hidden'); m.classList.remove('opacity-0'); setTimeout(() => m.classList.remove('scale-95'), 10); }
         function closeModal(id) { 
             const m = document.getElementById(id); 
             if (!m) return;
@@ -693,7 +546,7 @@
 
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape') {
-                const openModals = ['extract-modal', 'allocation-modal'];
+                const openModals = ['extract-modal'];
                 openModals.forEach(id => {
                     const m = document.getElementById(id);
                     if (m && !m.classList.contains('hidden')) closeModal(id);
@@ -704,7 +557,8 @@
 
         function setActiveLink(c) { document.querySelectorAll('.sub-nav-link').forEach(l => { l.classList.remove('active'); }); c.classList.add('active'); }
         
-        document.addEventListener('DOMContentLoaded', async () => { await loadMyServices(); const s = document.querySelector('header select'); if (s) onDateChange(s); else loadDashboard(); });
+        document.addEventListener('DOMContentLoaded', async () => { const s = document.querySelector('header select'); if (s) onDateChange(s); else loadDashboard(); });
     </script>
+
 </body>
 </html>

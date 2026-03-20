@@ -108,13 +108,9 @@ router.get('/support-management', requireAuth, requireGroup(['GESTAO_SUPORTE', '
 router.get('/api/support-management/metrics', requireAuth, requireGroup(['GESTAO_SUPORTE', 'DIRETOR', 'GESTOR']), supportController.getGlobalMetrics);
 router.get('/api/support-management/contracts', requireAuth, requireGroup(['GESTAO_SUPORTE', 'DIRETOR', 'GESTOR']), supportController.getContractsPerformance);
 router.get('/api/support-management/team', requireAuth, requireGroup(['GESTAO_SUPORTE', 'DIRETOR', 'GESTOR']), supportController.getTeamPerformance);
-router.get('/api/support-management/allocations', requireAuth, requireGroup(['GESTAO_SUPORTE', 'DIRETOR', 'GESTOR']), supportController.getAllocations);
 router.get('/api/support-management/extract', requireAuth, requireGroup(['GESTAO_SUPORTE', 'DIRETOR', 'GESTOR']), supportController.getContractExtract);
 router.get('/api/support-management/search-people', requireAuth, requireGroup(['GESTAO_SUPORTE', 'DIRETOR', 'GESTOR']), supportController.searchPeople);
-router.get('/api/support-management/my-services', requireAuth, requireGroup(['GESTAO_SUPORTE', 'DIRETOR', 'GESTOR']), supportController.getMyServices); 
 router.get('/api/support-management/contract-cases', requireAuth, requireGroup(['GESTAO_SUPORTE', 'DIRETOR', 'GESTOR']), supportController.getContractCases);
-router.post('/api/support-management/allocation', requireAuth, requireGroup(['GESTAO_SUPORTE', 'DIRETOR', 'GESTOR']), supportController.saveAllocation);
-router.delete('/api/support-management/allocation/:id', requireAuth, requireGroup(['GESTAO_SUPORTE', 'DIRETOR', 'GESTOR']), supportController.deleteAllocation);
 
 // --- RH ---
 router.get('/hr', requireAuth, requireGroup('ADMIN_RH'), hrController.renderHrDashboard);
