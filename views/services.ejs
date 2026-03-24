@@ -4,71 +4,66 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gestão de Serviços - C3C Workspace</title>
+    
+    <!-- Tailwind & Lucide -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    
     <script>
         tailwind.config = {
             theme: {
                 extend: {
-                    fontFamily: { sans: ['Montserrat', 'sans-serif'] },
-                    colors: { 
-                        c3c: { 
-                            blue: '#2978FF', 
-                            teal: '#1DDDBD', 
-                            gray: '#F2F2F2',
-                            dark: '#000000'
-                        } 
-                    }
+                    colors: { 'c3c-blue': '#2978FF', 'c3c-dark': '#1E293B' },
+                    backgroundImage: { 'c3c-gradient': 'linear-gradient(135deg, #2978FF 0%, #1E40AF 100%)' },
+                    fontFamily: { sans: ['Montserrat', 'sans-serif'] }
                 }
             }
         }
     </script>
     <style>
-        body { font-family: 'Montserrat', sans-serif; background-color: #F8FAFC; }
-        .bg-c3c-gradient { background: transparent linear-gradient(118deg, #1DDDBD 0%, #1ED9C0 45%, #2978FF 100%) 0% 0% no-repeat padding-box; }
-        .fade-in { animation: fadeIn 0.4s ease-out; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         .custom-scrollbar::-webkit-scrollbar { width: 4px; height: 4px; }
-        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #E2E8F0; border-radius: 10px; }
-        .modal-tab-active { border-bottom: 3px solid #2978FF; color: #2978FF; font-weight: 800; background-color: #F8FAFC; }
-        .modal-tab-inactive { border-bottom: 3px solid transparent; color: #94A3B8; }
-        .modal-tab-inactive:hover { color: #475569; background-color: #F9FAFB; }
-        .input-inline { background: transparent; border: 1px solid transparent; width: 100%; border-radius: 8px; padding: 4px 8px; transition: all 0.2s; }
-        .input-inline:hover { border-color: #E2E8F0; background: white; }
-        .input-inline:focus { border-color: #2978FF; background: white; outline: none; box-shadow: 0 0 0 4px rgba(41, 120, 255, 0.05); }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #f1f1f1; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        .fade-in { animation: fadeIn 0.3s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .input-modern { @apply bg-white border border-gray-300 rounded-2xl px-5 py-3 text-xs font-bold focus:ring-4 focus:ring-blue-100/50 focus:border-c3c-blue outline-none transition-all shadow-sm; }
+        .modal-tab-active { @apply border-b-4 border-c3c-blue text-c3c-blue; }
+        .modal-tab-inactive { @apply border-b-4 border-transparent text-gray-400 hover:text-gray-600; }
+        .input-inline { @apply w-full bg-transparent border-none p-0 text-xs focus:ring-0 outline-none; }
         .table-dense th, .table-dense td { padding: 8px 12px; font-size: 11px; vertical-align: middle; }
-        .readonly-field { background-color: #F3F4F6; color: #6B7280; cursor: not-allowed; }
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        
+        /* MODO DEMO */
+        .demo-mode-active .demo-blur { 
+            filter: blur(8px) !important; 
+            pointer-events: none !important; 
+            user-select: none !important; 
+            transition: all 0.3s ease;
+        }
     </style>
 </head>
 <body class="h-screen flex overflow-hidden bg-[#F8FAFC]">
 
     <%- include('partials/sidebar', { page: 'services' }) %>
 
-    <main class="flex-1 flex flex-col md:ml-64 relative w-full transition-all duration-300 overflow-hidden">
-        
-        <!-- HEADER -->
-        <header class="h-20 bg-white border-b border-gray-200 flex items-center justify-between px-4 md:px-8 sticky top-0 z-20 shrink-0">
-            <div class="flex items-center gap-4 text-left">
-                <button onclick="document.getElementById('sidebar').classList.toggle('-translate-x-full')" class="md:hidden p-2 text-gray-600 hover:bg-gray-100 rounded-lg">
-                    <i data-lucide="menu" class="w-6 h-6"></i>
-                </button>
-                <div>
-                    <h1 class="text-lg md:text-xl font-bold text-gray-800 flex items-center gap-2 tracking-tight">Gestão de Serviços <span class="text-c3c-blue">📁</span></h1>
-                    <p class="text-[10px] text-gray-400 font-bold uppercase tracking-widest hidden sm:block">Portfólio de Contratos e Baseline Comercial</p>
-                </div>
+    <main class="flex-1 md:ml-64 flex flex-col min-w-0 overflow-hidden relative">
+        <!-- HEADER PRINCIPAL -->
+        <header class="bg-white border-b border-gray-100 px-8 py-6 flex justify-between items-center shrink-0 shadow-sm z-10">
+            <div class="text-left">
+                <h1 class="text-2xl font-black text-gray-800 uppercase tracking-tighter leading-none">Gestão de Serviços</h1>
+                <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">Visão 360º de Projetos, Alocações e Faturamento</p>
             </div>
             
             <div class="flex items-center gap-4">
-                <div class="relative group hidden lg:block">
-                    <i data-lucide="search" class="w-4 h-4 text-gray-300 absolute left-4 top-1/2 -translate-y-1/2 group-focus-within:text-c3c-blue transition-colors"></i>
-                    <input type="text" id="search-input" onkeyup="filterServices()" placeholder="Buscar por serviço ou cliente..." class="w-72 pl-11 pr-4 py-2.5 bg-gray-50 border border-gray-100 rounded-2xl text-xs font-bold focus:ring-4 focus:ring-blue-50 focus:border-c3c-blue outline-none transition-all">
+                <div class="flex items-center bg-gray-50 border border-gray-100 rounded-xl px-4 py-2 gap-3 shadow-sm focus-within:ring-2 focus-within:ring-c3c-blue transition-all w-64">
+                    <i data-lucide="search" class="w-4 h-4 text-gray-400"></i>
+                    <input type="text" id="search-input" oninput="filterServices()" placeholder="Pesquisar serviços..." class="bg-transparent text-[10px] font-black text-gray-600 uppercase tracking-widest outline-none w-full placeholder:text-gray-300">
                 </div>
-                <div class="h-8 w-px bg-gray-100 hidden lg:block"></div>
-                
+
                 <div class="flex items-center bg-gray-50 border border-gray-100 rounded-xl px-3 py-1.5 gap-2 shadow-sm focus-within:ring-2 focus-within:ring-c3c-blue transition-all">
                     <i data-lucide="filter" class="w-3.5 h-3.5 text-c3c-blue"></i>
                     <select id="status-filter" onchange="filterServices()" class="bg-transparent text-[10px] font-black text-gray-500 uppercase tracking-widest outline-none cursor-pointer pr-6">
@@ -98,218 +93,391 @@
 
     <!-- MEGA MODAL SERVIÇO PREMIUM -->
     <div id="service-modal" class="fixed inset-0 bg-black/60 backdrop-blur-md hidden z-50 flex items-center justify-center p-4">
-        <div class="bg-white rounded-[48px] shadow-2xl w-full max-w-[95vw] h-[95vh] flex flex-col transform scale-95 transition-all overflow-hidden border border-white/20">
+        <div class="bg-white rounded-[40px] shadow-2xl w-full max-w-[95vw] h-[95vh] flex flex-col transform scale-95 transition-all overflow-hidden border border-white/20">
             
             <!-- LOADER -->
-            <div id="modal-loader" class="absolute inset-0 bg-white/90 z-[100] flex items-center justify-center hidden">
+            <div id="modal-loader" class="absolute inset-0 bg-white/80 backdrop-blur-sm z-[150] flex items-center justify-center hidden">
                 <div class="flex flex-col items-center gap-4">
                     <div class="w-12 h-12 border-4 border-blue-100 border-t-c3c-blue rounded-full animate-spin"></div>
                     <p class="text-[10px] font-black text-c3c-blue uppercase tracking-[0.3em] animate-pulse">Processando dados...</p>
                 </div>
             </div>
 
-            <!-- HEADER MODAL -->
-            <header class="p-8 border-b border-gray-100 bg-gray-50/50 shrink-0">
-                <div class="flex justify-between items-start mb-8">
+            <!-- MODAL HEADER CONSOLIDADO -->
+            <div class="px-10 py-6 border-b border-gray-100 flex justify-between items-center bg-gray-50/30 shrink-0">
+                <div class="flex items-center gap-4">
+                    <div class="w-12 h-12 rounded-2xl bg-c3c-gradient flex items-center justify-center text-white shadow-lg shadow-blue-100">
+                        <i data-lucide="layers" class="w-6 h-6"></i>
+                    </div>
                     <div class="text-left">
-                        <div class="flex items-center gap-3 mb-2">
-                            <span id="badge-status" class="bg-teal-50 text-teal-600 text-[9px] px-3 py-1 rounded-full border border-teal-100 font-black uppercase tracking-widest">Ativo</span>
-                            <span class="text-[10px] font-black text-gray-300 uppercase tracking-[0.2em] italic" id="modal-svc-id">#ID...</span>
+                        <div class="flex items-center gap-2">
+                            <h2 id="modal-svc-title" class="text-lg font-black text-gray-800 uppercase tracking-tighter">Editar Serviço</h2>
+                            <span id="badge-status" class="bg-blue-50 text-c3c-blue text-[8px] font-black px-2 py-0.5 rounded-full border border-blue-100 uppercase tracking-widest">Em Edição</span>
                         </div>
-                        <h3 class="text-3xl font-black text-gray-800 tracking-tighter uppercase leading-tight" id="modal-svc-title">Novo Serviço</h3>
-                    </div>
-                    <div class="flex items-center gap-4">
-                        <button onclick="saveService()" class="px-10 py-4 bg-c3c-gradient text-white font-black uppercase text-xs tracking-widest rounded-2xl shadow-xl shadow-blue-100 hover:opacity-90 transition-all active:scale-95 flex items-center gap-2"><i data-lucide="check" class="w-4 h-4"></i> Salvar Alterações</button>
-                        <button onclick="closeModal('service-modal')" class="p-3 bg-white hover:bg-red-50 text-gray-400 hover:text-red-500 rounded-full transition-all shadow-sm"><i data-lucide="x" class="w-6 h-6"></i></button>
+                        <p id="modal-svc-subtitle" class="text-[10px] font-bold text-c3c-blue uppercase tracking-widest mt-0.5 truncate max-w-md">Gestão de Escopo, Alocação e Faturamento</p>
                     </div>
                 </div>
 
-                <!-- SUMMARY CARDS -->
-                <div class="grid grid-cols-3 gap-6">
-                    <div class="bg-white p-5 rounded-3xl border border-gray-100 shadow-sm flex justify-between items-center text-left">
-                        <div><p class="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1">Baseline Comercial</p><p class="text-xl font-black text-gray-800 tracking-tighter" id="card-prop-rev">R$ 0,00</p></div>
-                        <div class="text-right px-4 py-2 bg-blue-50 rounded-2xl border border-blue-50"><p class="text-[8px] font-black text-c3c-blue uppercase">Margem</p><p class="text-sm font-black text-c3c-blue" id="card-prop-margin">0%</p></div>
+                <!-- INDICADORES NO HEADER -->
+                <div class="flex items-center gap-6">
+                    <div class="text-right">
+                        <p class="text-[8px] font-black text-gray-400 uppercase tracking-widest mb-0.5">Baseline</p>
+                        <p id="card-prop-rev" class="text-xs font-black text-gray-800">R$ 0,00</p>
+                        <p id="card-prop-margin" class="text-[9px] font-black text-c3c-blue">0% MG</p>
                     </div>
-                    <div class="bg-white p-5 rounded-3xl border border-gray-100 shadow-sm flex justify-between items-center text-left">
-                        <div><p class="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1">Previsão Alocação</p><p class="text-xl font-black text-gray-800 tracking-tighter" id="card-fcst-rev">R$ 0,00</p></div>
-                        <div class="text-right px-4 py-2 bg-indigo-50 rounded-2xl border border-indigo-50"><p class="text-[8px] font-black text-indigo-600 uppercase">Margem</p><p class="text-sm font-black text-indigo-600" id="card-fcst-margin">0%</p></div>
+                    <div class="w-px h-8 bg-gray-100"></div>
+                    <div class="text-right">
+                        <p class="text-[8px] font-black text-gray-400 uppercase tracking-widest mb-0.5">Previsão</p>
+                        <p id="card-fcst-rev" class="text-xs font-black text-gray-800">R$ 0,00</p>
+                        <p id="card-fcst-margin" class="text-[9px] font-black text-indigo-600">0% MG</p>
                     </div>
-                    <div class="bg-white p-5 rounded-3xl border border-gray-100 shadow-sm flex justify-between items-center text-left">
-                        <div><p class="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1">Resultado Realizado</p><p class="text-xl font-black text-gray-800 tracking-tighter" id="card-act-rev">R$ 0,00</p></div>
-                        <div class="text-right px-4 py-2 bg-teal-50 rounded-2xl border border-teal-50"><p class="text-[8px] font-black text-teal-600 uppercase">Margem</p><p class="text-sm font-black text-teal-600" id="card-act-margin">0%</p></div>
+                    <div class="w-px h-8 bg-gray-100"></div>
+                    <div class="text-right">
+                        <p class="text-[8px] font-black text-gray-400 uppercase tracking-widest mb-0.5">Real YTD</p>
+                        <p id="card-act-rev" class="text-xs font-black text-gray-800">R$ 0,00</p>
+                        <p id="card-act-margin" class="text-[9px] font-black text-teal-600">0% MG</p>
+                    </div>
+                    <div class="w-px h-8 bg-gray-100 ml-2"></div>
+                    <div class="flex gap-2 ml-2">
+                        <button onclick="saveService()" class="px-6 py-3 bg-c3c-gradient text-white font-black uppercase text-[10px] tracking-widest rounded-xl shadow-xl shadow-blue-100 hover:opacity-90 transition-all active:scale-95 flex items-center gap-2"><i data-lucide="save" class="w-4 h-4"></i> Salvar</button>
+                        <button onclick="closeModal('service-modal')" class="p-3 text-gray-300 hover:text-gray-600 hover:bg-gray-50 rounded-xl transition-all"><i data-lucide="x" class="w-5 h-5"></i></button>
                     </div>
                 </div>
-            </header>
-
-            <!-- TABS MODAL -->
-            <div class="flex px-10 border-b border-gray-100 bg-white shrink-0 gap-10 overflow-x-auto no-scrollbar">
-                <button onclick="switchTab('general')" id="tab-general" class="modal-tab-active py-5 text-[10px] font-black uppercase tracking-[0.2em] whitespace-nowrap transition-all">Geral</button>
-                <button onclick="switchTab('commercial')" id="tab-commercial" class="modal-tab-inactive py-5 text-[10px] font-black uppercase tracking-[0.2em] whitespace-nowrap transition-all">Baseline</button>
-                <button onclick="switchTab('execution')" id="tab-execution" class="modal-tab-inactive py-5 text-[10px] font-black uppercase tracking-[0.2em] whitespace-nowrap transition-all">Previsão</button>
-                <button onclick="switchTab('billing')" id="tab-billing" class="modal-tab-inactive py-5 text-[10px] font-black uppercase tracking-[0.2em] whitespace-nowrap transition-all">Faturamento (ERP)</button>
-                <button onclick="switchTab('realized')" id="tab-realized" class="modal-tab-inactive py-5 text-[10px] font-black uppercase tracking-[0.2em] whitespace-nowrap transition-all">Extrato Real</button>
             </div>
 
-            <!-- CONTEÚDO TABS -->
-            <div class="flex-1 overflow-y-auto p-10 custom-scrollbar bg-gray-50/30">
+            <!-- TABS -->
+            <div class="px-10 border-b border-gray-100 flex gap-8 bg-white shrink-0 overflow-x-auto no-scrollbar">
+                <button id="tab-general" onclick="switchTab('general')" class="modal-tab-active py-5 text-[10px] font-black uppercase tracking-[0.2em] whitespace-nowrap transition-all">Geral</button>
+                <button id="tab-attachments" onclick="switchTab('attachments')" class="modal-tab-inactive py-5 text-[10px] font-black uppercase tracking-[0.2em] whitespace-nowrap transition-all">Anexos</button>
+                <button id="tab-billing" onclick="switchTab('billing')" class="modal-tab-inactive py-5 text-[10px] font-black uppercase tracking-[0.2em] whitespace-nowrap transition-all">Faturamento</button>
+                <button id="tab-commercial" onclick="switchTab('commercial')" class="modal-tab-inactive py-5 text-[10px] font-black uppercase tracking-[0.2em] whitespace-nowrap transition-all">Comercial</button>
+                <button id="tab-execution" onclick="switchTab('execution')" class="modal-tab-inactive py-5 text-[10px] font-black uppercase tracking-[0.2em] whitespace-nowrap transition-all">Execução</button>
+                <button id="tab-realized" onclick="switchTab('realized')" class="modal-tab-inactive py-5 text-[10px] font-black uppercase tracking-[0.2em] whitespace-nowrap transition-all">Extrato Real</button>
+            </div>
+
+            <div class="flex-1 overflow-y-auto p-10 space-y-10 no-scrollbar bg-white">
+                
                 <!-- 1. GERAL -->
-                <div id="view-general" class="fade-in max-w-5xl mx-auto space-y-8 text-left">
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-12">
-                        <div class="space-y-6">
-                            <h4 class="text-xs font-black text-c3c-blue uppercase tracking-[0.3em] border-b border-blue-50 pb-3 flex items-center gap-2"><i data-lucide="info" class="w-4 h-4"></i> Dados do Contrato</h4>
-                            <div class="space-y-4">
-                                <div><label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Nome do Serviço</label><input type="text" id="input-svc-name" class="w-full bg-white border border-gray-200 rounded-2xl px-5 py-3 text-xs font-bold focus:ring-4 focus:ring-blue-50 focus:border-c3c-blue outline-none transition-all"></div>
-                                <div class="grid grid-cols-2 gap-4">
-                                    <div><label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Cliente (SF)</label><div class="relative"><input list="sf-accounts-list" id="input-sf-account" class="w-full bg-white border border-gray-200 rounded-2xl px-5 py-3 text-xs font-bold focus:ring-4 focus:ring-blue-50 focus:border-c3c-blue outline-none transition-all pr-10"><i data-lucide="search" class="w-4 h-4 text-gray-300 absolute right-4 top-1/2 -translate-y-1/2"></i></div><datalist id="sf-accounts-list"></datalist></div>
-                                    <div><label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Cliente (Conta Azul)</label><div class="relative"><input list="ca-clients-list" id="input-ca-client" class="w-full bg-white border border-gray-200 rounded-2xl px-5 py-3 text-xs font-bold focus:ring-4 focus:ring-blue-50 focus:border-c3c-blue outline-none transition-all pr-10" placeholder="Vincular CNPJ..."><i data-lucide="link" class="w-4 h-4 text-gray-300 absolute right-4 top-1/2 -translate-y-1/2"></i></div><datalist id="ca-clients-list"></datalist></div>
-                                </div>
-                                <div class="grid grid-cols-2 gap-4">
-                                    <div><label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Tipo de Serviço</label><select id="input-svc-type" class="w-full bg-white border border-gray-200 rounded-2xl px-5 py-3 text-xs font-bold focus:ring-4 focus:ring-blue-50 focus:border-c3c-blue outline-none transition-all cursor-pointer"><option>Suporte</option><option>Projeto</option><option>Alocação</option></select></div>
-                                    <div><label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Data Início</label><input type="date" id="input-svc-start" class="w-full bg-white border border-gray-200 rounded-2xl px-5 py-3 text-xs font-bold focus:ring-4 focus:ring-blue-50 focus:border-c3c-blue outline-none transition-all"></div>
-                                </div>
-                                <div class="grid grid-cols-2 gap-4">
-                                    <div><label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Data Fim Original</label><input type="date" id="input-svc-end-orig" class="w-full bg-white border border-gray-200 rounded-2xl px-5 py-3 text-xs font-bold focus:ring-4 focus:ring-blue-50 focus:border-c3c-blue outline-none transition-all"></div>
-                                    <div><label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Data Fim Real</label><input type="date" id="input-svc-end-real" class="w-full bg-white border border-gray-200 rounded-2xl px-5 py-3 text-xs font-bold focus:ring-4 focus:ring-blue-50 focus:border-c3c-blue outline-none transition-all"></div>
-                                </div>
-                            </div>
+                <div id="view-general" class="fade-in max-w-6xl mx-auto text-left">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-x-8 gap-y-8">
+                        <!-- LINHA 1 -->
+                        <div class="md:col-span-2">
+                            <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Nome do Serviço</label>
+                            <input id="input-svc-name" type="text" class="input-modern w-full" placeholder="Ex: Consultoria Estratégica V2">
+                        </div>
+                        <div class="md:col-span-1">
+                            <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Tipo de Serviço</label>
+                            <select id="input-svc-type" class="input-modern w-full">
+                                <option value="Projeto">Projeto</option>
+                                <option value="Recorrente">Recorrente</option>
+                                <option value="Suporte">Suporte</option>
+                                <option value="Hunting">Hunting</option>
+                                <option value="Alocação">Alocação</option>
+                            </select>
                         </div>
 
-                        <div class="space-y-6">
-                            <h4 class="text-xs font-black text-c3c-blue uppercase tracking-[0.3em] border-b border-blue-50 pb-3 flex items-center gap-2"><i data-lucide="users" class="w-4 h-4"></i> Governança e Liderança</h4>
-                            <div class="space-y-4">
-                                <div><label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Líder de Projeto</label><div class="relative"><input list="people-list" id="input-lead-project" class="w-full bg-white border border-gray-200 rounded-2xl px-5 py-3 text-xs font-bold focus:ring-4 focus:ring-blue-50 focus:border-c3c-blue outline-none transition-all pr-10"><i data-lucide="user" class="w-4 h-4 text-gray-300 absolute right-4 top-1/2 -translate-y-1/2"></i></div></div>
-                                <div><label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Coordenador</label><div class="relative"><input list="people-list" id="input-coordinator" class="w-full bg-white border border-gray-200 rounded-2xl px-5 py-3 text-xs font-bold focus:ring-4 focus:ring-blue-50 focus:border-c3c-blue outline-none transition-all pr-10"><i data-lucide="user" class="w-4 h-4 text-gray-300 absolute right-4 top-1/2 -translate-y-1/2"></i></div></div>
-                                <div><label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Líder Técnico</label><div class="relative"><input list="people-list" id="input-tech-lead" class="w-full bg-white border border-gray-200 rounded-2xl px-5 py-3 text-xs font-bold focus:ring-4 focus:ring-blue-50 focus:border-c3c-blue outline-none transition-all pr-10"><i data-lucide="user" class="w-4 h-4 text-gray-300 absolute right-4 top-1/2 -translate-y-1/2"></i></div></div>
-                                <datalist id="people-list"></datalist>
+                        <!-- LINHA 2 -->
+                        <div class="relative group">
+                            <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Cliente (SF)</label>
+                            <input id="input-sf-account" list="sf-accounts-list" class="input-modern w-full pr-8" placeholder="Buscar...">
+                            <button onclick="document.getElementById('input-sf-account').value=''" class="absolute right-3 bottom-3 text-gray-300 hover:text-red-500 transition-all opacity-0 group-hover:opacity-100"><i data-lucide="x" class="w-4 h-4"></i></button>
+                        </div>
+                        <div class="relative group">
+                            <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Cliente (ERP)</label>
+                            <input id="input-ca-client" list="ca-clients-list" onchange="validateCaClientSelection()" class="input-modern w-full pr-8" placeholder="Vincular...">
+                            <button onclick="document.getElementById('input-ca-client').value=''; validateCaClientSelection();" class="absolute right-3 bottom-3 text-gray-300 hover:text-red-500 transition-all opacity-0 group-hover:opacity-100"><i data-lucide="x" class="w-4 h-4"></i></button>
+                            <div id="ca-client-status" class="absolute right-10 bottom-3 hidden">
+                                <i data-lucide="check-circle-2" class="w-4 h-4 text-teal-500"></i>
                             </div>
+                        </div>                        <div>
+                            <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Tabela de Preços</label>
+                            <select id="select-pricebook" onchange="onPricebookChange()" class="input-modern w-full"></select>
                         </div>
-                    </div>
 
-                    <div class="mt-12 bg-white rounded-3xl border border-gray-100 p-8 shadow-sm">
-                        <h4 class="text-xs font-black text-gray-800 uppercase tracking-widest mb-6 flex items-center gap-2"><i data-lucide="file-text" class="w-4 h-4 text-c3c-blue"></i> Documentação do Projeto</h4>
-                        <div id="docs-list-container" class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                            <!-- Documentos injetados via JS -->
-                            <p class="text-[10px] font-bold text-gray-300 uppercase tracking-widest italic col-span-full py-8 text-center bg-gray-50/50 rounded-2xl border border-dashed border-gray-100">Nenhum documento anexado.</p>
+                        <!-- LINHA 3 -->
+                        <div class="relative group">
+                            <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Líder Projeto</label>
+                            <input id="input-lead-project" list="people-list" class="input-modern w-full pr-8" placeholder="Lead">
+                            <button onclick="document.getElementById('input-lead-project').value=''" class="absolute right-3 bottom-3 text-gray-300 hover:text-red-500 transition-all opacity-0 group-hover:opacity-100"><i data-lucide="x" class="w-4 h-4"></i></button>
                         </div>
-                        <button onclick="openUploadModal()" class="w-full bg-gray-50 hover:bg-blue-50 text-c3c-blue text-[10px] font-black uppercase tracking-widest px-6 py-4 rounded-2xl border border-dashed border-blue-100 transition-all flex items-center justify-center gap-2 active:scale-[0.99]"><i data-lucide="upload-cloud" class="w-4 h-4"></i> Anexar Proposta ou Contrato</button>
+                        <div class="relative group">
+                            <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Coordenador</label>
+                            <input id="input-coordinator" list="people-list" class="input-modern w-full pr-8" placeholder="Coord.">
+                            <button onclick="document.getElementById('input-coordinator').value=''" class="absolute right-3 bottom-3 text-gray-300 hover:text-red-500 transition-all opacity-0 group-hover:opacity-100"><i data-lucide="x" class="w-4 h-4"></i></button>
+                        </div>
+                        <div class="relative group">
+                            <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Líder Técnico</label>
+                            <input id="input-tech-lead" list="people-list" class="input-modern w-full pr-8" placeholder="Tech">
+                            <button onclick="document.getElementById('input-tech-lead').value=''" class="absolute right-3 bottom-3 text-gray-300 hover:text-red-500 transition-all opacity-0 group-hover:opacity-100"><i data-lucide="x" class="w-4 h-4"></i></button>
+                        </div>
+
+                        <!-- LINHA 4 -->
+                        <div>
+                            <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Data Início</label>
+                            <input id="input-svc-start" type="date" class="input-modern w-full">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Fim Original</label>
+                            <input id="input-svc-end-orig" type="date" class="input-modern w-full">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Fim Real</label>
+                            <input id="input-svc-end-real" type="date" class="input-modern w-full">
+                        </div>
                     </div>
                 </div>
 
-                <!-- 2. BASELINE COMERCIAL -->
+                <!-- 1.1 ANEXOS (NOVA ABA) -->
+                <div id="view-attachments" class="hidden fade-in max-w-6xl mx-auto space-y-8 text-left">
+                    <div class="flex justify-between items-center mb-4">
+                        <div>
+                            <h4 class="text-xs font-black text-gray-800 uppercase tracking-[0.3em] flex items-center gap-2"><i data-lucide="file-text" class="w-4 h-4 text-c3c-blue"></i> Documentação do Serviço</h4>
+                            <p class="text-[9px] font-bold text-gray-400 uppercase tracking-widest mt-1">Gestão de arquivos e propostas vinculadas</p>
+                        </div>
+                        <button onclick="openUploadModal()" class="bg-blue-50 hover:bg-blue-100 text-c3c-blue text-[10px] font-black uppercase tracking-widest px-6 py-3 rounded-xl transition-all flex items-center gap-2">
+                            <i data-lucide="upload-cloud" class="w-4 h-4"></i> Anexar Documento
+                        </button>
+                    </div>
+                    
+                    <div id="docs-list-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <!-- Documentos injetados via JS -->
+                    </div>
+                </div>
+
+                <!-- 2. COMERCIAL -->
                 <div id="view-commercial" class="hidden fade-in space-y-8 text-left">
-                    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-c3c-blue/5 p-6 rounded-3xl border border-blue-50">
-                        <div><h4 class="text-sm font-black text-c3c-blue uppercase tracking-widest">Orçamento Vendido (Baseline)</h4><p class="text-[10px] font-bold text-blue-400 uppercase tracking-widest mt-1">Defina os itens da proposta comercial aceita pelo cliente.</p></div>
-                        <div class="flex items-center gap-4 bg-white px-4 py-2 rounded-2xl border border-blue-100 shadow-sm"><label class="text-[9px] font-black text-gray-400 uppercase tracking-widest">Tabela de Preços:</label><select id="select-pricebook" onchange="onPricebookChange()" class="text-xs font-black text-c3c-blue uppercase outline-none bg-transparent cursor-pointer pr-4"></select></div>
+                    <div class="flex justify-between items-center">
+                        <h4 class="text-xs font-black text-gray-800 uppercase tracking-[0.3em] flex items-center gap-2"><i data-lucide="shopping-cart" class="w-4 h-4 text-c3c-blue"></i> Escopo Comercial (Vendido)</h4>
+                        <div class="flex gap-4 items-center">
+                            <div class="text-right px-4 py-2 bg-blue-50/50 rounded-2xl border border-blue-100">
+                                <p class="text-[8px] font-black text-gray-400 uppercase tracking-widest">Total Vendido</p>
+                                <p id="comm-total-rev-foot" class="text-xs font-black text-c3c-blue">R$ 0,00</p>
+                            </div>
+                        </div>
                     </div>
                     
                     <div class="bg-white rounded-[32px] border border-gray-100 shadow-xl overflow-hidden">
                         <table class="w-full text-left table-dense">
                             <thead class="bg-gray-50/80 border-b border-gray-100">
                                 <tr>
-                                    <th class="text-[10px] font-black text-gray-400 uppercase tracking-widest py-5 px-6">Produto / Perfil</th>
-                                    <th class="text-[10px] font-black text-gray-400 uppercase tracking-widest text-right">Taxa Venda</th>
+                                    <th class="text-[10px] font-black text-gray-400 uppercase tracking-widest py-5 px-6">Produto / Serviço</th>
+                                    <th class="text-[10px] font-black text-gray-400 uppercase tracking-widest text-right">Valor Hora</th>
                                     <th class="text-[10px] font-black text-gray-400 uppercase tracking-widest text-right">Custo Est.</th>
                                     <th class="text-[10px] font-black text-gray-400 uppercase tracking-widest text-center">Início</th>
-                                    <th class="text-[10px] font-black text-gray-400 uppercase tracking-widest text-center">Fim</th>
+                                    <th class="text-[10px] font-black text-gray-400 uppercase tracking-widest text-center">Término</th>
                                     <th class="text-[10px] font-black text-gray-400 uppercase tracking-widest text-center">Dias</th>
-                                    <th class="text-[10px] font-black text-gray-400 uppercase tracking-widest text-center">%</th>
-                                    <th class="text-[10px] font-black text-gray-400 uppercase tracking-widest text-right">Hrs Totais</th>
-                                    <th class="text-[10px] font-black text-gray-400 uppercase tracking-widest text-right bg-blue-50/50">Receita Total</th>
-                                    <th class="text-[10px] font-black text-gray-400 uppercase tracking-widest text-right">Custo Total</th>
+                                    <th class="text-[10px] font-black text-gray-400 uppercase tracking-widest text-center">Aloc%</th>
+                                    <th class="text-[10px] font-black text-gray-400 uppercase tracking-widest text-right">Total Hrs</th>
+                                    <th class="text-[10px] font-black text-gray-400 uppercase tracking-widest text-right">Receita</th>
+                                    <th class="text-[10px] font-black text-gray-400 uppercase tracking-widest text-right">Custo</th>
                                     <th class="text-[10px] font-black text-gray-400 uppercase tracking-widest text-center px-6">Ação</th>
                                 </tr>
                             </thead>
                             <tbody id="commercial-rows" class="divide-y divide-gray-50"></tbody>
-                            <tfoot class="bg-gray-50/50 border-t border-gray-100 font-black text-gray-800">
-                                <tr class="h-16">
-                                    <td colspan="7" class="text-right uppercase text-[10px] tracking-widest pr-8 text-gray-400">Totais Baseline:</td>
-                                    <td class="text-right text-xs" id="comm-total-hours">0h</td>
-                                    <td class="text-right text-xs text-c3c-blue bg-blue-50/50" id="comm-total-rev">R$ 0,00</td>
-                                    <td class="text-right text-xs text-red-600" id="comm-total-cost">R$ 0,00</td>
-                                    <td class="px-6 text-center text-xs text-indigo-600" id="comm-total-margin">0%</td>
+                            <tfoot class="bg-gray-50/30 font-black text-gray-600">
+                                <tr>
+                                    <td class="py-4 px-6 uppercase text-[9px] tracking-widest">Totais de Baseline</td>
+                                    <td colspan="6"></td>
+                                    <td id="comm-total-hours" class="text-right px-2">0h</td>
+                                    <td id="comm-total-rev" class="text-right px-2 text-c3c-blue">-</td>
+                                    <td id="comm-total-cost" class="text-right px-2 text-red-500">-</td>
+                                    <td id="comm-total-margin" class="text-center text-teal-600">-</td>
                                 </tr>
                             </tfoot>
                         </table>
-                        <div class="p-4 bg-gray-50/30 border-t border-gray-50"><button onclick="addCommercialRow()" class="w-full py-4 bg-white border border-gray-100 hover:border-blue-100 hover:bg-blue-50 text-[10px] font-black text-c3c-blue uppercase tracking-[0.2em] rounded-2xl transition-all flex items-center justify-center gap-2 active:scale-[0.99] shadow-sm"><i data-lucide="plus" class="w-4 h-4"></i> Adicionar Item Comercial</button></div>
+                        <div class="p-4 bg-gray-50/30 border-t border-gray-50"><button onclick="addCommercialRow()" class="w-full py-4 bg-white border border-gray-100 hover:border-c3c-blue hover:bg-blue-50 text-[10px] font-black text-c3c-blue uppercase tracking-[0.2em] rounded-2xl transition-all flex items-center justify-center gap-2 active:scale-[0.99] shadow-sm"><i data-lucide="plus" class="w-4 h-4"></i> Adicionar Item de Escopo</button></div>
+                    </div>
+
+                    <!-- FORECAST BASELINE ESPECÍFICO -->
+                    <div class="bg-white p-8 rounded-[32px] border border-gray-100 shadow-sm space-y-4">
+                        <div class="flex justify-between items-center">
+                            <h5 class="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-2"><i data-lucide="calendar-range" class="w-4 h-4"></i> Forecast Mensal (Baseline)</h5>
+                            <select id="forecast-year-comm" onchange="refreshAllForecasts()" class="input-modern py-1 text-[10px]"><option value="2024">2024</option><option value="2025" selected>2025</option><option value="2026">2026</option></select>
+                        </div>
+                        <div class="overflow-x-auto no-scrollbar">
+                            <table class="w-full text-[10px]">
+                                <thead id="monthly-forecast-header" class="text-gray-400 border-b border-gray-50 font-black uppercase"></thead>
+                                <tbody id="monthly-forecast-body" class="font-bold text-gray-700"></tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
 
-                <!-- 3. PREVISÃO ALOCAÇÃO -->
+                <!-- 3. EXECUÇÃO -->
                 <div id="view-execution" class="hidden fade-in space-y-8 text-left">
-                    <div class="bg-indigo-600 rounded-3xl p-8 text-white shadow-xl shadow-indigo-100 flex justify-between items-center overflow-hidden relative">
-                        <div class="relative z-10">
-                            <h4 class="text-lg font-black uppercase tracking-tighter">Planejamento de Alocação</h4>
-                            <p class="text-indigo-100 text-[10px] font-bold uppercase tracking-widest mt-1">Defina quais consultores realizarão os itens vendidos e o custo hora real.</p>
+                    <div class="flex justify-between items-center">
+                        <h4 class="text-xs font-black text-gray-800 uppercase tracking-[0.3em] flex items-center gap-2"><i data-lucide="users" class="w-4 h-4 text-indigo-500"></i> Plano de Alocação (Previsto)</h4>
+                        <div class="text-right px-4 py-2 bg-indigo-50/50 rounded-2xl border border-indigo-100">
+                            <p class="text-[8px] font-black text-gray-400 uppercase tracking-widest">Total Previsto</p>
+                            <p id="exec-total-rev-foot" class="text-xs font-black text-indigo-600">R$ 0,00</p>
                         </div>
-                        <i data-lucide="user-check" class="w-32 h-32 absolute -right-4 -bottom-4 opacity-10"></i>
                     </div>
-
+                    
                     <div class="bg-white rounded-[32px] border border-gray-100 shadow-xl overflow-hidden">
                         <table class="w-full text-left table-dense">
                             <thead class="bg-gray-50/80 border-b border-gray-100">
                                 <tr>
-                                    <th class="text-[10px] font-black text-gray-400 uppercase tracking-widest py-5 px-6">Vínculo Baseline</th>
-                                    <th class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Consultor</th>
-                                    <th class="text-[10px] font-black text-gray-400 uppercase tracking-widest text-right">Taxa (P)</th>
-                                    <th class="text-[10px] font-black text-gray-400 uppercase tracking-widest text-right">Custo (R)</th>
+                                    <th class="text-[10px] font-black text-gray-400 uppercase tracking-widest py-5 px-6 w-40">Item Baseline</th>
+                                    <th class="text-[10px] font-black text-gray-400 uppercase tracking-widest py-5">Recurso</th>
+                                    <th class="text-[10px] font-black text-gray-400 uppercase tracking-widest text-right w-20">P.Venda</th>
+                                    <th class="text-[10px] font-black text-gray-400 uppercase tracking-widest text-right w-20">C.Real</th>
                                     <th class="text-[10px] font-black text-gray-400 uppercase tracking-widest text-center">Início</th>
-                                    <th class="text-[10px] font-black text-gray-400 uppercase tracking-widest text-center">Fim</th>
-                                    <th class="text-[10px] font-black text-gray-400 uppercase tracking-widest text-center">%</th>
+                                    <th class="text-[10px] font-black text-gray-400 uppercase tracking-widest text-center">Término</th>
+                                    <th class="text-[10px] font-black text-gray-400 uppercase tracking-widest text-center">Aloc%</th>
+                                    <th class="text-[10px] font-black text-gray-400 uppercase tracking-widest text-center">Dias</th>
                                     <th class="text-[10px] font-black text-gray-400 uppercase tracking-widest text-right">Hrs</th>
-                                    <th class="text-[10px] font-black text-gray-400 uppercase tracking-widest text-right bg-indigo-50/50">Receita Prev.</th>
-                                    <th class="text-[10px] font-black text-gray-400 uppercase tracking-widest text-right">Custo Prev.</th>
+                                    <th class="text-[10px] font-black text-gray-400 uppercase tracking-widest text-right">Receita</th>
+                                    <th class="text-[10px] font-black text-gray-400 uppercase tracking-widest text-right">Custo</th>
+                                    <th class="text-[10px] font-black text-gray-400 uppercase tracking-widest text-right">MG%</th>
                                     <th class="text-[10px] font-black text-gray-400 uppercase tracking-widest text-center px-6">Ação</th>
                                 </tr>
                             </thead>
                             <tbody id="execution-rows" class="divide-y divide-gray-50"></tbody>
-                            <tfoot class="bg-gray-50/50 border-t border-gray-100 font-black text-gray-800">
-                                <tr class="h-16">
-                                    <td colspan="7" class="text-right uppercase text-[10px] tracking-widest pr-8 text-gray-400">Totais Previstos:</td>
-                                    <td class="text-right text-xs" id="exec-total-hours">0h</td>
-                                    <td class="text-right text-xs text-indigo-600 bg-indigo-50/50" id="exec-total-rev">R$ 0,00</td>
-                                    <td class="text-right text-xs text-red-600" id="exec-total-cost">R$ 0,00</td>
-                                    <td class="px-6 text-center text-xs text-indigo-600" id="exec-total-margin">0%</td>
+                            <tfoot class="bg-gray-50/30 font-black text-gray-600">
+                                <tr>
+                                    <td class="py-4 px-6 uppercase text-[9px] tracking-widest">Totais de Alocação</td>
+                                    <td colspan="7"></td>
+                                    <td id="exec-total-hours" class="text-right px-2">0h</td>
+                                    <td id="exec-total-rev" class="text-right px-2 text-indigo-600">-</td>
+                                    <td id="exec-total-cost" class="text-right px-2 text-red-500">-</td>
+                                    <td id="exec-total-margin" class="text-center text-teal-600">-</td>
                                 </tr>
                             </tfoot>
                         </table>
-                        <div class="p-4 bg-gray-50/30 border-t border-gray-50"><button onclick="addExecutionRow()" class="w-full py-4 bg-white border border-gray-100 hover:border-indigo-100 hover:bg-indigo-50 text-[10px] font-black text-indigo-600 uppercase tracking-[0.2em] rounded-2xl transition-all flex items-center justify-center gap-2 active:scale-[0.99] shadow-sm"><i data-lucide="user-plus" class="w-4 h-4"></i> Adicionar Alocação de Recurso</button></div>
+                        <div class="p-4 bg-gray-50/30 border-t border-gray-50"><button onclick="addExecutionRow()" class="w-full py-4 bg-white border border-gray-100 hover:border-indigo-100 hover:bg-indigo-50 text-[10px] font-black text-indigo-600 uppercase tracking-[0.2em] rounded-2xl transition-all flex items-center justify-center gap-2 active:scale-[0.99] shadow-sm"><i data-lucide="plus" class="w-4 h-4"></i> Adicionar Alocação de Recurso</button></div>
+                    </div>
+
+                    <!-- FORECAST ALOCAÇÃO ESPECÍFICO -->
+                    <div class="bg-white p-8 rounded-[32px] border border-gray-100 shadow-sm space-y-4">
+                        <div class="flex justify-between items-center">
+                            <h5 class="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-2"><i data-lucide="trending-up" class="w-4 h-4 text-indigo-500"></i> Forecast Mensal (Alocação / EOL)</h5>
+                            <select id="forecast-year-alloc" onchange="refreshAllForecasts()" class="input-modern py-1 text-[10px]"><option value="2024">2024</option><option value="2025" selected>2025</option><option value="2026">2026</option></select>
+                        </div>
+                        <div class="overflow-x-auto no-scrollbar">
+                            <table class="w-full text-[10px]">
+                                <thead id="alloc-forecast-header" class="text-gray-400 border-b border-gray-50 font-black uppercase"></thead>
+                                <tbody id="alloc-forecast-body" class="font-bold text-gray-700"></tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
 
                 <!-- 4. FATURAMENTO -->
                 <div id="view-billing" class="hidden fade-in space-y-8 text-left">
+                    <!-- Configurações de Relatório -->
+                    <div class="bg-white p-8 rounded-3xl border border-gray-100 shadow-sm flex flex-col md:flex-row gap-12">
+                        <label class="flex items-center gap-4 cursor-pointer group">
+                            <div class="relative">
+                                <input type="checkbox" id="input-req-report" class="sr-only peer" onchange="toggleReportLogic()">
+                                <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-100 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-c3c-blue"></div>
+                            </div>
+                            <div class="text-left">
+                                <span class="text-[10px] font-black text-gray-700 uppercase tracking-widest group-hover:text-c3c-blue transition-colors">Requer Relatório de Faturamento</span>
+                                <p class="text-[8px] font-bold text-gray-400 uppercase mt-0.5">Gera PDF de faturamento mensal automático</p>
+                            </div>
+                        </label>
+
+                        <label class="flex items-center gap-4 cursor-pointer group" id="label-sol-report">
+                            <div class="relative">
+                                <input type="checkbox" id="input-sol-report" class="sr-only peer">
+                                <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-100 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-teal-500 peer-disabled:bg-gray-100"></div>
+                            </div>
+                            <div class="text-left">
+                                <span class="text-[10px] font-black text-gray-700 uppercase tracking-widest group-hover:text-teal-600 transition-colors">Solicita Relatório de Horas</span>
+                                <p class="text-[8px] font-bold text-gray-400 uppercase mt-0.5">Exige anexo de evidência do consultor</p>
+                            </div>
+                        </label>
+                    </div>
+
                     <div class="bg-white rounded-3xl border border-gray-100 p-8 shadow-sm flex flex-col md:flex-row justify-between items-center gap-8">
                         <div class="flex-1">
-                            <h4 class="text-sm font-black text-gray-800 uppercase tracking-widest flex items-center gap-2"><i data-lucide="layout-grid" class="w-5 h-5 text-teal-500"></i> Plano de Faturamento</h4>
-                            <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">Projeção de parcelas conforme o ERP Conta Azul.</p>
+                            <h4 class="text-sm font-black text-gray-800 uppercase tracking-widest flex items-center gap-2"><i data-lucide="refresh-cw" class="w-5 h-5 text-teal-500"></i> Sincronização ERP (Conta Azul)</h4>
+                            <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">Vincule vendas do Conta Azul para gerar o cronograma de parcelas automaticamente.</p>
                         </div>
-                        <div class="flex items-center gap-4 bg-gray-50 px-6 py-4 rounded-3xl border border-gray-100 shadow-inner">
-                            <div><label class="block text-[8px] font-black text-gray-400 uppercase tracking-widest mb-1">Modelo de Negócio</label><select class="bg-transparent text-[10px] font-black text-gray-600 uppercase outline-none"><option>Recorrente</option><option>Horas</option><option>Fixo</option></select></div>
-                            <div class="w-px h-8 bg-gray-200"></div>
-                            <div><label class="block text-[8px] font-black text-gray-400 uppercase tracking-widest mb-1">Condição de Pagto</label><select class="bg-transparent text-[10px] font-black text-gray-600 uppercase outline-none"><option>30 Dias</option><option>15 Dias</option><option>À Vista</option></select></div>
+                        <div class="flex items-center gap-4">
+                            <button onclick="fetchAvailableSales()" class="px-6 py-4 bg-teal-50 border border-teal-100 text-teal-600 text-[10px] font-black uppercase tracking-widest rounded-2xl hover:bg-teal-100 transition-all flex items-center gap-2">
+                                <i data-lucide="plus-circle" class="w-4 h-4"></i> Vincular Vendas
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Vendas Vinculadas -->
+                    <div id="linked-sales-container" class="hidden space-y-4">
+                        <h5 class="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-2">Vendas Vinculadas ao Serviço</h5>
+                        <div id="linked-sales-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            <!-- Injetado via JS -->
                         </div>
                     </div>
 
                     <div class="bg-white rounded-[32px] border border-gray-100 shadow-xl overflow-hidden">
+                        <div class="px-8 py-6 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
+                            <h4 class="text-xs font-black text-gray-800 uppercase tracking-widest flex items-center gap-2"><i data-lucide="calendar" class="w-4 h-4 text-indigo-500"></i> Cronograma de Parcelas (Sincronizado ERP)</h4>
+                        </div>
                         <table class="w-full text-left table-dense">
-                            <thead class="bg-gray-50/80 border-b border-gray-100">
+                            <thead class="bg-white border-b border-gray-100">
                                 <tr>
                                     <th class="text-[10px] font-black text-gray-400 uppercase tracking-widest py-5 px-8 w-10">#</th>
                                     <th class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Descrição da Parcela</th>
                                     <th class="text-[10px] font-black text-gray-400 uppercase tracking-widest text-center">Competência</th>
                                     <th class="text-[10px] font-black text-gray-400 uppercase tracking-widest text-center">Vencimento</th>
-                                    <th class="text-[10px] font-black text-gray-400 uppercase tracking-widest text-right">Valor Bruto</th>
-                                    <th class="text-[10px] font-black text-gray-400 uppercase tracking-widest text-center px-8">Ação</th>
+                                    <th class="text-[10px] font-black text-gray-400 uppercase tracking-widest text-center">Status</th>
+                                    <th class="text-[10px] font-black text-gray-400 uppercase tracking-widest text-right px-8">Valor Bruto</th>
                                 </tr>
                             </thead>
                             <tbody id="svc-billing-list" class="divide-y divide-gray-50"></tbody>
+                            <tfoot class="bg-gray-50/50 font-black text-gray-800">
+                                <tr>
+                                    <td colspan="5" class="px-8 py-5 text-[10px] uppercase tracking-widest text-gray-400 text-right">Total das Parcelas Sincronizadas</td>
+                                    <td id="billing-total-value" class="px-8 py-5 text-right text-xs">R$ 0,00</td>
+                                </tr>
+                            </tfoot>
                         </table>
-                        <div class="p-4 bg-gray-50/30 border-t border-gray-50"><button onclick="addBillingRow()" class="w-full py-4 bg-white border border-gray-100 hover:border-teal-100 hover:bg-teal-50 text-[10px] font-black text-teal-600 uppercase tracking-[0.2em] rounded-2xl transition-all flex items-center justify-center gap-2 active:scale-[0.99] shadow-sm"><i data-lucide="plus" class="w-4 h-4"></i> Adicionar Parcela de Faturamento</button></div>
                     </div>
                 </div>
 
-                <!-- 5. EXTRATO REAL -->
+                <!-- 5. EXTRATO REAL (CONSOLIDADO & FORECAST) -->
                 <div id="view-realized" class="hidden fade-in space-y-8 text-left">
+                    <div class="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm">
+                        <div class="flex justify-between items-center mb-4">
+                            <h5 class="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-2"><i data-lucide="activity" class="w-4 h-4 text-teal-600"></i> Forecast Realizado (YTD)</h5>
+                            <select id="forecast-year-real" onchange="refreshAllForecasts()" class="input-modern py-1 text-[10px]"><option value="2024">2024</option><option value="2025" selected>2025</option><option value="2026">2026</option></select>
+                        </div>
+                        <div class="overflow-x-auto no-scrollbar">
+                            <table class="w-full text-[10px]">
+                                <thead id="realized-forecast-header" class="text-gray-400 border-b border-gray-50 font-black uppercase"></thead>
+                                <tbody id="realized-forecast-body" class="font-bold text-gray-700"></tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- DRE DETALHADO -->
+                    <div class="bg-white rounded-[32px] border border-gray-100 shadow-xl overflow-hidden">
+                        <div class="px-8 py-6 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center">
+                            <h4 class="text-xs font-black text-gray-800 uppercase tracking-widest flex items-center gap-2"><i data-lucide="bar-chart-3" class="w-4 h-4 text-c3c-blue"></i> DRE Detalhado do Projeto (Mensal)</h4>
+                            <p class="text-[9px] font-black text-gray-400 uppercase tracking-widest">Visão consolidada: Baseline vs Previsto vs Real</p>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left table-dense">
+                                <thead class="bg-white border-b border-gray-100">
+                                    <tr class="divide-x divide-gray-50">
+                                        <th class="text-[9px] font-black text-gray-400 uppercase tracking-widest py-4 px-6">Mês/Ano</th>
+                                        <th colspan="3" class="text-[9px] font-black text-c3c-blue uppercase tracking-widest text-center bg-blue-50/30">Baseline (Vendido)</th>
+                                        <th colspan="3" class="text-[9px] font-black text-indigo-600 uppercase tracking-widest text-center bg-indigo-50/30">Alocação (Previsto)</th>
+                                        <th colspan="3" class="text-[9px] font-black text-teal-600 uppercase tracking-widest text-center bg-teal-50/30">Extrato (Real YTD)</th>
+                                    </tr>
+                                    <tr class="text-[8px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-50">
+                                        <th class="px-6">Período</th>
+                                        <th class="text-right px-4 bg-blue-50/10">Rec.</th><th class="text-right px-4 bg-blue-50/10">Custo</th><th class="text-right px-4 bg-blue-50/10">MG%</th>
+                                        <th class="text-right px-4 bg-indigo-50/10">Rec.</th><th class="text-right px-4 bg-indigo-50/10">Custo</th><th class="text-right px-4 bg-indigo-50/10">MG%</th>
+                                        <th class="text-right px-4 bg-teal-50/10">Rec.</th><th class="text-right px-4 bg-teal-50/10">Custo</th><th class="text-right px-4 bg-teal-50/10">MG%</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="financial-grid" class="divide-y divide-gray-50 text-[10px]"></tbody>
+                                <tfoot id="financial-foot" class="bg-gray-50/80 font-black text-gray-800"></tfoot>
+                            </table>
+                        </div>
+                    </div>
+
                     <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
                         <div class="lg:col-span-2 space-y-8">
                             <h4 class="text-xs font-black text-gray-800 uppercase tracking-[0.3em] flex items-center gap-2"><i data-lucide="activity" class="w-4 h-4 text-teal-500"></i> Execução Real (Timesheet YTD)</h4>
@@ -353,36 +521,100 @@
         </div>
     </div>
 
+    <!-- DATALISTS (Metadados) -->
+    <datalist id="sf-accounts-list"></datalist>
+    <datalist id="ca-clients-list"></datalist>
+    <datalist id="people-list"></datalist>
+
+    <!-- MODAL VINCULAR VENDAS -->
+    <div id="sales-modal" class="fixed inset-0 bg-black/40 backdrop-blur-sm hidden flex items-center justify-center p-4 z-[120]">
+        <div class="bg-white rounded-[40px] shadow-2xl p-10 w-full max-w-2xl transform transition-all border border-gray-100 flex flex-col max-h-[80vh]">
+            <div class="flex justify-between items-center mb-8 shrink-0">
+                <h3 class="font-black text-gray-800 uppercase text-xs tracking-widest flex items-center gap-2"><i data-lucide="refresh-cw" class="w-5 h-5 text-teal-500"></i> Selecionar Vendas (Conta Azul)</h3>
+                <button onclick="document.getElementById('sales-modal').classList.add('hidden')" class="text-gray-300 hover:text-gray-600"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            
+            <div class="flex-1 overflow-y-auto no-scrollbar space-y-4">
+                <div id="available-sales-list" class="space-y-2">
+                    <!-- Injetado via JS -->
+                </div>
+                <div id="sales-loading" class="hidden py-20 text-center">
+                    <div class="inline-block w-8 h-8 border-4 border-teal-500 border-t-transparent rounded-full animate-spin"></div>
+                    <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mt-4">Buscando vendas no ERP...</p>
+                </div>
+                <div id="sales-empty" class="hidden py-20 text-center">
+                    <i data-lucide="search-x" class="w-10 h-10 text-gray-300 mx-auto"></i>
+                    <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mt-4">Nenhuma venda encontrada para este cliente.</p>
+                </div>
+            </div>
+
+            <div class="flex justify-end gap-3 pt-8 border-t border-gray-50 mt-4 shrink-0">
+                <button onclick="document.getElementById('sales-modal').classList.add('hidden')" class="px-6 py-3 text-[10px] font-black text-gray-400 hover:text-gray-600 uppercase tracking-widest">Cancelar</button>
+                <button onclick="linkSelectedSales()" class="px-8 py-3 bg-c3c-gradient text-white text-[10px] font-black uppercase tracking-widest rounded-2xl shadow-xl shadow-blue-100 transition-all active:scale-95">Vincular Selecionadas</button>
+            </div>
+        </div>
+    </div>
+
     <!-- MODAL UPLOAD -->
     <div id="upload-modal" class="fixed inset-0 bg-black/40 backdrop-blur-sm hidden flex items-center justify-center p-4 z-[120]">
-        <div class="bg-white rounded-[40px] shadow-2xl p-10 w-full max-w-sm transform transition-all border border-gray-100">
+        <div class="bg-white rounded-[40px] shadow-2xl p-10 w-full max-w-sm transform transition-all border border-gray-100 text-left">
             <div class="flex justify-between items-center mb-8">
                 <h3 class="font-black text-gray-800 uppercase text-xs tracking-widest flex items-center gap-2"><i data-lucide="upload" class="w-5 h-5 text-c3c-blue"></i> Anexar Arquivo</h3>
                 <button onclick="document.getElementById('upload-modal').classList.add('hidden')" class="text-gray-300 hover:text-gray-600"><i data-lucide="x" class="w-5 h-5"></i></button>
             </div>
             <div class="space-y-6">
-                <div><label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Tipo de Documento</label><select id="doc-type-select" class="w-full bg-gray-50 border border-gray-100 rounded-2xl px-5 py-3.5 text-xs font-bold focus:ring-4 focus:ring-blue-50 focus:border-c3c-blue outline-none transition-all cursor-pointer"><option>Proposta Comercial</option><option>Contrato</option><option>Pricing</option><option>Outros</option></select></div>
-                <div><label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Selecione o Arquivo</label><input type="file" id="file-input" class="w-full text-xs text-gray-400 font-bold file:mr-4 file:py-3 file:px-6 file:rounded-2xl file:border-0 file:text-[10px] file:font-black file:uppercase file:tracking-widest file:bg-blue-50 file:text-c3c-blue hover:file:bg-blue-100 transition-all"></div>
-                <div class="flex justify-end gap-3 pt-6 border-t border-gray-50"><button onclick="document.getElementById('upload-modal').classList.add('hidden')" class="px-6 py-3 text-[10px] font-black text-gray-400 hover:text-gray-600 uppercase tracking-widest">Cancelar</button><button onclick="uploadFile()" class="px-8 py-3 bg-c3c-gradient text-white text-[10px] font-black uppercase tracking-widest rounded-2xl shadow-xl shadow-blue-100 transition-all active:scale-95">Enviar Agora</button></div>
+                <div><label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Tipo do Documento</label><select id="doc-type-select" class="input-modern w-full"><option>Proposta Comercial</option><option>Contrato Assinado</option><option>Cronograma</option><option>Outros</option></select></div>
+                <div><label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Arquivo</label><input type="file" id="file-input" class="w-full text-xs font-bold text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-[10px] file:font-black file:bg-blue-50 file:text-c3c-blue hover:file:bg-blue-100 cursor-pointer"></div>
+            </div>
+            <div class="flex justify-end gap-3 pt-8">
+                <button onclick="document.getElementById('upload-modal').classList.add('hidden')" class="px-6 py-3 text-[10px] font-black text-gray-400 hover:text-gray-600 uppercase tracking-widest">Cancelar</button>
+                <button onclick="uploadFile()" class="px-8 py-3 bg-c3c-gradient text-white text-[10px] font-black uppercase tracking-widest rounded-2xl shadow-xl shadow-blue-100 transition-all active:scale-95">Enviar</button>
             </div>
         </div>
     </div>
 
-    <!-- TOAST -->
-    <div id="toast" class="fixed bottom-10 right-10 bg-gray-900/90 backdrop-blur-md text-white px-8 py-5 rounded-[24px] shadow-2xl translate-y-20 opacity-0 transition-all duration-500 flex items-center gap-4 z-[200] border border-white/10">
-        <div class="w-10 h-10 rounded-full bg-teal-500/20 flex items-center justify-center text-teal-400 shadow-inner"><i data-lucide="check-circle" class="w-5 h-5"></i></div>
-        <div><p class="text-xs font-black uppercase tracking-widest" id="toast-title">Sucesso</p><p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-0.5" id="toast-message">Operação realizada com êxito.</p></div>
-    </div>
-
     <!-- SCRIPTS -->
+    <!-- TOAST NOTIFICATION -->
+    <div id="toast-container" class="fixed bottom-8 right-8 z-[200] flex flex-col gap-3"></div>
+
     <script>
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            const colorClass = type === 'success' ? 'bg-teal-500' : 'bg-red-500';
+            const icon = type === 'success' ? 'check-circle' : 'alert-circle';
+            
+            toast.className = `flex items-center gap-4 ${colorClass} text-white px-6 py-4 rounded-[20px] shadow-2xl transform translate-y-20 opacity-0 transition-all duration-500 ease-out min-w-[300px] border border-white/10 backdrop-blur-sm`;
+            toast.innerHTML = `
+                <div class="bg-white/20 p-2 rounded-xl"><i data-lucide="${icon}" class="w-5 h-5"></i></div>
+                <div class="flex-1">
+                    <p class="text-[10px] font-black uppercase tracking-widest leading-none mb-1">${type === 'success' ? 'Sucesso' : 'Erro'}</p>
+                    <p class="text-xs font-bold opacity-90">${message}</p>
+                </div>
+            `;
+            
+            container.appendChild(toast);
+            lucide.createIcons();
+            
+            // Animation In
+            setTimeout(() => { toast.classList.remove('translate-y-20', 'opacity-0'); }, 10);
+            
+            // Auto Remove
+            setTimeout(() => {
+                toast.classList.add('translate-y-[-20px]', 'opacity-0');
+                setTimeout(() => toast.remove(), 500);
+            }, 4000);
+        }
+
         lucide.createIcons();
         let services = <%- JSON.stringify(services) %>;
         let currentServiceData = null; let metadata = {}; 
-        let attachedDocIds = []; 
+        let attachedDocIds = [];
+        let availableSales = []; // Vendas disponíveis para vincular
+        let linkedSales = [];    // Vendas já vinculadas ao serviço atual
 
         const money = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
-        const moneyValue = (val) => money.format(val || 0);
+        const moneyValue = (val) => `<span class="demo-blur">${money.format(val || 0)}</span>`;
         const holidays = ["01/01", "21/04", "01/05", "07/09", "12/10", "02/11", "15/11", "25/12"];
 
         // --- GLOBAL HELPERS & CALCS ---
@@ -402,35 +634,43 @@
         }
 
         function updateSummaryCards(cRev, cMargin, fRev, fMargin, aRev, aMargin) {
-            document.getElementById('card-prop-rev').innerText = moneyValue(cRev); document.getElementById('card-prop-margin').innerText = Math.round(cMargin) + '%';
-            document.getElementById('card-fcst-rev').innerText = moneyValue(fRev); document.getElementById('card-fcst-margin').innerText = Math.round(fMargin) + '%';
-            document.getElementById('card-act-rev').innerText = moneyValue(aRev); document.getElementById('card-act-margin').innerText = Math.round(aMargin) + '%';
+            document.getElementById('card-prop-rev').innerHTML = moneyValue(cRev); document.getElementById('card-prop-margin').innerText = Math.round(cMargin||0) + '% MG';
+            document.getElementById('card-fcst-rev').innerHTML = moneyValue(fRev); document.getElementById('card-fcst-margin').innerText = Math.round(fMargin||0) + '% MG';
+            document.getElementById('card-act-rev').innerHTML = moneyValue(aRev); document.getElementById('card-act-margin').innerText = Math.round(aMargin||0) + '% MG';
+            
+            // Atualizações no Extrato Real
+            const actRevSummary = document.getElementById('act-rev-summary');
+            const actCostSummary = document.getElementById('act-cost-summary');
+            if(actRevSummary) actRevSummary.innerHTML = moneyValue(aRev);
+            if(actCostSummary) actCostSummary.innerHTML = moneyValue(aRev * (1 - ((aMargin||0)/100)));
         }
 
         function calculateAllTotals() {
             let cRev=0, cCost=0, cHours=0;
             document.querySelectorAll('.comm-row').forEach(tr => {
-                cRev += parseFloat(tr.cells[8].innerText.replace(/[^0-9,-]+/g,"").replace(",",".")||0);
-                cCost += parseFloat(tr.cells[9].innerText.replace(/[^0-9,-]+/g,"").replace(",",".")||0);
-                cHours += parseFloat(tr.cells[7].innerText.replace('h','')||0);
+                cRev += parseFloat(tr.querySelector('.cell-rev').innerText.replace(/[^0-9,-]+/g,"").replace(",",".")||0);
+                cCost += parseFloat(tr.querySelector('.cell-cost').innerText.replace(/[^0-9,-]+/g,"").replace(",",".")||0);
+                cHours += parseFloat(tr.querySelector('.cell-hours').innerText.replace('h','')||0);
             });
             document.getElementById('comm-total-hours').innerText = cHours.toFixed(1) + 'h';
-            document.getElementById('comm-total-rev').innerText = moneyValue(cRev);
-            document.getElementById('comm-total-cost').innerText = moneyValue(cCost);
+            document.getElementById('comm-total-rev').innerHTML = moneyValue(cRev);
+            document.getElementById('comm-total-rev-foot').innerHTML = moneyValue(cRev);
+            document.getElementById('comm-total-cost').innerHTML = moneyValue(cCost);
             document.getElementById('comm-total-margin').innerText = cRev > 0 ? Math.round(((cRev-cCost)/cRev)*100) + '%' : '0%';
 
-            let aRev=0, aCost=0, aHours=0;
+            let eRev=0, eCost=0, eHours=0;
             document.querySelectorAll('.exec-row').forEach(tr => {
-                 aRev += parseFloat(tr.cells[8].innerText.replace(/[^0-9,-]+/g,"").replace(",",".")||0);
-                 aCost += parseFloat(tr.cells[9].innerText.replace(/[^0-9,-]+/g,"").replace(",",".")||0);
-                 aHours += parseFloat(tr.cells[7].innerText.replace('h','')||0);
+                eRev += parseFloat(tr.querySelector('.cell-rev').innerText.replace(/[^0-9,-]+/g,"").replace(",",".")||0);
+                eCost += parseFloat(tr.querySelector('.cell-cost').innerText.replace(/[^0-9,-]+/g,"").replace(",",".")||0);
+                eHours += parseFloat(tr.querySelector('.cell-hours').innerText.replace('h','')||0);
             });
-            document.getElementById('exec-total-hours').innerText = aHours.toFixed(1) + 'h';
-            document.getElementById('exec-total-rev').innerText = moneyValue(aRev); 
-            document.getElementById('exec-total-cost').innerText = moneyValue(aCost);
-            document.getElementById('exec-total-margin').innerText = aRev > 0 ? Math.round(((aRev-aCost)/aRev)*100) + '%' : '0%';
+            document.getElementById('exec-total-hours').innerText = eHours.toFixed(1) + 'h';
+            document.getElementById('exec-total-rev').innerHTML = moneyValue(eRev);
+            document.getElementById('exec-total-rev-foot').innerHTML = moneyValue(eRev);
+            document.getElementById('exec-total-cost').innerHTML = moneyValue(eCost);
+            document.getElementById('exec-total-margin').innerText = eRev > 0 ? Math.round(((eRev-eCost)/eRev)*100) + '%' : '0%';
 
-            updateSummaryCards(cRev, cRev>0?((cRev-cCost)/cRev)*100:0, aRev, aRev>0?((aRev-aCost)/aRev)*100:0, 0, 0);
+            refreshAllForecasts();
         }
 
         function recalcDistribution() {
@@ -444,7 +684,7 @@
                 const days = countBusinessDays(start, end);
                 const totalHours = days * 8 * (alloc / 100); 
                 const totalCost = totalHours * costRate;
-                tr.dataset.tempCost = totalCost; tr.dataset.tempHours = totalHours; tr.dataset.tempDays = days; 
+                tr.dataset.tempCost = totalCost; tr.dataset.tempHours = totalHours; 
                 
                 const cellDays = tr.querySelector('.cell-days');
                 const cellHours = tr.querySelector('.cell-hours');
@@ -452,7 +692,7 @@
                 
                 if(cellDays) cellDays.innerText = days; 
                 if(cellHours) cellHours.innerText = totalHours.toFixed(1) + 'h';
-                if(cellCost) cellCost.innerText = moneyValue(totalCost);
+                if(cellCost) cellCost.innerHTML = moneyValue(totalCost);
 
                 if(commId) {
                     if(!distributionMap[commId]) distributionMap[commId] = { totalCostIncurred: 0, rows: [] };
@@ -461,28 +701,230 @@
                     tr.cells[2].querySelector('input').value = '0.00';
                     const cellRev = tr.querySelector('.cell-rev');
                     const cellMargin = tr.querySelector('.cell-margin');
-                    if(cellRev) cellRev.innerText = moneyValue(0);
+                    if(cellRev) cellRev.innerHTML = moneyValue(0);
                     if(cellMargin) cellMargin.innerText = '-100%';
                 }
             });
             Object.keys(distributionMap).forEach(commId => {
                 const group = distributionMap[commId];
                 const commRow = document.querySelector(`.comm-row[data-id="${commId}"]`);
-                const commRev = commRow ? parseFloat(commRow.querySelector('.cell-rev').innerText.replace(/[^0-9,-]+/g,"").replace(",",".") || 0) : 0;
+                const commRevStr = commRow ? commRow.querySelector('.cell-rev').innerText.replace(/[^0-9,-]+/g,"").replace(",",".") : "0";
+                const commRev = parseFloat(commRevStr || 0);
                 group.rows.forEach(tr => {
                     const myCost = parseFloat(tr.dataset.tempCost); const myHours = parseFloat(tr.dataset.tempHours);
                     let myShareRev = (group.totalCostIncurred > 0) ? (commRev * myCost) / group.totalCostIncurred : 0;
                     tr.cells[2].querySelector('input').value = myHours > 0 ? (myShareRev / myHours).toFixed(2) : '0.00';
                     const cellRev = tr.querySelector('.cell-rev');
                     const cellMargin = tr.querySelector('.cell-margin');
-                    if(cellRev) cellRev.innerText = moneyValue(myShareRev);
+                    if(cellRev) cellRev.innerHTML = moneyValue(myShareRev);
                     if(cellMargin) cellMargin.innerText = myShareRev > 0 ? Math.round(((myShareRev - myCost) / myShareRev) * 100) + '%' : '0%';
                 });
             });
             calculateAllTotals();
+            refreshAllForecasts();
+        }
+
+        function refreshAllForecasts() {
+            const yrComm = parseInt(document.getElementById('forecast-year-comm').value);
+            const yrAlloc = parseInt(document.getElementById('forecast-year-alloc').value);
+            const yrReal = parseInt(document.getElementById('forecast-year-real').value);
+            
+            const cMonths = generatePreciseForecast('comm-row', yrComm); 
+            renderMonthlyTable(cMonths, 'monthly-forecast-header', 'monthly-forecast-body', yrComm);
+            
+            const aMonths = generatePreciseForecast('exec-row', yrAlloc); 
+            renderMonthlyTable(aMonths, 'alloc-forecast-header', 'alloc-forecast-body', yrAlloc);
+            
+            const rMonthsRaw = generatePreciseForecast('exec-row', yrReal); 
+            const rMonths = rMonthsRaw.map(d => ({ rev: d.rev * 0.9, cost: d.cost * 0.95 }));
+            renderMonthlyTable(rMonths, 'realized-forecast-header', 'realized-forecast-body', yrReal);
+            
+            generateDREDetailed();
+        }
+
+        function generatePreciseForecast(rowClass, year) {
+            const forecast = Array.from({length: 12}, () => ({ rev: 0, cost: 0 }));
+            const isComm = rowClass === 'comm-row';
+            const idxStart = isComm ? 3 : 4; const idxEnd = isComm ? 4 : 5; 
+            const idxSale = isComm ? 1 : 2; const idxCost = isComm ? 2 : 3; 
+            const idxAlloc = 6; 
+
+            document.querySelectorAll('.' + rowClass).forEach(tr => {
+                const sVal = tr.cells[idxStart].querySelector('input').value; 
+                const eVal = tr.cells[idxEnd].querySelector('input').value;
+                if(!sVal || !eVal) return;
+                
+                const sParts = sVal.split('-'); const start = new Date(sParts[0], sParts[1]-1, sParts[2]);
+                const eParts = eVal.split('-'); const end = new Date(eParts[0], eParts[1]-1, eParts[2]);
+                
+                const saleRate = parseFloat(tr.cells[idxSale].querySelector('input').value) || 0;
+                const costRate = parseFloat(tr.cells[idxCost].querySelector('input').value) || 0;
+                const alloc = parseFloat(tr.cells[idxAlloc].querySelector('input').value) || 0;
+                const hoursPerDay = 8 * (alloc/100);
+                
+                let cur = new Date(start);
+                while(cur <= end) {
+                    if(cur.getFullYear() === year) {
+                        const dayStr = String(cur.getDate()).padStart(2,'0') + '/' + String(cur.getMonth()+1).padStart(2,'0');
+                        if(cur.getDay() !== 0 && cur.getDay() !== 6 && !holidays.includes(dayStr)) {
+                            const m = cur.getMonth(); 
+                            forecast[m].rev += (hoursPerDay * saleRate); 
+                            forecast[m].cost += (hoursPerDay * costRate);
+                        }
+                    }
+                    cur.setDate(cur.getDate() + 1);
+                }
+            });
+            return forecast;
+        }
+
+        function renderMonthlyTable(data, headId, bodyId, year) {
+            const months = ["Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"];
+            let h = '<th class="w-12 py-2">Mês</th>', bRev = '<tr><td class="text-gray-400">Rec</td>', bCost = '<tr><td class="text-gray-400">Custo</td>';
+            let tRev=0, tCost=0;
+            
+            data.forEach((d, i) => {
+                h += `<th class="text-right px-1">${months[i]}</th>`;
+                bRev += `<td class="text-right">${(d.rev/1000).toFixed(1)}k</td>`;
+                bCost += `<td class="text-right text-red-400">${(d.cost/1000).toFixed(1)}k</td>`;
+                tRev += d.rev; tCost += d.cost;
+            });
+            
+            document.getElementById(headId).innerHTML = h; 
+            document.getElementById(bodyId).innerHTML = bRev + '</tr>' + bCost + '</tr>';
+        }
+
+        function generateDREDetailed() {
+            let minDate, maxDate;
+            const processRows = (selector, iStart, iEnd) => {
+                document.querySelectorAll(selector).forEach(tr => {
+                    const s = tr.cells[iStart].querySelector('input').value; 
+                    const e = tr.cells[iEnd].querySelector('input').value;
+                    if(s && (!minDate || s < minDate)) minDate = s;
+                    if(e && (!maxDate || e > maxDate)) maxDate = e;
+                });
+            };
+            processRows('.comm-row', 3, 4); processRows('.exec-row', 4, 5);
+            if(!minDate || !maxDate) return;
+
+            const months = []; 
+            let cur = new Date(minDate.split('-')[0], minDate.split('-')[1]-1, 1);
+            const end = new Date(maxDate.split('-')[0], maxDate.split('-')[1]-1, 1); 
+            while(cur <= end) { months.push(new Date(cur)); cur.setMonth(cur.getMonth() + 1); }
+
+            const cData = months.map(m => calcMonthData('.comm-row', m, 3, 4, 1, 2, 6));
+            const aData = months.map(m => calcMonthData('.exec-row', m, 4, 5, 2, 3, 6));
+            const rData = aData.map(d => ({ rev: d.rev * 0.9, cost: d.cost * 0.95 })); 
+            
+            let html = '';
+            months.forEach((m, i) => {
+                const c = cData[i], a = aData[i], r = rData[i];
+                const cMarg = c.rev > 0 ? Math.round(((c.rev-c.cost)/c.rev)*100) : 0;
+                const aMarg = a.rev > 0 ? Math.round(((a.rev-a.cost)/a.rev)*100) : 0;
+                const rMarg = r.rev > 0 ? Math.round(((r.rev-r.cost)/r.rev)*100) : 0;
+                
+                html += `<tr class="divide-x divide-gray-50 hover:bg-gray-50/50">
+                    <td class="font-black px-6 py-3 uppercase text-gray-500">${m.toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' })}</td>
+                    <td class="text-right px-4 text-gray-600">${moneyValue(c.rev)}</td><td class="text-right px-4 text-red-400">${moneyValue(c.cost)}</td><td class="text-right px-4 font-bold text-c3c-blue bg-blue-50/10">${cMarg}%</td>
+                    <td class="text-right px-4 text-indigo-600">${moneyValue(a.rev)}</td><td class="text-right px-4 text-red-400">${moneyValue(a.cost)}</td><td class="text-right px-4 font-bold text-indigo-600 bg-indigo-50/10">${aMarg}%</td>
+                    <td class="text-right px-4 text-teal-600">${moneyValue(r.rev)}</td><td class="text-right px-4 text-red-400">${moneyValue(r.cost)}</td><td class="text-right px-4 font-bold text-teal-600 bg-teal-50/10">${rMarg}%</td>
+                </tr>`;
+            });
+
+            const sum = (arr, k) => arr.reduce((a,b) => a + b[k], 0);
+            const ctRev = sum(cData,'rev'), ctCost = sum(cData,'cost');
+            const atRev = sum(aData,'rev'), atCost = sum(aData,'cost');
+            const rtRev = sum(rData,'rev'), rtCost = sum(rData,'cost');
+
+            const footHtml = `<tr class="bg-gray-50/80 font-black border-t-2 border-gray-100 divide-x divide-gray-100">
+                <td class="px-6 py-4">TOTAIS</td>
+                <td class="text-right px-4">${moneyValue(ctRev)}</td><td class="text-right px-4">${moneyValue(ctCost)}</td><td class="text-right px-4 text-c3c-blue bg-blue-50/20">${ctRev>0?Math.round(((ctRev-ctCost)/ctRev)*100):0}%</td>
+                <td class="text-right px-4">${moneyValue(atRev)}</td><td class="text-right px-4">${moneyValue(atCost)}</td><td class="text-right px-4 text-indigo-600 bg-indigo-50/20">${atRev>0?Math.round(((atRev-atCost)/atRev)*100):0}%</td>
+                <td class="text-right px-4">${moneyValue(rtRev)}</td><td class="text-right px-4">${moneyValue(rtCost)}</td><td class="text-right px-4 text-teal-600 bg-teal-50/20">${rtRev>0?Math.round(((rtRev-rtCost)/rtRev)*100):0}%</td>
+            </tr>`;
+
+            document.getElementById('financial-grid').innerHTML = html; 
+            document.getElementById('financial-foot').innerHTML = footHtml;
+        }
+
+        function calcMonthData(selector, targetMonth, iStart, iEnd, iSale, iCost, iAlloc) {
+            let rev = 0, cost = 0;
+            document.querySelectorAll(selector).forEach(tr => {
+                const sVal = tr.cells[iStart].querySelector('input').value; 
+                const eVal = tr.cells[iEnd].querySelector('input').value;
+                if(!sVal || !eVal) return;
+                
+                const s = sVal.split('-'); const e = eVal.split('-');
+                const start = new Date(s[0], s[1]-1, s[2]); const end = new Date(e[0], e[1]-1, e[2]);
+                
+                const mStart = new Date(targetMonth.getFullYear(), targetMonth.getMonth(), 1); 
+                const mEnd = new Date(targetMonth.getFullYear(), targetMonth.getMonth() + 1, 0);
+                
+                if (start <= mEnd && end >= mStart) {
+                    const overlapStart = start > mStart ? start : mStart; 
+                    const overlapEnd = end < mEnd ? end : mEnd;
+                    
+                    const days = countBusinessDays(overlapStart.toISOString().split('T')[0], overlapEnd.toISOString().split('T')[0]);
+                    if(days > 0) {
+                        const saleRate = parseFloat(tr.cells[iSale].querySelector('input').value) || 0;
+                        const costRate = parseFloat(tr.cells[iCost].querySelector('input').value) || 0;
+                        const hours = days * 8 * ((parseFloat(tr.cells[iAlloc].querySelector('input').value) || 0)/100);
+                        rev += hours * saleRate; 
+                        cost += hours * costRate;
+                    }
+                }
+            });
+            return { rev, cost };
         }
 
         // --- CORE FUNCTIONS ---
+        function getItemMonthlyData(tr) {
+            const isComm = tr.classList.contains('comm-row');
+            const idxStart = isComm ? 3 : 4; const idxEnd = isComm ? 4 : 5; 
+            const idxSale = isComm ? 1 : 2; const idxCost = isComm ? 2 : 3; 
+            const idxAlloc = 6; 
+
+            const sVal = tr.cells[idxStart].querySelector('input').value; 
+            const eVal = tr.cells[idxEnd].querySelector('input').value;
+            if(!sVal || !eVal) return [];
+
+            const sParts = sVal.split('-'); const start = new Date(sParts[0], sParts[1]-1, sParts[2]);
+            const eParts = eVal.split('-'); const end = new Date(eParts[0], eParts[1]-1, eParts[2]);
+            
+            const saleRate = parseFloat(tr.cells[idxSale].querySelector('input').value) || 0;
+            const costRate = parseFloat(tr.cells[idxCost].querySelector('input').value) || 0;
+            const alloc = parseFloat(tr.cells[idxAlloc].querySelector('input').value) || 0;
+            const hoursPerDay = 8 * (alloc/100);
+
+            const monthlyData = [];
+            let cur = new Date(start.getFullYear(), start.getMonth(), 1);
+            const endDateOnly = new Date(end.getFullYear(), end.getMonth(), 1);
+
+            while(cur <= endDateOnly) {
+                const mStart = new Date(cur.getFullYear(), cur.getMonth(), 1); 
+                const mEnd = new Date(cur.getFullYear(), cur.getMonth() + 1, 0);
+                
+                const overlapStart = start > mStart ? start : mStart; 
+                const overlapEnd = end < mEnd ? end : mEnd;
+                
+                const d1 = overlapStart.toISOString().split('T')[0];
+                const d2 = overlapEnd.toISOString().split('T')[0];
+
+                const days = countBusinessDays(d1, d2);
+                
+                if (days > 0) {
+                    const hours = days * hoursPerDay;
+                    monthlyData.push({
+                        date: mStart.toISOString().split('T')[0], 
+                        rev: hours * saleRate,
+                        cost: hours * costRate
+                    });
+                }
+                cur.setMonth(cur.getMonth() + 1);
+            }
+            return monthlyData;
+        }
+
         function renderServices(list = services) {
             const grid = document.getElementById('services-grid'); grid.innerHTML = '';
             if (list.length === 0) { document.getElementById('no-results').classList.remove('hidden'); document.getElementById('no-results').classList.add('flex'); }
@@ -498,8 +940,8 @@
         }
 
         function filterServices() {
-            const query = document.getElementById('search-input').value.toLowerCase();
-            const status = document.getElementById('status-filter').value;
+            const query = document.getElementById('search-input')?.value.toLowerCase() || '';
+            const status = document.getElementById('status-filter')?.value || 'active';
             fetch(`/api/services?status=${status}`).then(res => res.json()).then(data => {
                 services = data;
                 const filtered = services.filter(s => (s.name||'').toLowerCase().includes(query) || (s.client||'').toLowerCase().includes(query));
@@ -521,6 +963,7 @@
             fetch(endpoint).then(res => res.json()).then(data => {
                 currentServiceData = data;
                 metadata = data.metadata || {};
+                linkedSales = data.sales || [];
                 populateDatalist('sf-accounts-list', metadata.salesforceAccounts);
                 populateDatalist('ca-clients-list', metadata.contaAzulClients);
                 populateDatalist('people-list', metadata.people);
@@ -529,21 +972,44 @@
                 if(pbSelect) pbSelect.innerHTML = (metadata.pricebooks||[]).map(pb => `<option value="${pb.id}">${pb.name}</option>`).join('');
                 
                 if(id) {
-                    document.getElementById('input-svc-name').value = data.name;
-                    document.getElementById('input-sf-account').value = getMetadataName(metadata.salesforceAccounts, data.sf_account_id) || data.client;
+                    console.log("Loading Service Data:", data);
+                    const svcName = data.name || '';
+                    document.getElementById('input-svc-name').value = svcName;
+                    const subtitleEl = document.getElementById('modal-svc-subtitle');
+                    if(subtitleEl) subtitleEl.innerText = svcName;
+                    document.getElementById('input-sf-account').value = getMetadataName(metadata.salesforceAccounts, data.sf_account_id) || data.client || '';
                     document.getElementById('input-ca-client').value = getMetadataName(metadata.contaAzulClients, data.ca_client_id) || '';
-                    document.getElementById('input-svc-type').value = data.type || 'Projeto';
+                    
+                    validateCaClientSelection();
+
+                    const typeField = document.getElementById('input-svc-type');
+                    if(data.type) {
+                        typeField.value = data.type;
+                        if(typeField.value !== data.type) { // Valor não existe no select, adicionar temporariamente ou mapear
+                             const opt = document.createElement('option'); opt.value = data.type; opt.text = data.type;
+                             typeField.add(opt); typeField.value = data.type;
+                        }
+                    } else { typeField.value = 'Projeto'; }
+
                     document.getElementById('input-svc-start').value = data.dataInicio || '';
                     document.getElementById('input-svc-end-orig').value = data.dataFimOriginal || '';
                     document.getElementById('input-svc-end-real').value = data.dataFim || '';
                     document.getElementById('input-lead-project').value = getMetadataName(metadata.people, data.lead_project) || '';
                     document.getElementById('input-coordinator').value = getMetadataName(metadata.people, data.coordinator) || '';
                     document.getElementById('input-tech-lead').value = getMetadataName(metadata.people, data.tech_lead) || '';
+                    
+                    document.getElementById('input-req-report').checked = !!data.reqReport;
+                    document.getElementById('input-sol-report').checked = !!data.solReport;
+                    
+                    toggleReportLogic();
+
                     updateSummaryCards(data.prop?.rev, data.prop?.margin, data.fcst?.rev, data.fcst?.margin, data.act?.rev, data.act?.margin);
                 } else {
                     ['input-svc-name', 'input-sf-account', 'input-ca-client', 'input-lead-project', 'input-coordinator', 'input-tech-lead', 'input-svc-start', 'input-svc-end-orig', 'input-svc-end-real'].forEach(i => {
                         const el = document.getElementById(i); if(el) el.value = '';
                     });
+                    document.getElementById('input-req-report').checked = false;
+                    document.getElementById('input-sol-report').checked = false;
                     updateSummaryCards(0,0,0,0,0,0);
                 }
 
@@ -561,6 +1027,7 @@
                 const execRows = document.getElementById('execution-rows'); execRows.innerHTML = '';
                 (data.execution && data.execution.length > 0 ? data.execution : [{}]).forEach(row => addExecutionRow(row));
 
+                renderLinkedSales();
                 const billingList = document.getElementById('svc-billing-list'); billingList.innerHTML = '';
                 (data.installments && data.installments.length > 0 ? data.installments : []).forEach(inst => addBillingRow(inst));
 
@@ -568,6 +1035,182 @@
                 document.getElementById('modal-loader').classList.add('hidden');
                 lucide.createIcons();
             });
+        }
+
+        // --- BILLING & CONTA AZUL INTEGRATION ---
+        function fetchAvailableSales() {
+            const caClientInput = document.getElementById('input-ca-client');
+            const caClientId = document.querySelector(`#ca-clients-list option[value="${caClientInput.value}"]`)?.dataset.id;
+            
+            if(!caClientId) return showToast("Selecione um cliente vinculado ao Conta Azul primeiro.", 'error');
+            
+            document.getElementById('sales-modal').classList.remove('hidden');
+            document.getElementById('sales-loading').classList.remove('hidden');
+            document.getElementById('sales-empty').classList.add('hidden');
+            document.getElementById('available-sales-list').innerHTML = '';
+
+            fetch(`/api/services/sales/available?caClientId=${caClientId}`)
+                .then(res => res.json())
+                .then(sales => {
+                    document.getElementById('sales-loading').classList.add('hidden');
+                    availableSales = sales;
+                    
+                    if(!sales || sales.length === 0) {
+                        document.getElementById('sales-empty').classList.remove('hidden');
+                        return;
+                    }
+
+                    const list = document.getElementById('available-sales-list');
+                    sales.forEach(s => {
+                        const isAlreadyLinked = linkedSales.some(ls => ls.id_ca === s.id);
+                        if (isAlreadyLinked) return;
+
+                        const date = s.emissionDate ? s.emissionDate.split('T')[0].split('-').reverse().join('/') : '-';
+                        list.insertAdjacentHTML('beforeend', `
+                            <label class="flex items-center justify-between p-4 border border-gray-100 rounded-2xl hover:bg-gray-50 transition-all cursor-pointer group">
+                                <div class="flex items-center gap-4">
+                                    <input type="checkbox" name="sale-check" value="${s.id}" class="w-5 h-5 border-2 border-gray-200 rounded-lg text-teal-500 focus:ring-teal-500 transition-all">
+                                    <div>
+                                        <p class="text-[10px] font-black text-gray-800 uppercase tracking-widest">Venda #${s.number}</p>
+                                        <p class="text-[8px] font-bold text-gray-400 uppercase mt-0.5">${date} • ${s.status}</p>
+                                    </div>
+                                </div>
+                                <span class="text-xs font-black text-gray-700">${money.format(s.total)}</span>
+                            </label>
+                        `);
+                    });
+
+                    if(list.children.length === 0) document.getElementById('sales-empty').classList.remove('hidden');
+                    lucide.createIcons();
+                })
+                .catch(err => {
+                    document.getElementById('sales-loading').classList.add('hidden');
+                    alert("Erro ao buscar vendas: " + err.message);
+                });
+        }
+
+        async function linkSelectedSales() {
+            const selectedIds = Array.from(document.querySelectorAll('input[name="sale-check"]:checked')).map(cb => cb.value);
+            if(selectedIds.length === 0) return document.getElementById('sales-modal').classList.add('hidden');
+
+            document.getElementById('sales-modal').classList.add('hidden');
+            document.getElementById('modal-loader').classList.remove('hidden');
+
+            for (const saleId of selectedIds) {
+                const sale = availableSales.find(s => s.id === saleId);
+                if (!sale) continue;
+
+                linkedSales.push({ id_ca: sale.id, number: sale.number, date: sale.emissionDate, total: sale.total, status: sale.status });
+
+                try {
+                    const res = await fetch(`/api/services/sales/${saleId}/installments`);
+                    const installments = await res.json();
+                    installments.forEach(inst => {
+                        addBillingRow({
+                            desc: inst.desc,
+                            month: inst.month,
+                            date: inst.date,
+                            value: inst.value,
+                            status: inst.status,
+                            originSaleId: saleId
+                        });
+                    });
+                } catch(e) { console.error("Erro ao buscar parcelas:", e); }
+            }
+
+            renderLinkedSales();
+            
+            // --- SALVAMENTO IMEDIATO NO SALESFORCE ---
+            try {
+                const billingPayload = {
+                    serviceId: currentServiceData.id,
+                    sales: linkedSales.map(s => ({ id: s.id_ca || s.id, number: s.number, emissionDate: s.date, total: s.total, status: s.status })),
+                    installments: Array.from(document.querySelectorAll('.billing-row')).map(tr => ({
+                        desc: tr.cells[1].querySelector('input')?.value || '',
+                        month: tr.cells[2].querySelector('input')?.value || '',
+                        date: tr.cells[3].querySelector('input')?.value || '',
+                        value: parseFloat(tr.dataset.value || 0),
+                        status: tr.dataset.status || 'Pendente',
+                        originSaleId: tr.dataset.originSaleId
+                    }))
+                };
+
+                const resBill = await fetch('/api/services/sales', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(billingPayload) });
+                const dataBill = await resBill.json();
+
+                if (dataBill.success) {
+                    showToast('Vendas e parcelas sincronizadas com sucesso!');
+                } else {
+                    showToast("Vínculo realizado localmente, mas houve erro na sincronização: " + dataBill.error, 'error');
+                }
+            } catch(e) {
+                showToast("Erro ao sincronizar com Salesforce: " + e.message, 'error');
+            }
+
+            document.getElementById('modal-loader').classList.add('hidden');
+        }
+
+        function renderLinkedSales() {
+            const container = document.getElementById('linked-sales-container');
+            const list = document.getElementById('linked-sales-list');
+            
+            if (!linkedSales || linkedSales.length === 0) {
+                container.classList.add('hidden');
+                return;
+            }
+
+            container.classList.remove('hidden');
+            list.innerHTML = '';
+
+            linkedSales.forEach(s => {
+                const date = s.date ? (s.date.includes('T') ? s.date.split('T')[0] : s.date).split('-').reverse().join('/') : '-';
+                list.insertAdjacentHTML('beforeend', `
+                    <div class="bg-teal-50/30 border border-teal-100 p-4 rounded-2xl flex justify-between items-center group">
+                        <div class="flex items-center gap-3">
+                            <div class="w-8 h-8 rounded-full bg-white flex items-center justify-center text-teal-500 shadow-sm">
+                                <i data-lucide="shopping-bag" class="w-4 h-4"></i>
+                            </div>
+                            <div>
+                                <p class="text-[9px] font-black text-gray-800 uppercase tracking-widest">#${s.number}</p>
+                                <p class="text-[8px] font-bold text-teal-600 uppercase mt-0.5">${money.format(s.total)}</p>
+                            </div>
+                        </div>
+                        <button onclick="removeLinkedSale('${s.id}', '${s.id_ca}')" class="text-gray-200 hover:text-red-500 transition-all">
+                            <i data-lucide="unlink" class="w-4 h-4"></i>
+                        </button>
+                    </div>
+                `);
+            });
+            lucide.createIcons();
+        }
+
+        async function removeLinkedSale(saleSfId, caId) {
+            if(!confirm("Deseja desvincular esta venda? Todas as parcelas vinculadas a ela também serão removidas.")) return;
+            
+            // Se a venda tem um ID do Salesforce, precisamos excluir via API (que valida o forecast)
+            if (saleSfId && !saleSfId.startsWith('new')) {
+                document.getElementById('modal-loader').classList.remove('hidden');
+                try {
+                    const res = await fetch(`/api/services/sales/${saleSfId}`, { method: 'DELETE' });
+                    const data = await res.json();
+                    
+                    if (data.success) {
+                        showToast('Venda e parcelas desvinculadas com sucesso!');
+                        // Recarrega o modal para atualizar a lista de parcelas e vendas
+                        openServiceModal(currentServiceData.id);
+                    } else {
+                        throw new Error(data.error || 'Falha ao desvincular');
+                    }
+                } catch(e) {
+                    showToast(e.message, 'error');
+                    document.getElementById('modal-loader').classList.add('hidden');
+                }
+            } else {
+                // Caso seja uma venda que acabou de ser marcada mas não salvou no SF ainda (cenário raro com sync imediato)
+                linkedSales = linkedSales.filter(s => (s.id_ca || s.id) !== caId);
+                renderLinkedSales();
+                showToast('Vínculo removido localmente.');
+            }
         }
 
         function onPricebookChange() {
@@ -599,13 +1242,13 @@
             const days = countBusinessDays(start, end); const totalHours = days * 8 * (alloc / 100);
             const rev = totalHours * saleRate; const cost = totalHours * costRate;
             tr.querySelector('.cell-days').innerText = days; tr.querySelector('.cell-hours').innerText = totalHours.toFixed(1) + 'h';
-            tr.querySelector('.cell-rev').innerText = moneyValue(rev); tr.querySelector('.cell-cost').innerText = moneyValue(cost);
+            tr.querySelector('.cell-rev').innerHTML = moneyValue(rev); tr.querySelector('.cell-cost').innerHTML = moneyValue(cost);
             calculateAllTotals(); recalcDistribution(); 
         }
 
         function addExecutionRow(data = {}) {
             const tbody = document.getElementById('execution-rows'); const tr = document.createElement('tr');
-            tr.className = "exec-row group hover:bg-gray-50";
+            tr.className = "exec-row group hover:bg-gray-50"; tr.dataset.id = data.id || `new-exec-${Date.now()}`;
             tr.innerHTML = `<td class="px-6 py-4"><select class="input-inline text-[10px] font-black text-indigo-700 uppercase" onfocus="this.innerHTML = getCommLinkOptions(this.value)" onchange="onAllocLinkChange(this)">${getCommLinkOptions(data.commercialLinkId)}</select></td><td><select class="input-inline font-black text-gray-700 uppercase" onchange="onPersonChange(this)">${getPeopleOptions(data.person)}</select></td><td><input class="input-inline text-right font-black readonly-field" readonly value="${data.saleApplied || '0.00'}"></td><td><input class="input-inline text-right font-black readonly-field" readonly value="${data.costReal || '0.00'}"></td><td><input type="date" class="input-inline text-center" value="${data.start || ''}" onchange="recalcDistribution()"></td><td><input type="date" class="input-inline text-center" value="${data.end || ''}" onchange="recalcDistribution()"></td><td><input type="number" class="input-inline text-center font-black" value="${data.alloc || 100}" oninput="recalcDistribution()"></td><td class="text-center text-[10px] font-black text-gray-400 cell-days">0</td><td class="text-right font-black text-xs cell-hours">0h</td><td class="text-right font-black text-xs text-indigo-600 bg-indigo-50/50 cell-rev">R$ 0,00</td><td class="text-right font-black text-xs text-red-600 cell-cost">R$ 0,00</td><td class="text-right font-black text-xs pt-2 cell-margin">0%</td><td class="text-center"><button class="text-gray-200 hover:text-red-500" onclick="removeRow(this)"><i data-lucide="trash-2" class="w-4 h-4"></i></button></td>`;
             tbody.appendChild(tr); if(data.person) onPersonChange(tr.cells[1].querySelector('select')); lucide.createIcons();
         }
@@ -613,42 +1256,267 @@
         function onPersonChange(select) { select.closest('tr').cells[3].querySelector('input').value = select.selectedOptions[0].dataset.cost || 0; recalcDistribution(); }
         function onAllocLinkChange(select) { recalcDistribution(); }
 
-        function addBillingRow(d={}) { const t=document.getElementById('svc-billing-list'); const r=t.children.length+1; t.insertAdjacentHTML('beforeend', `<tr><td class="px-8 py-5 text-center text-gray-300 font-black text-[10px]">${r}</td><td class="px-3 py-2"><input class="input-inline font-black text-gray-700 uppercase" value="${d.desc||''}" placeholder="Ex: Parcela 01"></td><td class="px-3 py-2"><input class="input-inline text-center font-black" type="month" value="${d.month||''}"></td><td class="px-3 py-2"><input class="input-inline text-center font-black" type="date" value="${d.date||''}"></td><td class="px-3 py-2 text-right"><input class="input-inline text-right font-black text-gray-800" value="${d.value||''}" placeholder="0,00"></td><td class="px-8 py-2 text-center"><button onclick="removeRow(this)"><i data-lucide="trash-2" class="w-4 h-4 text-red-300 hover:text-red-500 transition-all"></i></button></td></tr>`); lucide.createIcons(); }
-        function removeRow(btn) { btn.closest('tr').remove(); recalcDistribution(); }
+        function addBillingRow(d={}) { 
+            const t=document.getElementById('svc-billing-list'); const r=t.children.length+1; 
+            const tr = document.createElement('tr');
+            tr.className = "billing-row group hover:bg-gray-50";
+            tr.dataset.originSaleId = d.originSaleId || '';
+            tr.dataset.status = d.status || 'Pendente';
+            tr.dataset.value = d.value || 0;
+            
+            let statusClass = 'bg-gray-50 text-gray-500 border-gray-100';
+            if (d.status === 'Pago') statusClass = 'bg-teal-50 text-teal-600 border-teal-100';
+            else if (d.status === 'Atrasado') statusClass = 'bg-red-50 text-red-600 border-red-100';
+            else if (d.status === 'Pendente') statusClass = 'bg-blue-50 text-c3c-blue border-blue-100';
+
+            tr.innerHTML = `
+                <td class="px-8 py-5 text-center text-gray-300 font-black text-[10px]">${r}</td>
+                <td class="px-3 py-2"><input class="input-inline font-black text-gray-700 uppercase readonly-field" readonly value="${d.desc||''}" placeholder="-"></td>
+                <td class="px-3 py-2 text-center"><input class="input-inline text-center font-black readonly-field" readonly type="month" value="${d.month||''}"></td>
+                <td class="px-3 py-2 text-center"><input class="input-inline text-center font-black readonly-field" readonly type="date" value="${d.date||''}"></td>
+                <td class="px-3 py-2 text-center">
+                    <span class="${statusClass} text-[8px] font-black px-2 py-1 rounded-full border uppercase tracking-widest">${d.status || 'Pendente'}</span>
+                </td>
+                <td class="px-8 py-2 text-right font-black text-gray-800">${moneyValue(d.value || 0)}</td>
+            `;
+            t.appendChild(tr);
+            calculateBillingTotals();
+        }
+
+        function calculateBillingTotals() {
+            let total = 0;
+            document.querySelectorAll('.billing-row').forEach(tr => {
+                total += parseFloat(tr.dataset.value || 0);
+            });
+            const totalEl = document.getElementById('billing-total-value');
+            if(totalEl) totalEl.innerHTML = moneyValue(total);
+        }
+
+        function removeRow(btn) { btn.closest('tr').remove(); calculateAllTotals(); recalcDistribution(); }
         function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
-        function switchTab(t) { ['general','commercial','execution','billing','realized'].forEach(x => { document.getElementById(`view-${x}`).classList.add('hidden'); document.getElementById(`tab-${x}`).className = 'modal-tab-inactive py-5 text-[10px] font-black uppercase tracking-[0.2em] whitespace-nowrap transition-all'; }); document.getElementById(`view-${t}`).classList.remove('hidden'); document.getElementById(`tab-${t}`).className = 'modal-tab-active py-5 text-[10px] font-black uppercase tracking-[0.2em] whitespace-nowrap transition-all'; }
+        function switchTab(t) { 
+            ['general','attachments','billing','commercial','execution','realized'].forEach(x => { 
+                const view = document.getElementById(`view-${x}`);
+                const tab = document.getElementById(`tab-${x}`);
+                if(view) view.classList.add('hidden'); 
+                if(tab) tab.className = 'modal-tab-inactive py-5 text-[10px] font-black uppercase tracking-[0.2em] whitespace-nowrap transition-all'; 
+            }); 
+            
+            const targetView = document.getElementById(`view-${t}`);
+            const targetTab = document.getElementById(`tab-${t}`);
+            if(targetView) targetView.classList.remove('hidden'); 
+            if(targetTab) targetTab.className = 'modal-tab-active py-5 text-[10px] font-black uppercase tracking-[0.2em] whitespace-nowrap transition-all';
+        }
         
-        function saveService() {
-            if (!currentServiceData) return;
-            const getDatalistId = (inputId, listId) => {
-                const val = document.getElementById(inputId).value;
-                const opt = document.querySelector(`#${listId} option[value="${val}"]`);
-                return opt ? opt.dataset.id : val; 
-            };
-            const payload = {
-                id: currentServiceData.id,
-                name: document.getElementById('input-svc-name').value,
-                sf_account_id: getDatalistId('input-sf-account', 'sf-accounts-list'),
-                ca_client_id: getDatalistId('input-ca-client', 'ca-clients-list'),
-                type: document.getElementById('input-svc-type').value,
-                lead_project: getDatalistId('input-lead-project', 'people-list'),
-                coordinator: getDatalistId('input-coordinator', 'people-list'),
-                tech_lead: getDatalistId('input-tech-lead', 'people-list'),
-                start: document.getElementById('input-svc-start').value,
-                end_original: document.getElementById('input-svc-end-orig').value,
-                end_real: document.getElementById('input-svc-end-real').value,
-                docIds: attachedDocIds,
-                commercial: Array.from(document.querySelectorAll('.comm-row')).map(tr => ({
-                    id: tr.dataset.id, productName: tr.cells[0].querySelector('select').value, saleRate: parseFloat(tr.cells[1].querySelector('input').value)||0, costEst: parseFloat(tr.cells[2].querySelector('input').value)||0, start: tr.cells[3].querySelector('input').value, end: tr.cells[4].querySelector('input').value, alloc: parseFloat(tr.cells[6].querySelector('input').value)||0, totalRev: parseFloat(tr.querySelector('.cell-rev').innerText.replace(/[^0-9,-]+/g,"").replace(",",".")), totalCost: parseFloat(tr.querySelector('.cell-cost').innerText.replace(/[^0-9,-]+/g,"").replace(",",".")), totalHours: parseFloat(tr.querySelector('.cell-hours').innerText.replace('h',''))
-                })),
-                execution: Array.from(document.querySelectorAll('.exec-row')).map(tr => ({
-                    id: tr.dataset.id, personId: tr.cells[1].querySelector('select').selectedOptions[0].dataset.id, commercialLinkId: tr.cells[0].querySelector('select').value, start: tr.cells[4].querySelector('input').value, end: tr.cells[5].querySelector('input').value, alloc: parseFloat(tr.cells[6].querySelector('input').value)||0
-                }))
-            };
-            if (!payload.name || !payload.sf_account_id || !payload.start) return alert('Campos obrigatórios ausentes.');
+        function openUploadModal() {
+            document.getElementById('upload-modal').classList.remove('hidden');
+        }
+
+        async function deleteDocument(docId) {
+            if (!confirm('Tem certeza que deseja excluir este anexo permanentemente?')) return;
+
             document.getElementById('modal-loader').classList.remove('hidden');
-            fetch('/api/services', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
-            .then(res => res.json()).then(data => { document.getElementById('modal-loader').classList.add('hidden'); if (data.success) { closeModal('service-modal'); filterServices(); } else alert(data.message); });
+            try {
+                const res = await fetch(`/api/services/doc/${docId}`, { method: 'DELETE' });
+                const data = await res.json();
+                if (data.success) {
+                    showToast('Documento excluído com sucesso!');
+                    document.getElementById(`doc-${docId}`)?.remove();
+                } else {
+                    throw new Error(data.error || 'Falha ao excluir');
+                }
+            } catch (e) {
+                showToast(e.message, 'error');
+            } finally {
+                document.getElementById('modal-loader').classList.add('hidden');
+            }
+        }
+
+        async function uploadFile() {
+            const fileInput = document.getElementById('file-input');
+            const file = fileInput.files[0];
+            const docType = document.getElementById('doc-type-select').value;
+            const serviceId = currentServiceData?.id;
+
+            if (!file || !serviceId) {
+                return showToast('Selecione um arquivo e um serviço primeiro.', 'error');
+            }
+            
+            // UX Melhorada: Fecha o modal de upload e mostra o loader principal
+            closeModal('upload-modal');
+            document.getElementById('modal-loader').classList.remove('hidden');
+            
+            const formData = new FormData();
+            formData.append('files', file);
+            formData.append('type', docType);
+            formData.append('serviceId', serviceId);
+
+            try {
+                const res = await fetch('/api/services/doc', { method: 'POST', body: formData });
+                const data = await res.json();
+
+                if (data.success) {
+                    showToast('Arquivo anexado com sucesso!');
+                    // Recarrega os dados do serviço no modal para exibir o novo anexo
+                    openServiceModal(serviceId); 
+                } else {
+                    throw new Error(data.message || 'Falha no servidor');
+                }
+            } catch (e) {
+                showToast(`Erro no upload: ${e.message}`, 'error');
+            } finally {
+                // A openServiceModal já esconde o loader quando os dados chegam.
+                // Mas garantimos que ele seja escondido em caso de erro na rede.
+                setTimeout(() => document.getElementById('modal-loader').classList.add('hidden'), 500);
+            }
+        }
+
+        function toggleReportLogic() {
+            const reqReport = document.getElementById('input-req-report');
+            const solReport = document.getElementById('input-sol-report');
+            const labelSol = document.getElementById('label-sol-report');
+
+            if (reqReport.checked) {
+                solReport.checked = true;
+                solReport.disabled = true;
+                labelSol.classList.add('opacity-50', 'pointer-events-none');
+            } else {
+                solReport.disabled = false;
+                labelSol.classList.remove('opacity-50', 'pointer-events-none');
+            }
+        }
+
+        function validateCaClientSelection() {
+            const input = document.getElementById('input-ca-client');
+            const status = document.getElementById('ca-client-status');
+            const list = document.getElementById('ca-clients-list');
+            const val = input.value;
+            
+            const match = Array.from(list.options).find(opt => opt.value === val);
+            if (match) {
+                status.classList.remove('hidden');
+                input.classList.add('border-teal-500', 'bg-teal-50/10');
+                input.classList.remove('border-gray-300');
+            } else {
+                status.classList.add('hidden');
+                input.classList.remove('border-teal-500', 'bg-teal-50/10');
+                input.classList.add('border-gray-300');
+            }
+        }
+
+        async function saveService() {
+            if (!currentServiceData) return;
+            
+            const getDatalistId = (inputId, listId) => {
+                const input = document.getElementById(inputId);
+                if (!input) return '';
+                const val = input.value;
+                if (!val) return '';
+                
+                const list = document.getElementById(listId);
+                if (!list) return val;
+                
+                const options = Array.from(list.options);
+                const match = options.find(opt => opt.value === val);
+                
+                console.log(`Mapping ${inputId} ('${val}') using ${listId}. Match found:`, match ? match.dataset.id : 'None');
+                return match ? match.dataset.id : val;
+            };
+            
+            try {
+                const payload = {
+                    id: currentServiceData.id,
+                    name: document.getElementById('input-svc-name')?.value || '',
+                    sf_account_id: getDatalistId('input-sf-account', 'sf-accounts-list'),
+                    ca_client_id: getDatalistId('input-ca-client', 'ca-clients-list'),
+                    type: document.getElementById('input-svc-type')?.value || 'Projeto',
+                    lead_project: getDatalistId('input-lead-project', 'people-list'),
+                    coordinator: getDatalistId('input-coordinator', 'people-list'),
+                    tech_lead: getDatalistId('input-tech-lead', 'people-list'),
+                    start: document.getElementById('input-svc-start')?.value || '',
+                    end_original: document.getElementById('input-svc-end-orig')?.value || '',
+                    end_real: document.getElementById('input-svc-end-real')?.value || '',
+                    reqReport: document.getElementById('input-req-report').checked,
+                    solReport: document.getElementById('input-sol-report').checked,
+                    docIds: attachedDocIds,
+                    commercial: Array.from(document.querySelectorAll('.comm-row')).map(tr => {
+                        const cellRevEl = tr.querySelector('.cell-rev');
+                        const cellCostEl = tr.querySelector('.cell-cost');
+                        const cellHoursEl = tr.querySelector('.cell-hours');
+                        
+                        return {
+                            id: tr.dataset.id, 
+                            productName: tr.cells[0].querySelector('select')?.value || '', 
+                            saleRate: parseFloat(tr.cells[1].querySelector('input')?.value)||0, 
+                            costEst: parseFloat(tr.cells[2].querySelector('input')?.value)||0, 
+                            start: tr.cells[3].querySelector('input')?.value || '', 
+                            end: tr.cells[4].querySelector('input')?.value || '', 
+                            alloc: parseFloat(tr.cells[6].querySelector('input')?.value)||0, 
+                            totalRev: parseFloat(cellRevEl?.innerText.replace(/[^0-9,-]+/g,"").replace(",",".") || 0), 
+                            totalCost: parseFloat(cellCostEl?.innerText.replace(/[^0-9,-]+/g,"").replace(",",".") || 0), 
+                            totalHours: parseFloat(cellHoursEl?.innerText.replace('h','') || 0), 
+                            monthlyData: getItemMonthlyData(tr)
+                        };
+                    }),
+                    execution: Array.from(document.querySelectorAll('.exec-row')).map(tr => ({
+                        id: tr.dataset.id, 
+                        personId: tr.cells[1].querySelector('select')?.selectedOptions[0]?.dataset.id, 
+                        commercialLinkId: tr.cells[0].querySelector('select')?.value || '', 
+                        start: tr.cells[4].querySelector('input')?.value || '', 
+                        end: tr.cells[5].querySelector('input')?.value || '', 
+                        alloc: parseFloat(tr.cells[6].querySelector('input')?.value)||0, 
+                        monthlyData: getItemMonthlyData(tr)
+                    }))
+                };
+                
+                console.log("Payload sendo enviado ao servidor:", JSON.stringify(payload, null, 2));
+                
+                if (!payload.name || !payload.sf_account_id || !payload.start) return showToast('Campos obrigatórios ausentes (Nome, Cliente SF e Início).', 'error');
+                document.getElementById('modal-loader').classList.remove('hidden');
+                
+                const resSvc = await fetch('/api/services', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                const dataSvc = await resSvc.json();
+                
+                if (!dataSvc.success) throw new Error(dataSvc.message);
+                
+                const serviceId = dataSvc.id;
+
+                const billingPayload = {
+                    serviceId: serviceId,
+                    sales: linkedSales.map(s => ({
+                        id: s.id_ca || s.id,
+                        number: s.number,
+                        emissionDate: s.date,
+                        total: s.total,
+                        status: s.status
+                    })),
+                    installments: Array.from(document.querySelectorAll('.billing-row')).map(tr => ({
+                        desc: tr.cells[1].querySelector('input')?.value || '',
+                        month: tr.cells[2].querySelector('input')?.value || '',
+                        date: tr.cells[3].querySelector('input')?.value || '',
+                        value: parseFloat(tr.dataset.value || 0),
+                        status: tr.dataset.status || 'Pendente',
+                        originSaleId: tr.dataset.originSaleId
+                    }))
+                };
+
+                const resBill = await fetch('/api/services/sales', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(billingPayload) });
+                const dataBill = await resBill.json();
+
+                if (dataBill.success) {
+                    document.getElementById('modal-loader').classList.add('hidden');
+                    closeModal('service-modal');
+                    filterServices();
+                    showToast('Serviço e faturamento salvos com sucesso!');
+                } else {
+                    showToast("Serviço salvo, mas houve erro no faturamento: " + dataBill.error, 'error');
+                }
+
+            } catch(e) {
+                document.getElementById('modal-loader').classList.add('hidden');
+                console.error("Erro completo ao salvar:", e);
+                showToast("Erro ao salvar: " + e.message, 'error');
+            }
         }
 
         // --- DOM HELPERS ---

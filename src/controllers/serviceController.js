@@ -126,31 +126,37 @@ exports.getServiceDetails = async (req, res) => {
 
 exports.saveService = async (req, res) => {
     const data = req.body;
+    console.log("Backend: Recebendo payload para salvar:", JSON.stringify(data, null, 2));
     if (!data.name || !data.sf_account_id || !data.start) return res.status(400).json({ success: false, message: "Campos obrigatórios ausentes." });
     try {
         const conn = await getSfConnection();
         let accountId = data.sf_account_id;
         if (!accountId.startsWith('001')) {
+            console.log("Backend: Nome de conta recebido em vez de ID, criando conta:", accountId);
             const accRet = await conn.sobject('Account').create({ Name: accountId });
             if (accRet.success) accountId = accRet.id; else throw new Error("Acc create error");
         }
         const cleanId = (val) => (val && val.length >= 15) ? val : null;
         const cleanDate = (val) => (val && val.trim() !== "") ? val : null;
-        const svcRecord = { 
-            Name: data.name, 
-            Conta__c: accountId, 
-            IDContaAzul__c: data.ca_client_id, 
-            Tipo__c: data.type, 
-            DataInicio__c: cleanDate(data.start), 
-            DataFimOriginal__c: cleanDate(data.end_original), 
-            DataFim__c: cleanDate(data.end_real), 
-            Lider__c: cleanId(data.lead_project), 
-            Coordenador__c: cleanId(data.coordinator), 
-            LiderTecnico__c: cleanId(data.tech_lead),
-            RequerRelatorioFaturamento__c: data.reqReport || false,
-            SolicitaRelatorioHoras__c: data.solReport || false
-        };
-        let result = data.id ? await conn.sobject('Servico__c').update({ ...svcRecord, Id: data.id }) : await conn.sobject('Servico__c').create(svcRecord);
+
+        // Construindo o objeto dinamicamente para não enviar null em campos não preenchidos no front
+        const svcRecord = { Id: data.id || null };
+        if (data.name) svcRecord.Name = data.name;
+        if (accountId) svcRecord.Conta__c = accountId;
+        if (data.ca_client_id !== undefined) svcRecord.IDContaAzul__c = data.ca_client_id;
+        if (data.type) svcRecord.Tipo__c = data.type;
+        if (data.start !== undefined) svcRecord.DataInicio__c = cleanDate(data.start);
+        if (data.end_original !== undefined) svcRecord.DataFimOriginal__c = cleanDate(data.end_original);
+        if (data.end_real !== undefined) svcRecord.DataFim__c = cleanDate(data.end_real);
+        if (data.lead_project !== undefined) svcRecord.Lider__c = cleanId(data.lead_project);
+        if (data.coordinator !== undefined) svcRecord.Coordenador__c = cleanId(data.coordinator);
+        if (data.tech_lead !== undefined) svcRecord.LiderTecnico__c = cleanId(data.tech_lead);
+        if (data.reqReport !== undefined) svcRecord.RequerRelatorioFaturamento__c = data.reqReport;
+        if (data.solReport !== undefined) svcRecord.SolicitaRelatorioHoras__c = data.solReport;
+
+        console.log("Backend: Objeto formatado para SF:", JSON.stringify(svcRecord, null, 2));
+        
+        let result = data.id ? await conn.sobject('Servico__c').update(svcRecord) : await conn.sobject('Servico__c').create(svcRecord);
         if (result.success) {
             const serviceId = result.id || data.id;
             if (data.docIds && data.docIds.length > 0) {
@@ -260,19 +266,66 @@ exports.saveService = async (req, res) => {
 };
 
 exports.uploadDocument = async (req, res) => {
-    if (!req.file) return res.status(400).json({ error: "No file" });
-    const { type } = req.body;
+    const { serviceId, type } = req.body;
+    const file = req.files?.files?.[0];
+
+    console.log("[Upload] ServiceID:", serviceId, "Type:", type);
+    console.log("[Upload] File received:", file);
+
+    if (!file || !serviceId) {
+        return res.status(400).json({ success: false, message: 'Arquivo ou ID do serviço ausente.' });
+    }
+
     try {
-        const conn = await getSfConnection();
-        const b64 = fs.readFileSync(req.file.path, { encoding: 'base64' });
-        const title = (type && type !== 'Outros') ? type : req.file.originalname;
-        const resCV = await conn.sobject('ContentVersion').create({ Title: title, PathOnClient: req.file.originalname, VersionData: b64, FirstPublishLocationId: req.session.user.id });
-        fs.unlinkSync(req.file.path);
-        if (resCV.success) {
-            const cv = await conn.query(`SELECT ContentDocumentId FROM ContentVersion WHERE Id = '${resCV.id}'`);
-            res.json({ success: true, docId: cv.records[0].ContentDocumentId });
-        } else res.status(400).json({ error: "SF Error" });
-    } catch (e) { res.status(500).json({ error: e.message }); }
+        const conn = await getSfConnection(req.session.user);
+        
+        // Buscar nome do serviço para usar no título do anexo
+        const service = await conn.sobject('Servico__c').retrieve(serviceId);
+        const serviceName = service.Name;
+        
+        // Construir o título: Tipo Selecionado - Nome do Serviço
+        let finalTitle = `${type} - ${serviceName}`;
+        if (finalTitle.length > 255) {
+            finalTitle = finalTitle.substring(0, 255);
+        }
+
+        const blob = fs.readFileSync(file.path);
+        
+        const contentVersion = {
+            Title: finalTitle,
+            PathOnClient: file.originalname, // Manter o nome original aqui
+            VersionData: blob.toString('base64'),
+            Origin: 'H',
+            FirstPublishLocationId: serviceId
+        };
+        
+        const cvResult = await conn.sobject('ContentVersion').create(contentVersion);
+        
+        if (!cvResult.success) {
+            console.error("Erro ao criar ContentVersion:", cvResult);
+            throw new Error('Falha ao criar ContentVersion no Salesforce.');
+        }
+        
+        console.log("ContentVersion criado com sucesso:", cvResult.id);
+
+        const docIdResult = await conn.query(`SELECT ContentDocumentId FROM ContentVersion WHERE Id = '${cvResult.id}'`);
+        
+        if (!docIdResult.records || docIdResult.records.length === 0) {
+            console.error("Não foi possível encontrar o ContentDocumentId para o ContentVersion Id:", cvResult.id);
+            throw new Error('ContentDocumentId não encontrado após a criação do anexo.');
+        }
+
+        const contentDocumentId = docIdResult.records[0].ContentDocumentId;
+        console.log("Anexo vinculado com ContentDocumentId:", contentDocumentId);
+
+        fs.unlinkSync(file.path);
+
+        res.json({ success: true, message: 'Upload bem-sucedido!', docId: contentDocumentId });
+
+    } catch (e) {
+        console.error('[ERRO NO UPLOAD]', e.message, e.stack);
+        res.status(500).json({ success: false, message: e.message });
+    }
 };
 
 exports.deleteDocument = async (req, res) => {
@@ -446,19 +499,34 @@ exports.deleteSale = async (req, res) => {
     try {
         const conn = await getSfConnection();
         
-        // 0. Verify dependencies (Parcelas)
-        const checkInstallments = await conn.query(`SELECT Count() FROM ParcelaFinanceira__c WHERE VendaContaAzul__c = '${id}'`);
-        if (checkInstallments.totalSize > 0) {
-            return res.status(400).json({ 
-                success: false, 
-                error: "Não é possível excluir: Existem parcelas financeiras vinculadas a esta venda." 
-            });
+        // 1. Buscar parcelas vinculadas a esta venda
+        const installments = await conn.query(`SELECT Id FROM ParcelaFinanceira__c WHERE VendaContaAzul__c = '${id}'`);
+        const instIds = installments.records.map(r => r.Id);
+
+        if (instIds.length > 0) {
+            // 2. Verificar se alguma parcela possui forecast (Distribuição de Receita) vinculado
+            // Usamos uma query de agregação para performance
+            const instIdsStr = instIds.map(id => `'${id}'`).join(',');
+            const forecastCheck = await conn.query(`SELECT Count(Id) total FROM DistribuicaoReceita__c WHERE ParcelaFinanceira__c IN (${instIdsStr})`);
+            
+            const hasForecast = forecastCheck.records[0].total > 0;
+
+            if (hasForecast) {
+                return res.status(400).json({ 
+                    success: false, 
+                    error: "Não é possível desvincular: Existem parcelas desta venda com forecast (distribuição de receita) já realizado." 
+                });
+            }
+
+            // 3. Excluir parcelas se não houver forecast
+            console.log(`[deleteSale] Excluindo ${instIds.length} parcelas da venda ${id}`);
+            await conn.sobject('ParcelaFinanceira__c').destroy(instIds);
         }
 
-        // 1. Delete VendaContaAzul__c
+        // 4. Excluir a venda (VendaContaAzul__c)
         await conn.sobject('VendaContaAzul__c').destroy(id);
 
-        res.json({ success: true });
+        res.json({ success: true, message: "Venda e parcelas removidas com sucesso." });
     } catch (e) {
         console.error("Delete Sale Error:", e);
         res.status(500).json({ success: false, error: e.message });

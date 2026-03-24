@@ -50,7 +50,7 @@ router.get('/services', requireAuth, requireGroup('GESTOR_FINANCEIRO'), serviceC
 router.get('/api/services', requireAuth, requireGroup('GESTOR_FINANCEIRO'), serviceController.getServices);
 router.get('/api/services/:id', requireAuth, requireGroup('GESTOR_FINANCEIRO'), serviceController.getServiceDetails);
 router.post('/api/services', requireAuth, requireGroup('GESTOR_FINANCEIRO'), serviceController.saveService);
-router.post('/api/services/doc', requireAuth, requireGroup('GESTOR_FINANCEIRO'), upload.single('files'), serviceController.uploadDocument);
+router.post('/api/services/doc', requireAuth, requireGroup('GESTOR_FINANCEIRO'), upload.fields([{ name: 'files', maxCount: 1 }]), serviceController.uploadDocument);
 router.delete('/api/services/doc/:docId', requireAuth, requireGroup('GESTOR_FINANCEIRO'), serviceController.deleteDocument);
 router.get('/api/services/doc/:docId', requireAuth, requireGroup('GESTOR_FINANCEIRO'), serviceController.downloadDocument);
 router.get('/api/services/sales/available', requireAuth, requireGroup('GESTOR_FINANCEIRO'), serviceController.getAvailableSales);
