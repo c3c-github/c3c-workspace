@@ -337,6 +337,38 @@
         let editingOriginalNormal = 0, editingOriginalExtra = 0, editingOriginalDate = '';
         let currentOffset = 0, hasMoreTickets = true;
 
+        function renderNewFilesPreview() {
+            const container = document.getElementById('new-files-preview');
+            if(!container) return;
+            container.innerHTML = '';
+            newTicketFiles.forEach((file, index) => {
+                container.innerHTML += `
+                    <div class="flex items-center justify-between p-4 bg-gray-50 border border-gray-100 rounded-2xl group text-left">
+                        <div class="flex items-center gap-3 overflow-hidden">
+                            <i data-lucide="file" class="w-4 h-4 text-c3c-blue"></i>
+                            <span class="text-[10px] font-black uppercase truncate max-w-[150px]">${file.name}</span>
+                        </div>
+                        <button type="button" onclick="removeNewFile(${index})" class="text-gray-300 hover:text-red-500 transition-all">
+                            <i data-lucide="x" class="w-4 h-4"></i>
+                        </button>
+                    </div>
+                `;
+            });
+            lucide.createIcons();
+        }
+
+        function removeNewFile(index) {
+            newTicketFiles.splice(index, 1);
+            renderNewFilesPreview();
+        }
+
+        function handleNewTicketFiles(input) {
+            const files = Array.from(input.files);
+            newTicketFiles = [...newTicketFiles, ...files];
+            renderNewFilesPreview();
+            input.value = ''; 
+        }
+
         function toggleLoading(show) { const el = document.getElementById('loading-overlay'); if(!el) return; if(show) el.classList.remove('hidden'); else el.classList.add('hidden'); }
 
         document.getElementById('search-tickets-input').addEventListener('input', (e) => {
@@ -543,7 +575,7 @@
                 if (l.canEdit && currentTicketData.Status !== 'Closed') { 
                     btns = `<div class="flex items-center justify-center gap-4"><button onclick="openEditLog('${l.id}','${l.rawDate}','${l.hoursNormal}','${l.hoursExtra}','${l.desc}')" class="text-blue-400 hover:text-c3c-blue transition-all"><i data-lucide="pencil" class="w-4 h-4"></i></button><button onclick="deleteLog('${l.id}')" class="text-red-300 hover:text-red-500 transition-all"><i data-lucide="trash-2" class="w-4 h-4"></i></button></div>`; 
                 } 
-                tb.innerHTML += `<tr class="hover:bg-gray-50/50 border-b border-gray-50 text-left"><td class="px-10 py-6 text-[10px] font-bold text-gray-500 uppercase">${l.date}</td><td class="px-8 py-6 text-xs font-black text-gray-700 uppercase">${l.ownerName}</td><td class="px-8 py-6 text-xs text-gray-600 leading-tight font-medium">${l.activity}</td><td class="px-8 py-6 text-center"><span class="px-3 py-1 rounded-full bg-white shadow-sm border border-gray-50 text-[8px] font-black uppercase">${l.status || 'Rascunho'}</span></td><td class="px-6 py-6 text-center text-teal-600 font-black text-sm tabular-nums">${l.hoursNormal}h</td><td class="px-10 py-6 text-center">${btns}</td></tr>`; 
+                tb.innerHTML += `<tr class="hover:bg-gray-50/50 border-b border-gray-50 text-left"><td class="px-10 py-6 text-[10px] font-bold text-gray-500 uppercase">${l.date}</td><td class="px-8 py-6 text-xs font-black text-gray-700 uppercase">${l.ownerName}</td><td class="px-8 py-6 text-xs text-gray-600 leading-tight font-medium">${l.activity}</td><td class="px-8 py-6 text-center"><span class="px-3 py-1 rounded-full bg-white shadow-sm border border-gray-100 text-[8px] font-black uppercase">${l.status || 'Rascunho'}</span></td><td class="px-6 py-6 text-center text-teal-600 font-black text-sm tabular-nums">${l.hoursNormal}h</td><td class="px-10 py-6 text-center">${btns}</td></tr>`; 
             }); 
             lucide.createIcons(); 
         }
@@ -649,7 +681,8 @@
         
         async function openNewTicketModal() { 
             openModal('new-ticket-modal'); 
-            newTicketFiles = []; renderNewFilesPreview();
+            newTicketFiles = []; 
+            if(typeof renderNewFilesPreview === 'function') renderNewFilesPreview();
             if(createOptionsCache.length===0) { const res = await fetch('/api/ops/create-options'); createOptionsCache = await res.json(); document.getElementById('new-service').innerHTML = '<option value="">Selecione...</option>' + createOptionsCache.map(o => `<option value="${o.serviceId}" data-account="${o.accountId}">${o.serviceName}</option>`).join(''); } 
         }
         async function onServiceChange() { const s = document.getElementById('new-service'), acc = s.options[s.selectedIndex].dataset.account; document.getElementById('new-account-id').value = acc||''; const c=document.getElementById('new-contact'); if(acc) { const r=await fetch(`/api/ops/account/${acc}/contacts`); const d=await r.json(); c.innerHTML='<option value="">Sem contato</option>' + d.map(ct=>`<option value="${ct.Id}">${ct.Name}</option>`).join(''); c.disabled=false; } }
