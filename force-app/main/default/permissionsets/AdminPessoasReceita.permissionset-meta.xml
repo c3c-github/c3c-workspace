@@ -42,6 +42,11 @@
     </classAccesses>
     <fieldPermissions>
         <editable>true</editable>
+        <field>ParcelaFinanceira__c.IDContaAzul__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
         <field>Alocacao__c.AlocacaoGestao__c</field>
         <readable>true</readable>
     </fieldPermissions>

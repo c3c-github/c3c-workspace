@@ -3,6 +3,11 @@
     <description>Concede acesso total ao Portal do Cliente C3C, incluindo Gestão de Sessões, Tickets (Casos), Contratos e Dashboard.</description>
     <fieldPermissions>
         <editable>true</editable>
+        <field>ParcelaFinanceira__c.IDContaAzul__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
         <field>AlocacaoPrevista__c.CustoTotal__c</field>
         <readable>true</readable>
     </fieldPermissions>

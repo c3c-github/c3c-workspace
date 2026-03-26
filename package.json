@@ -15,7 +15,8 @@
     "prepare": "husky || true",
     "precommit": "lint-staged",
     "start": "node server.js",
-    "heartbeat": "node scripts/refresh-token-heartbeat.js"
+    "heartbeat": "node scripts/refresh-token-heartbeat.js",
+    "sync-sales": "node scripts/sync-ca-sales.js"
   },
   "devDependencies": {
     "@lwc/eslint-plugin-lwc": "^3.1.0",
