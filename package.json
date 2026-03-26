@@ -14,7 +14,8 @@
     "prettier:verify": "prettier --check \"**/*.{cls,cmp,component,css,html,js,json,md,page,trigger,xml,yaml,yml}\"",
     "prepare": "husky || true",
     "precommit": "lint-staged",
-    "start": "node server.js"
+    "start": "node server.js",
+    "heartbeat": "node scripts/refresh-token-heartbeat.js"
   },
   "devDependencies": {
     "@lwc/eslint-plugin-lwc": "^3.1.0",

@@ -1,39 +1,7 @@
 const axios = require('axios');
-const { getSfConnection } = require('../config/salesforce');
+const { getValidToken } = require('./contaAzulAuth');
 
-const CA_TOKEN_URL = 'https://auth.contaazul.com/oauth2/token';
 const CA_API_URL = 'https://api-v2.contaazul.com/v1';
-
-async function getValidToken() {
-    const conn = await getSfConnection();
-    
-    // Executa a lógica de autenticação diretamente no Salesforce via Apex
-    // Isso garante que usamos a mesma lógica centralizada e segura da Org
-    const apexCode = `
-        ContaAzulAuthService.AuthResult res = ContaAzulAuthService.getAuthentication();
-        // Se houve atualização de token (refresh), precisamos salvar
-        if (res.configParaAtualizar != null) {
-            update res.configParaAtualizar;
-        }
-        System.debug('TOKEN:' + res.accessToken);
-    `;
-
-    const result = await conn.tooling.executeAnonymous(apexCode);
-
-    if (result.success) {
-        // O token é impresso no debug log, mas capturá-lo via executeAnonymous pode ser chato (parse de log).
-        // Uma abordagem mais limpa: O Apex atualiza o registro. Nós apenas lemos o registro atualizado.
-        // Como o refresh é síncrono no Apex (callout), ao final da execução o registro já estará atualizado.
-        
-        // Buscamos o token atualizado do banco
-        const configRes = await conn.query("SELECT Token__c FROM Configuracao__c LIMIT 1");
-        if (configRes.totalSize > 0) {
-            return configRes.records[0].Token__c;
-        }
-    }
-    
-    throw new Error("Falha ao obter token Conta Azul via Salesforce: " + (result.compileProblem || result.exceptionMessage));
-}
 
 exports.searchCustomers = async (query) => {
     try {
