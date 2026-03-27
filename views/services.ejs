@@ -944,10 +944,21 @@
                     const statusClass = s.status === 'Ativo' ? 'bg-teal-50 text-teal-600 border-teal-100' : 'bg-red-50 text-red-600 border-red-100';
                     const formatDateBR = (dateStr) => { if(!dateStr) return '-'; const [y, m, d] = dateStr.split('-'); return `${d}/${m}/${y.substr(2)}`; };
 
-                    // Alertas de Saúde
+                    // Alertas de Saúde Condicionais
                     let healthBadges = '';
-                    if (!s.health?.hasSales) healthBadges += `<span class="bg-orange-50 text-orange-600 text-[8px] font-black px-2 py-0.5 rounded-full border border-orange-100 uppercase tracking-tighter flex items-center gap-1"><i data-lucide="alert-circle" class="w-2.5 h-2.5"></i> Sem Venda</span>`;
-                    if (!s.health?.hasLogs) healthBadges += `<span class="bg-pink-50 text-pink-600 text-[8px] font-black px-2 py-0.5 rounded-full border border-pink-100 uppercase tracking-tighter flex items-center gap-1"><i data-lucide="clock" class="w-2.5 h-2.5"></i> Sem Horas</span>`;
+                    const needsSales = s.type !== 'Investimento';
+                    const needsLogs = s.type !== 'Venda de software';
+
+                    if (needsSales && !s.health?.hasSales) {
+                        healthBadges += `<span class="bg-orange-50 text-orange-600 text-[8px] font-black px-2 py-0.5 rounded-full border border-orange-100 uppercase tracking-tighter flex items-center gap-1"><i data-lucide="alert-circle" class="w-2.5 h-2.5"></i> Sem Venda</span>`;
+                    }
+                    if (needsLogs && !s.health?.hasLogs) {
+                        healthBadges += `<span class="bg-pink-50 text-pink-600 text-[8px] font-black px-2 py-0.5 rounded-full border border-pink-100 uppercase tracking-tighter flex items-center gap-1"><i data-lucide="clock" class="w-2.5 h-2.5"></i> Sem Horas</span>`;
+                    }
+                    
+                    if (s.type === 'Investimento') {
+                        healthBadges += `<span class="bg-indigo-50 text-indigo-600 text-[8px] font-black px-2 py-0.5 rounded-full border border-indigo-100 uppercase tracking-tighter flex items-center gap-1"><i data-lucide="trending-down" class="w-2.5 h-2.5"></i> Investimento</span>`;
+                    }
 
                     grid.innerHTML += `<div class="bg-white rounded-[32px] border border-gray-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer group overflow-hidden" onclick="openServiceModal('${s.id}')">
                         <div class="p-6 border-b border-gray-100 flex justify-between items-start">

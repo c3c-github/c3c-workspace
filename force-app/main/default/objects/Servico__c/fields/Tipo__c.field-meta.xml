@@ -31,6 +31,11 @@
                 <default>false</default>
                 <label>Venda de software</label>
             </value>
+            <value>
+                <fullName>Investimento</fullName>
+                <default>false</default>
+                <label>Investimento</label>
+            </value>
         </valueSetDefinition>
     </valueSet>
 </CustomField>
