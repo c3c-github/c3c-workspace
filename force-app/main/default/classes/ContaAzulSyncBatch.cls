@@ -6,9 +6,9 @@ public with sharing class ContaAzulSyncBatch implements Database.Batchable<sObje
     public Database.QueryLocator start(Database.BatchableContext BC) {
         // Busca parcelas que:
         // 1. Não estão pagas (precisam sincronizar com ERP)
-        // 2. Já estão pagas mas ainda possuem saldo a distribuir para competências (Histórico ou Planejamento tardio)
+        // 2. Já estão pagas mas ainda possuem saldo a distribuir para competências
         return Database.getQueryLocator([
-            SELECT Id, Servico__c, Valor__c, Status__c, VendaContaAzul__r.IDEventoFinanceiro__c, SaldoAberto__c
+            SELECT Id, Servico__c, Valor__c, Status__c, VendaContaAzul__r.IDEventoFinanceiro__c, SaldoAberto__c, DataVencimento__c
             FROM ParcelaFinanceira__c 
             WHERE Status__c != 'Pago' 
             OR SaldoAberto__c > 0
@@ -49,7 +49,7 @@ public with sharing class ContaAzulSyncBatch implements Database.Batchable<sObje
 
                 // 1. Se não estiver paga, sincroniza com ERP
                 if (!isPaid && String.isNotBlank(eventId)) {
-                    String statusCA = fetchStatusFromContaAzul(eventId, token);
+                    String statusCA = fetchStatusFromContaAzul(eventId, parc.DataVencimento__c, token);
                     if (STATUS_PAGO.contains(statusCA.toUpperCase())) {
                         parc.Status__c = 'Pago';
                         isPaid = true;
@@ -129,7 +129,9 @@ public with sharing class ContaAzulSyncBatch implements Database.Batchable<sObje
         }
     }
 
-    private String fetchStatusFromContaAzul(String eventId, String token) {
+    private String fetchStatusFromContaAzul(String eventId, Date sfDueDate, String token) {
+        if (sfDueDate == null) return 'PENDENTE';
+        
         Http http = new Http();
         HttpRequest req = new HttpRequest();
         req.setEndpoint('https://api-v2.contaazul.com/v1/financeiro/eventos-financeiros/' + eventId + '/parcelas');
@@ -139,11 +141,15 @@ public with sharing class ContaAzulSyncBatch implements Database.Batchable<sObje
         HttpResponse res = http.send(req);
         if (res.getStatusCode() == 200) {
             List<Object> parcelas = (List<Object>) JSON.deserializeUntyped(res.getBody());
-            if (!parcelas.isEmpty()) {
-                // Consideramos o status da primeira parcela encontrada (visto que tratamos 1 evento : 1 venda)
-                // Se houver múltiplas, a lógica pode ser refinada.
-                Map<String, Object> primeira = (Map<String, Object>) parcelas[0];
-                return (String) primeira.get('status');
+            String sfDueDateStr = String.valueOf(sfDueDate); // Formato yyyy-MM-dd
+
+            for (Object obj : parcelas) {
+                Map<String, Object> p = (Map<String, Object>) obj;
+                String caDueDate = (String) p.get('due_date'); // Ex: "2026-03-25T03:00:00.000+00:00"
+                
+                if (caDueDate != null && caDueDate.startsWith(sfDueDateStr)) {
+                    return (String) p.get('status');
+                }
             }
         }
         return 'PENDENTE';

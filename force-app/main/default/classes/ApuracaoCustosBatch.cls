@@ -112,7 +112,10 @@ public with sharing class ApuracaoCustosBatch implements Database.Batchable<sObj
         if (!allocationIds.isEmpty()) {
             recalculateTotals();
         }
-        System.debug('Apuração de Custos finalizada.');
+        System.debug('Apuração de Custos finalizada. Disparando Sincronização Conta Azul...');
+        
+        // 3. Próximo passo da cadeia: Sincronização de Receitas (ERP)
+        Database.executeBatch(new ContaAzulSyncBatch(), 50);
     }
 
     private void recalculateTotals() {

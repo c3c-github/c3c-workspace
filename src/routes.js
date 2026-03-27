@@ -55,10 +55,10 @@ router.delete('/api/services/doc/:docId', requireAuth, requireGroup('GESTOR_FINA
 router.get('/api/services/doc/:docId', requireAuth, requireGroup('GESTOR_FINANCEIRO'), serviceController.downloadDocument);
 router.get('/api/services/sales/available', requireAuth, requireGroup('GESTOR_FINANCEIRO'), serviceController.getAvailableSales);
 router.get('/api/services/sales/:saleId/installments', requireAuth, requireGroup('GESTOR_FINANCEIRO'), serviceController.getSaleInstallmentsPreview);
+router.get('/api/services/:id/realized', requireAuth, requireGroup('GESTOR_FINANCEIRO'), serviceController.getServiceRealizedData);
+router.delete('/api/services/allocations/:id', requireAuth, requireGroup('GESTOR_FINANCEIRO'), serviceController.deleteAllocation);
 router.post('/api/services/sales', requireAuth, requireGroup('GESTOR_FINANCEIRO'), serviceController.saveSales);
-router.delete('/api/services/sales/:id', requireAuth, requireGroup('GESTOR_FINANCEIRO'), serviceController.deleteSale);
-router.delete('/api/services/installments/:id', requireAuth, requireGroup('GESTOR_FINANCEIRO'), serviceController.deleteInstallment);
-router.delete('/api/services/allocation/:id', requireAuth, requireGroup('GESTOR_FINANCEIRO'), serviceController.deleteAllocation);
+router.delete('/api/services/sales/:id/:serviceId', requireAuth, requireGroup('GESTOR_FINANCEIRO'), serviceController.deleteSale);
 router.delete('/api/services/commercial/:id', requireAuth, requireGroup('GESTOR_FINANCEIRO'), serviceController.deleteCommercialItem);
 
 // --- APROVAÇÕES ---

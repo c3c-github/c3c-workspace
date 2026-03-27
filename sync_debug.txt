@@ -1,0 +1,46 @@
+[dotenv@17.2.3] injecting env (6) from .env -- tip: ⚙️  enable debug logging with { debug: true }
+[2026-03-25T21:31:20.222Z] 🚀 INICIANDO MOTOR DE SINCRONIZAÇÃO V2...
+(node:50386) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+✅ Conectado ao Salesforce (Client Credentials)!
+⏳ [1/4] Equalizando bases mensais e limpando duplicatas...
+⏳ [2/4] Reconciliando Realizado...
+[DEBUG Abastece] LH: undefined, Aloc: a17N500009pLOATIA4, Comp: 2026-02-01, Key: a17N500009pLOATIA4_2026-02-01, foundOrc: a1TN5000005IhX6MAK
+[DEBUG Abastece] LH: undefined, Aloc: a17N500009pLOATIA4, Comp: 2026-03-01, Key: a17N500009pLOATIA4_2026-03-01, foundOrc: a1TN5000005IhX7MAK
+[DEBUG Abastece] LH: undefined, Aloc: a17N500009pLOATIA4, Comp: 2026-03-01, Key: a17N500009pLOATIA4_2026-03-01, foundOrc: a1TN5000005IhX7MAK
+[DEBUG Abastece] LH: undefined, Aloc: a17N500009pLOATIA4, Comp: 2026-03-01, Key: a17N500009pLOATIA4_2026-03-01, foundOrc: a1TN5000005IhX7MAK
+[DEBUG Abastece] LH: undefined, Aloc: a17N500009cgPl9IAE, Comp: 2026-02-01, Key: a17N500009cgPl9IAE_2026-02-01, foundOrc: a1TN5000005IhRmMAK
+[DEBUG Abastece] LH: undefined, Aloc: a17N500009cgPl9IAE, Comp: 2026-03-01, Key: a17N500009cgPl9IAE_2026-03-01, foundOrc: a1TN5000005IhRnMAK
+[DEBUG Abastece] LH: undefined, Aloc: a17N500009cgPl9IAE, Comp: 2026-02-01, Key: a17N500009cgPl9IAE_2026-02-01, foundOrc: a1TN5000005IhRmMAK
+[DEBUG Abastece] LH: undefined, Aloc: a17N500009cgPl9IAE, Comp: 2026-02-01, Key: a17N500009cgPl9IAE_2026-02-01, foundOrc: a1TN5000005IhRmMAK
+[DEBUG Abastece] LH: undefined, Aloc: a17N500009cgPl9IAE, Comp: 2026-02-01, Key: a17N500009cgPl9IAE_2026-02-01, foundOrc: a1TN5000005IhRmMAK
+[DEBUG Abastece] LH: undefined, Aloc: a17N500009cgPl9IAE, Comp: 2026-02-01, Key: a17N500009cgPl9IAE_2026-02-01, foundOrc: a1TN5000005IhRmMAK
+[DEBUG Abastece] LH: undefined, Aloc: a17N500009cgPl9IAE, Comp: 2026-02-01, Key: a17N500009cgPl9IAE_2026-02-01, foundOrc: a1TN5000005IhRmMAK
+[DEBUG Abastece] LH: undefined, Aloc: a17N500009cgPl9IAE, Comp: 2026-02-01, Key: a17N500009cgPl9IAE_2026-02-01, foundOrc: a1TN5000005IhRmMAK
+[DEBUG Abastece] LH: undefined, Aloc: a17N500009cgPl9IAE, Comp: 2026-02-01, Key: a17N500009cgPl9IAE_2026-02-01, foundOrc: a1TN5000005IhRmMAK
+[DEBUG Abastece] LH: undefined, Aloc: a17N500009cgPl9IAE, Comp: 2026-02-01, Key: a17N500009cgPl9IAE_2026-02-01, foundOrc: a1TN5000005IhRmMAK
+[DEBUG Abastece] LH: undefined, Aloc: a17N500009cgPl9IAE, Comp: 2026-02-01, Key: a17N500009cgPl9IAE_2026-02-01, foundOrc: a1TN5000005IhRmMAK
+[DEBUG Abastece] LH: undefined, Aloc: a17N500009cgPl9IAE, Comp: 2026-02-01, Key: a17N500009cgPl9IAE_2026-02-01, foundOrc: a1TN5000005IhRmMAK
+[DEBUG Abastece] LH: undefined, Aloc: a17N500009cgPl9IAE, Comp: 2026-02-01, Key: a17N500009cgPl9IAE_2026-02-01, foundOrc: a1TN5000005IhRmMAK
+[DEBUG Abastece] LH: undefined, Aloc: a17N500009cgPl9IAE, Comp: 2026-02-01, Key: a17N500009cgPl9IAE_2026-02-01, foundOrc: a1TN5000005IhRmMAK
+[DEBUG Abastece] LH: undefined, Aloc: a17N500009cgPl9IAE, Comp: 2026-02-01, Key: a17N500009cgPl9IAE_2026-02-01, foundOrc: a1TN5000005IhRmMAK
+[DEBUG Abastece] LH: undefined, Aloc: a17N500009cgPl9IAE, Comp: 2026-02-01, Key: a17N500009cgPl9IAE_2026-02-01, foundOrc: a1TN5000005IhRmMAK
+[DEBUG Abastece] LH: undefined, Aloc: a17N500009cgPl9IAE, Comp: 2026-02-01, Key: a17N500009cgPl9IAE_2026-02-01, foundOrc: a1TN5000005IhRmMAK
+[DEBUG Abastece] LH: undefined, Aloc: a17N500009cgPl9IAE, Comp: 2026-02-01, Key: a17N500009cgPl9IAE_2026-02-01, foundOrc: a1TN5000005IhRmMAK
+[DEBUG Abastece] LH: undefined, Aloc: a17N500009cgPl9IAE, Comp: 2026-02-01, Key: a17N500009cgPl9IAE_2026-02-01, foundOrc: a1TN5000005IhRmMAK
+[DEBUG Abastece] LH: undefined, Aloc: a17N500009cgPl9IAE, Comp: 2026-03-01, Key: a17N500009cgPl9IAE_2026-03-01, foundOrc: a1TN5000005IhRnMAK
+[DEBUG Abastece] LH: undefined, Aloc: a17N500009cgPl9IAE, Comp: 2026-03-01, Key: a17N500009cgPl9IAE_2026-03-01, foundOrc: a1TN5000005IhRnMAK
+[DEBUG Abastece] LH: undefined, Aloc: a17N500009cgPl9IAE, Comp: 2026-03-01, Key: a17N500009cgPl9IAE_2026-03-01, foundOrc: a1TN5000005IhRnMAK
+[DEBUG Abastece] LH: undefined, Aloc: a17N500009cgPl9IAE, Comp: 2026-03-01, Key: a17N500009cgPl9IAE_2026-03-01, foundOrc: a1TN5000005IhRnMAK
+[DEBUG Abastece] LH: undefined, Aloc: a17N500009cgPl9IAE, Comp: 2026-03-01, Key: a17N500009cgPl9IAE_2026-03-01, foundOrc: a1TN5000005IhRnMAK
+[DEBUG Abastece] LH: undefined, Aloc: a17N500009cgPl9IAE, Comp: 2026-03-01, Key: a17N500009cgPl9IAE_2026-03-01, foundOrc: a1TN5000005IhRnMAK
+[DEBUG Abastece] LH: undefined, Aloc: a17N500009cgPl9IAE, Comp: 2026-03-01, Key: a17N500009cgPl9IAE_2026-03-01, foundOrc: a1TN5000005IhRnMAK
+[DEBUG Abastece] LH: undefined, Aloc: a17N500009cgPl9IAE, Comp: 2026-03-01, Key: a17N500009cgPl9IAE_2026-03-01, foundOrc: a1TN5000005IhRnMAK
+[DEBUG Abastece] LH: undefined, Aloc: a17N500009cgPl9IAE, Comp: 2026-03-01, Key: a17N500009cgPl9IAE_2026-03-01, foundOrc: a1TN5000005IhRnMAK
+[DEBUG Abastece] LH: undefined, Aloc: a17N500009cgPl9IAE, Comp: 2026-03-01, Key: a17N500009cgPl9IAE_2026-03-01, foundOrc: a1TN5000005IhRnMAK
+[DEBUG Abastece] LH: undefined, Aloc: a17N500009cgPl9IAE, Comp: 2026-03-01, Key: a17N500009cgPl9IAE_2026-03-01, foundOrc: a1TN5000005IhRnMAK
+[DEBUG Abastece] LH: undefined, Aloc: a17N500009cgPl9IAE, Comp: 2026-03-01, Key: a17N500009cgPl9IAE_2026-03-01, foundOrc: a1TN5000005IhRnMAK
+📦 Updating 5073 budget records with realized data...
+⏳ [3/4] Atualizando serviços...
+
+🏁 MOTOR FINALIZADO! Tempo: 16.25s
