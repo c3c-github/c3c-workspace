@@ -9,13 +9,25 @@ exports.renderServicesPage = async (req, res) => {
         const conn = await getSfConnection();
         const query = "SELECT Id, Name, Conta__r.Name, Tipo__c, Status__c, DataInicio__c, DataFimOriginal__c, DataFim__c, ReceitaVendida__c, CustoVendido__c, MargemVendida__c, ReceitaPrevista__c, CustoPrevisto__c, MargemPrevista__c, ReceitaRealizada__c, CustoRealizado__c, MargemRealizada__c FROM Servico__c WHERE Status__c = 'Ativo' ORDER BY Name ASC";
         const result = await conn.query(query);
-        const services = result.records.map(s => ({
-            id: s.Id, name: s.Name, client: s.Conta__r ? s.Conta__r.Name : '', type: s.Tipo__c, status: s.Status__c || 'Ativo',
-            dataInicio: s.DataInicio__c, dataFimOriginal: s.DataFimOriginal__c, dataFim: s.DataFim__c,
-            prop: { rev: s.ReceitaVendida__c || 0, margin: parseFloat((s.MargemVendida__c || 0).toFixed(2)) }, 
-            act: { rev: s.ReceitaRealizada__c || 0, cost: s.CustoRealizado__c || 0, margin: parseFloat((s.MargemRealizada__c || 0).toFixed(2)) }, 
-            fcst: { rev: s.ReceitaPrevista__c || 0, cost: s.CustoPrevisto__c || 0, margin: parseFloat((s.MargemPrevista__c || 0).toFixed(2)) }
-        }));
+        const services = result.records.map(s => {
+            const rev = s.ReceitaRealizada__c || 0;
+            const cost = s.CustoRealizado__c || 0;
+            let margem = 0;
+            
+            if (rev > 0) {
+                margem = ((rev - cost) / rev) * 100;
+            } else if (cost > 0) {
+                margem = -100; // Caso de Investimento
+            }
+
+            return {
+                id: s.Id, name: s.Name, client: s.Conta__r ? s.Conta__r.Name : '', type: s.Tipo__c, status: s.Status__c || 'Ativo',
+                dataInicio: s.DataInicio__c, dataFimOriginal: s.DataFimOriginal__c, dataFim: s.DataFim__c,
+                prop: { rev: s.ReceitaVendida__c || 0, margin: parseFloat((s.MargemVendida__c || 0).toFixed(2)) }, 
+                act: { rev: rev, cost: cost, margin: parseFloat(margem.toFixed(2)) }, 
+                fcst: { rev: s.ReceitaPrevista__c || 0, cost: s.CustoPrevisto__c || 0, margin: parseFloat((s.MargemPrevista__c || 0).toFixed(2)) }
+            };
+        });
         res.render('services', { user: req.session.user, page: 'services', services });
     } catch (e) { res.render('services', { user: req.session.user, page: 'services', services: [] }); }
 };
@@ -35,7 +47,7 @@ exports.getServices = async (req, res) => {
                    ReceitaPrevista__c, CustoPrevisto__c, MargemPrevista__c, 
                    ReceitaRealizada__c, CustoRealizado__c, MargemRealizada__c,
                    (SELECT Id FROM VendasVinculadas__r LIMIT 1),
-                   (SELECT Id FROM LancamentosHora__r LIMIT 1)
+                   (SELECT Id FROM LancamentosHoras__r LIMIT 1)
             FROM Servico__c ${whereClause} 
             ORDER BY Name ASC
         `;
@@ -48,7 +60,7 @@ exports.getServices = async (req, res) => {
             fcst: { rev: s.ReceitaPrevista__c || 0, margin: parseFloat((s.MargemPrevista__c || 0).toFixed(2)) },
             health: {
                 hasSales: s.VendasVinculadas__r ? s.VendasVinculadas__r.totalSize > 0 : false,
-                hasLogs: s.LancamentosHora__r ? s.LancamentosHora__r.totalSize > 0 : false
+                hasLogs: s.LancamentosHoras__r ? s.LancamentosHoras__r.totalSize > 0 : false
             }
         })));
     } catch (e) { res.status(500).json({ error: e.message }); }
