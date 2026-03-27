@@ -1015,6 +1015,11 @@
                 populateDatalist('ca-clients-list', metadata.contaAzulClients);
                 populateDatalist('people-list', metadata.people);
                 
+                const typeSelect = document.getElementById('input-svc-type');
+                if(typeSelect && metadata.serviceTypes) {
+                    typeSelect.innerHTML = metadata.serviceTypes.map(t => `<option value="${t.value}">${t.label}</option>`).join('');
+                }
+                
                 const pbSelect = document.getElementById('select-pricebook');
                 if(pbSelect) pbSelect.innerHTML = (metadata.pricebooks||[]).map(pb => `<option value="${pb.id}">${pb.name}</option>`).join('');
                 

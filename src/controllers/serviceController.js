@@ -558,9 +558,19 @@ exports.deleteCommercialItem = async (req, res) => {
 
 async function getMetadata() {
     const conn = await getSfConnection();
-    let accounts = [], people = [], pricebooks = [], caClients = [];
+    let accounts = [], people = [], pricebooks = [], caClients = [], serviceTypes = [];
     try { const r = await conn.query("SELECT Id, Name FROM Account ORDER BY Name ASC"); accounts = r.records.map(a => ({ id: a.Id, name: a.Name })); } catch(e) {}
     try { const r = await conn.query("SELECT Id, Name, Custo__c FROM Pessoa__c ORDER BY Name ASC"); people = r.records.map(p => ({ id: p.Id, name: p.Name, costRate: p.Custo__c || 0 })); } catch(e) {}
+    
+    // Buscar Tipos de Serviço (Picklist)
+    try {
+        const describe = await conn.sobject('Servico__c').describe();
+        const typeField = describe.fields.find(f => f.name === 'Tipo__c');
+        if (typeField && typeField.picklistValues) {
+            serviceTypes = typeField.picklistValues.filter(v => v.active).map(v => ({ label: v.label, value: v.value }));
+        }
+    } catch(e) { console.error("Erro ao buscar metadados de tipo:", e); }
+
     try {
         const pb = await conn.query("SELECT Id, Name FROM Pricebook2 WHERE IsActive = true ORDER BY Name ASC");
         const pbe = await conn.query("SELECT Id, Pricebook2Id, Product2.Name, UnitPrice, Custo__c FROM PricebookEntry WHERE IsActive = true AND Pricebook2.IsActive = true");
@@ -569,5 +579,5 @@ async function getMetadata() {
         pricebooks = pb.records.map(b => ({ id: b.Id, name: b.Name, products: map[b.Id] || [] }));
     } catch(e) {}
     try { caClients = await contaAzulService.searchCustomers(''); } catch(e) {}
-    return { pricebooks, salesforceAccounts: accounts, contaAzulClients: caClients, people };
+    return { pricebooks, salesforceAccounts: accounts, contaAzulClients: caClients, people, serviceTypes };
 }
