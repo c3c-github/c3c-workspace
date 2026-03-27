@@ -54,12 +54,23 @@ async function distributeRevenue() {
 
             console.log(`Receita Total Recebida (Efetiva): ${totalEffectiveRevenue.toFixed(2)}`);
 
-            // 3. Buscar Lançamentos e Custo Total do Serviço
+            // 3. Atualizar a Receita Realizada no Objeto Serviço
+            await conn.sobject('Servico__c').update({
+                Id: serviceId,
+                ReceitaRealizada__c: parseFloat(totalEffectiveRevenue.toFixed(2))
+            });
+
+            // 4. Buscar Lançamentos e Custo Total do Serviço para rateio
             const logs = await conn.query(`SELECT Id, ValorTotalLancamento__c FROM LancamentoHora__c WHERE Servico__c = '${serviceId}'`);
             const totalCost = logs.records.reduce((sum, log) => sum + (log.ValorTotalLancamento__c || 0), 0);
 
             if (totalEffectiveRevenue === 0 || totalCost === 0) {
-                console.log(`Sem receita ou sem custos para ratear. Zerando campos.`);
+                if (totalCost === 0 && totalEffectiveRevenue > 0) {
+                    console.log(`Receita registrada no serviço, mas sem custos para ratear nos lançamentos.`);
+                } else {
+                    console.log(`Sem receita ou sem custos. Zerando campos de lançamentos.`);
+                }
+                
                 if (logs.totalSize > 0) {
                     const updates = logs.records.map(l => ({ Id: l.Id, ValorReceita__c: 0 }));
                     await bulkUpdate(conn, 'LancamentoHora__c', updates);
@@ -67,7 +78,7 @@ async function distributeRevenue() {
                 continue;
             }
 
-            // 4. Rateio Ponderado: Receita = ReceitaEfetiva * (CustoLancamento / CustoTotal)
+            // 5. Rateio Ponderado: Receita = ReceitaEfetiva * (CustoLancamento / CustoTotal)
             console.log(`Rateando entre ${logs.totalSize} lançamentos...`);
             const updates = logs.records.map(log => {
                 const cost = log.ValorTotalLancamento__c || 0;
