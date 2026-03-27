@@ -177,9 +177,14 @@ exports.saveService = async (req, res) => {
             let tRev = 0, tCost = 0; const commIdMap = {};
             if (data.commercial) {
                 for (const item of data.commercial) {
-                    const record = { Servico__c: serviceId, Produto__c: item.productName, TaxaVenda__c: item.saleRate, CustoEstimado__c: item.costEst, DataInicio__c: cleanDate(item.start) || svcRecord.DataInicio__c, DataFim__c: cleanDate(item.end) || svcRecord.DataFimOriginal__c, PercentualAlocacao__c: item.alloc || 100, ReceitaTotal__c: item.totalRev, CustoTotal__c: item.totalCost, HorasTotais__c: item.totalHours };
+                    const record = { Produto__c: item.productName, TaxaVenda__c: item.saleRate, CustoEstimado__c: item.costEst, DataInicio__c: cleanDate(item.start) || svcRecord.DataInicio__c, DataFim__c: cleanDate(item.end) || svcRecord.DataFimOriginal__c, PercentualAlocacao__c: item.alloc || 100, ReceitaTotal__c: item.totalRev, CustoTotal__c: item.totalCost, HorasTotais__c: item.totalHours };
                     tRev += (item.totalRev || 0); tCost += (item.totalCost || 0);
-                    let ret = (item.id && !item.id.startsWith('new')) ? await conn.sobject('AlocacaoPrevista__c').update({ ...record, Id: item.id }) : await conn.sobject('AlocacaoPrevista__c').create(record);
+                    let ret;
+                    if (item.id && !item.id.startsWith('new')) {
+                        ret = await conn.sobject('AlocacaoPrevista__c').update({ ...record, Id: item.id });
+                    } else {
+                        ret = await conn.sobject('AlocacaoPrevista__c').create({ ...record, Servico__c: serviceId });
+                    }
                     commIdMap[item.id] = ret.id || item.id;
                     if (item.monthlyData && item.monthlyData.length > 0) {
                         const exOrcs = await conn.query(`SELECT Id FROM OrcamentoCompetencia__c WHERE AlocacaoPrevista__c = '${commIdMap[item.id]}'`);
@@ -190,8 +195,13 @@ exports.saveService = async (req, res) => {
             }
             if (data.execution) {
                 for (const item of data.execution) {
-                    const record = { Servico__c: serviceId, Pessoa__c: cleanId(item.personId), AlocacaoPrevista__c: commIdMap[item.commercialLinkId] || (item.commercialLinkId && !item.commercialLinkId.startsWith('new') ? item.commercialLinkId : null), DataInicio__c: cleanDate(item.start) || svcRecord.DataInicio__c, DataFimOriginal__c: cleanDate(item.end) || svcRecord.DataFimOriginal__c, Percentual__c: item.alloc || 100, TaxaVenda__c: item.saleApplied, CustoHr__c: item.costReal, ReceitaTotal__c: item.totalRealizedRevenue, CustoTotal__c: item.totalRealizedCost, HorasTotais__c: item.totalRealizedHours };
-                    let ret = (item.id && !item.id.startsWith('new')) ? await conn.sobject('Alocacao__c').update({ ...record, Id: item.id }) : await conn.sobject('Alocacao__c').create(record);
+                    const record = { AlocacaoPrevista__c: commIdMap[item.commercialLinkId] || (item.commercialLinkId && !item.commercialLinkId.startsWith('new') ? item.commercialLinkId : null), DataInicio__c: cleanDate(item.start) || svcRecord.DataInicio__c, DataFimOriginal__c: cleanDate(item.end) || svcRecord.DataFimOriginal__c, Percentual__c: item.alloc || 100, TaxaVenda__c: item.saleApplied, CustoHr__c: item.costReal, ReceitaTotal__c: item.totalRealizedRevenue, CustoTotal__c: item.totalRealizedCost, HorasTotais__c: item.totalRealizedHours };
+                    let ret;
+                    if (item.id && !item.id.startsWith('new')) {
+                        ret = await conn.sobject('Alocacao__c').update({ ...record, Id: item.id });
+                    } else {
+                        ret = await conn.sobject('Alocacao__c').create({ ...record, Servico__c: serviceId, Pessoa__c: cleanId(item.personId) });
+                    }
                     if (item.monthlyData && item.monthlyData.length > 0) {
                         const exOrcs = await conn.query(`SELECT Id FROM OrcamentoCompetencia__c WHERE Alocacao__c = '${ret.id || item.id}'`);
                         if (exOrcs.totalSize > 0) await conn.sobject('OrcamentoCompetencia__c').destroy(exOrcs.records.map(r => r.Id));
