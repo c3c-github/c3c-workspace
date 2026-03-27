@@ -487,17 +487,19 @@ exports.saveSales = async (req, res) => {
             saleToSfIdMap[s.id] = sfSaleId;
 
             // Criar ou atualizar o vínculo de junção
-            const junctionRecord = {
-                Servico__c: serviceId,
-                Venda__c: sfSaleId,
-                ValorAlocado__c: s.allocatedValue || s.total // Usa o valor alocado da tela ou o total da venda
-            };
-
             if (existingLinksMap[s.id]) {
-                junctionRecord.Id = existingLinksMap[s.id];
-                await conn.sobject('VendaServico__c').update(junctionRecord);
+                // No update, enviamos apenas o que pode mudar (Valor Alocado)
+                await conn.sobject('VendaServico__c').update({
+                    Id: existingLinksMap[s.id],
+                    ValorAlocado__c: s.allocatedValue || s.total
+                });
             } else {
-                await conn.sobject('VendaServico__c').create(junctionRecord);
+                // No create, enviamos tudo
+                await conn.sobject('VendaServico__c').create({
+                    Servico__c: serviceId,
+                    Venda__c: sfSaleId,
+                    ValorAlocado__c: s.allocatedValue || s.total
+                });
             }
         }
 
