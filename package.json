@@ -16,7 +16,8 @@
     "precommit": "lint-staged",
     "start": "node server.js",
     "heartbeat": "node scripts/refresh-token-heartbeat.js",
-    "sync-sales": "node scripts/sync-ca-sales.js"
+    "sync-sales": "node scripts/sync-ca-sales.js",
+    "distribute-revenue": "node scripts/distribute-revenue-total.js"
   },
   "devDependencies": {
     "@lwc/eslint-plugin-lwc": "^3.1.0",

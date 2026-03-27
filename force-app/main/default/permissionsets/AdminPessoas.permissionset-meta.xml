@@ -42,11 +42,6 @@
     </classAccesses>
     <fieldPermissions>
         <editable>true</editable>
-        <field>ParcelaFinanceira__c.IDContaAzul__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable>
         <field>Alocacao__c.AlocacaoGestao__c</field>
         <readable>true</readable>
     </fieldPermissions>
@@ -232,6 +227,11 @@
     </fieldPermissions>
     <fieldPermissions>
         <editable>true</editable>
+        <field>LancamentoHora__c.ValorReceita__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
         <field>LancamentoHora__c.Atividade__c</field>
         <readable>true</readable>
     </fieldPermissions>
@@ -268,6 +268,51 @@
     <fieldPermissions>
         <editable>true</editable>
         <field>LancamentoHora__c.Servico__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>ParcelaFinanceira__c.Competencia__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>ParcelaFinanceira__c.CondicaoPagamento__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>ParcelaFinanceira__c.DataVencimento__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>ParcelaFinanceira__c.Descricao__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>ParcelaFinanceira__c.IDContaAzul__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>ParcelaFinanceira__c.SaldoAberto__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>ParcelaFinanceira__c.Status__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>ParcelaFinanceira__c.ValorDistribuido__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>ParcelaFinanceira__c.Valor__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
@@ -505,8 +550,56 @@
         <field>Sessao__c.Status__c</field>
         <readable>true</readable>
     </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>VendaContaAzul__c.DataEmissao__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>VendaContaAzul__c.IDContaAzul__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>VendaContaAzul__c.IDEventoFinanceiro__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>VendaContaAzul__c.Status__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>VendaContaAzul__c.ValorTotal__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>VendaServico__c.ValorAlocado__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
     <hasActivationRequired>false</hasActivationRequired>
     <label>Administração de pessoas</label>
+    <objectPermissions>
+        <allowCreate>true</allowCreate>
+        <allowDelete>true</allowDelete>
+        <allowEdit>true</allowEdit>
+        <allowRead>true</allowRead>
+        <modifyAllRecords>true</modifyAllRecords>
+        <object>VendaContaAzul__c</object>
+        <viewAllRecords>true</viewAllRecords>
+    </objectPermissions>
+    <objectPermissions>
+        <allowCreate>true</allowCreate>
+        <allowDelete>true</allowDelete>
+        <allowEdit>true</allowEdit>
+        <allowRead>true</allowRead>
+        <modifyAllRecords>true</modifyAllRecords>
+        <object>ParcelaFinanceira__c</object>
+        <viewAllRecords>true</viewAllRecords>
+    </objectPermissions>
     <objectPermissions>
         <allowCreate>true</allowCreate>
         <allowDelete>false</allowDelete>
@@ -666,6 +759,15 @@
         <object>Sessao__c</object>
         <viewAllFields>false</viewAllFields>
         <viewAllRecords>false</viewAllRecords>
+    </objectPermissions>
+    <objectPermissions>
+        <allowCreate>true</allowCreate>
+        <allowDelete>true</allowDelete>
+        <allowEdit>true</allowEdit>
+        <allowRead>true</allowRead>
+        <modifyAllRecords>true</modifyAllRecords>
+        <object>VendaServico__c</object>
+        <viewAllRecords>true</viewAllRecords>
     </objectPermissions>
     <pageAccesses>
         <apexPage>PessoaCookieReader</apexPage>
