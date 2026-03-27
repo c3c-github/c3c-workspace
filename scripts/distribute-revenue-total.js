@@ -2,7 +2,7 @@ require('dotenv').config();
 const { getSfConnection } = require('../src/config/salesforce');
 
 async function distributeRevenue() {
-    console.log(`[${new Date().toISOString()}] 🚀 INICIANDO RATEIO DE RECEITA TOTAL...`);
+    console.log(`[${new Date().toISOString()}] 🚀 INICIANDO RATEIO DE RECEITA PONDERADO...`);
     try {
         const conn = await getSfConnection();
 
@@ -15,19 +15,51 @@ async function distributeRevenue() {
             return;
         }
 
-        console.log(`Processando ${serviceIds.length} serviços...`);
-
         for (const serviceId of serviceIds) {
-            // 2. Buscar Receita Total Recebida (Parcelas Pagas deste serviço)
-            const revenueRes = await conn.query(`SELECT SUM(Valor__c) total FROM ParcelaFinanceira__c WHERE Servico__c = '${serviceId}' AND Status__c IN ('Pago', 'Liquidado', 'QUITADO', 'PAGO')`);
-            const totalRevenue = revenueRes.records[0].total || 0;
+            console.log(`\nProcessando Serviço: ${serviceId}`);
 
-            // 3. Buscar Lançamentos e Custo Total
+            // 2. Calcular Receita Total Efetiva do Serviço baseada no VendaServico__c
+            // Precisamos saber quanto de cada venda pertence a este serviço
+            const junctionRes = await conn.query(`
+                SELECT Venda__c, Venda__r.ValorTotal__c, ValorAlocado__c 
+                FROM VendaServico__c 
+                WHERE Servico__c = '${serviceId}'
+            `);
+
+            let totalEffectiveRevenue = 0;
+
+            for (const link of junctionRes.records) {
+                const vendaId = link.Venda__c;
+                const totalVenda = link.Venda__r.ValorTotal__c || 0;
+                const valorAlocadoAoServico = link.ValorAlocado__c || 0;
+
+                if (totalVenda === 0) continue;
+
+                // Percentual da venda que pertence a este serviço
+                const percentualAlocacao = valorAlocadoAoServico / totalVenda;
+
+                // Somar quanto já foi pago desta venda (parcelas liquidadas)
+                const paidRes = await conn.query(`
+                    SELECT SUM(Valor__c) total 
+                    FROM ParcelaFinanceira__c 
+                    WHERE VendaContaAzul__c = '${vendaId}' 
+                    AND Status__c IN ('Pago', 'Liquidado', 'QUITADO', 'PAGO')
+                `);
+
+                const totalPagoVenda = paidRes.records[0].total || 0;
+                
+                // A receita que este serviço "recebeu" desta venda é proporcional ao seu vínculo
+                totalEffectiveRevenue += (totalPagoVenda * percentualAlocacao);
+            }
+
+            console.log(`Receita Total Recebida (Efetiva): ${totalEffectiveRevenue.toFixed(2)}`);
+
+            // 3. Buscar Lançamentos e Custo Total do Serviço
             const logs = await conn.query(`SELECT Id, ValorTotalLancamento__c FROM LancamentoHora__c WHERE Servico__c = '${serviceId}'`);
             const totalCost = logs.records.reduce((sum, log) => sum + (log.ValorTotalLancamento__c || 0), 0);
 
-            if (totalRevenue === 0) {
-                console.log(`Serviço ${serviceId}: Sem receita recebida. Zerando campos.`);
+            if (totalEffectiveRevenue === 0 || totalCost === 0) {
+                console.log(`Sem receita ou sem custos para ratear. Zerando campos.`);
                 if (logs.totalSize > 0) {
                     const updates = logs.records.map(l => ({ Id: l.Id, ValorReceita__c: 0 }));
                     await bulkUpdate(conn, 'LancamentoHora__c', updates);
@@ -35,23 +67,17 @@ async function distributeRevenue() {
                 continue;
             }
 
-            if (totalCost === 0) {
-                console.log(`Serviço ${serviceId}: Receita de ${totalRevenue} disponível, mas sem custos (lançamentos) para ratear.`);
-                continue;
-            }
-
-            // 4. Calcular e preparar updates
-            console.log(`Serviço ${serviceId}: Rateando ${totalRevenue} entre ${logs.totalSize} lançamentos (Custo Total: ${totalCost})`);
+            // 4. Rateio Ponderado: Receita = ReceitaEfetiva * (CustoLancamento / CustoTotal)
+            console.log(`Rateando entre ${logs.totalSize} lançamentos...`);
             const updates = logs.records.map(log => {
                 const cost = log.ValorTotalLancamento__c || 0;
-                const share = (totalRevenue * cost) / totalCost;
+                const share = (totalEffectiveRevenue * cost) / totalCost;
                 return {
                     Id: log.Id,
                     ValorReceita__c: parseFloat(share.toFixed(2))
                 };
             });
 
-            // 5. Update em massa
             await bulkUpdate(conn, 'LancamentoHora__c', updates);
         }
 
