@@ -144,7 +144,15 @@ exports.getServiceDetails = async (req, res) => {
             act: { rev: svc.ReceitaRealizada__c || 0, cost: svc.CustoRealizado__c || 0, margin: parseFloat((margemReal || 0).toFixed(2)) },
             commercial: rComm.records.map(r => ({ id: r.Id, productName: r.Produto__c, saleRate: r.TaxaVenda__c, costEst: r.CustoEstimado__c, start: formatDate(r.DataInicio__c), end: formatDate(r.DataFim__c), alloc: r.PercentualAlocacao__c, totalRev: r.ReceitaTotal__c, totalCost: r.CustoTotal__c, totalHours: r.HorasTotais__c })),
             execution: executionData,
-            sales: rSales.records.map(s => ({ id: s.Id, id_ca: s.IDContaAzul__c, number: s.Name, date: formatDate(s.DataEmissao__c), total: s.ValorTotal__c, status: s.Status__c })),
+            sales: rSales.records.map(s => ({ 
+                id: s.Venda__r ? s.Venda__r.Id : null, 
+                id_ca: s.Venda__r ? s.Venda__r.IDContaAzul__c : null, 
+                number: s.Venda__r ? s.Venda__r.Name : 'S/N', 
+                date: s.Venda__r ? formatDate(s.Venda__r.DataEmissao__c) : null, 
+                total: s.Venda__r ? s.Venda__r.ValorTotal__c : 0, 
+                status: s.Venda__r ? s.Venda__r.Status__c : null,
+                allocatedValue: s.ValorAlocado__c
+            })),
             installments: rFin.records.map(r => ({ id: r.Id, desc: r.Descricao__c, date: r.DataVencimento__c ? formatDate(r.DataVencimento__c) : '', value: r.Valor__c, status: r.Status__c, month: r.Competencia__c ? r.Competencia__c.substring(0,7) : '' })),
             metadata: await getMetadata()
         });
