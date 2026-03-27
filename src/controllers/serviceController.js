@@ -27,14 +27,29 @@ exports.getServices = async (req, res) => {
         if (status === 'active') whereClause = "WHERE Status__c = 'Ativo'";
         else if (status === 'inactive') whereClause = "WHERE Status__c = 'Inativo'";
         const conn = await getSfConnection();
-        const query = `SELECT Id, Name, Conta__r.Name, Tipo__c, Status__c, DataInicio__c, DataFimOriginal__c, DataFim__c, ReceitaVendida__c, CustoVendido__c, MargemVendida__c, ReceitaPrevista__c, CustoPrevisto__c, MargemPrevista__c, ReceitaRealizada__c, CustoRealizado__c, MargemRealizada__c FROM Servico__c ${whereClause} ORDER BY Name ASC`;
+        
+        // Query com subqueries para flags de saúde do serviço
+        const query = `
+            SELECT Id, Name, Conta__r.Name, Tipo__c, Status__c, DataInicio__c, DataFimOriginal__c, DataFim__c, 
+                   ReceitaVendida__c, CustoVendido__c, MargemVendida__c, 
+                   ReceitaPrevista__c, CustoPrevisto__c, MargemPrevista__c, 
+                   ReceitaRealizada__c, CustoRealizado__c, MargemRealizada__c,
+                   (SELECT Id FROM VendasVinculadas__r LIMIT 1),
+                   (SELECT Id FROM LancamentosHora__r LIMIT 1)
+            FROM Servico__c ${whereClause} 
+            ORDER BY Name ASC
+        `;
         const result = await conn.query(query);
         res.json(result.records.map(s => ({
             id: s.Id, name: s.Name, client: s.Conta__r ? s.Conta__r.Name : '', type: s.Tipo__c, status: s.Status__c || 'Ativo',
             dataInicio: s.DataInicio__c, dataFimOriginal: s.DataFimOriginal__c, dataFim: s.DataFim__c,
             prop: { rev: s.ReceitaVendida__c || 0, margin: parseFloat((s.MargemVendida__c || 0).toFixed(2)) }, 
             act: { rev: s.ReceitaRealizada__c || 0, margin: parseFloat((s.MargemRealizada__c || 0).toFixed(2)) }, 
-            fcst: { rev: s.ReceitaPrevista__c || 0, margin: parseFloat((s.MargemPrevista__c || 0).toFixed(2)) }
+            fcst: { rev: s.ReceitaPrevista__c || 0, margin: parseFloat((s.MargemPrevista__c || 0).toFixed(2)) },
+            health: {
+                hasSales: s.VendasVinculadas__r ? s.VendasVinculadas__r.totalSize > 0 : false,
+                hasLogs: s.LancamentosHora__r ? s.LancamentosHora__r.totalSize > 0 : false
+            }
         })));
     } catch (e) { res.status(500).json({ error: e.message }); }
 };
@@ -45,7 +60,7 @@ exports.getServiceDetails = async (req, res) => {
     try {
         const conn = await getSfConnection();
         const [rSvc, rComm, rExec, rLinks, rSales] = await Promise.all([
-            conn.query(`SELECT Id, Name, Conta__c, Conta__r.Name, IDContaAzul__c, Tipo__c, Status__c, Lider__c, Coordenador__c, LiderTecnico__c, DataInicio__c, DataFimOriginal__c, DataFim__c, ReceitaVendida__c, CustoVendido__c, MargemVendida__c, ReceitaPrevista__c, CustoPrevisto__c, MargemPrevista__c, ReceitaRealizada__c, MargemRealizada__c, RequerRelatorioFaturamento__c, SolicitaRelatorioHoras__c FROM Servico__c WHERE Id = '${id}'`),
+            conn.query(`SELECT Id, Name, Conta__c, Conta__r.Name, IDContaAzul__c, Tipo__c, Status__c, Lider__c, Coordenador__c, LiderTecnico__c, DataInicio__c, DataFimOriginal__c, DataFim__c, ReceitaVendida__c, CustoVendido__c, MargemVendida__c, ReceitaPrevista__c, CustoPrevisto__c, MargemPrevista__c, ReceitaRealizada__c, CustoRealizado__c, MargemRealizada__c, RequerRelatorioFaturamento__c, SolicitaRelatorioHoras__c FROM Servico__c WHERE Id = '${id}'`),
             conn.query(`SELECT Id, Produto__c, TaxaVenda__c, CustoEstimado__c, DataInicio__c, DataFim__c, PercentualAlocacao__c, ReceitaTotal__c, CustoTotal__c, HorasTotais__c FROM AlocacaoPrevista__c WHERE Servico__c = '${id}'`),
             conn.query(`SELECT Id, Pessoa__c, Pessoa__r.Name, DataInicio__c, DataFimOriginal__c, Percentual__c, AlocacaoPrevista__c, TaxaVenda__c, CustoHr__c, Dias__c, HorasTotais__c, ReceitaTotal__c, CustoTotal__c, Margem__c FROM Alocacao__c WHERE Servico__c = '${id}'`),
             conn.query(`SELECT ContentDocumentId FROM ContentDocumentLink WHERE LinkedEntityId = '${id}'`),
@@ -56,7 +71,7 @@ exports.getServiceDetails = async (req, res) => {
         try {
              rFin = await conn.query(`SELECT Id, Valor__c, DataVencimento__c, Competencia__c, Status__c, Descricao__c FROM ParcelaFinanceira__c WHERE Servico__c = '${id}'`);
         } catch(errFin) {
-            console.error("Erro ao buscar parcelas (campo inexistente?):", errFin.message);
+            console.error("Erro ao buscar parcelas:", errFin.message);
         }
 
         if (rSvc.totalSize === 0) return res.status(404).json({ message: "Not found" });
@@ -124,22 +139,111 @@ exports.getServiceDetails = async (req, res) => {
     } catch (e) { res.status(500).json({ error: e.message }); }
 };
 
+exports.getServiceRealizedData = async (req, res) => {
+    const { id } = req.params;
+    try {
+        const conn = await getSfConnection();
+        
+        // 1. Buscar todos os registros de OrcamentoCompetencia__c do serviço
+        const orcResults = await conn.query(`
+            SELECT Id, Alocacao__c, AlocacaoPrevista__c, Competencia__c, 
+                   ReceitaPrevista__c, CustoPrevisto__c, 
+                   ReceitaRealizada__c, CustoRealizado__c, HorasRealizadas__c
+            FROM OrcamentoCompetencia__c 
+            WHERE Servico__c = '${id}'
+            ORDER BY Competencia__c ASC
+        `);
+
+        // 2. Consolidar por Competência (Mês/Ano)
+        const consolidated = {};
+        
+        orcResults.records.forEach(orc => {
+            const comp = orc.Competencia__c;
+            if (!consolidated[comp]) {
+                consolidated[comp] = {
+                    month: comp,
+                    baseline: { revenue: 0, cost: 0 },
+                    forecast: { revenue: 0, cost: 0 },
+                    realized: { revenue: 0, cost: 0, hours: 0 }
+                };
+            }
+
+            const data = consolidated[comp];
+
+            // Se for Baseline (Item Comercial)
+            if (orc.AlocacaoPrevista__c) {
+                data.baseline.revenue += orc.ReceitaPrevista__c || 0;
+                data.baseline.cost += orc.CustoPrevisto__c || 0;
+            }
+
+            // Se for Forecast (Alocação Real)
+            if (orc.Alocacao__c) {
+                data.forecast.revenue += orc.ReceitaPrevista__c || 0;
+                data.forecast.cost += orc.CustoPrevisto__c || 0;
+                
+                // Realizado vem sempre das alocações reais
+                data.realized.revenue += orc.ReceitaRealizada__c || 0;
+                data.realized.cost += orc.CustoRealizado__c || 0;
+                data.realized.hours += orc.HorasRealizadas__c || 0;
+            }
+        });
+
+        // 3. Buscar detalhamento de horas e custos por consultor
+        const timeLogs = await conn.query(`
+            SELECT Responsavel__r.Name, SUM(Horas__c) hrs, SUM(ValorTotalLancamento__c) cost, CALENDAR_MONTH(DiaPeriodo__r.Data__c) m, CALENDAR_YEAR(DiaPeriodo__r.Data__c) y
+            FROM LancamentoHora__c 
+            WHERE Servico__c = '${id}' AND Status__c = 'Faturado'
+            GROUP BY Responsavel__r.Name, CALENDAR_MONTH(DiaPeriodo__r.Data__c), CALENDAR_YEAR(DiaPeriodo__r.Data__c)
+        `);
+
+        // 4. Buscar receita por consultor baseada nas distribuições (Vínculo indireto via Orcamento)
+        const revenueLogs = await conn.query(`
+            SELECT OrcamentoCompetencia__r.Alocacao__r.Pessoa__r.Name person, SUM(ValorDistribuido__c) rev, CALENDAR_MONTH(OrcamentoCompetencia__r.Competencia__c) m, CALENDAR_YEAR(OrcamentoCompetencia__r.Competencia__c) y
+            FROM DistribuicaoReceita__c
+            WHERE OrcamentoCompetencia__r.Servico__c = '${id}'
+            GROUP BY OrcamentoCompetencia__r.Alocacao__r.Pessoa__r.Name, CALENDAR_MONTH(OrcamentoCompetencia__r.Competencia__c), CALENDAR_YEAR(OrcamentoCompetencia__r.Competencia__c)
+        `);
+
+        // Mapear receita para os logs de tempo
+        const revMap = {};
+        revenueLogs.records.forEach(r => {
+            const key = `${r.person}_${r.y}-${r.m}`;
+            revMap[key] = (revMap[key] || 0) + r.rev;
+        });
+
+        res.json({ 
+            success: true, 
+            consolidated: Object.values(consolidated).sort((a,b) => a.month.localeCompare(b.month)),
+            timeLogs: timeLogs.records.map(r => {
+                const key = `${r.Name}_${r.y}-${r.m}`;
+                return {
+                    person: r.Name,
+                    hours: r.hrs,
+                    cost: r.cost,
+                    revenue: revMap[key] || 0,
+                    period: `${r.y}-${String(r.m).padStart(2,'0')}-01`
+                };
+            })
+        });
+    } catch (e) {
+        console.error("Get Realized Data Error:", e);
+        res.status(500).json({ success: false, error: e.message });
+    }
+};
+
 exports.saveService = async (req, res) => {
     const data = req.body;
-    console.log("Backend: Recebendo payload para salvar:", JSON.stringify(data, null, 2));
     if (!data.name || !data.sf_account_id || !data.start) return res.status(400).json({ success: false, message: "Campos obrigatórios ausentes." });
     try {
         const conn = await getSfConnection();
         let accountId = data.sf_account_id;
         if (!accountId.startsWith('001')) {
-            console.log("Backend: Nome de conta recebido em vez de ID, criando conta:", accountId);
             const accRet = await conn.sobject('Account').create({ Name: accountId });
             if (accRet.success) accountId = accRet.id; else throw new Error("Acc create error");
         }
         const cleanId = (val) => (val && val.length >= 15) ? val : null;
         const cleanDate = (val) => (val && val.trim() !== "") ? val : null;
 
-        // Construindo o objeto dinamicamente para não enviar null em campos não preenchidos no front
         const svcRecord = { Id: data.id || null };
         if (data.name) svcRecord.Name = data.name;
         if (accountId) svcRecord.Conta__c = accountId;
@@ -154,8 +258,6 @@ exports.saveService = async (req, res) => {
         if (data.reqReport !== undefined) svcRecord.RequerRelatorioFaturamento__c = data.reqReport;
         if (data.solReport !== undefined) svcRecord.SolicitaRelatorioHoras__c = data.solReport;
 
-        console.log("Backend: Objeto formatado para SF:", JSON.stringify(svcRecord, null, 2));
-        
         let result = data.id ? await conn.sobject('Servico__c').update(svcRecord) : await conn.sobject('Servico__c').create(svcRecord);
         if (result.success) {
             const serviceId = result.id || data.id;
@@ -173,7 +275,6 @@ exports.saveService = async (req, res) => {
                     
                     let ret;
                     if (item.id && !item.id.startsWith('new')) {
-                        // Remove Master-Detail field for update
                         const updateRecord = { ...record, Id: item.id };
                         delete updateRecord.Servico__c;
                         ret = await conn.sobject('AlocacaoPrevista__c').update(updateRecord);
@@ -185,7 +286,6 @@ exports.saveService = async (req, res) => {
                     
                     const allocId = ret.id || item.id;
                     if (item.monthlyData && item.monthlyData.length > 0 && allocId) {
-                        console.log(`Saving ${item.monthlyData.length} monthly records for alloc ${allocId}`);
                         const exOrcs = await conn.query(`SELECT Id FROM OrcamentoCompetencia__c WHERE AlocacaoPrevista__c = '${allocId}'`);
                         if (exOrcs.totalSize > 0) await conn.sobject('OrcamentoCompetencia__c').destroy(exOrcs.records.map(r => r.Id));
                         const orcRecords = item.monthlyData.map(m => ({ AlocacaoPrevista__c: allocId, Servico__c: serviceId, Competencia__c: m.date, ReceitaPrevista__c: m.rev, CustoPrevisto__c: m.cost }));
@@ -195,7 +295,6 @@ exports.saveService = async (req, res) => {
             }
 
             let tRevAlloc = 0, tCostAlloc = 0;
-
             if (data.execution) {
                 for (const item of data.execution) {
                     let allocPrevId = null;
@@ -203,9 +302,6 @@ exports.saveService = async (req, res) => {
                         allocPrevId = commIdMap[item.commercialLinkId] || (item.commercialLinkId.startsWith('new') ? null : item.commercialLinkId);
                     }
                     
-                    tRevAlloc += (item.totalRev || 0);
-                    tCostAlloc += (item.totalCost || 0);
-
                     const record = { 
                         Servico__c: serviceId, 
                         Pessoa__c: cleanId(item.personId), 
@@ -213,20 +309,18 @@ exports.saveService = async (req, res) => {
                         DataInicio__c: cleanDate(item.start) || svcRecord.DataInicio__c, 
                         DataFimOriginal__c: cleanDate(item.end) || svcRecord.DataFimOriginal__c, 
                         Percentual__c: item.alloc || 100,
-                        TaxaVenda__c: item.saleRate,
-                        CustoHr__c: item.costRate,
-                        Dias__c: item.days,
-                        HorasTotais__c: item.totalHours,
-                        ReceitaTotal__c: item.totalRev,
-                        CustoTotal__c: item.totalCost,
-                        Margem__c: item.margin
+                        TaxaVenda__c: item.saleApplied,
+                        CustoHr__c: item.costReal,
+                        ReceitaTotal__c: item.totalRealizedRevenue,
+                        CustoTotal__c: item.totalRealizedCost,
+                        HorasTotais__c: item.totalRealizedHours
                     };
                     
                     let ret;
                     if (item.id && !item.id.startsWith('new')) {
                         const updateRecord = { ...record, Id: item.id };
                         delete updateRecord.Servico__c; 
-                        delete updateRecord.Pessoa__c; // Remove Master-Detail from update
+                        delete updateRecord.Pessoa__c;
                         ret = await conn.sobject('Alocacao__c').update(updateRecord);
                     } else {
                         ret = await conn.sobject('Alocacao__c').create(record);
@@ -234,11 +328,8 @@ exports.saveService = async (req, res) => {
 
                     const allocId = ret.id || item.id;
                     if (item.monthlyData && item.monthlyData.length > 0 && allocId) {
-                        // Limpar orçamentos antigos vinculados a esta alocação (Execução)
                         const exOrcs = await conn.query(`SELECT Id FROM OrcamentoCompetencia__c WHERE Alocacao__c = '${allocId}'`);
                         if (exOrcs.totalSize > 0) await conn.sobject('OrcamentoCompetencia__c').destroy(exOrcs.records.map(r => r.Id));
-                        
-                        // Criar novos orçamentos mensais
                         const orcRecords = item.monthlyData.map(m => ({ 
                             Alocacao__c: allocId, 
                             Servico__c: serviceId, 
@@ -251,14 +342,19 @@ exports.saveService = async (req, res) => {
                 }
             }
 
+            // Recalcular totais previstos para o serviço
+            const allocTotals = await conn.query(`SELECT SUM(ReceitaTotal__c) rev, SUM(CustoTotal__c) cost FROM Alocacao__c WHERE Servico__c = '${serviceId}'`);
+            const tRevAllocReal = allocTotals.records[0].rev || 0;
+            const tCostAllocReal = allocTotals.records[0].cost || 0;
+
             await conn.sobject('Servico__c').update({ 
                 Id: serviceId, 
                 ReceitaVendida__c: tRev, 
                 CustoVendido__c: tCost, 
                 MargemVendida__c: tRev > 0 ? ((tRev - tCost) / tRev) * 100 : 0,
-                ReceitaPrevista__c: tRevAlloc,
-                CustoPrevisto__c: tCostAlloc,
-                MargemPrevista__c: tRevAlloc > 0 ? ((tRevAlloc - tCostAlloc) / tRevAlloc) * 100 : 0
+                ReceitaPrevista__c: tRevAllocReal,
+                CustoPrevisto__c: tCostAllocReal,
+                MargemPrevista__c: tRevAllocReal > 0 ? ((tRevAllocReal - tCostAllocReal) / tRevAllocReal) * 100 : 0
             });
             res.json({ success: true, message: "Salvo!", id: serviceId });
         } else res.status(400).json({ success: false, details: result.errors });
@@ -268,64 +364,31 @@ exports.saveService = async (req, res) => {
 exports.uploadDocument = async (req, res) => {
     const { serviceId, type } = req.body;
     const file = req.files?.files?.[0];
-
-    console.log("[Upload] ServiceID:", serviceId, "Type:", type);
-    console.log("[Upload] File received:", file);
-
-    if (!file || !serviceId) {
-        return res.status(400).json({ success: false, message: 'Arquivo ou ID do serviço ausente.' });
-    }
-
+    if (!file || !serviceId) return res.status(400).json({ success: false, message: 'Arquivo ou ID do serviço ausente.' });
     try {
-        const conn = await getSfConnection(req.session.user);
-        
-        // Buscar nome do serviço para usar no título do anexo
+        const conn = await getSfConnection();
         const service = await conn.sobject('Servico__c').retrieve(serviceId);
-        const serviceName = service.Name;
-        
-        // Construir o título: Tipo Selecionado - Nome do Serviço
-        let finalTitle = `${type} - ${serviceName}`;
-        if (finalTitle.length > 255) {
-            finalTitle = finalTitle.substring(0, 255);
-        }
-
+        let finalTitle = `${type} - ${service.Name}`;
+        if (finalTitle.length > 255) finalTitle = finalTitle.substring(0, 255);
         const blob = fs.readFileSync(file.path);
-        
-        const contentVersion = {
-            Title: finalTitle,
-            PathOnClient: file.originalname, // Manter o nome original aqui
-            VersionData: blob.toString('base64'),
-            Origin: 'H',
-            FirstPublishLocationId: serviceId
-        };
-        
-        const cvResult = await conn.sobject('ContentVersion').create(contentVersion);
-        
-        if (!cvResult.success) {
-            console.error("Erro ao criar ContentVersion:", cvResult);
-            throw new Error('Falha ao criar ContentVersion no Salesforce.');
-        }
-        
-        console.log("ContentVersion criado com sucesso:", cvResult.id);
-
+        const cvResult = await conn.sobject('ContentVersion').create({ Title: finalTitle, PathOnClient: file.originalname, VersionData: blob.toString('base64'), Origin: 'H', FirstPublishLocationId: serviceId });
         const docIdResult = await conn.query(`SELECT ContentDocumentId FROM ContentVersion WHERE Id = '${cvResult.id}'`);
-        
-        if (!docIdResult.records || docIdResult.records.length === 0) {
-            console.error("Não foi possível encontrar o ContentDocumentId para o ContentVersion Id:", cvResult.id);
-            throw new Error('ContentDocumentId não encontrado após a criação do anexo.');
-        }
-
-        const contentDocumentId = docIdResult.records[0].ContentDocumentId;
-        console.log("Anexo vinculado com ContentDocumentId:", contentDocumentId);
-
         fs.unlinkSync(file.path);
+        res.json({ success: true, docId: docIdResult.records[0].ContentDocumentId });
+    } catch (e) { res.status(500).json({ success: false, message: e.message }); }
+};
 
-        res.json({ success: true, message: 'Upload bem-sucedido!', docId: contentDocumentId });
-
-    } catch (e) {
-        console.error('[ERRO NO UPLOAD]', e.message, e.stack);
-        res.status(500).json({ success: false, message: e.message });
-    }
+exports.deleteAllocation = async (req, res) => {
+    const { id } = req.params;
+    try {
+        const conn = await getSfConnection();
+        const checkLogs = await conn.query(`SELECT Count(Id) total FROM LancamentoHora__c WHERE Responsavel__r.Alocacao__c = '${id}'`);
+        if (checkLogs.records[0].total > 0) return res.status(400).json({ success: false, error: "Não é possível excluir: Existem horas lançadas para esta alocação." });
+        const orcs = await conn.query(`SELECT Id FROM OrcamentoCompetencia__c WHERE Alocacao__c = '${id}'`);
+        if (orcs.totalSize > 0) await conn.sobject('OrcamentoCompetencia__c').destroy(orcs.records.map(r => r.Id));
+        await conn.sobject('Alocacao__c').destroy(id);
+        res.json({ success: true });
+    } catch (e) { res.status(500).json({ success: false, error: e.message }); }
 };
 
 exports.deleteDocument = async (req, res) => {
@@ -348,16 +411,9 @@ exports.getAvailableSales = async (req, res) => {
     try {
         const { caClientId } = req.query;
         if (!caClientId) return res.json([]);
-        
-        // Busca vendas direto da API Conta Azul (via Service)
         const sales = await contaAzulService.getSalesByCustomer(caClientId);
-        
-        // Retorna para o frontend (que vai filtrar o que já está salvo se necessário)
         res.json(sales);
-    } catch (e) {
-        console.error("Erro ao buscar vendas CA:", e);
-        res.status(500).json({ error: "Erro ao buscar vendas no Conta Azul" });
-    }
+    } catch (e) { res.status(500).json({ error: "Erro ao buscar vendas no Conta Azul" }); }
 };
 
 exports.getSaleInstallmentsPreview = async (req, res) => {
@@ -366,131 +422,86 @@ exports.getSaleInstallmentsPreview = async (req, res) => {
         if (!saleId) return res.json([]);
         const installments = await contaAzulService.getSaleInstallments(saleId);
         res.json(installments.map(p => {
-            // Normalização redundante para garantir que o front receba o status correto
             let normalizedStatus = 'Pendente';
-            const rawStatus = p.status || '';
-            const statusUpper = rawStatus.toUpperCase();
-            if (['QUITADO', 'PAGO', 'CONFIRMADO', 'APROVADO'].includes(statusUpper)) normalizedStatus = 'Pago';
-            else if (statusUpper === 'VENCIDO') normalizedStatus = 'Atrasado';
-            else if (statusUpper === 'CANCELADO') normalizedStatus = 'Cancelado';
-
-            return {
-                desc: p.descricao,
-                date: p.data_vencimento ? p.data_vencimento.split('T')[0] : null,
-                value: p.valor_composicao ? p.valor_composicao.valor_bruto : (p.valor_pago || 0),
-                status: normalizedStatus,
-                month: p.data_vencimento ? p.data_vencimento.substring(0, 7) : null
-            };
+            const sUpper = (p.status || '').toUpperCase();
+            if (['QUITADO', 'PAGO', 'CONFIRMADO', 'APROVADO'].includes(sUpper)) normalizedStatus = 'Pago';
+            else if (sUpper === 'VENCIDO') normalizedStatus = 'Atrasado';
+            else if (sUpper === 'CANCELADO') normalizedStatus = 'Cancelado';
+            return { desc: p.descricao, date: p.data_vencimento ? p.data_vencimento.split('T')[0] : null, value: p.valor_composicao ? p.valor_composicao.valor_bruto : (p.valor_pago || 0), status: normalizedStatus, month: p.data_vencimento ? p.data_vencimento.substring(0, 7) : null };
         }));
-    } catch (e) {
-        console.error("Erro ao buscar preview de parcelas:", e);
-        res.status(500).json({ error: "Erro ao buscar parcelas" });
-    }
+    } catch (e) { res.status(500).json({ error: "Erro ao buscar parcelas" }); }
 };
 
 exports.saveSales = async (req, res) => {
     const { serviceId, sales, installments } = req.body; 
-    console.log(`[saveSales] ServiceId: ${serviceId}, Sales: ${sales?.length}, Installments: ${installments?.length}`); // Debug
-
-    if (!serviceId || !sales || !Array.isArray(sales)) {
-        console.error("[saveSales] Invalid Payload");
-        return res.status(400).json({ success: false });
-    }
-
+    if (!serviceId || !sales || !Array.isArray(sales)) return res.status(400).json({ success: false });
     try {
         const conn = await getSfConnection();
         
-        // 1. Buscar vendas vinculadas
-        const existing = await conn.query(`SELECT Id, IDContaAzul__c FROM VendaContaAzul__c WHERE Servico__c = '${serviceId}'`);
-        const existingMap = {};
-        existing.records.forEach(r => existingMap[r.IDContaAzul__c] = r.Id);
+        // 1. Gerenciar Vínculos (VendaServico__c)
+        const existingLinks = await conn.query(`SELECT Id, Venda__r.IDContaAzul__c FROM VendaServico__c WHERE Servico__c = '${serviceId}'`);
+        const existingLinksMap = {};
+        existingLinks.records.forEach(r => existingLinksMap[r.Venda__r.IDContaAzul__c] = r.Id);
 
         const saleToSfIdMap = {};
-
+        
         for (const s of sales) {
-            // Pegar ID do evento financeiro se ainda não tivermos (melhoria futura: enviar do front)
-            // const caInstallments = await contaAzulService.getSaleInstallments(s.id); 
-            // REMOVIDO: Nao buscar parcelas aqui novamente para economizar API e usar o que veio do front
-            // Porem, precisamos do ID do evento financeiro se for novo.
-            // Para performance, vamos confiar que o front mandou as parcelas corretas. 
-            // Se precisarmos do IDEventoFinanceiro__c, idealmente o front mandaria ou buscamos sob demanda.
-            // Mantendo a busca apenas para garantir dados consistentes na Venda, mas sem gerar parcelas duplicadas.
+            // Garantir que a venda existe no SF (pode vir direto do CA e não estar no SF ainda)
+            const salesInSf = await conn.query(`SELECT Id FROM VendaContaAzul__c WHERE IDContaAzul__c = '${s.id}' LIMIT 1`);
+            let sfSaleId;
             
-            // Mas espere, se eu não buscar aqui, como preencho IDEventoFinanceiro__c?
-            // O front não tem esse ID explicitamente na lista de vendas (só tem nas parcelas como financialEventId invisivel?).
+            if (salesInSf.totalSize > 0) {
+                sfSaleId = salesInSf.records[0].Id;
+            } else {
+                // Se não existir, criamos (segurança extra)
+                const resIns = await conn.sobject('VendaContaAzul__c').create({
+                    IDContaAzul__c: s.id,
+                    Name: s.number ? String(s.number) : 'S/N',
+                    DataEmissao__c: s.emissionDate,
+                    ValorTotal__c: s.total,
+                    Status__c: s.status
+                });
+                sfSaleId = resIns.id;
+            }
             
-            // Vamos manter a busca leve OU assumir que o front pode mandar.
-            // Para debug agora, vou manter a lógica original mas logar.
-            
-            console.log(`[saveSales] Processing Sale: ${s.number}`);
-            
-            const caInstallments = await contaAzulService.getSaleInstallments(s.id);
-            let financialEventId = caInstallments.length > 0 ? caInstallments[0].financialEventId : null;
+            saleToSfIdMap[s.id] = sfSaleId;
 
-            const saleRecord = {
+            // Criar ou atualizar o vínculo de junção
+            const junctionRecord = {
                 Servico__c: serviceId,
-                IDContaAzul__c: s.id,
-                Name: s.number ? String(s.number) : 'S/N',
-                DataEmissao__c: s.emissionDate,
-                ValorTotal__c: s.total,
-                Status__c: s.status,
-                IDEventoFinanceiro__c: financialEventId
+                Venda__c: sfSaleId,
+                ValorAlocado__c: s.allocatedValue || s.total // Usa o valor alocado da tela ou o total da venda
             };
 
-            if (existingMap[s.id]) {
-                saleRecord.Id = existingMap[s.id];
-                await conn.sobject('VendaContaAzul__c').update(saleRecord);
-                saleToSfIdMap[s.id] = saleRecord.Id;
+            if (existingLinksMap[s.id]) {
+                junctionRecord.Id = existingLinksMap[s.id];
+                await conn.sobject('VendaServico__c').update(junctionRecord);
             } else {
-                const resIns = await conn.sobject('VendaContaAzul__c').create(saleRecord);
-                saleToSfIdMap[s.id] = resIns.id;
+                await conn.sobject('VendaServico__c').create(junctionRecord);
             }
         }
 
-        // 2. Persistir Parcelas (baseado no estado do front)
-        if (installments && Array.isArray(installments) && installments.length > 0) {
-            console.log(`[saveSales] Processing ${installments.length} Installments from Frontend`);
-            
-            // Limpar parcelas atuais do serviço para refletir o estado do front
+        // 2. Sincronizar Parcelas (Vínculo direto com Serviço e Venda)
+        if (installments && installments.length > 0) {
             const currentInsts = await conn.query(`SELECT Id FROM ParcelaFinanceira__c WHERE Servico__c = '${serviceId}'`);
-            if (currentInsts.totalSize > 0) {
-                console.log(`[saveSales] Deleting ${currentInsts.totalSize} existing installments`);
-                await conn.sobject('ParcelaFinanceira__c').destroy(currentInsts.records.map(r => r.Id));
-            }
-
-            const instToInsert = installments.map(i => {
-                let status = i.status || 'Pendente';
-                const sUpper = status.toUpperCase();
-                if (['QUITADO', 'PAGO', 'CONFIRMADO', 'APROVADO'].includes(sUpper)) status = 'Pago';
-                else if (sUpper === 'VENCIDO' || sUpper === 'ATRASADO') status = 'Atrasado';
-                else if (sUpper === 'CANCELADO') status = 'Cancelado';
-
-                return {
-                    Servico__c: serviceId,
-                    VendaContaAzul__c: saleToSfIdMap[i.originSaleId] || null, // Link to the SF Sale ID we just mapped
-                    Descricao__c: i.desc,
-                    Competencia__c: i.month ? `${i.month}-01` : null,
-                    DataVencimento__c: i.date,
-                    Valor__c: i.value,
-                    Status__c: status
-                };
-            });
+            if (currentInsts.totalSize > 0) await conn.sobject('ParcelaFinanceira__c').destroy(currentInsts.records.map(r => r.Id));
             
-            if (instToInsert.length > 0) {
-                console.log(`[saveSales] First Installment to Insert:`, JSON.stringify(instToInsert[0]));
-            }
-            
-            console.log(`[saveSales] Inserting ${instToInsert.length} new installments`);
+            const instToInsert = installments.map(i => ({ 
+                Servico__c: serviceId, 
+                VendaContaAzul__c: saleToSfIdMap[i.originSaleId] || null, 
+                Descricao__c: i.desc, 
+                Competencia__c: i.month ? `${i.month}-01` : null, 
+                DataVencimento__c: i.date, 
+                Valor__c: i.value, 
+                Status__c: i.status,
+                IDContaAzul__c: i.id_ca // Manter rastreabilidade se vier do preview
+            }));
             await conn.sobject('ParcelaFinanceira__c').create(instToInsert);
-        } else {
-            console.log("[saveSales] No installments to save.");
         }
-
-        res.json({ success: true, message: "Vendas e parcelas sincronizadas com sucesso." });
-
-    } catch (e) {
-        console.error("[saveSales] Error:", e);
-        res.status(500).json({ success: false, error: e.message });
+        res.json({ success: true });
+    } catch (e) { 
+        console.error("Erro ao salvar vínculos:", e);
+        res.status(500).json({ success: false, error: e.message }); 
     }
 };
 
@@ -498,153 +509,36 @@ exports.deleteSale = async (req, res) => {
     const { id } = req.params;
     try {
         const conn = await getSfConnection();
-        
-        // 1. Buscar parcelas vinculadas a esta venda
         const installments = await conn.query(`SELECT Id FROM ParcelaFinanceira__c WHERE VendaContaAzul__c = '${id}'`);
         const instIds = installments.records.map(r => r.Id);
-
         if (instIds.length > 0) {
-            // 2. Verificar se alguma parcela possui forecast (Distribuição de Receita) vinculado
-            // Usamos uma query de agregação para performance
-            const instIdsStr = instIds.map(id => `'${id}'`).join(',');
-            const forecastCheck = await conn.query(`SELECT Count(Id) total FROM DistribuicaoReceita__c WHERE ParcelaFinanceira__c IN (${instIdsStr})`);
-            
-            const hasForecast = forecastCheck.records[0].total > 0;
-
-            if (hasForecast) {
-                return res.status(400).json({ 
-                    success: false, 
-                    error: "Não é possível desvincular: Existem parcelas desta venda com forecast (distribuição de receita) já realizado." 
-                });
-            }
-
-            // 3. Excluir parcelas se não houver forecast
-            console.log(`[deleteSale] Excluindo ${instIds.length} parcelas da venda ${id}`);
+            const distCheck = await conn.query(`SELECT Count(Id) total FROM DistribuicaoReceita__c WHERE ParcelaFinanceira__c IN (${instIds.map(id => `'${id}'`).join(',')})`);
+            if (distCheck.records[0].total > 0) return res.status(400).json({ success: false, error: "Não é possível desvincular: Existem parcelas com receita já distribuída." });
             await conn.sobject('ParcelaFinanceira__c').destroy(instIds);
         }
-
-        // 4. Excluir a venda (VendaContaAzul__c)
         await conn.sobject('VendaContaAzul__c').destroy(id);
-
-        res.json({ success: true, message: "Venda e parcelas removidas com sucesso." });
-    } catch (e) {
-        console.error("Delete Sale Error:", e);
-        res.status(500).json({ success: false, error: e.message });
-    }
-};
-
-exports.deleteInstallment = async (req, res) => {
-    const { id } = req.params;
-    try {
-        const conn = await getSfConnection();
-        
-        // 0. Verify dependencies (DistribuicaoReceita__c)
-        // Check if there is any revenue distribution linked to this installment
-        try {
-            const distCheck = await conn.query(`SELECT Count() FROM DistribuicaoReceita__c WHERE ParcelaFinanceira__c = '${id}'`);
-            if (distCheck.totalSize > 0) { // Count() returns totalSize, records is empty
-                return res.status(400).json({ 
-                    success: false, 
-                    error: "Não é possível excluir: Esta parcela possui distribuição de receita vinculada." 
-                });
-            }
-        } catch (errDist) {
-             console.warn("Skipping Revenue Distribution check (Object might not exist):", errDist.message);
-        }
-
-        // 1. Delete ParcelaFinanceira__c
-        await conn.sobject('ParcelaFinanceira__c').destroy(id);
-
         res.json({ success: true });
-    } catch (e) {
-        console.error("Delete Installment Error:", e);
-        res.status(500).json({ success: false, error: e.message });
-    }
-};
-
-exports.deleteAllocation = async (req, res) => {
-    const { id } = req.params;
-    try {
-        const conn = await getSfConnection();
-        
-        // 0. Verify dependencies
-        // Check if there are any Responsavel__c records linked to this Allocation
-        try {
-            const responsavelCheck = await conn.query(`SELECT Count() FROM Responsavel__c WHERE Alocacao__c = '${id}'`);
-            if (responsavelCheck.totalSize > 0) {
-                return res.status(400).json({ 
-                    success: false, 
-                    error: "Não é possível excluir: Existem responsabilidades vinculadas a esta alocação." 
-                });
-            }
-        } catch (errResp) {
-            console.warn("Skipping Responsavel__c check (Object might not exist):", errResp.message);
-        }
-
-        // Check if there are any LancamentoHora__c records linked to this Allocation via Responsavel__r
-        try {
-            const timesheetCheck = await conn.query(`SELECT Count() FROM LancamentoHora__c WHERE Responsavel__r.Alocacao__c = '${id}'`);
-            if (timesheetCheck.totalSize > 0) {
-                return res.status(400).json({ 
-                    success: false, 
-                    error: "Não é possível excluir: Existem horas lançadas para esta alocação." 
-                });
-            }
-        } catch (errTime) {
-             console.warn("Skipping Timesheet check (Field might not exist):", errTime.message);
-        }
-
-        // 1. Delete dependent OrcamentoCompetencia__c
-        const orcs = await conn.query(`SELECT Id FROM OrcamentoCompetencia__c WHERE Alocacao__c = '${id}'`);
-        if (orcs.totalSize > 0) {
-            await conn.sobject('OrcamentoCompetencia__c').destroy(orcs.records.map(r => r.Id));
-        }
-
-        // 2. Delete Alocacao__c
-        await conn.sobject('Alocacao__c').destroy(id);
-
-        res.json({ success: true });
-    } catch (e) {
-        console.error("Delete Allocation Error:", e);
-        res.status(500).json({ success: false, error: e.message });
-    }
+    } catch (e) { res.status(500).json({ success: false, error: e.message }); }
 };
 
 exports.deleteCommercialItem = async (req, res) => {
     const { id } = req.params;
     try {
         const conn = await getSfConnection();
-        
-        // 0. Verify dependencies (Active Allocations)
-        const checkExec = await conn.query(`SELECT Count() FROM Alocacao__c WHERE AlocacaoPrevista__c = '${id}'`);
-        if (checkExec.totalSize > 0) {
-            return res.status(400).json({ 
-                success: false, 
-                error: "Não é possível excluir: Este item comercial está vinculado a alocações de recursos." 
-            });
-        }
-
-        // 1. Delete dependent OrcamentoCompetencia__c
+        const checkExec = await conn.query(`SELECT Count(Id) total FROM Alocacao__c WHERE AlocacaoPrevista__c = '${id}'`);
+        if (checkExec.records[0].total > 0) return res.status(400).json({ success: false, error: "Não é possível excluir: Este item comercial está vinculado a alocações." });
         const orcs = await conn.query(`SELECT Id FROM OrcamentoCompetencia__c WHERE AlocacaoPrevista__c = '${id}'`);
-        if (orcs.totalSize > 0) {
-            await conn.sobject('OrcamentoCompetencia__c').destroy(orcs.records.map(r => r.Id));
-        }
-
-        // 2. Delete AlocacaoPrevista__c
+        if (orcs.totalSize > 0) await conn.sobject('OrcamentoCompetencia__c').destroy(orcs.records.map(r => r.Id));
         await conn.sobject('AlocacaoPrevista__c').destroy(id);
-
         res.json({ success: true });
-    } catch (e) {
-        console.error("Delete Commercial Item Error:", e);
-        res.status(500).json({ success: false, error: e.message });
-    }
+    } catch (e) { res.status(500).json({ success: false, error: e.message }); }
 };
 
 async function getMetadata() {
     const conn = await getSfConnection();
     let accounts = [], people = [], pricebooks = [], caClients = [];
-    try { const r = await conn.query("SELECT Id, Name FROM Account ORDER BY Name ASC"); accounts = r.records.map(a => ({ id: a.Id, name: a.Name })); } catch(e) { console.error("Meta Acc Error:", e); }
-    try { const r = await conn.query("SELECT Id, Name, Custo__c FROM Pessoa__c ORDER BY Name ASC"); people = r.records.map(p => ({ id: p.Id, name: p.Name, costRate: p.Custo__c || 0 })); } catch(e) { console.error("Meta Ppl Error:", e); }
+    try { const r = await conn.query("SELECT Id, Name FROM Account ORDER BY Name ASC"); accounts = r.records.map(a => ({ id: a.Id, name: a.Name })); } catch(e) {}
+    try { const r = await conn.query("SELECT Id, Name, Custo__c FROM Pessoa__c ORDER BY Name ASC"); people = r.records.map(p => ({ id: p.Id, name: p.Name, costRate: p.Custo__c || 0 })); } catch(e) {}
     try {
         const pb = await conn.query("SELECT Id, Name FROM Pricebook2 WHERE IsActive = true ORDER BY Name ASC");
         const pbe = await conn.query("SELECT Id, Pricebook2Id, Product2.Name, UnitPrice, Custo__c FROM PricebookEntry WHERE IsActive = true AND Pricebook2.IsActive = true");
