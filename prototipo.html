@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enterprise Analytics | Filtros Cascata</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        base: '#0B0514', panel: '#130921', panelBorder: '#2A164A',
+                        neonCyan: '#00F0FF', neonPink: '#FF007F', neonPurple: '#8A2BE2', neonGreen: '#00FF85', textMuted: '#8b7aab'
+                    },
+                    fontFamily: { sans: ['Inter', 'sans-serif'] }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        body { background-color: #0B0514; color: #E2D8F0; margin: 0; padding-bottom: 50px; overflow-x: hidden; }
+        .glass-panel { background-color: #130921; border: 1px solid #2A164A; border-radius: 12px; box-shadow: 0 8px 32px rgba(0,0,0,0.5); }
+        .glow-text { text-shadow: 0 0 12px currentColor; }
+        
+        .ctrl-input { background-color: rgba(11, 5, 20, 0.9); border: 1px solid #2A164A; color: #00F0FF; outline: none; cursor: pointer; transition: 0.3s; padding: 8px 12px; border-radius: 6px; font-size: 12px; font-weight: 500; }
+        .ctrl-input:focus { border-color: #00F0FF; box-shadow: 0 0 8px rgba(0, 240, 255, 0.3); }
+        ::-webkit-calendar-picker-indicator { filter: invert(1) hue-rotate(180deg) brightness(1.5); cursor: pointer; }
+        
+        ::-webkit-scrollbar { width: 10px; height: 10px; }
+        ::-webkit-scrollbar-track { background: #0B0514; border-radius: 5px; }
+        ::-webkit-scrollbar-thumb { background: #2A164A; border-radius: 5px; border: 2px solid #0B0514; }
+        ::-webkit-scrollbar-thumb:hover { background: #8A2BE2; }
+
+        .ms-dropdown { display: none; position: absolute; top: 110%; left: 0; min-width: 250px; max-height: 350px; overflow-y: auto; background-color: #130921; border: 1px solid #00F0FF; border-radius: 8px; z-index: 50; box-shadow: 0 12px 40px rgba(0,0,0,0.8); }
+        .ms-dropdown.show { display: block; }
+        
+        .native-scroll-wrapper { max-height: 550px; overflow-y: auto; overflow-x: hidden; border-top: 1px solid #2A164A; margin-top: 15px; padding-top: 15px; padding-right: 10px; }
+        
+        /* Numeração da Hierarquia */
+        .step-badge { display: inline-flex; align-items: center; justify-content: center; width: 16px; height: 16px; border-radius: 50%; background: #2A164A; color: #00F0FF; font-size: 9px; font-weight: bold; margin-right: 6px; }
+    </style>
+</head>
+<body class="p-4 md:p-6 flex flex-col gap-6">
+
+    <div class="glass-panel p-5 flex flex-wrap items-end justify-between gap-6 sticky top-2 z-40 backdrop-blur-xl bg-[#130921]/95">
+        
+        <div class="flex flex-col gap-1.5 border-r border-panelBorder pr-6">
+            <span class="text-[10px] text-textMuted uppercase font-bold tracking-widest flex items-center"><span class="step-badge">1</span> Período Master</span>
+            <div class="flex items-center gap-2">
+                <select id="date-preset" class="ctrl-input !text-neonPurple !border-neonPurple/50" onchange="applyDatePreset()">
+                    <option value="custom">Customizado...</option>
+                    <option value="mes_atual" selected>Mês Atual (Mar/26)</option>
+                    <option value="mes_passado">Mês Passado (Fev/26)</option>
+                    <option value="quarter_atual">Quarter Atual (Q1)</option>
+                    <option value="quarter_passado">Quarter Passado (Q4/25)</option>
+                    <option value="ytd">YTD (Ano 2026)</option>
+                </select>
+                <input type="date" id="date-start" class="ctrl-input" onchange="onCustomDateChange()">
+                <span class="text-textMuted text-xs font-bold">ATÉ</span>
+                <input type="date" id="date-end" class="ctrl-input" onchange="onCustomDateChange()">
+            </div>
+        </div>
+
+        <div class="flex flex-1 flex-wrap items-center gap-4">
+            <div class="flex flex-col gap-1.5 flex-1 min-w-[150px]">
+                <span class="text-[10px] text-textMuted uppercase font-bold tracking-widest flex items-center"><span class="step-badge">2</span> Estrutura</span>
+                <select id="filter-squad" class="ctrl-input w-full" onchange="triggerCascade('squad')">
+                    <option value="all">Visão Global (Todas)</option>
+                    <option value="Consultoria">Consultoria</option>
+                    <option value="Desenvolvimento">Desenvolvimento</option>
+                    <option value="Operações">Operações</option>
+                    <option value="Diretoria">Diretoria</option>
+                </select>
+            </div>
+
+            <div class="flex flex-col gap-1.5 flex-1 min-w-[200px] relative" id="container-clients">
+                <span class="text-[10px] text-textMuted uppercase font-bold tracking-widest flex items-center justify-between">
+                    <span><span class="step-badge" style="background: rgba(138,43,226,0.2); color: #8A2BE2;">3</span> Clientes (Cascata)</span>
+                    <span id="badge-clients" class="bg-[#8A2BE2]/20 text-[#8A2BE2] border border-[#8A2BE2]/50 px-1.5 py-0.5 rounded text-[9px]">--/--</span>
+                </span>
+                <div class="ctrl-input flex justify-between items-center" onclick="toggleDropdown('dropdown-clients')">
+                    <span id="label-clients" class="truncate font-bold">Carregando...</span> <span class="text-[10px]">▼</span>
+                </div>
+                <div id="dropdown-clients" class="ms-dropdown"></div>
+            </div>
+
+            <div class="flex flex-col gap-1.5 flex-1 min-w-[200px] relative" id="container-services">
+                <span class="text-[10px] text-textMuted uppercase font-bold tracking-widest flex items-center justify-between">
+                    <span><span class="step-badge" style="background: rgba(255,0,127,0.2); color: #FF007F;">4</span> Serviços (Cascata)</span>
+                    <span id="badge-services" class="bg-[#FF007F]/20 text-[#FF007F] border border-[#FF007F]/50 px-1.5 py-0.5 rounded text-[9px]">--/--</span>
+                </span>
+                <div class="ctrl-input flex justify-between items-center" onclick="toggleDropdown('dropdown-services')">
+                    <span id="label-services" class="truncate font-bold">Carregando...</span> <span class="text-[10px]">▼</span>
+                </div>
+                <div id="dropdown-services" class="ms-dropdown"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-5">
+        <div class="glass-panel p-5 flex flex-col items-center justify-center relative col-span-1 h-40">
+            <span class="text-[11px] text-textMuted uppercase font-bold tracking-widest mb-1">Margem Global</span>
+            <div id="gauge-margin" class="w-full flex-1"></div>
+            <div class="absolute bottom-4 text-2xl font-bold text-neonCyan glow-text" id="val-margin">--%</div>
+        </div>
+        <div class="glass-panel p-5 flex flex-col items-center justify-center relative col-span-1 h-40">
+            <span class="text-[11px] text-textMuted uppercase font-bold tracking-widest mb-1">Tx. Utilização</span>
+            <div id="gauge-util" class="w-full flex-1"></div>
+            <div class="absolute bottom-4 text-2xl font-bold text-neonPurple glow-text" id="val-util">--%</div>
+        </div>
+        <div class="glass-panel p-5 flex flex-col items-center justify-center relative col-span-1 h-40">
+            <span class="text-[11px] text-textMuted uppercase font-bold tracking-widest mb-1">Ticket Médio</span>
+            <div id="gauge-ticket" class="w-full flex-1"></div>
+            <div class="absolute bottom-4 text-xl font-bold text-neonGreen glow-text" id="val-ticket">R$ --</div>
+        </div>
+        <div class="glass-panel p-6 col-span-1 md:col-span-3 flex flex-col justify-around gap-4 h-40">
+            <div>
+                <div class="flex justify-between items-end mb-1"><span class="text-[11px] text-textMuted uppercase font-bold">Receita Média / Hora</span><span id="val-rec-bar" class="text-neonCyan font-bold text-sm glow-text">R$ --</span></div>
+                <div class="h-2 w-full bg-base rounded-full overflow-hidden"><div class="h-full bg-neonCyan shadow-[0_0_8px_#00F0FF] w-full"></div></div>
+            </div>
+            <div>
+                <div class="flex justify-between items-end mb-1"><span class="text-[11px] text-textMuted uppercase font-bold">Custo Médio / Hora</span><span id="val-cost-bar" class="text-neonPink font-bold text-sm glow-text">R$ --</span></div>
+                <div class="h-2 w-full bg-base rounded-full overflow-hidden border border-panelBorder"><div id="bar-cost" class="h-full bg-neonPink shadow-[0_0_8px_#FF007F] transition-all duration-700 w-0"></div></div>
+            </div>
+            <div>
+                <div class="flex justify-between items-end mb-1"><span class="text-[11px] text-white uppercase font-bold">Lucro Médio / Hora</span><span id="val-profit-bar" class="text-neonGreen font-bold text-sm glow-text">R$ --</span></div>
+                <div class="h-2 w-full bg-base rounded-full overflow-hidden border border-panelBorder"><div id="bar-profit" class="h-full bg-neonGreen shadow-[0_0_8px_#00FF85] transition-all duration-700 w-0"></div></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="glass-panel p-6 w-full flex flex-col">
+        <div class="mb-2"><h3 class="text-sm font-bold text-white tracking-widest uppercase flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-neonCyan"></span> A. Evolução Financeira Temporal</h3></div>
+        <div id="chart-finance" style="width: 100%; height: 350px;"></div>
+    </div>
+
+    <div class="glass-panel p-6 w-full flex flex-col">
+        <div class="mb-2"><h3 class="text-sm font-bold text-white tracking-widest uppercase flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-neonPurple"></span> B. Matriz de Rentabilidade Estratégica</h3></div>
+        <div id="chart-matrix" style="width: 100%; height: 450px;"></div>
+    </div>
+
+    <div class="glass-panel p-6 w-full flex flex-col">
+        <div class="mb-2 flex justify-between items-end">
+            <div><h3 class="text-sm font-bold text-white tracking-widest uppercase flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-neonGreen"></span> C. ROI Operacional da Equipe</h3><p class="text-[11px] text-textMuted mt-1">Barras horizontais lado a lado (Ciano: Receita, Rosa: Custo).</p></div>
+            <span class="text-[10px] uppercase font-bold text-neonGreen bg-neonGreen/20 border border-neonGreen/50 px-3 py-1 rounded animate-pulse">Scroll Nativo Ativo</span>
+        </div>
+        <div class="native-scroll-wrapper"><div id="chart-roi" style="width: 100%;"></div></div>
+    </div>
+
+    <div class="glass-panel p-6 w-full flex flex-col">
+        <div class="mb-2 flex justify-between items-end">
+            <div><h3 class="text-sm font-bold text-white tracking-widest uppercase flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-neonPink"></span> D. Mapa de Engajamento e Risco (Burnout)</h3><p class="text-[11px] text-textMuted mt-1">Visualização diária. Tons escuros (Ociosidade), Tons Rosas (Excesso de Carga).</p></div>
+            <span class="text-[10px] uppercase font-bold text-neonPink bg-neonPink/20 border border-neonPink/50 px-3 py-1 rounded animate-pulse">Scroll Nativo Ativo</span>
+        </div>
+        <div class="native-scroll-wrapper"><div id="chart-heatmap" style="width: 100%;"></div></div>
+    </div>
+
+    <script>
+        // ==========================================
+        // 1. GERADOR DE MASSA MOCK (100 Pessoas, Hierarquia Rígida)
+        // ==========================================
+        const SQUADS = ['Consultoria', 'Desenvolvimento', 'Operações', 'Diretoria'];
+        const CLIENTS = Array.from({length: 20}, (_, i) => `Cliente Corporate ${String.fromCharCode(65 + i)}`);
+        
+        // Cada estrutura só oferece certos serviços
+        const SERVICES_PER_SQUAD = {
+            'Consultoria': ['Estratégia de TI', 'Mapeamento de Processos', 'Auditoria de Sistemas'],
+            'Desenvolvimento': ['Desenvolvimento Web', 'App Mobile', 'Integração de APIs', 'Sustentação ERP'],
+            'Operações': ['Suporte Nível 1', 'Suporte Nível 2', 'Gestão de Infraestrutura', 'Monitoramento NOC'],
+            'Diretoria': ['Reunião Estratégica', 'Gestão de Contas', 'Planejamento Financeiro']
+        };
+
+        const STAFF = Array.from({length: 100}, (_, i) => ({
+            name: `Colaborador ${String(i+1).padStart(3, '0')}`,
+            squad: SQUADS[i % SQUADS.length], ticket: 90 + Math.random() * 250, cost: 40 + Math.random() * 90     
+        }));
+
+        const rawData = [];
+        const dInit = new Date('2025-10-01T12:00:00');
+        const dEnd = new Date('2026-03-31T12:00:00');
+
+        for (let d = new Date(dInit); d <= dEnd; d.setDate(d.getDate() + 1)) {
+            if (d.getDay() === 0 || d.getDay() === 6) continue;
+            const dateStr = d.toISOString().split('T')[0];
+            
+            STAFF.forEach(p => {
+                if (Math.random() < 0.15) return;
+                
+                // Amarra Clientes específicos a Estruturas específicas para testar o filtro
+                let cliGroup;
+                if (p.squad === 'Consultoria') cliGroup = CLIENTS.slice(0, 8); // A - H
+                else if (p.squad === 'Desenvolvimento') cliGroup = CLIENTS.slice(5, 15); // F - O
+                else if (p.squad === 'Operações') cliGroup = CLIENTS.slice(10, 20); // K - T
+                else cliGroup = CLIENTS.slice(0, 2); // Diretoria atende APENAS Clientes A e B
+                
+                const cli = cliGroup[Math.floor(Math.random() * cliGroup.length)];
+                
+                const srvGroup = SERVICES_PER_SQUAD[p.squad];
+                const srv = srvGroup[Math.floor(Math.random() * srvGroup.length)];
+
+                let hrs = 4 + Math.random() * 5; 
+                let rev = hrs * p.ticket;
+                let cost = hrs * p.cost;
+                if (Math.random() < 0.06) rev = cost * 0.4;
+                
+                rawData.push({ date: dateStr, name: p.name, squad: p.squad, service: srv, client: cli, hours: hrs, revenue: rev, cost: cost });
+            });
+        }
+
+        // ==========================================
+        // 2. MOTOR DE CASCATA (Reatividade em Cadeia)
+        // ==========================================
+        const state = {
+            dateStart: '', dateEnd: '', squad: 'all',
+            clients: new Set(), services: new Set()
+        };
+        const availableOptions = { clients: [], services: [] };
+
+        function applyDatePreset() {
+            const preset = document.getElementById('date-preset').value;
+            const start = document.getElementById('date-start');
+            const end = document.getElementById('date-end');
+            
+            if (preset === 'ytd') { start.value = '2026-01-01'; end.value = '2026-12-31'; }
+            if (preset === 'mes_atual') { start.value = '2026-03-01'; end.value = '2026-03-31'; }
+            if (preset === 'mes_passado') { start.value = '2026-02-01'; end.value = '2026-02-28'; }
+            if (preset === 'quarter_atual') { start.value = '2026-01-01'; end.value = '2026-03-31'; }
+            if (preset === 'quarter_passado') { start.value = '2025-10-01'; end.value = '2025-12-31'; }
+            
+            if (preset !== 'custom') triggerCascade('date');
+        }
+        function onCustomDateChange() { document.getElementById('date-preset').value = 'custom'; triggerCascade('date'); }
+
+        // A MÁGICA DO FUNIL ACONTECE AQUI
+        function triggerCascade(source) {
+            state.dateStart = document.getElementById('date-start').value;
+            state.dateEnd = document.getElementById('date-end').value;
+            state.squad = document.getElementById('filter-squad').value;
+
+            // Filtro de Nível 1 e 2
+            const level2Data = rawData.filter(d => 
+                (d.date >= state.dateStart && d.date <= state.dateEnd) &&
+                (state.squad === 'all' || d.squad === state.squad)
+            );
+
+            // Se Data ou Squad mudou -> Recalcular Dropdown de Clientes
+            if (source === 'date' || source === 'squad') {
+                const newClients = [...new Set(level2Data.map(d => d.client))].sort();
+                
+                const wasAllSelected = availableOptions.clients.length === 0 || state.clients.size === availableOptions.clients.length;
+                availableOptions.clients = newClients;
+                buildDropdown('clients', newClients);
+                
+                if (wasAllSelected || state.clients.size === 0) {
+                    state.clients = new Set(newClients); // Se todos estavam selecionados antes, mantemos tudo selecionado na nova lista
+                } else {
+                    // Memória: Se o usuário marcou apenas um Cliente, ele tenta preservá-lo na nova lista
+                    state.clients = new Set([...state.clients].filter(c => newClients.includes(c)));
+                    if (state.clients.size === 0) state.clients = new Set(newClients); // Fallback: Evita tela em branco
+                }
+                
+                syncVisuals('clients');
+            }
+
+            // Filtro de Nível 3 (Clientes aplicados)
+            const level3Data = level2Data.filter(d => state.clients.has(d.client));
+
+            // Se Data, Squad ou Cliente mudou -> Recalcular Dropdown de Serviços
+            if (source === 'date' || source === 'squad' || source === 'clients') {
+                const newServices = [...new Set(level3Data.map(d => d.service))].sort();
+                
+                const wasAllSelected = availableOptions.services.length === 0 || state.services.size === availableOptions.services.length;
+                availableOptions.services = newServices;
+                buildDropdown('services', newServices);
+                
+                if (wasAllSelected || state.services.size === 0) {
+                    state.services = new Set(newServices);
+                } else {
+                    state.services = new Set([...state.services].filter(s => newServices.includes(s)));
+                    if (state.services.size === 0) state.services = new Set(newServices);
+                }
+
+                syncVisuals('services');
+            }
+
+            // Atualiza os Gráficos filtrando o último Nível (Serviços aplicados)
+            renderDashboard(level3Data.filter(d => state.services.has(d.service)));
+        }
+
+        // --- Funções Auxiliares do HTML dos Dropdowns ---
+        function buildDropdown(type, items) {
+            const container = document.getElementById(`dropdown-${type}`);
+            let html = `
+                <div class="p-2 border-b border-[#2A164A] sticky top-0 bg-[#130921] z-10">
+                    <label class="flex items-center space-x-2 cursor-pointer text-xs font-bold text-neonCyan">
+                        <input type="checkbox" id="all-${type}" class="accent-neonCyan w-4 h-4" onchange="toggleAllDropdown('${type}', this.checked)">
+                        <span>Selecionar Todos</span>
+                    </label>
+                </div>
+                <div class="p-2 flex flex-col gap-1">
+            `;
+            if (items.length === 0) {
+                html += `<div class="text-xs text-textMuted p-2 text-center">Nenhuma opção restante<br>devido aos filtros anteriores.</div>`;
+            } else {
+                items.forEach(item => {
+                    html += `
+                        <label class="flex items-center space-x-2 cursor-pointer text-xs p-1.5 hover:bg-[#2A164A] rounded text-gray-300 transition-colors">
+                            <input type="checkbox" class="chk-${type}" value="${item}" onchange="onCheckboxChange('${type}')" style="accent-color: #00F0FF; width: 14px; height: 14px;">
+                            <span class="truncate" title="${item}">${item}</span>
+                        </label>
+                    `;
+                });
+            }
+            html += `</div>`;
+            container.innerHTML = html;
+        }
+
+        function toggleAllDropdown(type, checked) {
+            document.querySelectorAll(`.chk-${type}`).forEach(el => el.checked = checked);
+            state[type].clear();
+            if (checked) availableOptions[type].forEach(item => state[type].add(item));
+            
+            syncVisuals(type);
+            triggerCascade(type); // Dispara para o próximo nível
+        }
+
+        function onCheckboxChange(type) {
+            state[type].clear();
+            document.querySelectorAll(`.chk-${type}:checked`).forEach(el => state[type].add(el.value));
+            
+            syncVisuals(type);
+            triggerCascade(type);
+        }
+
+        function syncVisuals(type) {
+            const checkedCount = state[type].size;
+            const totalCount = availableOptions[type].length;
+            
+            document.querySelectorAll(`.chk-${type}`).forEach(chk => chk.checked = state[type].has(chk.value));
+            const allBox = document.getElementById(`all-${type}`);
+            if(allBox) allBox.checked = (checkedCount === totalCount && totalCount > 0);
+
+            const label = document.getElementById(`label-${type}`);
+            const badge = document.getElementById(`badge-${type}`);
+            badge.innerText = `${checkedCount}/${totalCount}`;
+
+            if (totalCount === 0) { label.innerText = 'Vazio'; label.className = 'truncate font-bold text-gray-500'; }
+            else if (checkedCount === totalCount) { label.innerText = 'Todos Selecionados'; label.className = 'truncate font-bold text-white'; }
+            else if (checkedCount === 0) { label.innerText = 'Nenhum Selecionado'; label.className = 'truncate font-bold text-neonPink'; }
+            else if (checkedCount === 1) { label.innerText = Array.from(state[type])[0]; label.className = 'truncate font-bold text-neonCyan'; }
+            else { label.innerText = 'Múltiplos Selecionados'; label.className = 'truncate font-bold text-neonCyan'; }
+        }
+
+        function toggleDropdown(id) {
+            const el = document.getElementById(id);
+            document.querySelectorAll('.ms-dropdown').forEach(d => { if(d.id !== id) d.classList.remove('show'); });
+            el.classList.toggle('show');
+        }
+
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('#container-services')) document.getElementById('dropdown-services').classList.remove('show');
+            if (!e.target.closest('#container-clients')) document.getElementById('dropdown-clients').classList.remove('show');
+        });
+
+        // ==========================================
+        // 3. ECHARTS & RENDERIZAÇÃO
+        // ==========================================
+        const fMoney = (val) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 }).format(val);
+        const c = { cyan: '#00F0FF', pink: '#FF007F', purple: '#8A2BE2', green: '#00FF85', border: '#2A164A', text: '#9ca3af', bg: '#130921' };
+        const ttBg = 'rgba(11, 5, 20, 0.95)';
+
+        const initGauge = (id, color, max) => {
+            return echarts.init(document.getElementById(id)).setOption({ series: [{ type: 'gauge', startAngle: 210, endAngle: -30, min: 0, max: max, pointer: { show: false }, progress: { show: true, width: 10, itemStyle: { color: color, shadowBlur: 10, shadowColor: color } }, axisLine: { lineStyle: { width: 10, color: [[1, '#0B0514']] } }, axisTick: { show: false }, splitLine: { show: false }, axisLabel: { show: false }, detail: { show: false }, data: [{ value: 0 }] }] }, {notMerge: false});
+        };
+
+        const charts = { margin: echarts.init(document.getElementById('gauge-margin')), util: echarts.init(document.getElementById('gauge-util')), ticket: echarts.init(document.getElementById('gauge-ticket')), finance: echarts.init(document.getElementById('chart-finance')), matrix: echarts.init(document.getElementById('chart-matrix')) };
+        initGauge('gauge-margin', c.cyan, 100); initGauge('gauge-util', c.purple, 100); initGauge('gauge-ticket', c.green, 400);
+        let chartRoi = null; let chartHeatmap = null;
+
+        window.addEventListener('resize', () => { Object.values(charts).forEach(ch => ch.resize()); if(chartRoi) chartRoi.resize(); if(chartHeatmap) chartHeatmap.resize(); });
+
+        function renderDashboard(fd) {
+            if(fd.length === 0) {
+                document.getElementById('val-margin').innerText = '0%'; document.getElementById('val-util').innerText = '0%'; document.getElementById('val-ticket').innerText = 'R$ 0';
+                ['finance','matrix'].forEach(id => charts[id].clear());
+                if(chartRoi) chartRoi.clear(); if(chartHeatmap) chartHeatmap.clear();
+                return;
+            }
+
+            let tRev = 0, tCost = 0, tHrs = 0;
+            fd.forEach(d => { tRev += d.revenue; tCost += d.cost; tHrs += d.hours; });
+
+            const margin = tRev > 0 ? ((tRev - tCost) / tRev) * 100 : 0;
+            const ticket = tHrs > 0 ? tRev / tHrs : 0; const costAvg = tHrs > 0 ? tCost / tHrs : 0; const util = 85 + Math.random() * 10; 
+
+            document.getElementById('val-margin').innerText = margin.toFixed(1) + '%'; document.getElementById('val-util').innerText = util.toFixed(1) + '%'; document.getElementById('val-ticket').innerText = fMoney(ticket);
+            document.getElementById('val-rec-bar').innerText = fMoney(ticket); document.getElementById('val-cost-bar').innerText = fMoney(costAvg); document.getElementById('val-profit-bar').innerText = fMoney(ticket - costAvg);
+            document.getElementById('bar-cost').style.width = ticket > 0 ? `${Math.min((costAvg/ticket)*100, 100)}%` : '0%'; document.getElementById('bar-profit').style.width = ticket > 0 ? `${(Math.max(ticket - costAvg, 0)/ticket)*100}%` : '0%';
+
+            charts.margin.setOption({ series: [{ data: [{ value: Math.max(0, margin) }] }] }); charts.util.setOption({ series: [{ data: [{ value: util }] }] }); charts.ticket.setOption({ series: [{ data: [{ value: ticket }] }] });
+
+            const dMap = {}; fd.forEach(d => { if(!dMap[d.date]) dMap[d.date] = { r:0, c:0, h:0 }; dMap[d.date].r += d.revenue; dMap[d.date].c += d.cost; dMap[d.date].h += d.hours; });
+            const datesArr = Object.keys(dMap).sort();
+            charts.finance.setOption({ tooltip: { trigger: 'axis', backgroundColor: ttBg, borderColor: c.border, textStyle: { color: '#fff' } }, grid: { left: '3%', right: '3%', bottom: '5%', top: '8%', containLabel: true }, xAxis: { type: 'category', boundaryGap: false, data: datesArr.map(d=>d.substring(8,10)+'/'+d.substring(5,7)), axisLabel: { color: c.text, fontSize: 10 }, axisLine: { lineStyle: { color: c.border } } }, yAxis: [{ type: 'value', splitLine: { lineStyle: { color: c.border, type: 'dashed' } }, axisLabel: { color: c.text, formatter: v => 'R$ '+(v/1000)+'k' } }, { type: 'value', splitLine: { show: false }, axisLabel: { show: false } }], series: [{ name: 'Receita', type: 'line', smooth: true, showSymbol: false, lineStyle: { width: 3, color: c.cyan }, areaStyle: { color: new echarts.graphic.LinearGradient(0,0,0,1, [{offset:0, color:'rgba(0,240,255,0.3)'}, {offset:1, color:'rgba(0,240,255,0)'}]) }, data: datesArr.map(d => dMap[d].r) }, { name: 'Custo', type: 'line', smooth: true, showSymbol: false, lineStyle: { width: 3, color: c.pink }, data: datesArr.map(d => dMap[d].c) }, { name: 'Horas', type: 'line', yAxisIndex: 1, smooth: true, showSymbol: false, lineStyle: { width: 2, color: c.purple, type: 'dashed' }, data: datesArr.map(d => dMap[d].h) }] });
+
+            const sMap = {}; fd.forEach(d => { if(!sMap[d.service]) sMap[d.service] = { h:0, r:0, c:0 }; sMap[d.service].h += d.hours; sMap[d.service].r += d.revenue; sMap[d.service].c += d.cost; });
+            const matrixData = Object.keys(sMap).map(k => { const m = sMap[k].r > 0 ? ((sMap[k].r - sMap[k].c)/sMap[k].r)*100 : -20; return [sMap[k].h, m, sMap[k].r, k]; });
+            charts.matrix.setOption({ tooltip: { backgroundColor: ttBg, borderColor: c.pink, textStyle: { color: '#fff' }, formatter: p => `<div class="font-bold border-b border-[#2A164A] pb-1 mb-1 text-[11px]">${p.data[3]}</div>Esforço: ${p.data[0].toFixed(0)}h<br/>Margem: ${p.data[1].toFixed(1)}%<br/>Receita: ${fMoney(p.data[2])}` }, grid: { left: '4%', right: '5%', bottom: '5%', top: '5%', containLabel: true }, xAxis: { name: 'Horas Gastas', nameLocation: 'middle', nameGap: 25, splitLine: { lineStyle: { color: c.border, type: 'dashed' } }, axisLabel: { color: c.text } }, yAxis: { name: 'Margem %', nameLocation: 'middle', nameGap: 35, splitLine: { lineStyle: { color: c.border, type: 'dashed' } }, axisLabel: { color: c.text, formatter: '{value}%' } }, series: [{ type: 'scatter', data: matrixData, symbolSize: d => Math.max(Math.sqrt(d[2])/12, 8), itemStyle: { color: p => p.data[1] < 0 ? c.pink : c.cyan, shadowBlur: 10, shadowColor: 'inherit', opacity: 0.8 } }] }, true);
+
+            const pMap = {}; fd.forEach(d => { if(!pMap[d.name]) pMap[d.name] = { r:0, c:0 }; pMap[d.name].r += d.revenue; pMap[d.name].c += d.cost; });
+            const sortedNames = Object.keys(pMap).sort((a,b) => (pMap[a].r - pMap[a].c) - (pMap[b].r - pMap[b].c));
+            const domRoi = document.getElementById('chart-roi'); domRoi.style.height = `${Math.max(400, sortedNames.length * 35)}px`;
+            if(chartRoi) chartRoi.dispose(); chartRoi = echarts.init(domRoi);
+            chartRoi.setOption({ tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' }, backgroundColor: ttBg, borderColor: c.border, textStyle: { color: '#fff' } }, grid: { left: '1%', right: '4%', bottom: '1%', top: '1%', containLabel: true }, xAxis: { type: 'value', splitLine: { lineStyle: { color: c.border, type: 'dashed' } }, axisLabel: { color: c.text, formatter: v => (v/1000)+'k' } }, yAxis: { type: 'category', data: sortedNames, axisLine: { show: false }, axisTick: { show: false }, axisLabel: { color: '#fff', fontSize: 11, width: 110, overflow: 'truncate' } }, series: [{ name: 'Receita', type: 'bar', barGap: '0%', barWidth: '40%', itemStyle: { color: c.cyan, borderRadius: [0,4,4,0] }, data: sortedNames.map(n => pMap[n].r.toFixed(0)) }, { name: 'Custo', type: 'bar', barWidth: '40%', itemStyle: { color: c.pink, borderRadius: [0,4,4,0] }, data: sortedNames.map(n => pMap[n].c.toFixed(0)) }] });
+
+            const hMap = {}; fd.forEach(d => { const k = d.name + '|' + d.date; hMap[k] = (hMap[k] || 0) + d.hours; });
+            const heatData = []; sortedNames.forEach((name, y) => { datesArr.forEach((date, x) => { const hrs = hMap[name + '|' + date]; if (hrs > 0) heatData.push([x, y, hrs.toFixed(1)]); }); });
+            const domHeat = document.getElementById('chart-heatmap'); domHeat.style.height = `${Math.max(400, sortedNames.length * 28)}px`;
+            if(chartHeatmap) chartHeatmap.dispose(); chartHeatmap = echarts.init(domHeat);
+            chartHeatmap.setOption({ tooltip: { position: 'top', backgroundColor: ttBg, borderColor: c.border, textStyle: { color: '#fff' }, formatter: p => `${sortedNames[p.value[1]]}<br/>Data: ${datesArr[p.value[0]].substring(8,10)+'/'+datesArr[p.value[0]].substring(5,7)}<br/>Esforço: <b style="color:${c.cyan}">${p.value[2]}h</b>` }, grid: { left: '1%', right: '2%', bottom: '8%', top: '2%', containLabel: true }, dataZoom: [{ type: 'slider', xAxisIndex: 0, height: 10, bottom: 0, borderColor: 'transparent', fillerColor: 'rgba(138,43,226,0.3)', textStyle: { color: 'transparent' } }, { type: 'inside', xAxisIndex: 0 }], xAxis: { type: 'category', data: datesArr.map(d=>d.substring(8,10)+'/'+d.substring(5,7)), axisLine: { show: false }, axisTick: { show: false }, axisLabel: { color: c.text, fontSize: 10 } }, yAxis: { type: 'category', data: sortedNames, axisLine: { show: false }, axisTick: { show: false }, axisLabel: { color: '#fff', fontSize: 10, width: 110, overflow: 'truncate' } }, visualMap: { min: 0, max: 14, show: false, inRange: { color: [c.bg, c.purple, c.pink] } }, series: [{ type: 'heatmap', data: heatData, itemStyle: { borderColor: c.bg, borderWidth: 2, borderRadius: 2 }, emphasis: { itemStyle: { shadowBlur: 10, shadowColor: 'inherit' } } }] });
+        }
+
+        // Boot Inicial
+        applyDatePreset();
+
+    </script>
+</body>
+</html>

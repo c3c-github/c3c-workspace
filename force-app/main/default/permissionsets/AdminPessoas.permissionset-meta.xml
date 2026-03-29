@@ -272,6 +272,26 @@
     </fieldPermissions>
     <fieldPermissions>
         <editable>true</editable>
+        <field>OrcamentoCompetencia__c.AlocacaoPrevista__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>OrcamentoCompetencia__c.Alocacao__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>OrcamentoCompetencia__c.ReceitaPrevista__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>OrcamentoCompetencia__c.Servico__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
         <field>ParcelaFinanceira__c.Competencia__c</field>
         <readable>true</readable>
     </fieldPermissions>
@@ -503,11 +523,6 @@
     <fieldPermissions>
         <editable>false</editable>
         <field>Servico__c.HorasMesAlocadas__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>false</editable>
-        <field>Servico__c.NumeroAtividadesPeriodo__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>

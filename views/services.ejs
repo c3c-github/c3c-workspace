@@ -120,18 +120,18 @@
 
                 <!-- INDICADORES NO HEADER -->
                 <div class="flex items-center gap-6">
-                    <div class="text-right">
+                    <div class="text-right hidden">
                         <p class="text-[8px] font-black text-gray-400 uppercase tracking-widest mb-0.5">Baseline</p>
                         <p id="card-prop-rev" class="text-xs font-black text-gray-800">R$ 0,00</p>
                         <p id="card-prop-margin" class="text-[9px] font-black text-c3c-blue">0% MG</p>
                     </div>
-                    <div class="w-px h-8 bg-gray-100"></div>
-                    <div class="text-right">
+                    <div class="w-px h-8 bg-gray-100 hidden"></div>
+                    <div class="text-right hidden">
                         <p class="text-[8px] font-black text-gray-400 uppercase tracking-widest mb-0.5">Previsão</p>
                         <p id="card-fcst-rev" class="text-xs font-black text-gray-800">R$ 0,00</p>
                         <p id="card-fcst-margin" class="text-[9px] font-black text-indigo-600">0% MG</p>
                     </div>
-                    <div class="w-px h-8 bg-gray-100"></div>
+                    <div class="w-px h-8 bg-gray-100 hidden"></div>
                     <div class="text-right">
                         <p class="text-[8px] font-black text-gray-400 uppercase tracking-widest mb-0.5">Real YTD</p>
                         <p id="card-act-rev" class="text-xs font-black text-gray-800">R$ 0,00</p>
@@ -151,8 +151,8 @@
                 <button id="tab-attachments" onclick="switchTab('attachments')" class="modal-tab-inactive py-5 text-[10px] font-black uppercase tracking-[0.2em] whitespace-nowrap transition-all">Anexos</button>
                 <button id="tab-billing" onclick="switchTab('billing')" class="modal-tab-inactive py-5 text-[10px] font-black uppercase tracking-[0.2em] whitespace-nowrap transition-all">Faturamento</button>
                 <button id="tab-commercial" onclick="switchTab('commercial')" class="modal-tab-inactive py-5 text-[10px] font-black uppercase tracking-[0.2em] whitespace-nowrap transition-all">Comercial</button>
-                <button id="tab-execution" onclick="switchTab('execution')" class="modal-tab-inactive py-5 text-[10px] font-black uppercase tracking-[0.2em] whitespace-nowrap transition-all">Execução</button>
-                <button id="tab-realized" onclick="switchTab('realized')" class="modal-tab-inactive py-5 text-[10px] font-black uppercase tracking-[0.2em] whitespace-nowrap transition-all">Extrato Real</button>
+                <button id="tab-execution" onclick="switchTab('execution')" class="modal-tab-inactive py-5 text-[10px] font-black uppercase tracking-[0.2em] whitespace-nowrap transition-all">Planejamento</button>
+                <button id="tab-realized" onclick="switchTab('realized')" class="modal-tab-inactive py-5 text-[10px] font-black uppercase tracking-[0.2em] whitespace-nowrap transition-all">Execução</button>
             </div>
 
             <div class="flex-1 overflow-y-auto p-10 space-y-10 no-scrollbar bg-white">
@@ -289,7 +289,7 @@
                     </div>
 
                     <!-- FORECAST BASELINE ESPECÍFICO -->
-                    <div class="bg-white p-8 rounded-[32px] border border-gray-100 shadow-sm space-y-4">
+                    <div class="bg-white p-8 rounded-[32px] border border-gray-100 shadow-sm space-y-4 hidden">
                         <div class="flex justify-between items-center">
                             <h5 class="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-2"><i data-lucide="calendar-range" class="w-4 h-4"></i> Forecast Mensal (Baseline)</h5>
                             <select id="forecast-year-comm" onchange="refreshAllForecasts()" class="input-modern py-1 text-[10px]"><option value="2024">2024</option><option value="2025" selected>2025</option><option value="2026">2026</option></select>
@@ -348,7 +348,7 @@
                     </div>
 
                     <!-- FORECAST ALOCAÇÃO ESPECÍFICO -->
-                    <div class="bg-white p-8 rounded-[32px] border border-gray-100 shadow-sm space-y-4">
+                    <div class="bg-white p-8 rounded-[32px] border border-gray-100 shadow-sm space-y-4 hidden">
                         <div class="flex justify-between items-center">
                             <h5 class="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-2"><i data-lucide="trending-up" class="w-4 h-4 text-indigo-500"></i> Forecast Mensal (Alocação / EOL)</h5>
                             <select id="forecast-year-alloc" onchange="refreshAllForecasts()" class="input-modern py-1 text-[10px]"><option value="2024">2024</option><option value="2025" selected>2025</option><option value="2026">2026</option></select>
@@ -438,85 +438,69 @@
                     </div>
                 </div>
 
-                <!-- 5. EXTRATO REAL (CONSOLIDADO & FORECAST) -->
+                <!-- 5. EXECUÇÃO (ANTIGO EXTRATO REAL) -->
                 <div id="view-realized" class="hidden fade-in space-y-8 text-left">
-                    <div class="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm">
-                        <div class="flex justify-between items-center mb-4">
-                            <h5 class="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-2"><i data-lucide="activity" class="w-4 h-4 text-teal-600"></i> Forecast Realizado (YTD)</h5>
-                            <select id="forecast-year-real" onchange="refreshAllForecasts()" class="input-modern py-1 text-[10px]"><option value="2024">2024</option><option value="2025" selected>2025</option><option value="2026">2026</option></select>
-                        </div>
-                        <div class="overflow-x-auto no-scrollbar">
-                            <table class="w-full text-[10px]">
-                                <thead id="realized-forecast-header" class="text-gray-400 border-b border-gray-50 font-black uppercase"></thead>
-                                <tbody id="realized-forecast-body" class="font-bold text-gray-700"></tbody>
-                            </table>
-                        </div>
-                    </div>
-
-                    <!-- DRE DETALHADO -->
-                    <div class="bg-white rounded-[32px] border border-gray-100 shadow-xl overflow-hidden">
-                        <div class="px-8 py-6 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center">
-                            <h4 class="text-xs font-black text-gray-800 uppercase tracking-widest flex items-center gap-2"><i data-lucide="bar-chart-3" class="w-4 h-4 text-c3c-blue"></i> DRE Detalhado do Projeto (Mensal)</h4>
-                            <p class="text-[9px] font-black text-gray-400 uppercase tracking-widest">Visão consolidada: Baseline vs Previsto vs Real</p>
+                    <div class="bg-white rounded-[32px] border border-gray-100 shadow-sm overflow-hidden">
+                        <div class="px-8 py-6 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
+                            <div>
+                                <h3 class="text-xs font-black text-gray-800 uppercase tracking-widest flex items-center gap-2">
+                                    <i data-lucide="bar-chart-3" class="w-4 h-4 text-c3c-blue"></i>
+                                    Consolidado Mensal
+                                </h3>
+                                <p class="text-[9px] font-bold text-gray-400 uppercase mt-1">Consolidado por competência (Baseline vs Lançamentos de Horas)</p>
+                            </div>
                         </div>
                         <div class="overflow-x-auto">
                             <table class="w-full text-left table-dense">
                                 <thead class="bg-white border-b border-gray-100">
-                                    <tr class="divide-x divide-gray-50">
-                                        <th class="text-[9px] font-black text-gray-400 uppercase tracking-widest py-4 px-6">Mês/Ano</th>
-                                        <th colspan="3" class="text-[9px] font-black text-c3c-blue uppercase tracking-widest text-center bg-blue-50/30">Baseline (Vendido)</th>
-                                        <th colspan="3" class="text-[9px] font-black text-indigo-600 uppercase tracking-widest text-center bg-indigo-50/30">Alocação (Previsto)</th>
-                                        <th colspan="3" class="text-[9px] font-black text-teal-600 uppercase tracking-widest text-center bg-teal-50/30">Extrato (Real YTD)</th>
-                                    </tr>
-                                    <tr class="text-[8px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-50">
-                                        <th class="px-6">Período</th>
-                                        <th class="text-right px-4 bg-blue-50/10">Rec.</th><th class="text-right px-4 bg-blue-50/10">Custo</th><th class="text-right px-4 bg-blue-50/10">MG%</th>
-                                        <th class="text-right px-4 bg-indigo-50/10">Rec.</th><th class="text-right px-4 bg-indigo-50/10">Custo</th><th class="text-right px-4 bg-indigo-50/10">MG%</th>
-                                        <th class="text-right px-4 bg-teal-50/10">Rec.</th><th class="text-right px-4 bg-teal-50/10">Custo</th><th class="text-right px-4 bg-teal-50/10">MG%</th>
+                                    <tr>
+                                        <th class="px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest">Mês/Ano</th>
+                                        <th class="px-8 py-5 text-right text-[10px] font-black text-teal-500 uppercase tracking-widest bg-teal-50/10">Realizado (Rev)</th>
+                                        <th class="px-8 py-5 text-right text-[10px] font-black text-red-400 uppercase tracking-widest bg-red-50/10">Custo Real</th>
+                                        <th class="px-8 py-5 text-right text-[10px] font-black text-c3c-blue uppercase tracking-widest border-l border-gray-50">Margem R$</th>
+                                        <th class="px-8 py-5 text-center text-[10px] font-black text-gray-400 uppercase tracking-widest">Margem %</th>
                                     </tr>
                                 </thead>
-                                <tbody id="financial-grid" class="divide-y divide-gray-50 text-[10px]"></tbody>
-                                <tfoot id="financial-foot" class="bg-gray-50/80 font-black text-gray-800"></tfoot>
+                                <tbody id="realized-monthly-body" class="divide-y divide-gray-50 text-[10px]">
+                                    <!-- Dinâmico via JavaScript -->
+                                </tbody>
+                                <tfoot id="realized-monthly-foot" class="bg-gray-50/80 font-black text-gray-800">
+                                    <!-- Totais -->
+                                </tfoot>
                             </table>
                         </div>
                     </div>
 
-                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                        <div class="lg:col-span-2 space-y-8">
-                            <h4 class="text-xs font-black text-gray-800 uppercase tracking-[0.3em] flex items-center gap-2"><i data-lucide="activity" class="w-4 h-4 text-teal-500"></i> Execução Real (Timesheet YTD)</h4>
-                            <div class="bg-white rounded-[32px] border border-gray-100 shadow-xl overflow-hidden">
-                                <table class="w-full text-left table-dense">
-                                    <thead class="bg-gray-50/80 border-b border-gray-100">
-                                        <tr>
-                                            <th class="text-[10px] font-black text-gray-400 uppercase tracking-widest py-5 px-6">Consultor</th>
-                                            <th class="text-[10px] font-black text-gray-400 uppercase tracking-widest text-right">Hrs Lançadas</th>
-                                            <th class="text-[10px] font-black text-gray-400 uppercase tracking-widest text-right">Custo Incorrido</th>
-                                            <th class="text-[10px] font-black text-gray-400 uppercase tracking-widest text-right">Preço Venda</th>
-                                            <th class="text-[10px] font-black text-gray-400 uppercase tracking-widest text-right">Rec. Medida</th>
-                                            <th class="text-[10px] font-black text-gray-400 uppercase tracking-widest text-center px-6">Margem</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="realized-rows" class="divide-y divide-gray-50"></tbody>
-                                </table>
+                    <!-- NOVA TABELA: PERFORMANCE POR CONSULTOR -->
+                    <div class="bg-white rounded-[32px] border border-gray-100 shadow-sm overflow-hidden">
+                        <div class="px-8 py-6 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
+                            <div>
+                                <h3 class="text-xs font-black text-gray-800 uppercase tracking-widest flex items-center gap-2">
+                                    <i data-lucide="users" class="w-4 h-4 text-c3c-blue"></i>
+                                    Performance por Consultor
+                                </h3>
+                                <p class="text-[9px] font-bold text-gray-400 uppercase mt-1">Detalhamento de produtividade e rentabilidade individual</p>
                             </div>
                         </div>
-
-                        <div class="space-y-6">
-                            <h4 class="text-xs font-black text-gray-800 uppercase tracking-[0.3em] flex items-center gap-2"><i data-lucide="pie-chart" class="w-4 h-4 text-indigo-500"></i> Saúde Financeira</h4>
-                            <div class="bg-white p-8 rounded-[32px] border border-gray-100 shadow-xl space-y-8">
-                                <div class="space-y-2">
-                                    <div class="flex justify-between items-end"><span class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Burn Rate Alocação</span><span class="text-xs font-black text-indigo-600" id="burn-rate-pct">0%</span></div>
-                                    <div class="w-full h-3 bg-gray-50 rounded-full overflow-hidden border border-gray-100"><div class="h-full bg-indigo-500 transition-all duration-1000" style="width: 0%" id="burn-rate-bar"></div></div>
-                                </div>
-                                <div class="space-y-2">
-                                    <div class="flex justify-between items-end"><span class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Aderência ao Baseline</span><span class="text-xs font-black text-teal-600" id="baseline-pct">0%</span></div>
-                                    <div class="w-full h-3 bg-gray-50 rounded-full overflow-hidden border border-gray-100"><div class="h-full bg-teal-500 transition-all duration-1000" style="width: 0%" id="baseline-bar"></div></div>
-                                </div>
-                                <div class="pt-6 border-t border-gray-50 flex flex-col gap-4">
-                                    <div class="flex items-center gap-3"><div class="w-2 h-2 rounded-full bg-teal-500"></div><p class="text-[10px] font-bold text-gray-500 uppercase">Receita YTD: <span class="text-gray-800 font-black" id="act-rev-summary">R$ 0,00</span></p></div>
-                                    <div class="flex items-center gap-3"><div class="w-2 h-2 rounded-full bg-red-400"></div><p class="text-[10px] font-bold text-gray-500 uppercase">Custo YTD: <span class="text-gray-800 font-black" id="act-cost-summary">R$ 0,00</span></p></div>
-                                </div>
-                            </div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left table-dense">
+                                <thead class="bg-white border-b border-gray-100">
+                                    <tr>
+                                        <th class="px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest">Consultor</th>
+                                        <th class="px-8 py-5 text-right text-[10px] font-black text-gray-400 uppercase tracking-widest">Horas</th>
+                                        <th class="px-8 py-5 text-right text-[10px] font-black text-teal-500 uppercase tracking-widest bg-teal-50/10">Receita</th>
+                                        <th class="px-8 py-5 text-right text-[10px] font-black text-red-400 uppercase tracking-widest bg-red-50/10">Custo</th>
+                                        <th class="px-8 py-5 text-center text-[10px] font-black text-c3c-blue uppercase tracking-widest border-l border-gray-50">Margem %</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="performance-consultant-body" class="divide-y divide-gray-50 text-[10px]">
+                                    <!-- Dinâmico via JavaScript futuramente -->
+                                    <tr class="divide-x divide-gray-50">
+                                        <td colspan="5" class="px-8 py-10 text-center text-gray-400 italic uppercase tracking-widest text-[10px]">Aguardando dados de performance...</td>
+                                    </tr>
+                                </tbody>
+                                <tfoot id="performance-consultant-foot" class="bg-gray-50/80 font-black text-gray-800"></tfoot>
+                            </table>
                         </div>
                     </div>
                 </div>
@@ -643,16 +627,20 @@
             return days;
         }
 
-        function updateSummaryCards(cRev, cMargin, fRev, fMargin, aRev, aMargin) {
-            document.getElementById('card-prop-rev').innerHTML = moneyValue(cRev); document.getElementById('card-prop-margin').innerText = Math.round(cMargin||0) + '% MG';
-            document.getElementById('card-fcst-rev').innerHTML = moneyValue(fRev); document.getElementById('card-fcst-margin').innerText = Math.round(fMargin||0) + '% MG';
-            document.getElementById('card-act-rev').innerHTML = moneyValue(aRev); document.getElementById('card-act-margin').innerText = Math.round(aMargin||0) + '% MG';
+        function updateSummaryCards(cRev, cMargin, fRev, fMargin, aRev, aMargin, aCost) {
+            document.getElementById('card-prop-rev').innerHTML = moneyValue(cRev); document.getElementById('card-prop-margin').innerText = (cMargin||0).toFixed(1) + '% MG';
+            document.getElementById('card-fcst-rev').innerHTML = moneyValue(fRev); document.getElementById('card-fcst-margin').innerText = (fMargin||0).toFixed(1) + '% MG';
+            document.getElementById('card-act-rev').innerHTML = moneyValue(aRev); document.getElementById('card-act-margin').innerText = (aMargin||0).toFixed(1) + '% MG';
             
             // Atualizações no Extrato Real
             const actRevSummary = document.getElementById('act-rev-summary');
             const actCostSummary = document.getElementById('act-cost-summary');
             if(actRevSummary) actRevSummary.innerHTML = moneyValue(aRev);
-            if(actCostSummary) actCostSummary.innerHTML = moneyValue(aRev * (1 - ((aMargin||0)/100)));
+            if(actCostSummary) {
+                // Se aCost foi passado, usa ele. Senão tenta inferir (legado)
+                const realCost = (aCost !== undefined) ? aCost : (aRev * (1 - ((aMargin||0)/100)));
+                actCostSummary.innerHTML = moneyValue(realCost);
+            }
         }
 
         function calculateAllTotals() {
@@ -666,19 +654,24 @@
             document.getElementById('comm-total-rev').innerHTML = moneyValue(cRev);
             document.getElementById('comm-total-rev-foot').innerHTML = moneyValue(cRev);
             document.getElementById('comm-total-cost').innerHTML = moneyValue(cCost);
-            document.getElementById('comm-total-margin').innerText = cRev > 0 ? Math.round(((cRev-cCost)/cRev)*100) + '%' : '0%';
+            document.getElementById('comm-total-margin').innerText = cRev > 0 ? Math.round(((cRev-cCost)/cRev)*100) + '%' : (cCost > 0 ? '-100%' : '0%');
 
             let eRev=0, eCost=0, eHours=0;
             document.querySelectorAll('.exec-row').forEach(tr => {
-                eRev += parseFloat(tr.querySelector('.cell-rev').innerText.replace(/[^0-9,-]+/g,"").replace(",",".")||0);
-                eCost += parseFloat(tr.querySelector('.cell-cost').innerText.replace(/[^0-9,-]+/g,"").replace(",",".")||0);
-                eHours += parseFloat(tr.querySelector('.cell-hours').innerText.replace('h','')||0);
+                const cellRev = tr.querySelector('.cell-rev');
+                const cellCost = tr.querySelector('.cell-cost');
+                const cellHours = tr.querySelector('.cell-hours');
+                
+                if(cellRev) eRev += parseFloat(cellRev.innerText.replace(/[^0-9,-]+/g,"").replace(",",".")||0);
+                if(cellCost) eCost += parseFloat(cellCost.innerText.replace(/[^0-9,-]+/g,"").replace(",",".")||0);
+                if(cellHours) eHours += parseFloat(cellHours.innerText.replace('h','')||0);
             });
             document.getElementById('exec-total-hours').innerText = eHours.toFixed(1) + 'h';
             document.getElementById('exec-total-rev').innerHTML = moneyValue(eRev);
             document.getElementById('exec-total-rev-foot').innerHTML = moneyValue(eRev);
             document.getElementById('exec-total-cost').innerHTML = moneyValue(eCost);
-            document.getElementById('exec-total-margin').innerText = eRev > 0 ? Math.round(((eRev-eCost)/eRev)*100) + '%' : '0%';
+            const eMargin = eRev > 0 ? ((eRev-eCost)/eRev)*100 : (eCost > 0 ? -100 : 0);
+            document.getElementById('exec-total-margin').innerText = Math.round(eMargin) + '%';
 
             refreshAllForecasts();
         }
@@ -727,7 +720,7 @@
                     const cellRev = tr.querySelector('.cell-rev');
                     const cellMargin = tr.querySelector('.cell-margin');
                     if(cellRev) cellRev.innerHTML = moneyValue(myShareRev);
-                    if(cellMargin) cellMargin.innerText = myShareRev > 0 ? Math.round(((myShareRev - myCost) / myShareRev) * 100) + '%' : '0%';
+                    if(cellMargin) cellMargin.innerText = myShareRev > 0 ? Math.round(((myShareRev - myCost) / myShareRev) * 100) + '%' : (myCost > 0 ? '-100%' : '0%');
                 });
             });
             calculateAllTotals();
@@ -735,19 +728,20 @@
         }
 
         function refreshAllForecasts() {
-            const yrComm = parseInt(document.getElementById('forecast-year-comm').value);
-            const yrAlloc = parseInt(document.getElementById('forecast-year-alloc').value);
-            const yrReal = parseInt(document.getElementById('forecast-year-real').value);
+            const yrCommSelect = document.getElementById('forecast-year-comm');
+            const yrAllocSelect = document.getElementById('forecast-year-alloc');
             
-            const cMonths = generatePreciseForecast('comm-row', yrComm); 
-            renderMonthlyTable(cMonths, 'monthly-forecast-header', 'monthly-forecast-body', yrComm);
+            if (yrCommSelect) {
+                const yrComm = parseInt(yrCommSelect.value);
+                const cMonths = generatePreciseForecast('comm-row', yrComm); 
+                renderMonthlyTable(cMonths, 'monthly-forecast-header', 'monthly-forecast-body', yrComm);
+            }
             
-            const aMonths = generatePreciseForecast('exec-row', yrAlloc); 
-            renderMonthlyTable(aMonths, 'alloc-forecast-header', 'alloc-forecast-body', yrAlloc);
-            
-            const rMonthsRaw = generatePreciseForecast('exec-row', yrReal); 
-            const rMonths = rMonthsRaw.map(d => ({ rev: d.rev * 0.9, cost: d.cost * 0.95 }));
-            renderMonthlyTable(rMonths, 'realized-forecast-header', 'realized-forecast-body', yrReal);
+            if (yrAllocSelect) {
+                const yrAlloc = parseInt(yrAllocSelect.value);
+                const aMonths = generatePreciseForecast('exec-row', yrAlloc); 
+                renderMonthlyTable(aMonths, 'alloc-forecast-header', 'alloc-forecast-body', yrAlloc);
+            }
             
             generateDREDetailed();
         }
@@ -805,56 +799,8 @@
         }
 
         function generateDREDetailed() {
-            let minDate, maxDate;
-            const processRows = (selector, iStart, iEnd) => {
-                document.querySelectorAll(selector).forEach(tr => {
-                    const s = tr.cells[iStart].querySelector('input').value; 
-                    const e = tr.cells[iEnd].querySelector('input').value;
-                    if(s && (!minDate || s < minDate)) minDate = s;
-                    if(e && (!maxDate || e > maxDate)) maxDate = e;
-                });
-            };
-            processRows('.comm-row', 3, 4); processRows('.exec-row', 4, 5);
-            if(!minDate || !maxDate) return;
-
-            const months = []; 
-            let cur = new Date(minDate.split('-')[0], minDate.split('-')[1]-1, 1);
-            const end = new Date(maxDate.split('-')[0], maxDate.split('-')[1]-1, 1); 
-            while(cur <= end) { months.push(new Date(cur)); cur.setMonth(cur.getMonth() + 1); }
-
-            const cData = months.map(m => calcMonthData('.comm-row', m, 3, 4, 1, 2, 6));
-            const aData = months.map(m => calcMonthData('.exec-row', m, 4, 5, 2, 3, 6));
-            const rData = aData.map(d => ({ rev: d.rev * 0.9, cost: d.cost * 0.95 })); 
-            
-            let html = '';
-            months.forEach((m, i) => {
-                const c = cData[i], a = aData[i], r = rData[i];
-                const cMarg = c.rev > 0 ? Math.round(((c.rev-c.cost)/c.rev)*100) : 0;
-                const aMarg = a.rev > 0 ? Math.round(((a.rev-a.cost)/a.rev)*100) : 0;
-                const rMarg = r.rev > 0 ? Math.round(((r.rev-r.cost)/r.rev)*100) : 0;
-                
-                html += `<tr class="divide-x divide-gray-50 hover:bg-gray-50/50">
-                    <td class="font-black px-6 py-3 uppercase text-gray-500">${m.toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' })}</td>
-                    <td class="text-right px-4 text-gray-600">${moneyValue(c.rev)}</td><td class="text-right px-4 text-red-400">${moneyValue(c.cost)}</td><td class="text-right px-4 font-bold text-c3c-blue bg-blue-50/10">${cMarg}%</td>
-                    <td class="text-right px-4 text-indigo-600">${moneyValue(a.rev)}</td><td class="text-right px-4 text-red-400">${moneyValue(a.cost)}</td><td class="text-right px-4 font-bold text-indigo-600 bg-indigo-50/10">${aMarg}%</td>
-                    <td class="text-right px-4 text-teal-600">${moneyValue(r.rev)}</td><td class="text-right px-4 text-red-400">${moneyValue(r.cost)}</td><td class="text-right px-4 font-bold text-teal-600 bg-teal-50/10">${rMarg}%</td>
-                </tr>`;
-            });
-
-            const sum = (arr, k) => arr.reduce((a,b) => a + b[k], 0);
-            const ctRev = sum(cData,'rev'), ctCost = sum(cData,'cost');
-            const atRev = sum(aData,'rev'), atCost = sum(aData,'cost');
-            const rtRev = sum(rData,'rev'), rtCost = sum(rData,'cost');
-
-            const footHtml = `<tr class="bg-gray-50/80 font-black border-t-2 border-gray-100 divide-x divide-gray-100">
-                <td class="px-6 py-4">TOTAIS</td>
-                <td class="text-right px-4">${moneyValue(ctRev)}</td><td class="text-right px-4">${moneyValue(ctCost)}</td><td class="text-right px-4 text-c3c-blue bg-blue-50/20">${ctRev>0?Math.round(((ctRev-ctCost)/ctRev)*100):0}%</td>
-                <td class="text-right px-4">${moneyValue(atRev)}</td><td class="text-right px-4">${moneyValue(atCost)}</td><td class="text-right px-4 text-indigo-600 bg-indigo-50/20">${atRev>0?Math.round(((atRev-atCost)/atRev)*100):0}%</td>
-                <td class="text-right px-4">${moneyValue(rtRev)}</td><td class="text-right px-4">${moneyValue(rtCost)}</td><td class="text-right px-4 text-teal-600 bg-teal-50/20">${rtRev>0?Math.round(((rtRev-rtCost)/rtRev)*100):0}%</td>
-            </tr>`;
-
-            document.getElementById('financial-grid').innerHTML = html; 
-            document.getElementById('financial-foot').innerHTML = footHtml;
+            // Função legada substituída pela aba de Comparação de Margem (renderFinancialGrid)
+            return;
         }
 
         function calcMonthData(selector, targetMonth, iStart, iEnd, iSale, iCost, iAlloc) {
@@ -935,12 +881,22 @@
             return monthlyData;
         }
 
-        function renderServices(list = services) {
-            const grid = document.getElementById('services-grid'); grid.innerHTML = '';
-            if (list.length === 0) { document.getElementById('no-results').classList.remove('hidden'); document.getElementById('no-results').classList.add('flex'); }
+        const allServices = <%- JSON.stringify(services) %>;
+
+        function renderServices(list) {
+            // Se não passar lista, usa o filtro padrão (Ativo) no carregamento inicial
+            const displayList = list || allServices.filter(s => s.status === 'Ativo');
+            const grid = document.getElementById('services-grid');
+            grid.innerHTML = '';
+
+            if (displayList.length === 0) { 
+                document.getElementById('no-results').classList.remove('hidden'); 
+                document.getElementById('no-results').classList.add('flex'); 
+            }
             else {
-                document.getElementById('no-results').classList.add('hidden'); document.getElementById('no-results').classList.remove('flex');
-                list.forEach(s => {
+                document.getElementById('no-results').classList.add('hidden'); 
+                document.getElementById('no-results').classList.remove('flex');
+                displayList.forEach(s => {
                     const statusClass = s.status === 'Ativo' ? 'bg-teal-50 text-teal-600 border-teal-100' : 'bg-red-50 text-red-600 border-red-100';
                     const formatDateBR = (dateStr) => { if(!dateStr) return '-'; const [y, m, d] = dateStr.split('-'); return `${d}/${m}/${y.substr(2)}`; };
 
@@ -975,20 +931,40 @@
                                 <i data-lucide="chevron-right" class="w-5 h-5"></i>
                             </div>
                         </div>
-<div class="p-6 grid grid-cols-3 gap-2 text-center text-xs divide-x divide-gray-50 bg-gray-50/30"><div><p class="text-gray-400 font-black uppercase text-[9px] tracking-widest">Baseline</p><p class="font-black text-gray-800 mt-1">${moneyValue(s.prop?.rev)}</p><p class="text-[9px] text-c3c-blue font-black mt-0.5">${s.prop?.margin||0}% MG</p></div><div><p class="text-gray-400 font-black uppercase text-[9px] tracking-widest">Previsto</p><p class="font-black text-gray-800 mt-1">${moneyValue(s.fcst?.rev)}</p><p class="text-[9px] text-indigo-600 font-black mt-0.5">${s.fcst?.margin||0}% MG</p></div><div><p class="text-gray-400 font-black uppercase text-[9px] tracking-widest">YTD Real</p><p class="font-black text-gray-800 mt-1">${moneyValue(s.act?.rev)}</p><p class="text-[9px] text-teal-600 font-black mt-0.5">${s.act?.margin||0}% MG</p></div></div><div class="px-6 py-4 bg-gray-50 border-t border-gray-100 flex justify-between items-center text-[9px] font-black text-gray-400 uppercase tracking-widest"><span>INÍCIO: ${formatDateBR(s.dataInicio)}</span><span>TÉRMINO: ${formatDateBR(s.dataFim)}</span></div></div>`;
+                        <div class="p-6 grid grid-cols-3 gap-2 text-center text-xs divide-x divide-gray-50 bg-gray-50/30">
+                            <!-- <div><p class="text-gray-400 font-black uppercase text-[9px] tracking-widest">Baseline</p><p class="font-black text-gray-800 mt-1">${moneyValue(s.prop?.rev)}</p><p class="text-[9px] text-c3c-blue font-black mt-0.5">${(s.prop?.margin||0).toFixed(1)}% MG</p></div> -->
+                            <!-- <div><p class="text-gray-400 font-black uppercase text-[9px] tracking-widest">Previsto</p><p class="font-black text-gray-800 mt-1">${moneyValue(s.fcst?.rev)}</p><p class="text-[9px] text-indigo-600 font-black mt-0.5">${(s.fcst?.margin||0).toFixed(1)}% MG</p></div> -->
+                            <div class="col-span-3"><p class="text-gray-400 font-black uppercase text-[9px] tracking-widest">YTD Real</p><p class="font-black text-gray-800 mt-1">${moneyValue(s.act?.rev)}</p><p class="text-[9px] text-teal-600 font-black mt-0.5">${(s.act?.margin||0).toFixed(1)}% MG</p></div>
+                        </div>
+                        <div class="px-6 py-4 bg-gray-50 border-t border-gray-100 flex justify-between items-center text-[9px] font-black text-gray-400 uppercase tracking-widest">
+                            <span>INÍCIO: ${formatDateBR(s.dataInicio)}</span>
+                            <span>TÉRMINO: ${formatDateBR(s.dataFim)}</span>
+                        </div>
+                    </div>`;
                 });
             }
             lucide.createIcons();
         }
 
         function filterServices() {
-            const query = document.getElementById('search-input')?.value.toLowerCase() || '';
-            const status = document.getElementById('status-filter')?.value || 'active';
-            fetch(`/api/services?status=${status}`).then(res => res.json()).then(data => {
-                services = data;
-                const filtered = services.filter(s => (s.name||'').toLowerCase().includes(query) || (s.client||'').toLowerCase().includes(query));
-                renderServices(filtered);
+            const query = (document.getElementById('search-input')?.value || '').toLowerCase().trim();
+            const statusFilter = document.getElementById('status-filter')?.value || 'active';
+            
+            const filtered = allServices.filter(s => {
+                const sStatus = s.status || 'Ativo';
+                const sName = (s.name || '').toLowerCase();
+                const sClient = (s.client || '').toLowerCase();
+
+                const matchStatus = statusFilter === 'all' || 
+                                   (statusFilter === 'active' && sStatus === 'Ativo') || 
+                                   (statusFilter === 'inactive' && sStatus === 'Inativo');
+                
+                const matchText = query === '' || sName.includes(query) || sClient.includes(query);
+                
+                return matchStatus && matchText;
             });
+            
+            renderServices(filtered);
         }
 
         function openServiceModal(id = null) {
@@ -1055,7 +1031,7 @@
                     
                     toggleReportLogic();
 
-                    updateSummaryCards(data.prop?.rev, data.prop?.margin, data.fcst?.rev, data.fcst?.margin, data.act?.rev, data.act?.margin);
+                    updateSummaryCards(data.prop?.rev, data.prop?.margin, data.fcst?.rev, data.fcst?.margin, data.act?.rev, data.act?.margin, data.act?.cost);
                 } else {
                     ['input-svc-name', 'input-sf-account', 'input-ca-client', 'input-lead-project', 'input-coordinator', 'input-tech-lead', 'input-svc-start', 'input-svc-end-orig', 'input-svc-end-real'].forEach(i => {
                         const el = document.getElementById(i); if(el) el.value = '';
@@ -1507,122 +1483,126 @@
         async function loadRealizedTab(serviceId) {
             if (!serviceId) return;
             document.getElementById('modal-loader').classList.remove('hidden');
-            
+
             try {
                 const res = await fetch(`/api/services/${serviceId}/realized`);
                 const data = await res.json();
-                
+
                 if (!data.success) throw new Error(data.error);
 
                 renderFinancialGrid(data.consolidated);
-                renderTimesheetRealized(data.timeLogs);
+                renderPersonPerformance(data.timeLogs);
                 isRealizedTabLoaded = true;
 
             } catch (e) {
-                showToast(`Erro ao carregar extrato real: ${e.message}`, 'error');
+                showToast(`Erro ao carregar dados de execução: ${e.message}`, 'error');
             } finally {
                 document.getElementById('modal-loader').classList.add('hidden');
             }
         }
 
-        function renderFinancialGrid(consolidated) {
-            const gridBody = document.getElementById('financial-grid');
-            const gridFoot = document.getElementById('financial-foot');
-            if (!gridBody) return;
-
-            gridBody.innerHTML = '';
-            let totals = { 
-                baseRev: 0, baseCost: 0, 
-                foreRev: 0, foreCost: 0, 
-                realRev: 0, realCost: 0 
-            };
-
-            consolidated.forEach(m => {
-                const dateLabel = m.month.split('-').reverse().slice(1).join('/'); // MM/YYYY
-                
-                const baseMg = m.baseline.revenue > 0 ? ((m.baseline.revenue - m.baseline.cost) / m.baseline.revenue) * 100 : 0;
-                const foreMg = m.forecast.revenue > 0 ? ((m.forecast.revenue - m.forecast.cost) / m.forecast.revenue) * 100 : 0;
-                const realMg = m.realized.revenue > 0 ? ((m.realized.revenue - m.realized.cost) / m.realized.revenue) * 100 : 0;
-
-                totals.baseRev += m.baseline.revenue; totals.baseCost += m.baseline.cost;
-                totals.foreRev += m.forecast.revenue; totals.foreCost += m.forecast.cost;
-                totals.realRev += m.realized.revenue; totals.realCost += m.realized.cost;
-
-                gridBody.insertAdjacentHTML('beforeend', `
-                    <tr class="divide-x divide-gray-50 hover:bg-gray-50/50 transition-all">
-                        <td class="px-6 py-4 font-black text-gray-800">${dateLabel}</td>
-                        
-                        <!-- Baseline -->
-                        <td class="px-4 text-right font-bold text-gray-400 bg-blue-50/5">${money.format(m.baseline.revenue)}</td>
-                        <td class="px-4 text-right text-gray-400 bg-blue-50/5">${money.format(m.baseline.cost)}</td>
-                        <td class="px-4 text-right font-black ${baseMg >= 30 ? 'text-teal-500' : 'text-amber-500'} bg-blue-50/5">${baseMg.toFixed(1)}%</td>
-
-                        <!-- Forecast -->
-                        <td class="px-4 text-right font-bold text-indigo-400 bg-indigo-50/5">${money.format(m.forecast.revenue)}</td>
-                        <td class="px-4 text-right text-indigo-300 bg-indigo-50/5">${money.format(m.forecast.cost)}</td>
-                        <td class="px-4 text-right font-black ${foreMg >= 30 ? 'text-teal-500' : 'text-amber-500'} bg-indigo-50/5">${foreMg.toFixed(1)}%</td>
-
-                        <!-- Realized -->
-                        <td class="px-4 text-right font-black text-teal-600 bg-teal-50/10">${money.format(m.realized.revenue)}</td>
-                        <td class="px-4 text-right font-bold text-teal-500 bg-teal-50/10">${money.format(m.realized.cost)}</td>
-                        <td class="px-4 text-right font-black ${realMg >= 30 ? 'text-white bg-teal-500' : 'text-white bg-amber-500'} rounded-lg">${realMg.toFixed(1)}%</td>
-                    </tr>
-                `);
-            });
-
-            // Footer Totals
-            const totalBaseMg = totals.baseRev > 0 ? ((totals.baseRev - totals.baseCost) / totals.baseRev) * 100 : 0;
-            const totalForeMg = totals.foreRev > 0 ? ((totals.foreRev - totals.foreCost) / totals.foreRev) * 100 : 0;
-            const totalRealMg = totals.realRev > 0 ? ((totals.realRev - totals.realCost) / totals.realRev) * 100 : 0;
-
-            gridFoot.innerHTML = `
-                <tr class="divide-x divide-gray-100 bg-gray-100/30">
-                    <td class="px-6 py-5 uppercase tracking-widest text-[9px]">Totais Consolidados</td>
-                    <td class="px-4 text-right">${money.format(totals.baseRev)}</td>
-                    <td class="px-4 text-right">${money.format(totals.baseCost)}</td>
-                    <td class="px-4 text-right font-black">${totalBaseMg.toFixed(1)}%</td>
-                    <td class="px-4 text-right text-indigo-600">${money.format(totals.foreRev)}</td>
-                    <td class="px-4 text-right text-indigo-600">${money.format(totals.foreCost)}</td>
-                    <td class="px-4 text-right font-black text-indigo-600">${totalForeMg.toFixed(1)}%</td>
-                    <td class="px-4 text-right text-teal-700">${money.format(totals.realRev)}</td>
-                    <td class="px-4 text-right text-teal-700">${money.format(totals.realCost)}</td>
-                    <td class="px-4 text-right font-black text-teal-700">${totalRealMg.toFixed(1)}%</td>
-                </tr>
-            `;
-
-            // Update Top Cards
-            document.getElementById('card-act-rev').innerText = money.format(totals.realRev);
-            document.getElementById('card-act-margin').innerText = `${totalRealMg.toFixed(1)}% MG`;
-            document.getElementById('card-act-margin').className = `text-[9px] font-black ${totalRealMg >= 30 ? 'text-teal-600' : 'text-amber-600'}`;
-        }
-
-        function renderTimesheetRealized(logs) {
-            const body = document.getElementById('realized-rows');
+        function renderPersonPerformance(logs) {
+            const body = document.getElementById('performance-consultant-body');
+            const foot = document.getElementById('performance-consultant-foot');
             if (!body) return;
             body.innerHTML = '';
+            if (foot) foot.innerHTML = '';
 
             if (!logs || logs.length === 0) {
-                body.innerHTML = '<tr><td colspan="6" class="p-8 text-center text-gray-400 italic">Nenhum lançamento faturado para este serviço.</td></tr>';
+                body.innerHTML = '<tr><td colspan="5" class="p-10 text-center text-gray-400 italic">Nenhum lançamento encontrado para este serviço.</td></tr>';
                 return;
             }
 
+            let totals = { hours: 0, revenue: 0, cost: 0 };
+
             logs.forEach(l => {
-                const margin = l.revenue > 0 ? ((l.revenue - l.cost) / l.revenue) * 100 : 0;
-                
+                const margin = l.margin || 0;
+                totals.hours += (l.hours || 0);
+                totals.revenue += (l.revenue || 0);
+                totals.cost += (l.cost || 0);
+
                 body.insertAdjacentHTML('beforeend', `
-                    <tr class="hover:bg-gray-50/50 transition-all border-b border-gray-50">
-                        <td class="px-6 py-4 font-black text-gray-800">${l.person}</td>
-                        <td class="px-4 py-4 text-right font-black text-gray-600">${l.hours.toFixed(1)}h</td>
-                        <td class="px-4 py-4 text-right font-bold text-amber-600">${money.format(l.cost)}</td>
-                        <td class="px-4 py-4 text-right text-gray-400">-</td>
-                        <td class="px-4 py-4 text-right font-black text-teal-600">${money.format(l.revenue || 0)}</td>
-                        <td class="px-6 py-4 text-center">
-                            <span class="px-2 py-1 rounded-lg bg-teal-50 text-teal-600 font-black text-[9px] border border-teal-100">${margin.toFixed(1)}%</span>
+                    <tr class="divide-x divide-gray-50 hover:bg-gray-50/50 transition-all text-[11px]">
+                        <td class="px-8 py-4 font-black text-gray-800 uppercase tracking-widest">${l.person}</td>
+                        <td class="px-8 py-4 text-right font-bold text-gray-500">${l.hours.toFixed(1)}h</td>
+                        <td class="px-8 py-4 text-right font-black text-teal-600 bg-teal-50/10">${money.format(l.revenue || 0)}</td>
+                        <td class="px-8 py-4 text-right font-bold text-red-400 bg-red-50/5">${money.format(l.cost || 0)}</td>
+                        <td class="px-8 py-4 text-center border-l border-gray-50">
+                            <span class="px-3 py-1 rounded-full font-black ${margin >= 30 ? 'bg-teal-50 text-teal-600' : (margin < 0 ? 'bg-red-50 text-red-600' : 'bg-amber-50 text-amber-600')}">
+                                ${margin.toFixed(1)}%
+                            </span>
                         </td>
                     </tr>
                 `);
             });
+
+            // Totais no Rodapé
+            const totalMarginPct = totals.revenue > 0 ? ((totals.revenue - totals.cost) / totals.revenue) * 100 : (totals.cost > 0 ? -100 : 0);
+
+            if(foot) {
+                foot.innerHTML = `
+                    <tr class="divide-x divide-gray-100 bg-gray-100/30">
+                        <td class="px-8 py-5 uppercase tracking-widest text-[9px]">Totais por Consultor</td>
+                        <td class="px-8 py-5 text-right text-gray-800">${totals.hours.toFixed(1)}h</td>
+                        <td class="px-8 text-right text-teal-700">${money.format(totals.revenue)}</td>
+                        <td class="px-8 text-right text-red-500">${money.format(totals.cost)}</td>
+                        <td class="px-8 text-center font-black text-teal-700 border-l border-gray-100">${totalMarginPct.toFixed(1)}%</td>
+                    </tr>
+                `;
+            }
         }
+        function renderFinancialGrid(consolidated) {
+            const gridBody = document.getElementById('realized-monthly-body');
+            const gridFoot = document.getElementById('realized-monthly-foot');
+            if (!gridBody) return;
+
+            gridBody.innerHTML = '';
+            let totals = { realRev: 0, realCost: 0 };
+
+            consolidated.forEach(m => {
+                const dateLabel = m.month.split('-').reverse().slice(1).join('/'); // MM/YYYY
+                const realMarginValue = (m.realized.revenue || 0) - (m.realized.cost || 0);
+                const realMarginPct = m.realized.revenue > 0 ? (realMarginValue / m.realized.revenue) * 100 : (m.realized.cost > 0 ? -100 : 0);
+
+                totals.realRev += (m.realized.revenue || 0);
+                totals.realCost += (m.realized.cost || 0);
+
+                gridBody.insertAdjacentHTML('beforeend', `
+                    <tr class="divide-x divide-gray-50 hover:bg-gray-50/50 transition-all text-[11px]">
+                        <td class="px-8 py-4 font-black text-gray-800">${dateLabel}</td>
+                        <td class="px-8 text-right font-black text-teal-600 bg-teal-50/10">${money.format(m.realized.revenue || 0)}</td>
+                        <td class="px-8 text-right font-bold text-red-400 bg-red-50/5">${money.format(m.realized.cost || 0)}</td>
+                        <td class="px-8 text-right font-black ${realMarginValue >= 0 ? 'text-c3c-blue' : 'text-red-500'} border-l border-gray-50">${money.format(realMarginValue)}</td>
+                        <td class="px-8 text-center">
+                            <span class="px-3 py-1 rounded-full font-black ${realMarginPct >= 30 ? 'bg-teal-50 text-teal-600' : 'bg-amber-50 text-amber-600'}">
+                                ${realMarginPct.toFixed(1)}%
+                            </span>
+                        </td>
+                    </tr>
+                `);
+            });
+
+            // Totais no Rodapé
+            const totalMarginValue = totals.realRev - totals.realCost;
+            const totalMarginPct = totals.realRev > 0 ? (totalMarginValue / totals.realRev) * 100 : (totals.realCost > 0 ? -100 : 0);
+
+            if(gridFoot) {
+                gridFoot.innerHTML = `
+                    <tr class="divide-x divide-gray-100 bg-gray-100/30">
+                        <td class="px-8 py-5 uppercase tracking-widest text-[9px]">Totais Consolidados</td>
+                        <td class="px-8 text-right text-teal-700">${money.format(totals.realRev)}</td>
+                        <td class="px-8 text-right text-red-500">${money.format(totals.realCost)}</td>
+                        <td class="px-8 text-right text-c3c-blue border-l border-gray-100">${money.format(totalMarginValue)}</td>
+                        <td class="px-8 text-center font-black text-teal-700">${totalMarginPct.toFixed(1)}%</td>
+                    </tr>
+                `;
+            }
+
+            updateSummaryCards(currentServiceData.prop?.rev, currentServiceData.prop?.margin, currentServiceData.fcst?.rev, currentServiceData.fcst?.margin, totals.realRev, totalMarginPct, totals.realCost);
+        }
+
+        // Função removida por simplificação da aba de margem
+        function renderTimesheetRealized(logs) {}
 
         async function saveService() {
             if (!currentServiceData) return;
@@ -1688,8 +1668,6 @@
                         monthlyData: getItemMonthlyData(tr)
                     }))
                 };
-                
-                console.log("Payload sendo enviado ao servidor:", JSON.stringify(payload, null, 2));
                 
                 if (!payload.name || !payload.sf_account_id || !payload.start) return showToast('Campos obrigatórios ausentes (Nome, Cliente SF e Início).', 'error');
                 document.getElementById('modal-loader').classList.remove('hidden');

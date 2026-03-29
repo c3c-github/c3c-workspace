@@ -33,9 +33,9 @@ async function runSyncV2() {
         console.log('⏳ [1/4] Equalizando bases mensais e limpando duplicatas...');
         
         const [alocsComm, alocsExec, budgetRecords] = await Promise.all([
-            fetchAll("SELECT Id, Servico__c, Produto__c, TaxaVenda__c, CustoEstimado__c, DataInicio__c, DataFim__c, PercentualAlocacao__c FROM AlocacaoPrevista__c"),
-            fetchAll("SELECT Id, Servico__c, Pessoa__c, DataInicio__c, DataFimOriginal__c, Percentual__c, TaxaVenda__c, CustoHr__c FROM Alocacao__c"),
-            fetchAll("SELECT Id, Alocacao__c, AlocacaoPrevista__c, Competencia__c, ReceitaPrevista__c, CustoPrevisto__c FROM OrcamentoCompetencia__c")
+            fetchAll("SELECT Id, Servico__c, Produto__c, TaxaVenda__c, CustoEstimado__c, DataInicio__c, DataFim__c, PercentualAlocacao__c FROM AlocacaoPrevista__c WHERE DataFim__c >= 2025-01-01"),
+            fetchAll("SELECT Id, Servico__c, Pessoa__c, DataInicio__c, DataFimOriginal__c, Percentual__c, TaxaVenda__c, CustoHr__c FROM Alocacao__c WHERE DataFimOriginal__c >= 2025-01-01"),
+            fetchAll("SELECT Id, Alocacao__c, AlocacaoPrevista__c, Competencia__c, ReceitaPrevista__c, CustoPrevisto__c FROM OrcamentoCompetencia__c WHERE Competencia__c >= 2025-01-01")
         ]);
 
         const orcMap = new Map();
@@ -121,11 +121,11 @@ async function runSyncV2() {
         console.log('⏳ [2/4] Reconciliando Realizado...');
         
         const [timeLogs, revenueLogs] = await Promise.all([
-            fetchAll("SELECT Id, Responsavel__r.Alocacao__c, DiaPeriodo__r.Data__c, ValorTotalLancamento__c, Horas__c, Servico__c FROM LancamentoHora__c WHERE (Status__c = 'Faturado' OR Status__c = 'Aprovado') AND Responsavel__r.Alocacao__c != null"),
-            fetchAll("SELECT OrcamentoCompetencia__c, ValorDistribuido__c FROM DistribuicaoReceita__c WHERE OrcamentoCompetencia__c != null")
+            fetchAll("SELECT Id, Responsavel__r.Alocacao__c, DiaPeriodo__r.Data__c, ValorTotalLancamento__c, Horas__c, Servico__c FROM LancamentoHora__c WHERE (Status__c = 'Faturado' OR Status__c = 'Aprovado') AND Responsavel__r.Alocacao__c != null AND DiaPeriodo__r.Data__c >= 2025-01-01"),
+            fetchAll("SELECT OrcamentoCompetencia__c, ValorDistribuido__c FROM DistribuicaoReceita__c WHERE OrcamentoCompetencia__c != null AND OrcamentoCompetencia__r.Competencia__c >= 2025-01-01")
         ]);
 
-        const latestOrcs = await fetchAll("SELECT Id, Alocacao__c, AlocacaoPrevista__c, Competencia__c, CustoRealizado__c, ReceitaRealizada__c, HorasRealizadas__c FROM OrcamentoCompetencia__c");
+        const latestOrcs = await fetchAll("SELECT Id, Alocacao__c, AlocacaoPrevista__c, Competencia__c, CustoRealizado__c, ReceitaRealizada__c, HorasRealizadas__c FROM OrcamentoCompetencia__c WHERE Competencia__c >= 2025-01-01");
         console.log(`📊 Loaded ${latestOrcs.length} budget records for reconciliation.`);
 
         const realizedMap = new Map();
@@ -183,11 +183,26 @@ async function runSyncV2() {
         // FASE 3: CONSOLIDAÇÃO SERVIÇOS
         // ---------------------------------------------------------
         console.log('⏳ [3/4] Atualizando serviços...');
-        const serviceTotals = await fetchAll(`SELECT Servico__c, SUM(ReceitaRealizada__c) r, SUM(CustoRealizado__c) c, SUM(ReceitaPrevista__c) rp, SUM(CustoPrevisto__c) cp FROM OrcamentoCompetencia__c GROUP BY Servico__c`);
-        const svcsUpdate = serviceTotals.map(r => ({
-            Id: r.Servico__c, ReceitaRealizada__c: r.r || 0, CustoRealizado__c: r.c || 0, MargemRealizada__c: (r.r || 0) > 0 ? (((r.r || 0) - (r.c || 0)) / (r.r || 0)) * 100 : 0,
-            ReceitaPrevista__c: r.rp || 0, CustoPrevisto__c: r.cp || 0, MargemPrevista__c: (r.rp || 0) > 0 ? (((r.rp || 0) - (r.cp || 0)) / (r.rp || 0)) * 100 : 0
-        }));
+        const serviceTotals = await fetchAll(`SELECT Servico__c, SUM(ReceitaRealizada__c) r, SUM(CustoRealizado__c) c, SUM(ReceitaPrevista__c) rp, SUM(CustoPrevisto__c) cp FROM OrcamentoCompetencia__c WHERE Competencia__c >= 2025-01-01 GROUP BY Servico__c`);
+        const svcsUpdate = serviceTotals.map(r => {
+            const revReal = r.r || 0;
+            const costReal = r.c || 0;
+            const marginReal = revReal > 0 ? ((revReal - costReal) / revReal) * 100 : (costReal > 0 ? -100 : 0);
+            
+            const revPrev = r.rp || 0;
+            const costPrev = r.cp || 0;
+            const marginPrev = revPrev > 0 ? ((revPrev - costPrev) / revPrev) * 100 : (costPrev > 0 ? -100 : 0);
+
+            return {
+                Id: r.Servico__c, 
+                ReceitaRealizada__c: revReal, 
+                CustoRealizado__c: costReal, 
+                MargemRealizada__c: marginReal,
+                ReceitaPrevista__c: revPrev, 
+                CustoPrevisto__c: costPrev, 
+                MargemPrevista__c: marginPrev
+            };
+        });
         if (svcsUpdate.length > 0) await bulkOperation(conn, 'Servico__c', 'update', svcsUpdate);
 
         console.log(`\n🏁 MOTOR FINALIZADO! Tempo: ${((new Date() - startTime) / 1000).toFixed(2)}s`);

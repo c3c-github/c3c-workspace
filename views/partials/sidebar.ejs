@@ -151,6 +151,18 @@
     </div>
 </aside>
 
+<!-- OVERLAY DE CARREGAMENTO GLOBAL -->
+<div id="global-page-loader" class="fixed inset-0 bg-white/80 backdrop-blur-sm z-[10000] hidden flex flex-col items-center justify-center transition-all duration-500">
+    <div class="relative w-24 h-24 mb-8">
+        <div class="absolute inset-0 border-4 border-blue-50 rounded-full"></div>
+        <div class="absolute inset-0 border-4 border-[#2978FF] border-t-transparent rounded-full animate-spin"></div>
+        <div class="absolute inset-0 flex items-center justify-center">
+            <img src="/assets/signatures/assinaturaCapivorce.png" alt="C3C" class="w-12 h-12 object-contain animate-pulse">
+        </div>
+    </div>
+    <p class="text-[10px] font-black text-gray-400 uppercase tracking-[0.4em] animate-pulse">Sincronizando Workspace...</p>
+</div>
+
 <!-- MODAL SIMULAR ACESSO -->
 <% if (user.grupos && user.grupos.includes('LOGIN_AS')) { %>
 <div id="impersonate-modal" class="fixed inset-0 bg-black/60 z-[9999] hidden flex items-center justify-center p-4 backdrop-blur-md">
@@ -175,7 +187,6 @@
             </div>
         </div>
         
-        <!-- FOOTER DE EMERGÊNCIA -->
         <footer class="p-4 bg-gray-50 border-t border-gray-100 flex justify-center">
             <button onclick="closeImpersonateModal()" class="text-[10px] font-black text-gray-400 uppercase tracking-widest hover:text-gray-600 transition-colors">Fechar Janela</button>
         </footer>
@@ -184,7 +195,7 @@
 <% } %>
 
 <script>
-    // LÓGICA MODO DEMO GLOBAL (Acessível a todos)
+    // LÓGICA MODO DEMO GLOBAL
     function toggleDemoMode(active) {
         document.body.classList.toggle('demo-mode-active', active);
         localStorage.setItem('demoMode', active);
@@ -195,7 +206,6 @@
         }
     }
 
-    // Inicialização do estado do Modo Demo
     (function() {
         const isDemo = localStorage.getItem('demoMode') === 'true';
         if(isDemo) {
@@ -207,7 +217,6 @@
         }
     })();
 
-    // LÓGICA DE SIMULAÇÃO (Restrita via EJS no servidor)
     <% if (user.grupos && user.grupos.includes('LOGIN_AS')) { %>
     window.allUsersCache = [];
     window.isLoadingUsers = false;
@@ -283,10 +292,27 @@
         } catch (e) { alert('Erro de conexão.'); }
     }
     <% } %>
+
+    // LÓGICA DE LOADING NA NAVEGAÇÃO
+    document.addEventListener('DOMContentLoaded', () => {
+        const loader = document.getElementById('global-page-loader');
+        const navLinks = document.querySelectorAll('.nav-item, a[href^="/"]');
+        
+        navLinks.forEach(link => {
+            link.addEventListener('click', (e) => {
+                const href = link.getAttribute('href');
+                if (href && !href.startsWith('#') && !href.startsWith('javascript') && !href.includes('logout') && link.target !== '_blank') {
+                    if (loader) {
+                        loader.classList.remove('hidden');
+                        loader.classList.add('flex');
+                    }
+                }
+            });
+        });
+    });
 </script>
 
 <style>
-    /* ESTILO GLOBAL DE DESFOQUE PARA MODO DEMO */
     .demo-mode-active .demo-blur { 
         filter: blur(6px) !important; 
         pointer-events: none !important; 
