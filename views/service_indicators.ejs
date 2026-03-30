@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Análise de Rentabilidade | C3C Workspace</title>
+    <title>Enterprise Analytics | C3C Workspace</title>
     
     <!-- Frameworks & Fonts -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@100;300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     
     <script>
         tailwind.config = {
@@ -21,16 +21,21 @@
                         'panel-border': '#E2E8F0',
                         'text-muted': '#64748B'
                     },
-                    fontFamily: { sans: ['Inter', 'sans-serif'] }
+                    fontFamily: { sans: ['Montserrat', 'sans-serif'] }
                 }
             }
         }
     </script>
     
     <style>
-        body { background-color: #F8FAFC; color: #1E293B; margin: 0; font-family: 'Inter', sans-serif; overflow-x: hidden; }
-        .glass-panel { background-color: white; border: 1px solid #E2E8F0; border-radius: 16px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); }
-        .ctrl-input { background-color: #F8FAFC; border: 1px solid #E2E8F0; color: #1E293B; outline: none; cursor: pointer; transition: 0.3s; padding: 8px 12px; border-radius: 8px; font-size: 11px; font-weight: 600; text-transform: uppercase; }
+        body { background-color: #F8FAFC; color: #1E293B; margin: 0; font-family: 'Montserrat', sans-serif; overflow-x: hidden; }
+        .glass-panel { background-color: white; border: 1px solid #E2E8F0; border-radius: 20px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); }
+        
+        .kpi-card { @apply flex flex-col items-center justify-center p-6 bg-white border border-gray-100 rounded-[24px] shadow-sm transition-all hover:shadow-md hover:-translate-y-1; }
+        .kpi-label { @apply text-[10px] text-text-muted uppercase font-black tracking-widest mb-2; }
+        .kpi-value { @apply text-2xl font-black tracking-tighter leading-none; }
+
+        .ctrl-input { background-color: #F8FAFC; border: 1px solid #E2E8F0; color: #1E293B; outline: none; cursor: pointer; transition: 0.3s; padding: 10px 16px; border-radius: 12px; font-size: 11px; font-weight: 700; text-transform: uppercase; }
         .ctrl-input:focus { border-color: #2978FF; box-shadow: 0 0 0 3px rgba(41, 120, 255, 0.1); }
         
         .ms-dropdown { display: none; position: absolute; top: 110%; left: 0; min-width: 280px; max-height: 400px; overflow-y: auto; background-color: white; border: 1px solid #E2E8F0; border-radius: 12px; z-index: 50; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); }
@@ -119,51 +124,76 @@
             </button>
         </div>
 
-        <div id="dashboard-view" class="flex-1 overflow-y-auto p-8 fade-in space-y-8 custom-scrollbar">
+        <div id="dashboard-view" class="flex-1 overflow-y-auto p-8 fade-in space-y-6 custom-scrollbar">
             
-            <!-- SEÇÃO UNIFICADA: BIG NUMBERS OPERACIONAIS & RENTABILIDADE ESTRATÉGICA -->
-            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
-                <!-- BIG NUMBERS OPERACIONAIS -->
-                <div class="lg:col-span-4 grid grid-cols-1 gap-4">
-                    <div class="glass-panel p-5 border-l-4 border-l-c3c-blue flex justify-between items-center">
-                        <span class="text-[10px] text-text-muted uppercase font-black tracking-widest">Horas Lançadas</span>
-                        <h2 id="bn-hours" class="text-2xl font-black text-gray-800 tracking-tighter">--</h2>
-                    </div>
-                    <div class="glass-panel p-5 border-l-4 border-l-indigo-500 flex justify-between items-center">
-                        <span class="text-[10px] text-text-muted uppercase font-black tracking-widest">Tx. Méd. Receita</span>
-                        <h2 id="bn-avg-rate-rev" class="text-xl font-black text-indigo-600 tracking-tighter">--</h2>
-                    </div>
-                    <div class="glass-panel p-5 border-l-4 border-l-amber-500 flex justify-between items-center text-right">
-                        <span class="text-[10px] text-text-muted uppercase font-black tracking-widest">Tx. Méd. Custo</span>
-                        <h2 id="bn-avg-rate-cost" class="text-xl font-black text-amber-600 tracking-tighter">--</h2>
-                    </div>
-                </div>
-
-                <!-- PAINEL DE RENTABILIDADE CONSOLIDADA -->
-                <div class="lg:col-span-8 glass-panel p-8 flex flex-col justify-between bg-gradient-to-br from-white to-gray-50/30">
-                    <div class="flex justify-between items-start mb-8">
-                        <div class="space-y-1">
-                            <span class="text-[10px] text-text-muted uppercase font-black tracking-widest">Performance de Rentabilidade</span>
-                            <p class="text-[9px] text-gray-400 font-bold uppercase">Resultado líquido consolidado do período</p>
-                        </div>
-                        <div class="flex gap-12">
-                            <div class="text-right">
-                                <span class="text-[9px] text-text-muted uppercase font-black tracking-widest leading-none">Receita Total</span>
-                                <div id="comp-total-revenue" class="text-3xl font-black text-gray-800 tracking-tighter mt-1">R$ 0,00</div>
-                            </div>
-                            <div class="text-right border-l border-gray-100 pl-12">
-                                <span class="text-[9px] text-text-muted uppercase font-black tracking-widest leading-none">Margem %</span>
-                                <div id="comp-total-margin" class="text-3xl font-black text-teal-600 tracking-tighter mt-1">0,0%</div>
-                            </div>
-                        </div>
+            <!-- LINHA 1: PAINEL DE PERFORMANCE DE RENTABILIDADE (DISCRETO) -->
+            <div class="glass-panel p-6 flex flex-col justify-between bg-gradient-to-br from-white to-gray-50/50">
+                <div class="flex flex-col md:flex-row justify-between items-center gap-6 mb-6">
+                    <div class="text-center md:text-left space-y-1">
+                        <h3 class="text-[10px] font-black text-gray-800 uppercase tracking-[0.2em]">Performance de Rentabilidade</h3>
+                        <p class="text-[9px] text-gray-400 font-bold uppercase">Consolidado Estratégico do Período</p>
                     </div>
                     
-                    <div id="revenue-composition-bar" class="w-full h-16 rounded-2xl overflow-hidden flex shadow-inner bg-gray-100 border border-gray-200"></div>
-
-                    <div class="flex gap-10 mt-6">
-                        <div class="flex items-center gap-3"><div class="w-3.5 h-3.5 rounded bg-red-500 shadow-sm"></div><span class="text-[10px] font-black text-gray-500 uppercase tracking-widest">Custo Operacional</span></div>
-                        <div class="flex items-center gap-3"><div class="w-3.5 h-3.5 rounded bg-emerald-500 shadow-sm"></div><span class="text-[10px] font-black text-gray-500 uppercase tracking-widest">Resultado do Período</span></div>
+                    <div class="flex items-center gap-10">
+                        <div class="text-center">
+                            <span class="kpi-label !mb-1">Receita Total</span>
+                            <div class="flex items-baseline justify-center gap-2">
+                                <div id="comp-total-revenue" class="text-2xl font-black text-c3c-blue tracking-tighter">R$ 0,00</div>
+                                <span id="delta-revenue" class="text-[10px] font-bold"></span>
+                            </div>
+                        </div>
+                        <div class="text-center border-l border-gray-100 pl-10">
+                            <span class="kpi-label !mb-1">Margem Operacional</span>
+                            <div class="flex items-baseline justify-center gap-2">
+                                <div id="comp-total-margin" class="text-2xl font-black text-teal-500 tracking-tighter">0,0%</div>
+                                <span id="delta-margin" class="text-[10px] font-bold"></span>
+                            </div>
+                        </div>
                     </div>
+                </div>
+                
+                <div class="relative">
+                    <div id="revenue-composition-bar" class="w-full h-10 rounded-full overflow-hidden flex shadow-inner bg-gray-100 border border-gray-200 p-1"></div>
+                    <!-- Legendas Customizadas -->
+                    <div class="flex justify-center gap-8 mt-4">
+                        <div class="flex items-center gap-2">
+                            <div class="w-3 h-3 rounded-full bg-red-500"></div>
+                            <span class="text-[9px] font-black text-gray-500 uppercase tracking-widest">Custo Operacional</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <div class="w-3 h-3 rounded-full bg-emerald-500"></div>
+                            <span class="text-[9px] font-black text-gray-500 uppercase tracking-widest">Resultado Líquido</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- LINHA 2: KPIs OPERACIONAIS -->
+            <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-6">
+                <div class="kpi-card border-b-4 border-b-c3c-blue">
+                    <span class="kpi-label">Horas Lançadas</span>
+                    <h2 id="bn-hours" class="kpi-value text-gray-800">--</h2>
+                    <span id="delta-hours" class="text-[10px] font-bold mt-1"></span>
+                </div>
+                <div class="kpi-card border-b-4 border-b-indigo-500">
+                    <span class="kpi-label">Tx. Média Receita</span>
+                    <h2 id="bn-avg-rate-rev" class="kpi-value text-indigo-600">--</h2>
+                    <span id="delta-avg-rate-rev" class="text-[10px] font-bold mt-1"></span>
+                </div>
+                <div class="kpi-card border-b-4 border-b-amber-500">
+                    <span class="kpi-label">Tx. Média Custo</span>
+                    <h2 id="bn-avg-rate-cost" class="kpi-value text-amber-600">--</h2>
+                    <span id="delta-avg-rate-cost" class="text-[10px] font-bold mt-1"></span>
+                </div>
+                <div class="kpi-card border-b-4 border-b-emerald-500">
+                    <span class="kpi-label">Pessoas Ativas</span>
+                    <h2 id="bn-people" class="kpi-value text-emerald-600">--</h2>
+                    <span id="delta-people" class="text-[10px] font-bold mt-1"></span>
+                </div>
+                <div class="kpi-card border-b-4 border-b-purple-500">
+                    <span class="kpi-label">Receita p/ Pessoa</span>
+                    <h2 id="bn-rev-per-person" class="kpi-value text-purple-600">--</h2>
+                    <span id="delta-rev-per-person" class="text-[10px] font-bold mt-1"></span>
                 </div>
             </div>
 
@@ -176,16 +206,16 @@
                 <div id="chart-finance" style="width: 100%; height: 400px;"></div>
             </div>
 
-            <!-- SHARE E SEGMENTAÇÃO -->
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                <div class="glass-panel p-8">
-                    <div class="mb-6"><h3 class="text-xs font-black uppercase flex items-center gap-3 text-gray-800 tracking-widest"><span class="w-3 h-3 rounded bg-indigo-500"></span> Rentabilidade por Tipo</h3></div>
-                    <div id="chart-segment-types" style="width: 100%; height: 350px;"></div>
-                </div>
-                <div class="glass-panel p-8">
-                    <div class="mb-6"><h3 class="text-xs font-black uppercase flex items-center gap-3 text-gray-800 tracking-widest"><span class="w-3 h-3 rounded bg-emerald-500"></span> Receita por Cliente (Top 10)</h3></div>
-                    <div id="chart-segment-clients" style="width: 100%; height: 350px;"></div>
-                </div>
+            <!-- RENTABILIDADE POR TIPO -->
+            <div class="glass-panel p-8">
+                <div class="mb-6"><h3 class="text-xs font-black uppercase flex items-center gap-3 text-gray-800 tracking-widest"><span class="w-3 h-3 rounded bg-indigo-500"></span> Rentabilidade por Tipo</h3></div>
+                <div id="chart-segment-types" style="width: 100%; height: 400px;"></div>
+            </div>
+
+            <!-- RECEITA POR CLIENTE -->
+            <div class="glass-panel p-8">
+                <div class="mb-6"><h3 class="text-xs font-black uppercase flex items-center gap-3 text-gray-800 tracking-widest"><span class="w-3 h-3 rounded bg-emerald-500"></span> Receita por Cliente (Top 10)</h3></div>
+                <div id="chart-segment-clients" style="width: 100%; height: 400px;"></div>
             </div>
 
             <!-- MATRIZ DE RENTABILIDADE -->
@@ -217,6 +247,7 @@
 
     <script>
         let rawData = [];
+        let prevData = [];
         let state = { dateStart: '', dateEnd: '', squad: new Set(), clients: new Set(), services: new Set() };
         let availableOptions = { squad: [], clients: [], services: [] };
         const fMoney = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 }).format(v);
@@ -226,27 +257,42 @@
             initCharts(); applyDatePreset(); lucide.createIcons();
         });
 
+        async function fetchChunked(start, end) {
+            let data = [];
+            const countRes = await fetch(`/api/services/indicators/count?start=${start}&end=${end}`);
+            const countData = await countRes.json();
+            const total = countData.total || 0;
+            let lastId = null; let hasMore = true;
+            while (hasMore) {
+                const chunkRes = await fetch(`/api/services/indicators/chunk?start=${start}&end=${end}&lastId=${lastId || ''}`);
+                const chunk = await chunkRes.json();
+                if (chunk.data && chunk.data.length > 0) {
+                    data.push(...chunk.data); lastId = chunk.lastId;
+                } else { hasMore = false; }
+                if (data.length >= total) hasMore = false;
+            }
+            return data;
+        }
+
         async function loadData() {
             const loader = document.getElementById('main-loader');
             const fill = document.getElementById('loader-fill');
             const stats = document.getElementById('loader-stats');
-            loader.classList.remove('hidden'); fill.style.width = '0%'; stats.innerText = '0 / 0';
-            rawData = [];
+            loader.classList.remove('hidden'); fill.style.width = '0%'; stats.innerText = 'Sincronizando...';
+            rawData = []; prevData = [];
             try {
-                const countRes = await fetch(`/api/services/indicators/count?start=${state.dateStart}&end=${state.dateEnd}`);
-                const countData = await countRes.json();
-                const total = countData.total || 0;
-                let lastId = null; let hasMore = true;
-                while (hasMore) {
-                    const chunkRes = await fetch(`/api/services/indicators/chunk?start=${state.dateStart}&end=${state.dateEnd}&lastId=${lastId || ''}`);
-                    const chunkData = await chunkRes.json();
-                    if (chunkData.data && chunkData.data.length > 0) {
-                        rawData.push(...chunkData.data); lastId = chunkData.lastId;
-                        const pct = Math.min(100, (rawData.length / total) * 100);
-                        fill.style.width = pct + '%'; stats.innerText = `${rawData.length.toLocaleString()} / ${total.toLocaleString()}`;
-                    } else { hasMore = false; }
-                    if (rawData.length >= total) hasMore = false;
-                }
+                const d1 = new Date(state.dateStart);
+                const d2 = new Date(state.dateEnd);
+                const diff = d2 - d1;
+                const prevEnd = new Date(d1.getTime() - 86400000);
+                const prevStart = new Date(prevEnd.getTime() - diff);
+                
+                const [cur, prev] = await Promise.all([
+                    fetchChunked(state.dateStart, state.dateEnd),
+                    fetchChunked(prevStart.toISOString().split('T')[0], prevEnd.toISOString().split('T')[0])
+                ]);
+                
+                rawData = cur; prevData = prev;
                 populateSquads(); triggerCascade('init');
             } catch (e) { console.error(e); } 
             finally { loader.classList.add('hidden'); }
@@ -260,18 +306,26 @@
 
         function triggerCascade(source) {
             const level2Data = rawData.filter(d => state.squad.has(d.squad));
+            const pLevel2Data = prevData.filter(d => state.squad.has(d.squad));
+
             if (['squad','init','date'].includes(source)) {
                 const newClients = [...new Set(level2Data.map(d => d.client))].filter(Boolean).sort();
                 availableOptions.clients = newClients; buildDropdown('clients', newClients);
                 state.clients = new Set(newClients); syncVisuals('clients');
             }
+            
             const level3Data = level2Data.filter(d => state.clients.has(d.client));
+            const pLevel3Data = pLevel2Data.filter(d => state.clients.has(d.client));
+
             if (['squad','clients','init','date'].includes(source)) {
                 const newServices = [...new Set(level3Data.map(d => d.service))].filter(Boolean).sort();
                 availableOptions.services = newServices; buildDropdown('services', newServices);
                 state.services = new Set(newServices); syncVisuals('services');
             }
-            renderDashboard(level3Data.filter(d => state.services.has(d.service)));
+            
+            const finalData = level3Data.filter(d => state.services.has(d.service));
+            const pFinalData = pLevel3Data.filter(d => state.services.has(d.service));
+            renderDashboard(finalData, pFinalData);
         }
 
         function applyDatePreset() {
@@ -344,54 +398,101 @@
             window.addEventListener('resize', () => { Object.values(charts).forEach(ch => ch && ch.resize()); if(chartRoi) chartRoi.resize(); });
         }
 
-        function renderDashboard(fd) {
+        function renderDashboard(fd, pfd = []) {
             if(fd.length === 0) return;
-            let tRev = 0, tCost = 0, tHrs = 0; fd.forEach(d => { tRev += d.revenue; tCost += d.cost; tHrs += d.hours; });
-            const margin = tRev > 0 ? ((tRev - tCost) / tRev) * 100 : 0; 
-            const avgRateRev = tHrs > 0 ? tRev / tHrs : 0; 
-            const avgRateCost = tHrs > 0 ? tCost / tHrs : 0;
+
+            const calc = (data) => {
+                let r = 0, c = 0, h = 0; 
+                data.forEach(d => { r += d.revenue; c += d.cost; h += d.hours; });
+                const people = new Set(data.map(d => d.person)).size;
+                return {
+                    rev: r, cost: c, hours: h, people: people,
+                    margin: r > 0 ? ((r - c) / r) * 100 : 0,
+                    rateRev: h > 0 ? r / h : 0,
+                    rateCost: h > 0 ? c / h : 0,
+                    revPerPerson: people > 0 ? r / people : 0
+                };
+            };
+
+            const cur = calc(fd);
+            const prev = calc(pfd);
 
             const setVal = (id, val) => { const el = document.getElementById(id); if(el) el.innerText = val; };
-            setVal('bn-hours', tHrs.toFixed(1).toLocaleString() + 'h'); 
-            setVal('bn-avg-rate-rev', 'R$ ' + avgRateRev.toFixed(2));
-            setVal('bn-avg-rate-cost', 'R$ ' + avgRateCost.toFixed(2)); 
-            setVal('comp-total-revenue', fMoney(tRev));
-            setVal('comp-total-margin', margin.toFixed(1) + '%');
+            const setDelta = (id, cVal, pVal, isLowerBetter = false) => {
+                const el = document.getElementById(`delta-${id}`);
+                if(!el) return;
+                if(!pVal || pVal === 0) { el.innerText = ''; return; }
+                const diff = ((cVal - pVal) / pVal) * 100;
+                const isPositive = diff > 0;
+                const isGood = isLowerBetter ? !isPositive : isPositive;
+                
+                el.innerHTML = `${isPositive ? '▲' : '▼'} ${Math.abs(diff).toFixed(1)}%`;
+                el.className = `text-[10px] font-black mt-1 ${Math.abs(diff) < 0.1 ? 'text-gray-400' : (isGood ? 'text-emerald-500' : 'text-red-500')}`;
+            };
+
+            setVal('bn-hours', cur.hours.toFixed(1).toLocaleString() + 'h'); 
+            setDelta('hours', cur.hours, prev.hours);
+
+            setVal('bn-avg-rate-rev', fMoney(cur.rateRev));
+            setDelta('avg-rate-rev', cur.rateRev, prev.rateRev);
+
+            setVal('bn-avg-rate-cost', fMoney(cur.rateCost)); 
+            setDelta('avg-rate-cost', cur.rateCost, prev.rateCost, true);
+
+            setVal('bn-people', cur.people);
+            setDelta('people', cur.people, prev.people);
+
+            setVal('bn-rev-per-person', fMoney(cur.revPerPerson));
+            setDelta('rev-per-person', cur.revPerPerson, prev.revPerPerson);
+
+            setVal('comp-total-revenue', fMoney(cur.rev));
+            setDelta('revenue', cur.rev, prev.rev);
+
+            setVal('comp-total-margin', cur.margin.toFixed(1) + '%');
+            setDelta('margin', cur.margin, prev.margin);
 
             const compDiv = document.getElementById('revenue-composition-bar');
             if(compDiv) {
-                const costPct = tRev > 0 ? (tCost / tRev) * 100 : 100;
-                compDiv.innerHTML = `<div class="h-full bg-red-500 comp-label" style="width: ${costPct}%">${fMoney(tCost)}</div><div class="h-full bg-emerald-500 comp-label shadow-[inset_4px_0_10px_rgba(0,0,0,0.1)]" style="width: ${100-costPct}%">${fMoney(tRev - tCost)}</div>`;
+                const costPct = cur.rev > 0 ? (cur.cost / cur.rev) * 100 : 100;
+                compDiv.innerHTML = `
+                    <div class="h-full bg-red-500 flex items-center justify-center transition-all duration-1000 rounded-l-full" style="width: ${costPct}%">
+                        <span class="text-[9px] font-black text-white px-2 truncate">${fMoney(cur.cost)}</span>
+                    </div>
+                    <div class="h-full bg-emerald-500 flex items-center justify-center shadow-[inset_4px_0_10px_rgba(0,0,0,0.1)] transition-all duration-1000 rounded-r-full" style="width: ${100-costPct}%">
+                        <span class="text-[9px] font-black text-white px-2 truncate">${fMoney(cur.rev - cur.cost)}</span>
+                    </div>
+                `;
             }
 
             const isMonthly = ((new Date(state.dateEnd) - new Date(state.dateStart)) / 86400000) > 31;
-            setVal('evolution-scale', `ESCALA: ${isMonthly ? 'MENSUAL' : 'DIÁRIA'}`);
+            setVal('evolution-scale', `ESCALA: ${isMonthly ? 'MENSAL' : 'DIÁRIA'}`);
 
             const dMap = {}; fd.forEach(d => { const key = isMonthly ? d.date.substring(0, 7) : d.date; if(!dMap[key]) dMap[key] = { r:0, c:0 }; dMap[key].r += d.revenue; dMap[key].c += d.cost; });
             const datesArr = Object.keys(dMap).sort();
-            if(charts.finance) charts.finance.setOption({ tooltip: { trigger: 'axis' }, xAxis: { type: 'category', boundaryGap: false, data: isMonthly ? datesArr.map(d => d.split('-').reverse().join('/')) : datesArr.map(d=>d.substring(8,10)+'/'+d.substring(5,7)) }, yAxis: { type: 'value', axisLabel: { formatter: v => (v/1000)+'k' } }, series: [{ name: 'Receita', type: 'line', smooth: true, lineStyle: { width: 4, color: COLORS.blue }, areaStyle: { color: 'rgba(41,120,255,0.1)' }, data: datesArr.map(d => dMap[d].r) }, { name: 'Custo', type: 'line', smooth: true, lineStyle: { width: 3, color: COLORS.red }, data: datesArr.map(d => dMap[d].c) }] }, true);
+            if(charts.finance) charts.finance.setOption({ textStyle: { fontFamily: 'Montserrat' }, tooltip: { trigger: 'axis', backgroundColor: '#fff', borderRadius: 12, padding: 15, textStyle: { color: '#1E293B', fontWeight: 'bold' } }, xAxis: { type: 'category', boundaryGap: false, data: isMonthly ? datesArr.map(d => d.split('-').reverse().join('/')) : datesArr.map(d=>d.substring(8,10)+'/'+d.substring(5,7)), axisLine: { show: false } }, yAxis: { type: 'value', splitLine: { lineStyle: { type: 'dashed' } } }, series: [{ name: 'Receita', type: 'line', smooth: true, lineStyle: { width: 5, color: COLORS.blue }, areaStyle: { color: new echarts.graphic.LinearGradient(0,0,0,1, [{offset:0, color:'rgba(41,120,255,0.15)'}, {offset:1, color:'rgba(41,120,255,0)'}]) }, data: datesArr.map(d => dMap[d].r) }, { name: 'Custo', type: 'line', smooth: true, lineStyle: { width: 3, color: COLORS.red, type: 'dashed' }, data: datesArr.map(d => dMap[d].c) }] }, true);
+
 
             const typeMap = {}; fd.forEach(d => typeMap[d.squad] = (typeMap[d.squad] || 0) + d.revenue);
-            if(charts.types) charts.types.setOption({ series: [{ type: 'pie', radius: ['40%', '70%'], itemStyle: { borderRadius: 10, borderColor: '#fff', borderWidth: 2 }, label: { show: true, fontSize: 9, formatter: '{b}\n{d}%' }, data: Object.keys(typeMap).map(k => ({ value: typeMap[k], name: k })) }] });
+            if(charts.types) charts.types.setOption({ textStyle: { fontFamily: 'Montserrat' }, series: [{ type: 'pie', radius: ['50%', '80%'], itemStyle: { borderRadius: 15, borderColor: '#fff', borderWidth: 5 }, label: { show: true, fontSize: 10, fontWeight: '900', formatter: '{b}\n{d}%' }, data: Object.keys(typeMap).map(k => ({ value: typeMap[k], name: k })) }] });
             
             const clientMap = {}; fd.forEach(d => clientMap[d.client] = (clientMap[d.client] || 0) + d.revenue);
             const sortedClients = Object.keys(clientMap).sort((a,b) => clientMap[b] - clientMap[a]).slice(0, 10);
-            if(charts.clients) charts.clients.setOption({ xAxis: { type: 'value', axisLabel: { show: false } }, yAxis: { type: 'category', data: sortedClients.reverse(), axisLabel: { fontSize: 9 } }, series: [{ type: 'bar', data: sortedClients.map(c => clientMap[c]), itemStyle: { color: COLORS.indigo, borderRadius: [0,4,4,0] }, label: { show: true, position: 'right', formatter: p => fMoney(p.value), fontSize: 8 } }] });
+            if(charts.clients) charts.clients.setOption({ textStyle: { fontFamily: 'Montserrat' }, grid: { left: '15%', right: '5%', bottom: '5%', top: '5%' }, xAxis: { type: 'value', show: false }, yAxis: { type: 'category', data: sortedClients.reverse(), axisLine: { show: false }, axisTick: { show: false }, axisLabel: { fontSize: 9, fontWeight: '700' } }, series: [{ type: 'bar', data: sortedClients.map(c => clientMap[c]), itemStyle: { color: COLORS.indigo, borderRadius: [0,8,8,0] }, label: { show: true, position: 'right', formatter: p => fMoney(p.value), fontSize: 9, fontWeight: '900' } }] });
 
             const sMap = {}; fd.forEach(d => { if(!sMap[d.service]) sMap[d.service] = { h:0, r:0, c:0 }; sMap[d.service].h += d.hours; sMap[d.service].r += d.revenue; sMap[d.service].c += d.cost; });
             const matrixData = Object.keys(sMap).map(k => {
                 const m = sMap[k].r > 0 ? ((sMap[k].r - sMap[k].c)/sMap[k].r)*100 : -100;
                 return [sMap[k].h, m, m >= 0 ? sMap[k].r : sMap[k].c, k, sMap[k].r, sMap[k].c];
             });
-            if(charts.matrix) charts.matrix.setOption({ tooltip: { formatter: p => `<div class="font-black text-[10px] border-b pb-1 mb-1 uppercase">${p.data[3]}</div><div class="space-y-1 text-[10px]"><div>Esforço: <b>${p.data[0].toFixed(1)}h</b></div><div>Receita: <b>${fMoney(p.data[4])}</b></div><div>Custo: <b>${fMoney(p.data[5])}</b></div><div class="mt-1 pt-1 border-t border-gray-100">Margem: <b class="${p.data[1] < 0 ? 'text-red-500' : 'text-emerald-600'}">${p.data[1].toFixed(1)}%</b></div></div>` }, grid: { left: '5%', right: '5%', bottom: '5%', top: '5%', containLabel: true }, xAxis: { name: 'Horas Gastas' }, yAxis: { name: 'Margem %', min: -100, max: 100 }, series: [{ type: 'scatter', data: matrixData, symbolSize: d => Math.max(Math.sqrt(d[2])/8, 10), itemStyle: { color: p => p.data[1] < 0 ? COLORS.red : COLORS.blue, opacity: 0.7 } }] }, true);
+            if(charts.matrix) charts.matrix.setOption({ textStyle: { fontFamily: 'Montserrat' }, tooltip: { formatter: p => `<div class="font-black text-[10px] border-b pb-1 mb-1 uppercase">${p.data[3]}</div><div class="space-y-1 text-[10px]"><div>Esforço: <b>${p.data[0].toFixed(1)}h</b></div><div>Receita: <b>${fMoney(p.data[4])}</b></div><div>Custo: <b>${fMoney(p.data[5])}</b></div><div class="mt-1 pt-1 border-t border-gray-100">Margem: <b class="${p.data[1] < 0 ? 'text-red-500' : 'text-emerald-600'}">${p.data[1].toFixed(1)}%</b></div></div>` }, xAxis: { name: 'Horas Gastas', splitLine: { lineStyle: { type: 'dashed' } } }, yAxis: { name: 'Margem %', min: -100, max: 100, splitLine: { lineStyle: { type: 'dashed' } } }, series: [{ type: 'scatter', data: matrixData, symbolSize: d => Math.max(Math.sqrt(d[2])/8, 12), itemStyle: { color: p => p.data[1] < 0 ? COLORS.red : COLORS.blue, opacity: 0.8, shadowBlur: 20, shadowColor: 'rgba(0,0,0,0.1)' } }] }, true);
 
             const pMap = {}; fd.forEach(d => { if(!pMap[d.person]) pMap[d.person] = { r:0, c:0 }; pMap[d.person].r += d.revenue; pMap[d.person].c += d.cost; });
             const sortedNames = Object.keys(pMap).sort((a,b) => (pMap[a].r - pMap[a].c) - (pMap[b].r - pMap[b].c));
             const domRoi = document.getElementById('chart-roi'); 
             if(domRoi) {
-                domRoi.style.height = `${Math.max(400, sortedNames.length * 40)}px`;
+                domRoi.style.height = `${Math.max(400, sortedNames.length * 45)}px`;
                 if(chartRoi) chartRoi.dispose(); chartRoi = echarts.init(domRoi);
-                chartRoi.setOption({ tooltip: { trigger: 'axis' }, grid: { left: '2%', right: '5%', bottom: '2%', top: '2%', containLabel: true }, xAxis: { type: 'value' }, yAxis: { type: 'category', data: sortedNames, axisLabel: { fontSize: 10, width: 120, overflow: 'truncate' } }, series: [{ name: 'Receita', type: 'bar', barWidth: '40%', itemStyle: { color: COLORS.blue, borderRadius: [0,4,4,0] }, data: sortedNames.map(n => pMap[n].r.toFixed(0)) }, { name: 'Custo', type: 'bar', barWidth: '40%', itemStyle: { color: COLORS.red, borderRadius: [0,4,4,0] }, data: sortedNames.map(n => pMap[n].c.toFixed(0)) }] });
+                chartRoi.setOption({ textStyle: { fontFamily: 'Montserrat' }, tooltip: { trigger: 'axis' }, grid: { left: '2%', right: '5%', bottom: '2%', top: '2%', containLabel: true }, xAxis: { type: 'value', axisLine: { show: false }, splitLine: { lineStyle: { type: 'dashed' } } }, yAxis: { type: 'category', data: sortedNames, axisLine: { show: false }, axisTick: { show: false }, axisLabel: { fontSize: 10, fontWeight: '800', width: 150, overflow: 'truncate' } }, series: [{ name: 'Receita', type: 'bar', barWidth: '40%', itemStyle: { color: COLORS.blue, borderRadius: [0,6,6,0] }, data: sortedNames.map(n => pMap[n].r.toFixed(0)) }, { name: 'Custo', type: 'bar', barWidth: '40%', itemStyle: { color: COLORS.red, borderRadius: [0,6,6,0] }, data: sortedNames.map(n => pMap[n].c.toFixed(0)) }] });
             }
         }
     </script>
