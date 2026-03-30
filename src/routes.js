@@ -48,8 +48,10 @@ router.get('/dashboard', requireAuth, dashboardController.renderHome);
 
 // --- GESTÃO DE SERVIÇOS (NOVO MÓDULO) ---
 router.get('/services', requireAuth, requireGroup('GESTOR_FINANCEIRO'), serviceController.renderServicesPage);
-router.get('/services/indicators', requireAuth, requireGroup('GESTOR_FINANCEIRO'), serviceIndicatorController.renderIndicatorsPage);
-router.get('/api/services/indicators/data', requireAuth, requireGroup('GESTOR_FINANCEIRO'), serviceIndicatorController.getIndicatorData);
+router.get('/services/indicators', requireAuth, requireGroup('DIRETOR'), serviceIndicatorController.renderIndicatorsPage);
+router.get('/api/services/indicators/count', requireAuth, requireGroup('DIRETOR'), serviceIndicatorController.getIndicatorCount);
+router.get('/api/services/indicators/chunk', requireAuth, requireGroup('DIRETOR'), serviceIndicatorController.getIndicatorChunk);
+router.get('/api/services/indicators/filters', requireAuth, requireGroup('DIRETOR'), serviceIndicatorController.getFilterOptions);
 router.get('/api/services', requireAuth, requireGroup('GESTOR_FINANCEIRO'), serviceController.getServices);
 router.get('/api/services/:id', requireAuth, requireGroup('GESTOR_FINANCEIRO'), serviceController.getServiceDetails);
 router.post('/api/services', requireAuth, requireGroup('GESTOR_FINANCEIRO'), serviceController.saveService);

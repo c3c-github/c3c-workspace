@@ -85,6 +85,9 @@
                 <i data-lucide="briefcase" class="w-5 h-5"></i>
                 <span class="font-medium text-sm">Gestão de Serviços</span>
             </a>
+        <% } %>
+
+        <% if (user.grupos && user.grupos.includes('DIRETOR')) { %>
             <a href="/services/indicators" class="nav-item <%= (typeof page !== 'undefined' && page === 'service_indicators') ? 'active-nav' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900' %> flex items-center gap-3 px-6 py-3 transition-all">
                 <i data-lucide="pie-chart" class="w-5 h-5"></i>
                 <span class="font-medium text-sm">Indicadores de Serviço</span>
