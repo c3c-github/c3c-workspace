@@ -1,58 +1,64 @@
 require('dotenv').config();
 const { getSfConnection } = require('../src/config/salesforce');
 
-async function autoLinkHistoricalSales() {
-    console.log("🚀 Iniciando Arqueologia de Vendas Históricas...");
+async function migrateToJunction() {
+    console.log(`[${new Date().toISOString()}] 🚀 INICIANDO MIGRAÇÃO PARA MODELO DE JUNÇÃO...`);
+    
     try {
         const conn = await getSfConnection();
+        
+        // 1. Buscar todas as parcelas que têm vínculo direto com o serviço (modelo antigo)
+        console.log("Buscando parcelas vinculadas a serviços...");
+        const res = await conn.query(`
+            SELECT VendaContaAzul__c, Servico__c, VendaContaAzul__r.ValorTotal__c
+            FROM ParcelaFinanceira__c 
+            WHERE Servico__c != null 
+            AND VendaContaAzul__c != null
+        `);
+        
+        console.log(`Encontradas ${res.totalSize} parcelas para processar.`);
 
-        // 1. Buscar serviços inativos sem vendas
-        const services = await conn.query(
-            "SELECT Id, Name FROM Servico__c WHERE Status__c = 'Inativo' AND Id NOT IN (SELECT Servico__c FROM VendaServico__c)"
-        );
+        // 2. Identificar pares únicos de (Venda, Serviço)
+        const pairMap = new Map();
+        res.records.forEach(r => {
+            const key = `${r.VendaContaAzul__c}-${r.Servico__c}`;
+            if (!pairMap.has(key)) {
+                pairMap.set(key, {
+                    Venda__c: r.VendaContaAzul__c,
+                    Servico__c: r.Servico__c,
+                    ValorAlocado__c: r.VendaContaAzul__r ? r.VendaContaAzul__r.ValorTotal__c : 0
+                });
+            }
+        });
 
-        console.log(`Analisando ${services.totalSize} serviços inativos...`);
+        console.log(`Total de vínculos únicos identificados: ${pairMap.size}`);
 
-        for (const svc of services.records) {
-            // Regex para encontrar números de 3 dígitos (padrão de vendas como 256, 270, etc)
-            const matches = svc.Name.match(/\b\d{3}\b/g);
-            
-            if (!matches) continue;
+        // 3. Criar os registros de junção que ainda não existem
+        let created = 0;
+        let skipped = 0;
 
-            console.log(`\nServiço: ${svc.Name}`);
-            
-            for (const saleNum of matches) {
-                // Buscar a venda pelo número
-                const saleSearch = await conn.query(
-                    `SELECT Id, Name, ValorTotal__c FROM VendaContaAzul__c WHERE Name LIKE 'Venda ${saleNum}%' LIMIT 1`
-                );
+        for (const link of pairMap.values()) {
+            const check = await conn.query(`
+                SELECT Id FROM VendaServico__c 
+                WHERE Venda__c = '${link.Venda__c}' 
+                AND Servico__c = '${link.Servico__c}'
+            `);
 
-                if (saleSearch.totalSize > 0) {
-                    const sale = saleSearch.records[0];
-                    console.log(`   ✅ Encontrada ${sale.Name} (R$ ${sale.ValorTotal__c}) para o serviço.`);
-
-                    // Criar vínculo de junção
-                    try {
-                        await conn.sobject("VendaServico__c").create({
-                            Servico__c: svc.Id,
-                            Venda__c: sale.Id,
-                            ValorAlocado__c: sale.ValorTotal__c
-                        });
-                        console.log(`   🔗 Vínculo criado com sucesso.`);
-                    } catch (err) {
-                        console.error(`   ❌ Erro ao criar vínculo: ${err.message}`);
-                    }
-                } else {
-                    console.log(`   ⚠️ Venda #${saleNum} não encontrada no Salesforce.`);
-                }
+            if (check.totalSize === 0) {
+                await conn.sobject('VendaServico__c').create(link);
+                created++;
+            } else {
+                skipped++;
             }
         }
 
-        console.log(`\n🏁 Processo de vinculação automática concluído.`);
+        console.log(`\n🏁 MIGRAÇÃO CONCLUÍDA!`);
+        console.log(`- Vínculos criados: ${created}`);
+        console.log(`- Vínculos já existentes (pulados): ${skipped}`);
 
     } catch (e) {
-        console.error("❌ Erro fatal:", e.message);
+        console.error("❌ ERRO NA MIGRAÇÃO:", e.message);
     }
 }
 
-autoLinkHistoricalSales();
+migrateToJunction();

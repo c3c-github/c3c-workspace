@@ -11,6 +11,7 @@ const timesheetController = require('./controllers/timesheetController');
 const operationsController = require('./controllers/operationsController'); 
 const supportController = require('./controllers/supportController');
 const serviceController = require('./controllers/serviceController');
+const serviceIndicatorController = require('./controllers/serviceIndicatorController');
 const utilityController = require('./controllers/utilityController');
 const billingController = require('./controllers/billingController');
 
@@ -47,6 +48,8 @@ router.get('/dashboard', requireAuth, dashboardController.renderHome);
 
 // --- GESTÃO DE SERVIÇOS (NOVO MÓDULO) ---
 router.get('/services', requireAuth, requireGroup('GESTOR_FINANCEIRO'), serviceController.renderServicesPage);
+router.get('/services/indicators', requireAuth, requireGroup('GESTOR_FINANCEIRO'), serviceIndicatorController.renderIndicatorsPage);
+router.get('/api/services/indicators/data', requireAuth, requireGroup('GESTOR_FINANCEIRO'), serviceIndicatorController.getIndicatorData);
 router.get('/api/services', requireAuth, requireGroup('GESTOR_FINANCEIRO'), serviceController.getServices);
 router.get('/api/services/:id', requireAuth, requireGroup('GESTOR_FINANCEIRO'), serviceController.getServiceDetails);
 router.post('/api/services', requireAuth, requireGroup('GESTOR_FINANCEIRO'), serviceController.saveService);

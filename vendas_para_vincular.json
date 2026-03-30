@@ -1,0 +1,346 @@
+[
+  {
+    "SF_ID": "a1VN5000004pyDJMAY",
+    "Venda": "Venda 126",
+    "Status": "Aprovado",
+    "Valor_Venda": 512000,
+    "Parcelas_2025": 9,
+    "Soma_Parcelas_2025": 271160
+  },
+  {
+    "SF_ID": "a1VN5000004pyD7MAI",
+    "Venda": "Venda 139",
+    "Status": "Aprovado",
+    "Valor_Venda": 39023.8,
+    "Parcelas_2025": 2,
+    "Soma_Parcelas_2025": 38223.82
+  },
+  {
+    "SF_ID": "a1VN5000004pyCbMAI",
+    "Venda": "Venda 170",
+    "Status": "Aprovado",
+    "Valor_Venda": 40248,
+    "Parcelas_2025": 1,
+    "Soma_Parcelas_2025": 3356.68
+  },
+  {
+    "SF_ID": "a1VN5000004pyCaMAI",
+    "Venda": "Venda 171",
+    "Status": "Aprovado",
+    "Valor_Venda": 62400,
+    "Parcelas_2025": 1,
+    "Soma_Parcelas_2025": 4876.7
+  },
+  {
+    "SF_ID": "a1VN5000004pyCZMAY",
+    "Venda": "Venda 173",
+    "Status": "Aprovado",
+    "Valor_Venda": 36960,
+    "Parcelas_2025": 1,
+    "Soma_Parcelas_2025": 2887.08
+  },
+  {
+    "SF_ID": "a1VN5000004pyCVMAY",
+    "Venda": "Venda 178",
+    "Status": "Aprovado",
+    "Valor_Venda": 125412,
+    "Parcelas_2025": 1,
+    "Soma_Parcelas_2025": 9804.76
+  },
+  {
+    "SF_ID": "a1VN5000004pyCUMAY",
+    "Venda": "Venda 179",
+    "Status": "Aprovado",
+    "Valor_Venda": 195804,
+    "Parcelas_2025": 2,
+    "Soma_Parcelas_2025": 30627
+  },
+  {
+    "SF_ID": "a1VN5000004pyCPMAY",
+    "Venda": "Venda 184",
+    "Status": "Aprovado",
+    "Valor_Venda": 28800,
+    "Parcelas_2025": 3,
+    "Soma_Parcelas_2025": 6746.700000000001
+  },
+  {
+    "SF_ID": "a1VN5000004pyCOMAY",
+    "Venda": "Venda 185",
+    "Status": "Aprovado",
+    "Valor_Venda": 173520,
+    "Parcelas_2025": 5,
+    "Soma_Parcelas_2025": 67853.54999999999
+  },
+  {
+    "SF_ID": "a1VN5000004pyCNMAY",
+    "Venda": "Venda 186",
+    "Status": "Aprovado",
+    "Valor_Venda": 216000,
+    "Parcelas_2025": 3,
+    "Soma_Parcelas_2025": 50675.5
+  },
+  {
+    "SF_ID": "a1VN5000004pyCJMAY",
+    "Venda": "Venda 194",
+    "Status": "Aprovado",
+    "Valor_Venda": 37440,
+    "Parcelas_2025": 4,
+    "Soma_Parcelas_2025": 11890.36
+  },
+  {
+    "SF_ID": "a1VN5000004pyCFMAY",
+    "Venda": "Venda 198",
+    "Status": "Aprovado",
+    "Valor_Venda": 180000,
+    "Parcelas_2025": 8,
+    "Soma_Parcelas_2025": 112620
+  },
+  {
+    "SF_ID": "a1VN5000004pyCEMAY",
+    "Venda": "Venda 201",
+    "Status": "Aprovado",
+    "Valor_Venda": 15120,
+    "Parcelas_2025": 5,
+    "Soma_Parcelas_2025": 6300
+  },
+  {
+    "SF_ID": "a1VN5000004pyCCMAY",
+    "Venda": "Venda 203",
+    "Status": "Aprovado",
+    "Valor_Venda": 59227.68,
+    "Parcelas_2025": 6,
+    "Soma_Parcelas_2025": 27771.6
+  },
+  {
+    "SF_ID": "a1VN5000004pyC4MAI",
+    "Venda": "Venda 212",
+    "Status": "Aprovado",
+    "Valor_Venda": 7722,
+    "Parcelas_2025": 7,
+    "Soma_Parcelas_2025": 2769.69
+  },
+  {
+    "SF_ID": "a1VN5000004pyC3MAI",
+    "Venda": "Venda 213",
+    "Status": "Aprovado",
+    "Valor_Venda": 7722,
+    "Parcelas_2025": 7,
+    "Soma_Parcelas_2025": 4611.81
+  },
+  {
+    "SF_ID": "a1VN5000004pyC2MAI",
+    "Venda": "Venda 214",
+    "Status": "Aprovado",
+    "Valor_Venda": 3196.05,
+    "Parcelas_2025": 7,
+    "Soma_Parcelas_2025": 2033.85
+  },
+  {
+    "SF_ID": "a1VN5000004pyBwMAI",
+    "Venda": "Venda 222",
+    "Status": "Aprovado",
+    "Valor_Venda": 1091.15,
+    "Parcelas_2025": 2,
+    "Soma_Parcelas_2025": 436.46
+  },
+  {
+    "SF_ID": "a1VN5000004pyBuMAI",
+    "Venda": "Venda 224",
+    "Status": "Aprovado",
+    "Valor_Venda": 25147.92,
+    "Parcelas_2025": 1,
+    "Soma_Parcelas_2025": 65499.9
+  },
+  {
+    "SF_ID": "a1VN5000004pyBrMAI",
+    "Venda": "Venda 228",
+    "Status": "Aprovado",
+    "Valor_Venda": 9000,
+    "Parcelas_2025": 4,
+    "Soma_Parcelas_2025": 5617
+  },
+  {
+    "SF_ID": "a1VN5000004pyBpMAI",
+    "Venda": "Venda 233",
+    "Status": "Aprovado",
+    "Valor_Venda": 181440,
+    "Parcelas_2025": 12,
+    "Soma_Parcelas_2025": 181440
+  },
+  {
+    "SF_ID": "a1VN5000004pyBnMAI",
+    "Venda": "Venda 235",
+    "Status": "Aprovado",
+    "Valor_Venda": 62610.72,
+    "Parcelas_2025": 1,
+    "Soma_Parcelas_2025": 58756.66
+  },
+  {
+    "SF_ID": "a1VN5000004pyBjMAI",
+    "Venda": "Venda 241",
+    "Status": "Aprovado",
+    "Valor_Venda": 117000,
+    "Parcelas_2025": 6,
+    "Soma_Parcelas_2025": 300261.13
+  },
+  {
+    "SF_ID": "a1VN5000004pyBbMAI",
+    "Venda": "Venda 259",
+    "Status": "Aprovado",
+    "Valor_Venda": 2717,
+    "Parcelas_2025": 1,
+    "Soma_Parcelas_2025": 2549.9
+  },
+  {
+    "SF_ID": "a1VN5000004pyBaMAI",
+    "Venda": "Venda 260",
+    "Status": "Aprovado",
+    "Valor_Venda": 32634,
+    "Parcelas_2025": 2,
+    "Soma_Parcelas_2025": 30627
+  },
+  {
+    "SF_ID": "a1VN5000004pyBZMAY",
+    "Venda": "Venda 261",
+    "Status": "Aprovado",
+    "Valor_Venda": 3120,
+    "Parcelas_2025": 1,
+    "Soma_Parcelas_2025": 2924.62
+  },
+  {
+    "SF_ID": "a1VN5000004pyBYMAY",
+    "Venda": "Venda 262",
+    "Status": "Aprovado",
+    "Valor_Venda": 16317,
+    "Parcelas_2025": 1,
+    "Soma_Parcelas_2025": 15313.5
+  },
+  {
+    "SF_ID": "a1VN5000004pyBXMAY",
+    "Venda": "Venda 264",
+    "Status": "Aprovado",
+    "Valor_Venda": 45600,
+    "Parcelas_2025": 6,
+    "Soma_Parcelas_2025": 42795.6
+  },
+  {
+    "SF_ID": "a1VN5000004pyBWMAY",
+    "Venda": "Venda 265",
+    "Status": "Aprovado",
+    "Valor_Venda": 12000,
+    "Parcelas_2025": 5,
+    "Soma_Parcelas_2025": 11248
+  },
+  {
+    "SF_ID": "a1VN5000004pyBVMAY",
+    "Venda": "Venda 266",
+    "Status": "Aprovado",
+    "Valor_Venda": 28920,
+    "Parcelas_2025": 2,
+    "Soma_Parcelas_2025": 27141.42
+  },
+  {
+    "SF_ID": "a1VN5000004pyBTMAY",
+    "Venda": "Venda 269",
+    "Status": "Aprovado",
+    "Valor_Venda": 28920,
+    "Parcelas_2025": 2,
+    "Soma_Parcelas_2025": 27141.42
+  },
+  {
+    "SF_ID": "a1VN5000004pyBRMAY",
+    "Venda": "Venda 273",
+    "Status": "Aprovado",
+    "Valor_Venda": 3120,
+    "Parcelas_2025": 1,
+    "Soma_Parcelas_2025": 2924.62
+  },
+  {
+    "SF_ID": "a1VN5000004pyBOMAY",
+    "Venda": "Venda 281",
+    "Status": "Aprovado",
+    "Valor_Venda": 67719.4,
+    "Parcelas_2025": 1,
+    "Soma_Parcelas_2025": 63554.66
+  },
+  {
+    "SF_ID": "a1VN5000004pyBNMAY",
+    "Venda": "Venda 282",
+    "Status": "Aprovado",
+    "Valor_Venda": 44647.44,
+    "Parcelas_2025": 1,
+    "Soma_Parcelas_2025": 47720.72
+  },
+  {
+    "SF_ID": "a1VN5000004pyBMMAY",
+    "Venda": "Venda 283",
+    "Status": "Aprovado",
+    "Valor_Venda": 159735.96,
+    "Parcelas_2025": 3,
+    "Soma_Parcelas_2025": 124259.1
+  },
+  {
+    "SF_ID": "a1VN5000004pyBJMAY",
+    "Venda": "Venda 289",
+    "Status": "Aprovado",
+    "Valor_Venda": 12000,
+    "Parcelas_2025": 5,
+    "Soma_Parcelas_2025": 11848.9
+  },
+  {
+    "SF_ID": "a1VN5000004pyBIMAY",
+    "Venda": "Venda 290",
+    "Status": "Aprovado",
+    "Valor_Venda": 55490.4,
+    "Parcelas_2025": 2,
+    "Soma_Parcelas_2025": 52070.74
+  },
+  {
+    "SF_ID": "a1VN5000004pyBHMAY",
+    "Venda": "Venda 295",
+    "Status": "Aprovado",
+    "Valor_Venda": 63000,
+    "Parcelas_2025": 2,
+    "Soma_Parcelas_2025": 90625.5
+  },
+  {
+    "SF_ID": "a1VN5000004pyBFMAY",
+    "Venda": "Venda 298",
+    "Status": "Aprovado",
+    "Valor_Venda": 5954,
+    "Parcelas_2025": 1,
+    "Soma_Parcelas_2025": 5584.33
+  },
+  {
+    "SF_ID": "a1VN5000004pyBDMAY",
+    "Venda": "Venda 300",
+    "Status": "Aprovado",
+    "Valor_Venda": 14938.56,
+    "Parcelas_2025": 1,
+    "Soma_Parcelas_2025": 14019.84
+  },
+  {
+    "SF_ID": "a1VN5000004pyB9MAI",
+    "Venda": "Venda 319",
+    "Status": "Aprovado",
+    "Valor_Venda": 43206.06,
+    "Parcelas_2025": 1,
+    "Soma_Parcelas_2025": 43206.06
+  },
+  {
+    "SF_ID": "a1VN5000004pyB7MAI",
+    "Venda": "Venda 322",
+    "Status": "Aprovado",
+    "Valor_Venda": 102051.64,
+    "Parcelas_2025": 1,
+    "Soma_Parcelas_2025": 102051.64
+  },
+  {
+    "SF_ID": "a1VN5000004qdfhMAA",
+    "Venda": "Venda 324",
+    "Status": "Aprovado",
+    "Valor_Venda": 300484.8,
+    "Parcelas_2025": 12,
+    "Soma_Parcelas_2025": 300484.8
+  }
+]

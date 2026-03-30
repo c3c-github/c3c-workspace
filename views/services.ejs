@@ -421,7 +421,6 @@
                                 <tr>
                                     <th class="text-[10px] font-black text-gray-400 uppercase tracking-widest py-5 px-8 w-10">#</th>
                                     <th class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Descrição da Parcela</th>
-                                    <th class="text-[10px] font-black text-gray-400 uppercase tracking-widest text-center">Competência</th>
                                     <th class="text-[10px] font-black text-gray-400 uppercase tracking-widest text-center">Vencimento</th>
                                     <th class="text-[10px] font-black text-gray-400 uppercase tracking-widest text-center">Status</th>
                                     <th class="text-[10px] font-black text-gray-400 uppercase tracking-widest text-right px-8">Valor Bruto</th>
@@ -430,7 +429,7 @@
                             <tbody id="svc-billing-list" class="divide-y divide-gray-50"></tbody>
                             <tfoot class="bg-gray-50/50 font-black text-gray-800">
                                 <tr>
-                                    <td colspan="5" class="px-8 py-5 text-[10px] uppercase tracking-widest text-gray-400 text-right">Total das Parcelas Sincronizadas</td>
+                                    <td colspan="4" class="px-8 py-5 text-[10px] uppercase tracking-widest text-gray-400 text-right">Total das Parcelas Sincronizadas</td>
                                     <td id="billing-total-value" class="px-8 py-5 text-right text-xs">R$ 0,00</td>
                                 </tr>
                             </tfoot>
@@ -440,6 +439,30 @@
 
                 <!-- 5. EXECUÇÃO (ANTIGO EXTRATO REAL) -->
                 <div id="view-realized" class="hidden fade-in space-y-8 text-left">
+                    <!-- KPIs GLOBAIS DE EXECUÇÃO -->
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                        <div class="bg-white p-6 rounded-[24px] border border-gray-100 shadow-sm">
+                            <p class="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1">Taxa Média Hora</p>
+                            <h3 id="kpi-avg-rate" class="text-xl font-black text-c3c-blue">R$ 0,00</h3>
+                            <p class="text-[8px] text-gray-400 mt-1 font-bold italic uppercase">Base de Distribuição</p>
+                        </div>
+                        <div class="bg-white p-6 rounded-[24px] border border-gray-100 shadow-sm">
+                            <p class="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1">Eficiência Custo</p>
+                            <h3 id="kpi-cost-efficiency" class="text-xl font-black text-red-600">R$ 0,00</h3>
+                            <p class="text-[8px] text-gray-400 mt-1 font-bold italic uppercase">Custo Médio p/ Hora</p>
+                        </div>
+                        <div class="bg-white p-6 rounded-[24px] border border-gray-100 shadow-sm">
+                            <p class="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1">Volume de Esforço</p>
+                            <h3 id="kpi-total-hours" class="text-xl font-black text-gray-800">0,0h</h3>
+                            <p class="text-[8px] text-gray-400 mt-1 font-bold italic uppercase">Total Horas Custo</p>
+                        </div>
+                        <div class="bg-white p-6 rounded-[24px] border border-gray-100 shadow-sm">
+                            <p class="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1">Margem Realizada</p>
+                            <h3 id="kpi-realized-margin" class="text-xl font-black text-teal-600">0,0%</h3>
+                            <p class="text-[8px] text-gray-400 mt-1 font-bold italic uppercase">DRE do Projeto</p>
+                        </div>
+                    </div>
+
                     <div class="bg-white rounded-[32px] border border-gray-100 shadow-sm overflow-hidden">
                         <div class="px-8 py-6 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
                             <div>
@@ -455,12 +478,11 @@
                                 <thead class="bg-white border-b border-gray-100">
                                     <tr>
                                         <th class="px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest">Mês/Ano</th>
-                                        <th class="px-8 py-5 text-right text-[10px] font-black text-teal-500 uppercase tracking-widest bg-teal-50/10">Realizado (Rev)</th>
-                                        <th class="px-8 py-5 text-right text-[10px] font-black text-red-400 uppercase tracking-widest bg-red-50/10">Custo Real</th>
-                                        <th class="px-8 py-5 text-right text-[10px] font-black text-c3c-blue uppercase tracking-widest border-l border-gray-50">Margem R$</th>
-                                        <th class="px-8 py-5 text-center text-[10px] font-black text-gray-400 uppercase tracking-widest">Margem %</th>
-                                    </tr>
-                                </thead>
+                                        <th class="px-8 py-5 text-right text-[10px] font-black text-teal-700 uppercase tracking-widest bg-teal-50/30">Realizado (Rev)</th>
+                                        <th class="px-8 py-5 text-right text-[10px] font-black text-red-700 uppercase tracking-widest bg-red-50/30">Custo Real</th>
+                                        <th class="px-8 py-5 text-right text-[10px] font-black text-gray-600 uppercase tracking-widest">Horas</th>
+                                        <th class="px-8 py-5 text-center text-[10px] font-black text-gray-400 uppercase tracking-widest border-l border-gray-50">Margem %</th>
+                                    </tr>                                </thead>
                                 <tbody id="realized-monthly-body" class="divide-y divide-gray-50 text-[10px]">
                                     <!-- Dinâmico via JavaScript -->
                                 </tbody>
@@ -488,13 +510,12 @@
                                     <tr>
                                         <th class="px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest">Consultor</th>
                                         <th class="px-8 py-5 text-right text-[10px] font-black text-gray-400 uppercase tracking-widest">Horas</th>
-                                        <th class="px-8 py-5 text-right text-[10px] font-black text-teal-500 uppercase tracking-widest bg-teal-50/10">Receita</th>
-                                        <th class="px-8 py-5 text-right text-[10px] font-black text-red-400 uppercase tracking-widest bg-red-50/10">Custo</th>
-                                        <th class="px-8 py-5 text-center text-[10px] font-black text-c3c-blue uppercase tracking-widest border-l border-gray-50">Margem %</th>
-                                    </tr>
-                                </thead>
+                                        <th class="px-8 py-5 text-right text-[10px] font-black text-teal-700 uppercase tracking-widest bg-teal-50/30">Receita</th>
+                                        <th class="px-8 py-5 text-right text-[10px] font-black text-red-700 uppercase tracking-widest bg-red-50/30">Custo</th>
+                                        <th class="px-8 py-5 text-center text-[10px] font-black text-gray-400 uppercase tracking-widest border-l border-gray-50">Margem %</th>
+                                    </tr>                                </thead>
                                 <tbody id="performance-consultant-body" class="divide-y divide-gray-50 text-[10px]">
-                                    <!-- Dinâmico via JavaScript futuramente -->
+                                    <!-- Dinâmico via JavaScript -->
                                     <tr class="divide-x divide-gray-50">
                                         <td colspan="5" class="px-8 py-10 text-center text-gray-400 italic uppercase tracking-widest text-[10px]">Aguardando dados de performance...</td>
                                     </tr>
@@ -1152,15 +1173,7 @@
             try {
                 const billingPayload = {
                     serviceId: currentServiceData.id,
-                    sales: linkedSales.map(s => ({ id: s.id_ca || s.id, number: s.number, emissionDate: s.date, total: s.total, status: s.status })),
-                    installments: Array.from(document.querySelectorAll('.billing-row')).map(tr => ({
-                        desc: tr.cells[1].querySelector('input')?.value || '',
-                        month: tr.cells[2].querySelector('input')?.value || '',
-                        date: tr.cells[3].querySelector('input')?.value || '',
-                        value: parseFloat(tr.dataset.value || 0),
-                        status: tr.dataset.status || 'Pendente',
-                        originSaleId: tr.dataset.originSaleId
-                    }))
+                    sales: linkedSales.map(s => ({ id: s.id_ca || s.id, number: s.number, emissionDate: s.date, total: s.total, status: s.status }))
                 };
 
                 const resBill = await fetch('/api/services/sales', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(billingPayload) });
@@ -1313,7 +1326,6 @@
             tr.innerHTML = `
                 <td class="px-8 py-5 text-center text-gray-300 font-black text-[10px]">${r}</td>
                 <td class="px-3 py-2"><input class="input-inline font-black text-gray-700 uppercase readonly-field" readonly value="${d.desc||''}" placeholder="-"></td>
-                <td class="px-3 py-2 text-center"><input class="input-inline text-center font-black readonly-field" readonly type="month" value="${d.month||''}"></td>
                 <td class="px-3 py-2 text-center"><input class="input-inline text-center font-black readonly-field" readonly type="date" value="${d.date||''}"></td>
                 <td class="px-3 py-2 text-center">
                     <span class="${statusClass} text-[8px] font-black px-2 py-1 rounded-full border uppercase tracking-widest">${rawStatus}</span>
@@ -1525,8 +1537,8 @@
                     <tr class="divide-x divide-gray-50 hover:bg-gray-50/50 transition-all text-[11px]">
                         <td class="px-8 py-4 font-black text-gray-800 uppercase tracking-widest">${l.person}</td>
                         <td class="px-8 py-4 text-right font-bold text-gray-500">${l.hours.toFixed(1)}h</td>
-                        <td class="px-8 py-4 text-right font-black text-teal-600 bg-teal-50/10">${money.format(l.revenue || 0)}</td>
-                        <td class="px-8 py-4 text-right font-bold text-red-400 bg-red-50/5">${money.format(l.cost || 0)}</td>
+                        <td class="px-8 py-4 text-right font-black text-teal-700 bg-teal-50/30">${money.format(l.revenue || 0)}</td>
+                        <td class="px-8 py-4 text-right font-bold text-red-700 bg-red-50/30">${money.format(l.cost || 0)}</td>
                         <td class="px-8 py-4 text-center border-l border-gray-50">
                             <span class="px-3 py-1 rounded-full font-black ${margin >= 30 ? 'bg-teal-50 text-teal-600' : (margin < 0 ? 'bg-red-50 text-red-600' : 'bg-amber-50 text-amber-600')}">
                                 ${margin.toFixed(1)}%
@@ -1557,7 +1569,7 @@
             if (!gridBody) return;
 
             gridBody.innerHTML = '';
-            let totals = { realRev: 0, realCost: 0 };
+            let totals = { realRev: 0, realCost: 0, realHrs: 0 };
 
             consolidated.forEach(m => {
                 const dateLabel = m.month.split('-').reverse().slice(1).join('/'); // MM/YYYY
@@ -1566,14 +1578,15 @@
 
                 totals.realRev += (m.realized.revenue || 0);
                 totals.realCost += (m.realized.cost || 0);
+                totals.realHrs += (m.realized.hours || 0);
 
                 gridBody.insertAdjacentHTML('beforeend', `
                     <tr class="divide-x divide-gray-50 hover:bg-gray-50/50 transition-all text-[11px]">
                         <td class="px-8 py-4 font-black text-gray-800">${dateLabel}</td>
-                        <td class="px-8 text-right font-black text-teal-600 bg-teal-50/10">${money.format(m.realized.revenue || 0)}</td>
-                        <td class="px-8 text-right font-bold text-red-400 bg-red-50/5">${money.format(m.realized.cost || 0)}</td>
-                        <td class="px-8 text-right font-black ${realMarginValue >= 0 ? 'text-c3c-blue' : 'text-red-500'} border-l border-gray-50">${money.format(realMarginValue)}</td>
-                        <td class="px-8 text-center">
+                        <td class="px-8 text-right font-black text-teal-700 bg-teal-50/30">${money.format(m.realized.revenue || 0)}</td>
+                        <td class="px-8 text-right font-bold text-red-700 bg-red-50/30">${money.format(m.realized.cost || 0)}</td>
+                        <td class="px-8 text-right font-bold text-gray-600">${m.realized.hours.toFixed(1)}h</td>
+                        <td class="px-8 text-center border-l border-gray-50">
                             <span class="px-3 py-1 rounded-full font-black ${realMarginPct >= 30 ? 'bg-teal-50 text-teal-600' : 'bg-amber-50 text-amber-600'}">
                                 ${realMarginPct.toFixed(1)}%
                             </span>
@@ -1582,18 +1595,24 @@
                 `);
             });
 
-            // Totais no Rodapé
-            const totalMarginValue = totals.realRev - totals.realCost;
-            const totalMarginPct = totals.realRev > 0 ? (totalMarginValue / totals.realRev) * 100 : (totals.realCost > 0 ? -100 : 0);
+            // --- ATUALIZAR KPIs GLOBAIS ---
+            const avgRate = totals.realHrs > 0 ? (totals.realRev / totals.realHrs) : 0;
+            const costEff = totals.realHrs > 0 ? (totals.realCost / totals.realHrs) : 0;
+            const totalMarginPct = totals.realRev > 0 ? ((totals.realRev - totals.realCost) / totals.realRev) * 100 : (totals.realCost > 0 ? -100 : 0);
+
+            document.getElementById('kpi-avg-rate').innerText = money.format(avgRate) + '/h';
+            document.getElementById('kpi-cost-efficiency').innerText = money.format(costEff) + '/h';
+            document.getElementById('kpi-total-hours').innerText = totals.realHrs.toFixed(1) + 'h';
+            document.getElementById('kpi-realized-margin').innerText = totalMarginPct.toFixed(1) + '%';
 
             if(gridFoot) {
                 gridFoot.innerHTML = `
                     <tr class="divide-x divide-gray-100 bg-gray-100/30">
                         <td class="px-8 py-5 uppercase tracking-widest text-[9px]">Totais Consolidados</td>
-                        <td class="px-8 text-right text-teal-700">${money.format(totals.realRev)}</td>
-                        <td class="px-8 text-right text-red-500">${money.format(totals.realCost)}</td>
-                        <td class="px-8 text-right text-c3c-blue border-l border-gray-100">${money.format(totalMarginValue)}</td>
-                        <td class="px-8 text-center font-black text-teal-700">${totalMarginPct.toFixed(1)}%</td>
+                        <td class="px-8 text-right text-teal-700 bg-teal-100/10">${money.format(totals.realRev)}</td>
+                        <td class="px-8 text-right text-red-500 bg-red-100/10">${money.format(totals.realCost)}</td>
+                        <td class="px-8 text-right text-gray-800">${totals.realHrs.toFixed(1)}h</td>
+                        <td class="px-8 text-center font-black text-teal-700 border-l border-gray-100">${totalMarginPct.toFixed(1)}%</td>
                     </tr>
                 `;
             }

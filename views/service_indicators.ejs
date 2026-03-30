@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Indicadores de Serviço - C3C Workspace</title>
+    
+    <!-- Tailwind & Lucide -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
+    
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: { 
+                        'c3c-blue': '#2978FF', 
+                        'c3c-dark': '#1E293B',
+                        'neon-cyan': '#00F0FF',
+                        'neon-pink': '#FF007F',
+                        'neon-purple': '#8A2BE2'
+                    },
+                    backgroundImage: { 'c3c-gradient': 'linear-gradient(135deg, #2978FF 0%, #1E40AF 100%)' },
+                    fontFamily: { sans: ['Montserrat', 'sans-serif'] }
+                }
+            }
+        }
+    </script>
+    <style>
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; height: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #f1f1f1; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        .fade-in { animation: fadeIn 0.3s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .kpi-card { @apply bg-white p-6 rounded-[24px] border border-gray-100 shadow-sm hover:shadow-md transition-all; }
+        .filter-select { @apply bg-white border border-gray-200 rounded-xl px-4 py-2 text-xs font-bold text-gray-600 outline-none focus:ring-2 focus:ring-c3c-blue transition-all cursor-pointer; }
+    </style>
+</head>
+<body class="h-screen flex overflow-hidden bg-[#F8FAFC]">
+
+    <%- include('partials/sidebar', { page: 'service_indicators' }) %>
+
+    <main class="flex-1 md:ml-64 flex flex-col min-w-0 overflow-hidden relative">
+        <!-- HEADER PRINCIPAL COM FILTROS -->
+        <header class="bg-white border-b border-gray-100 px-8 py-6 shrink-0 shadow-sm z-10">
+            <div class="flex flex-col lg:flex-row justify-between lg:items-center gap-6">
+                <div class="text-left">
+                    <h1 class="text-2xl font-black text-gray-800 uppercase tracking-tighter leading-none">Indicadores de Serviço</h1>
+                    <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1 text-left">Análise de Rentabilidade e Performance Operacional</p>
+                </div>
+                
+                <div class="flex flex-wrap items-center gap-3">
+                    <div class="flex flex-col gap-1">
+                        <span class="text-[9px] font-black text-gray-400 uppercase tracking-widest ml-1 text-left">Período</span>
+                        <select id="filter-period" onchange="updateFilters()" class="filter-select">
+                            <option value="30">Últimos 30 dias</option>
+                            <option value="90">Últimos 90 dias</option>
+                            <option value="cur_month" selected>Mês Atual</option>
+                            <option value="last_month">Mês Passado</option>
+                            <option value="all">Todo Histórico</option>
+                        </select>
+                    </div>
+
+                    <div class="flex flex-col gap-1">
+                        <span class="text-[9px] font-black text-gray-400 uppercase tracking-widest ml-1 text-left">Tipo de Serviço</span>
+                        <select id="filter-type" onchange="updateFilters()" class="filter-select">
+                            <option value="all">Todos os Tipos</option>
+                        </select>
+                    </div>
+
+                    <div class="flex flex-col gap-1">
+                        <span class="text-[9px] font-black text-gray-400 uppercase tracking-widest ml-1 text-left">Cliente</span>
+                        <select id="filter-client" onchange="onClientChange()" class="filter-select max-w-[200px]">
+                            <option value="all">Todos os Clientes</option>
+                        </select>
+                    </div>
+
+                    <div class="flex flex-col gap-1">
+                        <span class="text-[9px] font-black text-gray-400 uppercase tracking-widest ml-1 text-left">Serviço</span>
+                        <select id="filter-service" onchange="applyFilters()" class="filter-select max-w-[200px]">
+                            <option value="all">Todos os Serviços</option>
+                        </select>
+                    </div>
+
+                    <button onclick="loadData()" class="mt-4 p-2 bg-gray-50 hover:bg-gray-100 rounded-xl transition-all" title="Recarregar Dados">
+                        <i data-lucide="refresh-cw" class="w-4 h-4 text-gray-400"></i>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- CONTEÚDO -->
+        <div class="flex-1 overflow-y-auto p-4 md:p-8 fade-in custom-scrollbar bg-gray-50/30">
+            
+            <!-- KPIs TOP -->
+            <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-8">
+                <div class="kpi-card relative overflow-hidden text-left">
+                    <div class="absolute top-0 right-0 w-16 h-16 bg-c3c-blue/5 rounded-bl-full flex items-center justify-center -mr-4 -mt-4">
+                        <i data-lucide="percent" class="w-5 h-5 text-c3c-blue opacity-20"></i>
+                    </div>
+                    <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Margem Global</p>
+                    <h3 id="kpi-margin" class="text-2xl font-black text-gray-800 tracking-tighter">0%</h3>
+                    <p class="text-[9px] font-bold text-emerald-500 mt-1">Eficiência Financeira</p>
+                </div>
+
+                <div class="kpi-card relative overflow-hidden text-left">
+                    <div class="absolute top-0 right-0 w-16 h-16 bg-neon-pink/5 rounded-bl-full flex items-center justify-center -mr-4 -mt-4">
+                        <i data-lucide="ticket" class="w-5 h-5 text-neon-pink opacity-20"></i>
+                    </div>
+                    <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Ticket Médio</p>
+                    <h3 id="kpi-ticket" class="text-2xl font-black text-gray-800 tracking-tighter">R$ 0</h3>
+                    <p class="text-[9px] font-bold text-gray-400 mt-1">Por Serviço</p>
+                </div>
+
+                <div class="kpi-card relative overflow-hidden text-left">
+                    <div class="absolute top-0 right-0 w-16 h-16 bg-neon-cyan/5 rounded-bl-full flex items-center justify-center -mr-4 -mt-4">
+                        <i data-lucide="trending-up" class="w-5 h-5 text-neon-cyan opacity-20"></i>
+                    </div>
+                    <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Receita Méd./Hora</p>
+                    <h3 id="kpi-rev-hour" class="text-2xl font-black text-gray-800 tracking-tighter">R$ 0</h3>
+                    <p class="text-[9px] font-bold text-gray-400 mt-1">Produtividade Valor</p>
+                </div>
+
+                <div class="kpi-card relative overflow-hidden text-left">
+                    <div class="absolute top-0 right-0 w-16 h-16 bg-red-500/5 rounded-bl-full flex items-center justify-center -mr-4 -mt-4">
+                        <i data-lucide="dollar-sign" class="w-5 h-5 text-red-500 opacity-20"></i>
+                    </div>
+                    <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Custo Méd./Hora</p>
+                    <h3 id="kpi-cost-hour" class="text-2xl font-black text-gray-800 tracking-tighter">R$ 0</h3>
+                    <p class="text-[9px] font-bold text-gray-400 mt-1">Eficiência de Custo</p>
+                </div>
+
+                <div class="kpi-card relative overflow-hidden text-left">
+                    <div class="absolute top-0 right-0 w-16 h-16 bg-neon-purple/5 rounded-bl-full flex items-center justify-center -mr-4 -mt-4">
+                        <i data-lucide="zap" class="w-5 h-5 text-neon-purple opacity-20"></i>
+                    </div>
+                    <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Lucro Méd./Hora</p>
+                    <h3 id="kpi-profit-hour" class="text-2xl font-black text-gray-800 tracking-tighter">R$ 0</h3>
+                    <p class="text-[9px] font-bold text-gray-400 mt-1">Margem Operacional</p>
+                </div>
+            </div>
+
+            <!-- GRÁFICOS -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Evolução Financeira -->
+                <div class="bg-white p-6 rounded-[32px] border border-gray-100 shadow-sm flex flex-col">
+                    <div class="flex items-center justify-between mb-6">
+                        <h4 class="text-xs font-black text-gray-400 uppercase tracking-widest text-left">Evolução Financeira (Receita vs Custo)</h4>
+                        <i data-lucide="line-chart" class="w-4 h-4 text-gray-300"></i>
+                    </div>
+                    <div id="chart-evolution" class="w-full h-[350px]"></div>
+                </div>
+
+                <!-- Matriz de Rentabilidade -->
+                <div class="bg-white p-6 rounded-[32px] border border-gray-100 shadow-sm flex flex-col">
+                    <div class="flex items-center justify-between mb-6">
+                        <h4 class="text-xs font-black text-gray-400 uppercase tracking-widest text-left">Matriz de Rentabilidade (Por Serviço)</h4>
+                        <i data-lucide="layers" class="w-4 h-4 text-gray-300"></i>
+                    </div>
+                    <div id="chart-matrix" class="w-full h-[350px]"></div>
+                </div>
+
+                <!-- ROI Operacional -->
+                <div class="bg-white p-6 rounded-[32px] border border-gray-100 shadow-sm flex flex-col lg:col-span-2">
+                    <div class="flex items-center justify-between mb-6">
+                        <h4 class="text-xs font-black text-gray-400 uppercase tracking-widest text-left">ROI Operacional (Por Pessoa)</h4>
+                        <i data-lucide="users" class="w-4 h-4 text-gray-300"></i>
+                    </div>
+                    <div id="chart-roi" class="w-full h-[450px]"></div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        let rawData = [];
+        let filteredData = [];
+        let charts = {};
+
+        const VIBRANT_COLORS = ['#00F0FF', '#FF007F', '#8A2BE2', '#2978FF', '#1DDDBD', '#F472B6'];
+
+        document.addEventListener('DOMContentLoaded', () => {
+            initCharts();
+            loadData();
+            if (typeof lucide !== 'undefined') lucide.createIcons();
+        });
+
+        async function loadData() {
+            try {
+                const res = await fetch('/api/services/indicators/data');
+                const result = await res.json();
+                if (result.success) {
+                    rawData = result.data;
+                    populateInitialFilters();
+                    updateFilters();
+                }
+            } catch (e) {
+                console.error("Erro ao carregar dados:", e);
+            }
+        }
+
+        function initCharts() {
+            charts.evolution = echarts.init(document.getElementById('chart-evolution'));
+            charts.matrix = echarts.init(document.getElementById('chart-matrix'));
+            charts.roi = echarts.init(document.getElementById('chart-roi'));
+
+            window.addEventListener('resize', () => {
+                Object.values(charts).forEach(c => c.resize());
+            });
+        }
+
+        function populateInitialFilters() {
+            const types = [...new Set(rawData.map(d => d.squad))].filter(Boolean).sort();
+            const typeFilter = document.getElementById('filter-type');
+            typeFilter.innerHTML = '<option value="all">Todos os Tipos</option>' + 
+                types.map(t => `<option value="${t}">${t}</option>`).join('');
+        }
+
+        function onClientChange() {
+            updateServiceFilter();
+            applyFilters();
+        }
+
+        function updateServiceFilter() {
+            const selectedClient = document.getElementById('filter-client').value;
+            const selectedType = document.getElementById('filter-type').value;
+            const selectedPeriod = document.getElementById('filter-period').value;
+
+            // Filtro base para os serviços (considera período e tipo)
+            let dataForServices = filterByPeriodAndType(rawData, selectedPeriod, selectedType);
+            
+            if (selectedClient !== 'all') {
+                dataForServices = dataForServices.filter(d => d.client === selectedClient);
+            }
+
+            const services = [...new Set(dataForServices.map(d => d.service))].filter(Boolean).sort();
+            const serviceFilter = document.getElementById('filter-service');
+            const currentService = serviceFilter.value;
+
+            serviceFilter.innerHTML = '<option value="all">Todos os Serviços</option>' + 
+                services.map(s => `<option value="${s}">${s}</option>`).join('');
+            
+            if (services.includes(currentService)) {
+                serviceFilter.value = currentService;
+            }
+        }
+
+        function updateFilters() {
+            const selectedPeriod = document.getElementById('filter-period').value;
+            const selectedType = document.getElementById('filter-type').value;
+
+            // 1. Filtrar dados pelo período e tipo para atualizar os clientes disponíveis
+            let dataForClients = filterByPeriodAndType(rawData, selectedPeriod, selectedType);
+            
+            const clients = [...new Set(dataForClients.map(d => d.client))].filter(Boolean).sort();
+            const clientFilter = document.getElementById('filter-client');
+            const currentClient = clientFilter.value;
+
+            clientFilter.innerHTML = '<option value="all">Todos os Clientes</option>' + 
+                clients.map(c => `<option value="${c}">${c}</option>`).join('');
+            
+            if (clients.includes(currentClient)) {
+                clientFilter.value = currentClient;
+            }
+
+            updateServiceFilter();
+            applyFilters();
+        }
+
+        function filterByPeriodAndType(data, period, type) {
+            let filtered = data;
+
+            // Filtro de Tipo
+            if (type !== 'all') {
+                filtered = filtered.filter(d => d.squad === type);
+            }
+
+            // Filtro de Período
+            const now = new Date();
+            if (period === '30') {
+                const limit = new Date();
+                limit.setDate(now.getDate() - 30);
+                filtered = filtered.filter(d => new Date(d.date) >= limit);
+            } else if (period === '90') {
+                const limit = new Date();
+                limit.setDate(now.getDate() - 90);
+                filtered = filtered.filter(d => new Date(d.date) >= limit);
+            } else if (period === 'cur_month') {
+                filtered = filtered.filter(d => {
+                    const dDate = new Date(d.date);
+                    return dDate.getMonth() === now.getMonth() && dDate.getFullYear() === now.getFullYear();
+                });
+            } else if (period === 'last_month') {
+                const lastMonth = now.getMonth() === 0 ? 11 : now.getMonth() - 1;
+                const year = now.getMonth() === 0 ? now.getFullYear() - 1 : now.getFullYear();
+                filtered = filtered.filter(d => {
+                    const dDate = new Date(d.date);
+                    return dDate.getMonth() === lastMonth && dDate.getFullYear() === year;
+                });
+            }
+
+            return filtered;
+        }
+
+        function applyFilters() {
+            const period = document.getElementById('filter-period').value;
+            const type = document.getElementById('filter-type').value;
+            const client = document.getElementById('filter-client').value;
+            const service = document.getElementById('filter-service').value;
+
+            filteredData = filterByPeriodAndType(rawData, period, type);
+
+            if (client !== 'all') {
+                filteredData = filteredData.filter(d => d.client === client);
+            }
+            if (service !== 'all') {
+                filteredData = filteredData.filter(d => d.service === service);
+            }
+
+            calculateKPIs();
+            renderCharts();
+        }
+
+        function calculateKPIs() {
+            let totalRev = 0;
+            let totalCost = 0;
+            let totalHours = 0;
+            const uniqueServices = new Set();
+
+            filteredData.forEach(d => {
+                totalRev += d.revenue || 0;
+                totalCost += d.cost || 0;
+                totalHours += d.hours || 0;
+                uniqueServices.add(d.service);
+            });
+
+            const margin = totalRev > 0 ? ((totalRev - totalCost) / totalRev) * 100 : 0;
+            const ticket = uniqueServices.size > 0 ? totalRev / uniqueServices.size : 0;
+            const revHour = totalHours > 0 ? totalRev / totalHours : 0;
+            const costHour = totalHours > 0 ? totalCost / totalHours : 0;
+            const profitHour = totalHours > 0 ? (totalRev - totalCost) / totalHours : 0;
+
+            document.getElementById('kpi-margin').innerText = margin.toFixed(1) + '%';
+            document.getElementById('kpi-ticket').innerText = 'R$ ' + ticket.toLocaleString('pt-BR', { maximumFractionDigits: 0 });
+            document.getElementById('kpi-rev-hour').innerText = 'R$ ' + revHour.toLocaleString('pt-BR', { maximumFractionDigits: 0 });
+            document.getElementById('kpi-cost-hour').innerText = 'R$ ' + costHour.toLocaleString('pt-BR', { maximumFractionDigits: 0 });
+            document.getElementById('kpi-profit-hour').innerText = 'R$ ' + profitHour.toLocaleString('pt-BR', { maximumFractionDigits: 0 });
+        }
+
+        function renderCharts() {
+            renderEvolutionChart();
+            renderMatrixChart();
+            renderROIChart();
+        }
+
+        function renderEvolutionChart() {
+            const dailyData = {};
+            filteredData.forEach(d => {
+                if (!dailyData[d.date]) dailyData[d.date] = { rev: 0, cost: 0 };
+                dailyData[d.date].rev += d.revenue;
+                dailyData[d.date].cost += d.cost;
+            });
+
+            const dates = Object.keys(dailyData).sort();
+            const revenues = dates.map(d => dailyData[d].rev);
+            const costs = dates.map(d => dailyData[d].cost);
+
+            charts.evolution.setOption({
+                tooltip: { trigger: 'axis' },
+                legend: { bottom: 0 },
+                grid: { top: 40, bottom: 60, left: 60, right: 20 },
+                xAxis: { type: 'category', data: dates },
+                yAxis: { type: 'value', axisLabel: { formatter: 'R$ {value}' } },
+                series: [
+                    { 
+                        name: 'Receita', type: 'line', data: revenues, smooth: true, 
+                        itemStyle: { color: '#00F0FF' }, lineStyle: { width: 3 },
+                        areaStyle: { color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [{offset: 0, color: '#00F0FF44'}, {offset: 1, color: '#00F0FF00'}]) }
+                    },
+                    { 
+                        name: 'Custo', type: 'line', data: costs, smooth: true, 
+                        itemStyle: { color: '#FF007F' }, lineStyle: { width: 3 }
+                    }
+                ]
+            });
+        }
+
+        function renderMatrixChart() {
+            const serviceData = {};
+            filteredData.forEach(d => {
+                if (!serviceData[d.service]) serviceData[d.service] = { rev: 0, cost: 0, hours: 0 };
+                serviceData[d.service].rev += d.revenue;
+                serviceData[d.service].cost += d.cost;
+                serviceData[d.service].hours += d.hours;
+            });
+
+            const scatterData = Object.entries(serviceData).map(([name, data]) => {
+                const margin = data.rev > 0 ? ((data.rev - data.cost) / data.rev) * 100 : 0;
+                return [data.hours, margin, data.rev, name];
+            });
+
+            charts.matrix.setOption({
+                tooltip: {
+                    formatter: (params) => `<b>${params.data[3]}</b><br/>Horas: ${params.data[0].toFixed(1)}h<br/>Margem: ${params.data[1].toFixed(1)}%<br/>Receita: R$ ${params.data[2].toLocaleString('pt-BR')}`
+                },
+                grid: { top: 40, bottom: 40, left: 60, right: 40 },
+                xAxis: { name: 'Horas', splitLine: { lineStyle: { type: 'dashed' } } },
+                yAxis: { name: 'Margem %', splitLine: { lineStyle: { type: 'dashed' } } },
+                series: [{
+                    type: 'scatter',
+                    data: scatterData,
+                    symbolSize: function (data) {
+                        return Math.sqrt(data[2]) / 2; // Tamanho proporcional à receita
+                    },
+                    itemStyle: {
+                        color: function(params) {
+                            return params.data[1] > 30 ? '#00F0FF' : (params.data[1] > 0 ? '#8A2BE2' : '#FF007F');
+                        },
+                        opacity: 0.7
+                    }
+                }]
+            });
+        }
+
+        function renderROIChart() {
+            const personData = {};
+            filteredData.forEach(d => {
+                if (!personData[d.person]) personData[d.person] = { rev: 0, cost: 0 };
+                personData[d.person].rev += d.revenue;
+                personData[d.person].cost += d.cost;
+            });
+
+            const sortedPeople = Object.entries(personData)
+                .map(([name, data]) => ({ name, ...data, margin: data.rev - data.cost }))
+                .sort((a, b) => a.margin - b.margin);
+
+            const names = sortedPeople.map(p => p.name);
+            const revenues = sortedPeople.map(p => p.rev);
+            const costs = sortedPeople.map(p => p.cost);
+
+            charts.roi.setOption({
+                tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+                legend: { bottom: 0 },
+                grid: { left: '3%', right: '4%', bottom: '10%', top: '5%', containLabel: true },
+                xAxis: { type: 'value', axisLabel: { formatter: 'R$ {value}' } },
+                yAxis: { type: 'category', data: names, axisLabel: { fontSize: 10 } },
+                series: [
+                    { name: 'Receita', type: 'bar', stack: 'total', data: revenues, itemStyle: { color: '#00F0FF' } },
+                    { name: 'Custo', type: 'bar', stack: 'total', data: costs.map(c => -c), itemStyle: { color: '#FF007F' } }
+                ]
+            });
+        }
+    </script>
+</body>
+</html>

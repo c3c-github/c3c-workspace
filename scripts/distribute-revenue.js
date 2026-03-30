@@ -50,14 +50,15 @@ async function distributeRevenue() {
                 const percentualAlocacao = valorAlocado / totalVenda;
 
                 const paidRes = await conn.query(`
-                    SELECT SUM(Valor__c) total 
+                    SELECT Valor__c, Status__c 
                     FROM ParcelaFinanceira__c 
-                    WHERE VendaContaAzul__c = '${vendaId}' 
-                    AND Status__c IN ('Pago', 'Conciliado')
-                    AND DataVencimento__c >= ${START_DATE}
+                    WHERE VendaContaAzul__c = '${vendaId}'
                 `);
 
-                const totalPago = paidRes.records[0].total || 0;
+                const totalPago = paidRes.records
+                    .filter(p => (p.Status__c || '').toUpperCase() === 'QUITADO')
+                    .reduce((sum, p) => sum + (p.Valor__c || 0), 0);
+                
                 totalServiceRevenue += (totalPago * percentualAlocacao);
             }
 

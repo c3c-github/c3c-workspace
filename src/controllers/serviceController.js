@@ -91,7 +91,13 @@ exports.getServiceDetails = async (req, res) => {
         ]);
         
         let rFin = { records: [] };
-        try { rFin = await conn.query(`SELECT Id, Valor__c, DataVencimento__c, Competencia__c, Status__c, Descricao__c FROM ParcelaFinanceira__c WHERE Servico__c = '${id}' AND Competencia__c >= 2025-01-01`); } catch(err) { console.error("Erro busca parcelas:", err.message); }
+        try { 
+            rFin = await conn.query(`
+                SELECT Id, Valor__c, DataVencimento__c, Competencia__c, Status__c, Descricao__c 
+                FROM ParcelaFinanceira__c 
+                WHERE VendaContaAzul__c IN (SELECT Venda__c FROM VendaServico__c WHERE Servico__c = '${id}')
+            `); 
+        } catch(err) { console.error("Erro busca parcelas:", err.message); }
 
         if (rSvc.totalSize === 0) return res.status(404).json({ message: "Not found" });
         const svc = rSvc.records[0];
@@ -160,7 +166,6 @@ exports.getServiceRealizedData = async (req, res) => {
     try {
         const conn = await getSfConnection();
         
-        // 1. Buscar Consolidados de Baseline e Alocação (OrcamentoCompetencia__c)
         const orcResults = await conn.query(`
             SELECT Competencia__c, ReceitaPrevista__c, CustoPrevisto__c, AlocacaoPrevista__c, Alocacao__c 
             FROM OrcamentoCompetencia__c 
@@ -172,29 +177,24 @@ exports.getServiceRealizedData = async (req, res) => {
         
         orcResults.records.forEach(orc => {
             const comp = orc.Competencia__c;
-            if (!consolidated[comp]) consolidated[comp] = { month: comp, baseline: { revenue: 0, cost: 0 }, forecast: { revenue: 0, cost: 0 }, realized: { revenue: 0, cost: 0, hours: 0 } };
+            if (!consolidated[comp]) consolidated[comp] = { month: comp, baseline: { revenue: 0, cost: 0 }, forecast: { revenue: 0, cost: 0 }, realized: { revenue: 0, cost: 0, hours: 0, avgRate: 0 } };
             
             const data = consolidated[comp];
-            
-            // Dados de Baseline (Comercial)
             if (orc.AlocacaoPrevista__c) {
                 data.baseline.revenue += orc.ReceitaPrevista__c || 0;
                 data.baseline.cost += orc.CustoPrevisto__c || 0;
             }
-            
-            // Dados de Forecast (Alocação Planejada)
             if (orc.Alocacao__c) {
                 data.forecast.revenue += orc.ReceitaPrevista__c || 0;
                 data.forecast.cost += orc.CustoPrevisto__c || 0;
             }
         });
 
-        // 2. Buscar Dados Reais diretamente dos Lançamentos de Horas
         const timeLogs = await conn.query(`
             SELECT 
                 CALENDAR_MONTH(DiaPeriodo__r.Data__c) m, 
                 CALENDAR_YEAR(DiaPeriodo__r.Data__c) y, 
-                SUM(Horas__c) hrs, 
+                SUM(HorasCusto__c) hrs, 
                 SUM(ValorTotalLancamento__c) cost,
                 SUM(ValorReceita__c) rev
             FROM LancamentoHora__c 
@@ -205,17 +205,17 @@ exports.getServiceRealizedData = async (req, res) => {
 
         timeLogs.records.forEach(log => {
             const comp = `${log.y}-${String(log.m).padStart(2, '0')}-01`;
-            if (!consolidated[comp]) consolidated[comp] = { month: comp, baseline: { revenue: 0, cost: 0 }, forecast: { revenue: 0, cost: 0 }, realized: { revenue: 0, cost: 0, hours: 0 } };
+            if (!consolidated[comp]) consolidated[comp] = { month: comp, baseline: { revenue: 0, cost: 0 }, forecast: { revenue: 0, cost: 0 }, realized: { revenue: 0, cost: 0, hours: 0, avgRate: 0 } };
             
             const data = consolidated[comp];
             data.realized.revenue = log.rev || 0;
             data.realized.cost = log.cost || 0;
             data.realized.hours = log.hrs || 0;
+            data.realized.avgRate = (log.hrs > 0) ? (log.rev / log.hrs) : 0;
         });
 
-        // 3. Buscar Detalhamento por Pessoa (Totalizado por Projeto)
         const personLogs = await conn.query(`
-            SELECT Pessoa__r.Name personName, SUM(Horas__c) hrs, SUM(ValorTotalLancamento__c) cost, SUM(ValorReceita__c) rev
+            SELECT Pessoa__r.Name personName, SUM(HorasCusto__c) hrs, SUM(ValorTotalLancamento__c) cost, SUM(ValorReceita__c) rev
             FROM LancamentoHora__c 
             WHERE Servico__c = '${id}' AND DiaPeriodo__r.Data__c >= 2025-01-01
             GROUP BY Pessoa__r.Name
@@ -229,6 +229,7 @@ exports.getServiceRealizedData = async (req, res) => {
                 hours: r.hrs || 0, 
                 cost: r.cost || 0, 
                 revenue: r.rev || 0,
+                avgRate: (r.hrs > 0) ? (r.rev / r.hrs) : 0,
                 margin: calculateMargin(r.rev || 0, r.cost || 0)
             })) 
         });
@@ -321,25 +322,23 @@ exports.saveService = async (req, res) => {
 };
 
 exports.saveSales = async (req, res) => {
-    const { serviceId, sales, installments } = req.body; 
+    const { serviceId, sales } = req.body; 
     if (!serviceId || !sales || !Array.isArray(sales)) return res.status(400).json({ success: false });
     try {
         const conn = await getSfConnection();
         const existingLinks = await conn.query(`SELECT Id, Venda__r.IDContaAzul__c FROM VendaServico__c WHERE Servico__c = '${serviceId}'`);
         const existingLinksMap = {};
         existingLinks.records.forEach(r => existingLinksMap[r.Venda__r.IDContaAzul__c] = r.Id);
-        const saleToSfIdMap = {};
+        
         for (const s of sales) {
             const salesInSf = await conn.query(`SELECT Id FROM VendaContaAzul__c WHERE IDContaAzul__c = '${s.id}' LIMIT 1`);
             let sfSaleId = salesInSf.totalSize > 0 ? salesInSf.records[0].Id : (await conn.sobject('VendaContaAzul__c').create({ IDContaAzul__c: s.id, Name: s.number ? String(s.number) : 'S/N', DataEmissao__c: s.emissionDate, ValorTotal__c: s.total, Status__c: s.status })).id;
-            saleToSfIdMap[s.id] = sfSaleId;
-            if (existingLinksMap[s.id]) await conn.sobject('VendaServico__c').update({ Id: existingLinksMap[s.id], ValorAlocado__c: s.allocatedValue || s.total });
-            else await conn.sobject('VendaServico__c').create({ Servico__c: serviceId, Venda__c: sfSaleId, ValorAlocado__c: s.allocatedValue || s.total });
-        }
-        if (installments && installments.length > 0) {
-            const currentInsts = await conn.query(`SELECT Id FROM ParcelaFinanceira__c WHERE Servico__c = '${serviceId}'`);
-            if (currentInsts.totalSize > 0) await conn.sobject('ParcelaFinanceira__c').destroy(currentInsts.records.map(r => r.Id));
-            await conn.sobject('ParcelaFinanceira__c').create(installments.map(i => ({ Servico__c: serviceId, VendaContaAzul__c: saleToSfIdMap[i.originSaleId] || null, Descricao__c: i.desc, Competencia__c: i.month ? `${i.month}-01` : null, DataVencimento__c: i.date, Valor__c: i.value, Status__c: i.status, IDContaAzul__c: i.id_ca })));
+            
+            if (existingLinksMap[s.id]) {
+                await conn.sobject('VendaServico__c').update({ Id: existingLinksMap[s.id], ValorAlocado__c: s.allocatedValue || s.total });
+            } else {
+                await conn.sobject('VendaServico__c').create({ Servico__c: serviceId, Venda__c: sfSaleId, ValorAlocado__c: s.allocatedValue || s.total });
+            }
         }
         res.json({ success: true });
     } catch (e) { res.status(500).json({ success: false, error: e.message }); }
@@ -404,7 +403,23 @@ exports.getSaleInstallmentsPreview = async (req, res) => {
             if (['QUITADO', 'PAGO', 'CONFIRMADO', 'APROVADO'].includes(sUpper)) normalizedStatus = 'Pago';
             else if (sUpper === 'VENCIDO') normalizedStatus = 'Atrasado';
             else if (sUpper === 'CANCELADO') normalizedStatus = 'Cancelado';
-            return { desc: p.descricao, date: p.data_vencimento ? p.data_vencimento.split('T')[0] : null, value: p.valor_composicao ? p.valor_composicao.valor_bruto : (p.valor_pago || 0), status: normalizedStatus, month: p.data_vencimento ? p.data_vencimento.substring(0, 7) : null, id_ca: p.id };
+            
+            // Capturar valor líquido real (se pago, soma das baixas, senão valor líquido da composição)
+            let finalValue = (p.valor_composicao ? p.valor_composicao.valor_liquido : p.valor) || 0;
+            if (p.baixas && p.baixas.length > 0) {
+                finalValue = p.baixas.reduce((sum, b) => {
+                    const val = (b.valor_composicao ? b.valor_composicao.valor_liquido : b.valor_pago) || 0;
+                    return sum + val;
+                }, 0);
+            }
+
+            return { 
+                desc: p.descricao, 
+                date: p.data_vencimento ? p.data_vencimento.split('T')[0] : null, 
+                value: finalValue, 
+                status: p.status, 
+                id_ca: p.id 
+            };
         }));
     } catch (e) { res.status(500).json({ error: "Erro busca parcelas" }); }
 };

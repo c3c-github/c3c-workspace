@@ -1,0 +1,346 @@
+[
+  {
+    "Venda": "Venda 295",
+    "Cliente": "99 Tecnologia",
+    "Status": "Aprovado",
+    "Valor Total": 63000,
+    "Parcelas 2025+": 2,
+    "SF_ID": "a1VN5000004pyBHMAY"
+  },
+  {
+    "Venda": "Venda 198",
+    "Cliente": "99 Tecnologia",
+    "Status": "Aprovado",
+    "Valor Total": 180000,
+    "Parcelas 2025+": 8,
+    "SF_ID": "a1VN5000004pyCFMAY"
+  },
+  {
+    "Venda": "Venda 203",
+    "Cliente": "ABRASCE",
+    "Status": "Aprovado",
+    "Valor Total": 59227.68,
+    "Parcelas 2025+": 6,
+    "SF_ID": "a1VN5000004pyCCMAY"
+  },
+  {
+    "Venda": "Venda 269",
+    "Cliente": "ADAMA",
+    "Status": "Aprovado",
+    "Valor Total": 28920,
+    "Parcelas 2025+": 2,
+    "SF_ID": "a1VN5000004pyBTMAY"
+  },
+  {
+    "Venda": "Venda 266",
+    "Cliente": "ADAMA",
+    "Status": "Aprovado",
+    "Valor Total": 28920,
+    "Parcelas 2025+": 2,
+    "SF_ID": "a1VN5000004pyBVMAY"
+  },
+  {
+    "Venda": "Venda 185",
+    "Cliente": "ADAMA",
+    "Status": "Aprovado",
+    "Valor Total": 173520,
+    "Parcelas 2025+": 5,
+    "SF_ID": "a1VN5000004pyCOMAY"
+  },
+  {
+    "Venda": "Venda 126",
+    "Cliente": "ADAMA",
+    "Status": "Aprovado",
+    "Valor Total": 512000,
+    "Parcelas 2025+": 9,
+    "SF_ID": "a1VN5000004pyDJMAY"
+  },
+  {
+    "Venda": "Venda 273",
+    "Cliente": "ASTER SISTEMAS DE SERVICOS LTDA",
+    "Status": "Aprovado",
+    "Valor Total": 3120,
+    "Parcelas 2025+": 1,
+    "SF_ID": "a1VN5000004pyBRMAY"
+  },
+  {
+    "Venda": "Venda 261",
+    "Cliente": "ASTER SISTEMAS DE SERVICOS LTDA",
+    "Status": "Aprovado",
+    "Valor Total": 3120,
+    "Parcelas 2025+": 1,
+    "SF_ID": "a1VN5000004pyBZMAY"
+  },
+  {
+    "Venda": "Venda 194",
+    "Cliente": "ASTER SISTEMAS DE SERVICOS LTDA",
+    "Status": "Aprovado",
+    "Valor Total": 37440,
+    "Parcelas 2025+": 4,
+    "SF_ID": "a1VN5000004pyCJMAY"
+  },
+  {
+    "Venda": "Venda 186",
+    "Cliente": "CARAPRETA",
+    "Status": "Aprovado",
+    "Valor Total": 216000,
+    "Parcelas 2025+": 3,
+    "SF_ID": "a1VN5000004pyCNMAY"
+  },
+  {
+    "Venda": "Venda 171",
+    "Cliente": "Célebre Corretora",
+    "Status": "Aprovado",
+    "Valor Total": 62400,
+    "Parcelas 2025+": 1,
+    "SF_ID": "a1VN5000004pyCaMAI"
+  },
+  {
+    "Venda": "Venda 139",
+    "Cliente": "Célebre Corretora",
+    "Status": "Aprovado",
+    "Valor Total": 39023.8,
+    "Parcelas 2025+": 2,
+    "SF_ID": "a1VN5000004pyD7MAI"
+  },
+  {
+    "Venda": "Venda 324",
+    "Cliente": "CIMENTO APODI",
+    "Status": "Aprovado",
+    "Valor Total": 300484.8,
+    "Parcelas 2025+": 12,
+    "SF_ID": "a1VN5000004qdfhMAA"
+  },
+  {
+    "Venda": "Venda 173",
+    "Cliente": "COMPRE ALUGUE AGORA",
+    "Status": "Aprovado",
+    "Valor Total": 36960,
+    "Parcelas 2025+": 1,
+    "SF_ID": "a1VN5000004pyCZMAY"
+  },
+  {
+    "Venda": "Venda 290",
+    "Cliente": "DOREMUS",
+    "Status": "Aprovado",
+    "Valor Total": 55490.4,
+    "Parcelas 2025+": 2,
+    "SF_ID": "a1VN5000004pyBIMAY"
+  },
+  {
+    "Venda": "Venda 298",
+    "Cliente": "DOREMUS",
+    "Status": "Aprovado",
+    "Valor Total": 5954,
+    "Parcelas 2025+": 1,
+    "SF_ID": "a1VN5000004pyBFMAY"
+  },
+  {
+    "Venda": "Venda 213",
+    "Cliente": "ID DIGITAL",
+    "Status": "Aprovado",
+    "Valor Total": 7722,
+    "Parcelas 2025+": 7,
+    "SF_ID": "a1VN5000004pyC3MAI"
+  },
+  {
+    "Venda": "Venda 179",
+    "Cliente": "ID DIGITAL",
+    "Status": "Aprovado",
+    "Valor Total": 195804,
+    "Parcelas 2025+": 2,
+    "SF_ID": "a1VN5000004pyCUMAY"
+  },
+  {
+    "Venda": "Venda 264",
+    "Cliente": "ID DIGITAL",
+    "Status": "Aprovado",
+    "Valor Total": 45600,
+    "Parcelas 2025+": 6,
+    "SF_ID": "a1VN5000004pyBXMAY"
+  },
+  {
+    "Venda": "Venda 262",
+    "Cliente": "ID DIGITAL",
+    "Status": "Aprovado",
+    "Valor Total": 16317,
+    "Parcelas 2025+": 1,
+    "SF_ID": "a1VN5000004pyBYMAY"
+  },
+  {
+    "Venda": "Venda 260",
+    "Cliente": "ID DIGITAL",
+    "Status": "Aprovado",
+    "Valor Total": 32634,
+    "Parcelas 2025+": 2,
+    "SF_ID": "a1VN5000004pyBaMAI"
+  },
+  {
+    "Venda": "Venda 259",
+    "Cliente": "ID DIGITAL",
+    "Status": "Aprovado",
+    "Valor Total": 2717,
+    "Parcelas 2025+": 1,
+    "SF_ID": "a1VN5000004pyBbMAI"
+  },
+  {
+    "Venda": "Venda 222",
+    "Cliente": "ID DIGITAL",
+    "Status": "Aprovado",
+    "Valor Total": 1091.15,
+    "Parcelas 2025+": 2,
+    "SF_ID": "a1VN5000004pyBwMAI"
+  },
+  {
+    "Venda": "Venda 214",
+    "Cliente": "ID DIGITAL",
+    "Status": "Aprovado",
+    "Valor Total": 3196.05,
+    "Parcelas 2025+": 7,
+    "SF_ID": "a1VN5000004pyC2MAI"
+  },
+  {
+    "Venda": "Venda 212",
+    "Cliente": "ID DIGITAL",
+    "Status": "Aprovado",
+    "Valor Total": 7722,
+    "Parcelas 2025+": 7,
+    "SF_ID": "a1VN5000004pyC4MAI"
+  },
+  {
+    "Venda": "Venda 201",
+    "Cliente": "ID DIGITAL",
+    "Status": "Aprovado",
+    "Valor Total": 15120,
+    "Parcelas 2025+": 5,
+    "SF_ID": "a1VN5000004pyCEMAY"
+  },
+  {
+    "Venda": "Venda 178",
+    "Cliente": "KARINA",
+    "Status": "Aprovado",
+    "Valor Total": 125412,
+    "Parcelas 2025+": 1,
+    "SF_ID": "a1VN5000004pyCVMAY"
+  },
+  {
+    "Venda": "Venda 228",
+    "Cliente": "NCC-1701 COMUNICACAO LTDA",
+    "Status": "Aprovado",
+    "Valor Total": 9000,
+    "Parcelas 2025+": 4,
+    "SF_ID": "a1VN5000004pyBrMAI"
+  },
+  {
+    "Venda": "Venda 233",
+    "Cliente": "OLGACOLOR",
+    "Status": "Aprovado",
+    "Valor Total": 181440,
+    "Parcelas 2025+": 12,
+    "SF_ID": "a1VN5000004pyBpMAI"
+  },
+  {
+    "Venda": "Venda 170",
+    "Cliente": "PAMCARY",
+    "Status": "Aprovado",
+    "Valor Total": 40248,
+    "Parcelas 2025+": 1,
+    "SF_ID": "a1VN5000004pyCbMAI"
+  },
+  {
+    "Venda": "Venda 322",
+    "Cliente": "REDE PONTES (Mar Hotel Conventions)",
+    "Status": "Aprovado",
+    "Valor Total": 102051.64,
+    "Parcelas 2025+": 1,
+    "SF_ID": "a1VN5000004pyB7MAI"
+  },
+  {
+    "Venda": "Venda 319",
+    "Cliente": "Supernova Contabilidade",
+    "Status": "Aprovado",
+    "Valor Total": 43206.06,
+    "Parcelas 2025+": 1,
+    "SF_ID": "a1VN5000004pyB9MAI"
+  },
+  {
+    "Venda": "Venda 283",
+    "Cliente": "VINDI TECNOLOGIA E MARKETING LTDA",
+    "Status": "Aprovado",
+    "Valor Total": 159735.96,
+    "Parcelas 2025+": 3,
+    "SF_ID": "a1VN5000004pyBMMAY"
+  },
+  {
+    "Venda": "Venda 282",
+    "Cliente": "VINDI TECNOLOGIA E MARKETING LTDA",
+    "Status": "Aprovado",
+    "Valor Total": 44647.44,
+    "Parcelas 2025+": 1,
+    "SF_ID": "a1VN5000004pyBNMAY"
+  },
+  {
+    "Venda": "Venda 235",
+    "Cliente": "VINDI TECNOLOGIA E MARKETING LTDA",
+    "Status": "Aprovado",
+    "Valor Total": 62610.72,
+    "Parcelas 2025+": 1,
+    "SF_ID": "a1VN5000004pyBnMAI"
+  },
+  {
+    "Venda": "Venda 281",
+    "Cliente": "VINDI TECNOLOGIA E MARKETING LTDA",
+    "Status": "Aprovado",
+    "Valor Total": 67719.4,
+    "Parcelas 2025+": 1,
+    "SF_ID": "a1VN5000004pyBOMAY"
+  },
+  {
+    "Venda": "Venda 241",
+    "Cliente": "VINDI TECNOLOGIA E MARKETING LTDA",
+    "Status": "Aprovado",
+    "Valor Total": 117000,
+    "Parcelas 2025+": 6,
+    "SF_ID": "a1VN5000004pyBjMAI"
+  },
+  {
+    "Venda": "Venda 224",
+    "Cliente": "VINDI TECNOLOGIA E MARKETING LTDA",
+    "Status": "Aprovado",
+    "Valor Total": 25147.92,
+    "Parcelas 2025+": 1,
+    "SF_ID": "a1VN5000004pyBuMAI"
+  },
+  {
+    "Venda": "Venda 300",
+    "Cliente": "YAPAY PAGAMENTOS ONLINE S.A",
+    "Status": "Aprovado",
+    "Valor Total": 14938.56,
+    "Parcelas 2025+": 1,
+    "SF_ID": "a1VN5000004pyBDMAY"
+  },
+  {
+    "Venda": "Venda 289",
+    "Cliente": "ZANCHETTA ALIMENTOS LTDA",
+    "Status": "Aprovado",
+    "Valor Total": 12000,
+    "Parcelas 2025+": 5,
+    "SF_ID": "a1VN5000004pyBJMAY"
+  },
+  {
+    "Venda": "Venda 265",
+    "Cliente": "ZANCHETTA ALIMENTOS LTDA",
+    "Status": "Aprovado",
+    "Valor Total": 12000,
+    "Parcelas 2025+": 5,
+    "SF_ID": "a1VN5000004pyBWMAY"
+  },
+  {
+    "Venda": "Venda 184",
+    "Cliente": "ZANCHETTA ALIMENTOS LTDA",
+    "Status": "Aprovado",
+    "Valor Total": 28800,
+    "Parcelas 2025+": 3,
+    "SF_ID": "a1VN5000004pyCPMAY"
+  }
+]

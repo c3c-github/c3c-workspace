@@ -3,33 +3,9 @@
     <fullName>Status__c</fullName>
     <externalId>false</externalId>
     <label>Status</label>
+    <length>255</length>
     <required>false</required>
     <trackTrending>false</trackTrending>
-    <type>Picklist</type>
-    <valueSet>
-        <restricted>true</restricted>
-        <valueSetDefinition>
-            <sorted>false</sorted>
-            <value>
-                <fullName>Pendente</fullName>
-                <default>true</default>
-                <label>Pendente</label>
-            </value>
-            <value>
-                <fullName>Pago</fullName>
-                <default>false</default>
-                <label>Pago</label>
-            </value>
-            <value>
-                <fullName>Atrasado</fullName>
-                <default>false</default>
-                <label>Atrasado</label>
-            </value>
-            <value>
-                <fullName>Cancelado</fullName>
-                <default>false</default>
-                <label>Cancelado</label>
-            </value>
-        </valueSetDefinition>
-    </valueSet>
+    <type>Text</type>
+    <unique>false</unique>
 </CustomField>
