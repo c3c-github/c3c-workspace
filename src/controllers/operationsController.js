@@ -140,8 +140,8 @@ exports.getTickets = async (req, res) => {
         const conn = await getSfConnection();
         const today = new Date().toISOString().split('T')[0];
 
-        // PASSO 1: Definir o escopo de Contas permitidas (Apenas com Alocacao Vigente em Serviço de Suporte)
-        const soqlAlocScope = `SELECT Servico__r.Conta__c FROM Alocacao__c WHERE Pessoa__c = '${userId}' AND Servico__r.Tipo__c = 'Suporte' AND DataInicio__c <= ${today} AND (DataFimOriginal__c >= ${today} OR DataFimOriginal__c = NULL)`;
+        // PASSO 1: Definir o escopo de Contas permitidas (Apenas com Alocação Vigente em Serviço de Suporte Ativo)
+        const soqlAlocScope = `SELECT Servico__r.Conta__c FROM Alocacao__c WHERE Pessoa__c = '${userId}' AND Servico__r.Tipo__c = 'Suporte' AND Servico__r.Status__c = 'Ativo' AND DataInicio__c <= ${today} AND (DataFimOriginal__c >= ${today} OR DataFimOriginal__c = NULL)`;
         const alocResScope = await conn.query(soqlAlocScope);
         const accountIds = [...new Set(alocResScope.records.map(a => a.Servico__r ? a.Servico__r.Conta__c : null).filter(id => id !== null))];
         
@@ -302,6 +302,7 @@ exports.getCreateOptions = async (req, res) => {
             FROM Alocacao__c 
             WHERE Pessoa__c = '${userId}' 
             AND Servico__r.Tipo__c = 'Suporte'
+            AND Servico__r.Status__c = 'Ativo'
             AND DataInicio__c <= ${today} 
             AND (DataFimOriginal__c >= ${today} OR DataFimOriginal__c = NULL)
             ORDER BY Servico__r.Name ASC
