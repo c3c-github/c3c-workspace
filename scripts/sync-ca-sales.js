@@ -37,7 +37,8 @@ async function syncAllSales() {
             Name: `Venda ${s.numero}`,
             ValorTotal__c: s.valor_total || s.total || s.valor || 0,
             DataEmissao__c: s.data_emissao || s.data,
-            Status__c: s.situacao ? s.situacao.nome : 'PENDENTE'
+            Status__c: s.situacao ? s.situacao.nome : 'PENDENTE',
+            Cliente__c: s.cliente ? s.cliente.nome : 'N/A'
         }));
         await bulkUpsert(conn, 'VendaContaAzul__c', 'IDContaAzul__c', salesToUpsert);
 

@@ -99,7 +99,8 @@ exports.getIndicatorChunk = async (req, res) => {
 
             // 2. Buscar TODAS as parcelas pagas no período
             const installmentsRes = await conn.query(`
-                SELECT Id, Valor__c, DataVencimento__c, VendaContaAzul__c, VendaContaAzul__r.Name
+                SELECT Id, Valor__c, DataVencimento__c, VendaContaAzul__c, 
+                       VendaContaAzul__r.Name, VendaContaAzul__r.Cliente__c
                 FROM ParcelaFinanceira__c 
                 WHERE DataVencimento__c >= ${start} AND DataVencimento__c <= ${end}
                 AND Status__c IN ('Pago', 'Liquidado', 'QUITADO', 'PAGO')
@@ -134,7 +135,7 @@ exports.getIndicatorChunk = async (req, res) => {
                             person: '💰 RECEITA DIRETA',
                             squad: 'NÃO ASSOCIADO A SERVIÇO',
                             service: 'VENDA NÃO ASSOCIADA A SERVIÇO',
-                            client: p.VendaContaAzul__r ? p.VendaContaAzul__r.Name : 'N/A',
+                            client: p.VendaContaAzul__r ? (p.VendaContaAzul__r.Cliente__c || p.VendaContaAzul__r.Name) : 'N/A',
                             hours: 0,
                             revenue: p.Valor__c || 0,
                             cost: 0
@@ -148,7 +149,7 @@ exports.getIndicatorChunk = async (req, res) => {
                                 person: '💰 RECEITA DIRETA',
                                 squad: link.Servico__r ? link.Servico__r.Tipo__c : 'NÃO ASSOCIADO',
                                 service: link.Servico__r ? link.Servico__r.Name : 'VENDA NÃO ASSOCIADA',
-                                client: (link.Servico__r && link.Servico__r.Conta__r) ? link.Servico__r.Conta__r.Name : (p.VendaContaAzul__r ? p.VendaContaAzul__r.Name : 'N/A'),
+                                client: (link.Servico__r && link.Servico__r.Conta__r) ? link.Servico__r.Conta__r.Name : (p.VendaContaAzul__r ? (p.VendaContaAzul__r.Cliente__c || p.VendaContaAzul__r.Name) : 'N/A'),
                                 hours: 0,
                                 revenue: (p.Valor__c || 0) * ratio,
                                 cost: 0
