@@ -204,10 +204,28 @@ exports.getServiceLogs = async (req, res) => {
         const conn = await getSfConnection();
 
         let serviceIds = [serviceId];
+        let accIdGroup, typeGroup;
+
         if (serviceId.includes('_')) {
-            const [accId, type] = serviceId.split('_');
-            const svcs = await conn.query(`SELECT Id FROM Servico__c WHERE Conta__c = '${accId}' AND Tipo__c = '${type}'`).execute();
+            [accIdGroup, typeGroup] = serviceId.split('_');
+            const svcs = await conn.query(`SELECT Id FROM Servico__c WHERE Conta__c = '${accIdGroup}' AND Tipo__c = '${typeGroup}'`).execute();
             serviceIds = (Array.isArray(svcs) ? svcs : svcs.records).map(s => s.Id);
+        }
+
+        // Busca o contrato mais recente do grupo para calcular a taxa
+        let avgRate = 0;
+        if (typeGroup === 'Suporte' || !serviceId.includes('_')) {
+            const contractSvc = await conn.query(`
+                SELECT Contrato__r.HorasContratadas__c, Contrato__r.Valor__c 
+                FROM Servico__c 
+                WHERE Id IN ('${serviceIds.join("','")}') 
+                AND Contrato__c != null 
+                ORDER BY DataInicio__c DESC LIMIT 1
+            `).execute();
+            const cs = contractSvc.records?.[0];
+            if (cs && cs.Contrato__r?.HorasContratadas__c > 0) {
+                avgRate = (cs.Contrato__r.Valor__c || 0) / cs.Contrato__r.HorasContratadas__c;
+            }
         }
 
         const logsRes = await conn.query(`
@@ -224,7 +242,7 @@ exports.getServiceLogs = async (req, res) => {
             id: l.Id, date: l.DiaPeriodo__r?.Data__c, resourceName: l.Pessoa__r?.Name || 'N/A', desc: l.Atividade__r?.Name || 'Sem atividade',
             logged: (l.Horas__c || 0) + 2 * (l.HorasExtras__c || 0),
             billable: l.HorasFaturar__c !== null && l.HorasFaturar__c !== undefined ? l.HorasFaturar__c : ((l.Horas__c || 0) + 2 * (l.HorasExtras__c || 0)),
-            rate: 0
+            rate: avgRate
         })));
     } catch (err) { res.json([]); }
 };
