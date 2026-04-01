@@ -206,26 +206,34 @@
 
         async function loadPeriods() {
             try {
-                // Mesa de medição usa períodos de gestor
-                const res = await fetch(`${API_URL}/periods?type=manager`);
-                const data = await res.json();
                 const selector = document.getElementById('period-selector');
                 selector.innerHTML = '';
                 
-                if(!data || data.length === 0) { 
-                    selector.innerHTML = '<option value="">Sem ciclos ativos</option>'; 
-                    return; 
-                }
-                
-                // Encontra o período não finalizado mais antigo
-                const nonFinalized = data.filter(p => p.Status__c !== 'Finalizado/Pago');
-                let suggestedId = nonFinalized.length > 0 ? nonFinalized[nonFinalized.length - 1].Id : data[0].Id;
+                const now = new Date();
+                const months = [];
+                const monthNames = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
 
-                data.forEach((p, i) => {
+                // Gera os últimos 12 meses fechados
+                for (let i = 0; i < 12; i++) {
+                    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+                    const month = d.getMonth();
+                    const year = d.getFullYear();
+                    
+                    const firstDay = new Date(year, month, 1).toISOString().split('T')[0];
+                    const lastDay = new Date(year, month + 1, 0).toISOString().split('T')[0];
+                    
+                    months.push({
+                        name: `${monthNames[month]} ${year}`,
+                        start: firstDay,
+                        end: lastDay
+                    });
+                }
+
+                months.forEach((m, i) => {
                     const opt = document.createElement('option');
-                    opt.value = JSON.stringify({id: p.Id, start: p.DataInicio__c, end: p.DataFim__c});
-                    opt.text = p.Name;
-                    if (p.Id === suggestedId) opt.selected = true;
+                    opt.value = JSON.stringify({start: m.start, end: m.end});
+                    opt.text = m.name;
+                    if (i === 0) opt.selected = true; // Seleciona o mês atual por padrão
                     selector.appendChild(opt);
                 });
                 
