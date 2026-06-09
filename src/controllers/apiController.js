@@ -470,7 +470,9 @@ exports.handleApprovalAction = async (req, res) => {
       return upd;
     });
 
-    await conn.update("LancamentoHora__c", allUpdates);
+    for (let i = 0; i < allUpdates.length; i += 200) {
+      await conn.update("LancamentoHora__c", allUpdates.slice(i, i + 200));
+    }
 
     // --- LÓGICA DE TRANSIÇÃO DO STATUS DO PERÍODO ---
 
@@ -487,7 +489,10 @@ exports.handleApprovalAction = async (req, res) => {
           Id: id,
           Status__c: "Aberto"
         }));
-        await conn.sobject("Periodo__c").update(periodUpdates);
+        
+        for (let i = 0; i < periodUpdates.length; i += 200) {
+          await conn.sobject("Periodo__c").update(periodUpdates.slice(i, i + 200));
+        }
       } else {
         // APROVAÇÃO: Verifica se o período PODE avançar para 'Aguardando Aprovação RH'
         for (const pId of periodIds) {

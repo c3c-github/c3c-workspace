@@ -251,7 +251,11 @@ exports.saveAdjustments = async (req, res) => {
     try {
         const { serviceId, logs, reportData } = req.body;
         const conn = await getSfConnection();
-        await conn.sobject('LancamentoHora__c').update(logs.map(l => ({ Id: l.id, HorasFaturar__c: l.billable })));
+        
+        const logsUpdates = logs.map(l => ({ Id: l.id, HorasFaturar__c: l.billable }));
+        for (let i = 0; i < logsUpdates.length; i += 200) {
+            await conn.sobject('LancamentoHora__c').update(logsUpdates.slice(i, i + 200));
+        }
 
         let targetServiceId = serviceId;
         if (serviceId.includes('_')) {
@@ -265,7 +269,10 @@ exports.saveAdjustments = async (req, res) => {
             HorasLancadas__c: reportData.logged, HorasAFaturar__c: reportData.billable, Status__c: 'Em Ajuste'
         })).id;
 
-        await conn.sobject('RelatorioHorasFaturarLancamento__c').create(logs.map(l => ({ RelatorioHorasFaturar__c: reportId, LancamentoHora__c: l.id })));
+        const junctionRecords = logs.map(l => ({ RelatorioHorasFaturar__c: reportId, LancamentoHora__c: l.id }));
+        for (let i = 0; i < junctionRecords.length; i += 200) {
+            await conn.sobject('RelatorioHorasFaturarLancamento__c').create(junctionRecords.slice(i, i + 200));
+        }
         res.json({ success: true, reportId });
     } catch (err) { res.status(500).json({ error: err.message }); }
 }
@@ -322,8 +329,16 @@ exports.reproveNotaFiscal = async (req, res) => {
     try {
         const { periodIds, motivo } = req.body; const conn = await getSfConnection();
         const nfs = await conn.query(`SELECT Id FROM NotaFiscal__c WHERE Periodo__c IN ('${periodIds.join("','")}') AND Status__c != 'Reprovada'`);
-        if (nfs.records.length) await conn.sobject('NotaFiscal__c').update(nfs.records.map(nf => ({ Id: nf.Id, Status__c: 'Reprovada', MotivoReprovacao__c: motivo })));
-        await conn.sobject('Periodo__c').update(periodIds.map(id => ({ Id: id, Status__c: 'Liberado para Nota Fiscal' })));
+        if (nfs.records.length) {
+            const nfUpdates = nfs.records.map(nf => ({ Id: nf.Id, Status__c: 'Reprovada', MotivoReprovacao__c: motivo }));
+            for (let i = 0; i < nfUpdates.length; i += 200) {
+                await conn.sobject('NotaFiscal__c').update(nfUpdates.slice(i, i + 200));
+            }
+        }
+        const periodUpdates = periodIds.map(id => ({ Id: id, Status__c: 'Liberado para Nota Fiscal' }));
+        for (let i = 0; i < periodUpdates.length; i += 200) {
+            await conn.sobject('Periodo__c').update(periodUpdates.slice(i, i + 200));
+        }
         res.json({ success: true });
     } catch (e) { res.status(500).json({ error: e.message }); }
 };
@@ -337,8 +352,21 @@ exports.updateFinanceStatus = async (req, res) => {
     try {
         const { periodIds, newStatus } = req.body; const conn = await getSfConnection();
         let nfSt = newStatus === 'Pronto para Pagamento' ? 'Aprovada' : newStatus === 'Pagamento Agendado' ? 'Pagamento Agendado' : newStatus === 'Finalizado/Pago' ? 'Pago' : null;
-        await conn.sobject('Periodo__c').update(periodIds.map(id => ({ Id: id, Status__c: newStatus })));
-        if (nfSt) { const nfs = await conn.query(`SELECT Id FROM NotaFiscal__c WHERE Periodo__c IN ('${periodIds.join("','")}') AND Tipo__c = 'Entrada'`); if (nfs.records.length) await conn.sobject('NotaFiscal__c').update(nfs.records.map(nf => ({ Id: nf.Id, Status__c: nfSt }))); }
+        
+        const periodUpdates = periodIds.map(id => ({ Id: id, Status__c: newStatus }));
+        for (let i = 0; i < periodUpdates.length; i += 200) {
+            await conn.sobject('Periodo__c').update(periodUpdates.slice(i, i + 200));
+        }
+
+        if (nfSt) { 
+            const nfs = await conn.query(`SELECT Id FROM NotaFiscal__c WHERE Periodo__c IN ('${periodIds.join("','")}') AND Tipo__c = 'Entrada'`); 
+            if (nfs.records.length) {
+                const nfUpdates = nfs.records.map(nf => ({ Id: nf.Id, Status__c: nfSt }));
+                for (let i = 0; i < nfUpdates.length; i += 200) {
+                    await conn.sobject('NotaFiscal__c').update(nfUpdates.slice(i, i + 200));
+                }
+            } 
+        }
         if (newStatus === 'Finalizado/Pago') periodIds.forEach(id => syncNfToSharePoint(conn, id).catch(console.error));
         res.json({ success: true });
     } catch (e) { res.status(500).json({ error: e.message }); }

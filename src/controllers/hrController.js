@@ -243,7 +243,10 @@ exports.handleHrAction = async (req, res) => {
     }
 
     if (updates.length > 0) {
-      await conn.sobject("LancamentoHora__c").update(updates);
+      // Process in chunks of 200
+      for (let i = 0; i < updates.length; i += 200) {
+        await conn.sobject("LancamentoHora__c").update(updates.slice(i, i + 200));
+      }
 
       // --- LOGICA DE TRANSIÇÃO DO STATUS DO PERÍODO ---
       if (affectedPeriodIds.size > 0) {
@@ -253,7 +256,10 @@ exports.handleHrAction = async (req, res) => {
             Id: id,
             Status__c: "Aberto"
           }));
-          await conn.sobject("Periodo__c").update(periodUpdates);
+          
+          for (let i = 0; i < periodUpdates.length; i += 200) {
+            await conn.sobject("Periodo__c").update(periodUpdates.slice(i, i + 200));
+          }
         } else {
           // APROVAÇÃO: Verifica se o período PODE avançar para 'Liberado para Nota Fiscal'
           for (const pId of affectedPeriodIds) {

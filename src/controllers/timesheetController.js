@@ -433,10 +433,12 @@ exports.submitPeriod = async (req, res) => {
         // Mesmo que não existam lançamentos para atualizar, vamos atualizar o status do período
         // para garantir que ele mude conforme a ação do usuário.
         
-        // 2. Atualiza Lançamentos se existirem
+        // 2. Atualiza Lançamentos se existirem (em lotes de 200 para evitar limite da API)
         if (result.totalSize > 0) {
             const updates = result.records.map(r => ({ Id: r.Id, Status__c: 'Em aprovação do serviço' }));
-            await conn.sobject('LancamentoHora__c').update(updates);
+            for (let i = 0; i < updates.length; i += 200) {
+                await conn.sobject('LancamentoHora__c').update(updates.slice(i, i + 200));
+            }
         }
 
         // 3. Atualiza o Status do PERÍODO para 'Em aprovação do serviço'
@@ -465,11 +467,12 @@ exports.recallPeriod = async (req, res) => {
         `;
         const result = await conn.query(query);
 
-        // 2. Volta Lançamentos para Rascunho se existirem
+        // 2. Volta Lançamentos para Rascunho se existirem (em lotes de 200 para evitar limite da API)
         if (result.totalSize > 0) {
-            // Dividir em lotes de 200 para o Salesforce se necessário (jsforce cuida disso geralmente, mas garantimos)
             const updates = result.records.map(r => ({ Id: r.Id, Status__c: 'Rascunho' }));
-            await conn.sobject('LancamentoHora__c').update(updates);
+            for (let i = 0; i < updates.length; i += 200) {
+                await conn.sobject('LancamentoHora__c').update(updates.slice(i, i + 200));
+            }
         }
 
         // 3. Volta o Status do PERÍODO para 'Aberto'

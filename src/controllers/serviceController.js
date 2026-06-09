@@ -15,9 +15,9 @@ exports.renderServicesPage = async (req, res) => {
         const conn = await getSfConnection();
         const query = `
             SELECT Id, Name, Conta__r.Name, Tipo__c, Status__c, DataInicio__c, DataFimOriginal__c, DataFim__c, 
-                   ReceitaVendida__c, CustoVendido__c, MargemVendida__c, 
-                   ReceitaPrevista__c, CustoPrevisto__c, MargemPrevista__c, 
-                   ReceitaRealizada__c, CustoRealizado__c, MargemRealizada__c,
+                   ReceitaVendida__c, CustoVendido__c, 
+                   ReceitaPrevista__c, CustoPrevisto__c, 
+                   ReceitaRealizada__c, CustoRealizado__c, 
                    (SELECT Id FROM VendasVinculadas__r LIMIT 1),
                    (SELECT Id FROM LancamentosHoras__r LIMIT 1)
             FROM Servico__c 
@@ -32,9 +32,9 @@ exports.renderServicesPage = async (req, res) => {
             return {
                 id: s.Id, name: s.Name, client: s.Conta__r ? s.Conta__r.Name : '', type: s.Tipo__c, status: s.Status__c || 'Ativo',
                 dataInicio: s.DataInicio__c, dataFimOriginal: s.DataFimOriginal__c, dataFim: s.DataFim__c,
-                prop: { rev: s.ReceitaVendida__c || 0, margin: parseFloat((s.MargemVendida__c || 0).toFixed(2)) }, 
+                prop: { rev: s.ReceitaVendida__c || 0, margin: calculateMargin(s.ReceitaVendida__c, s.CustoVendido__c) }, 
                 act: { rev: rev, margin: margem }, 
-                fcst: { rev: s.ReceitaPrevista__c || 0, cost: s.CustoPrevisto__c || 0, margin: parseFloat((s.MargemPrevista__c || 0).toFixed(2)) },
+                fcst: { rev: s.ReceitaPrevista__c || 0, cost: s.CustoPrevisto__c || 0, margin: calculateMargin(s.ReceitaPrevista__c, s.CustoPrevisto__c) },
                 health: {
                     hasSales: (s.VendasVinculadas__r && s.VendasVinculadas__r.totalSize > 0),
                     hasLogs: (s.LancamentosHoras__r && s.LancamentosHoras__r.totalSize > 0)

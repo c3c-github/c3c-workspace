@@ -145,7 +145,7 @@ public with sharing class ContaAzulSyncBatch implements Database.Batchable<sObje
 
             for (Object obj : parcelas) {
                 Map<String, Object> p = (Map<String, Object>) obj;
-                String caDueDate = (String) p.get('due_date'); // Ex: "2026-03-25T03:00:00.000+00:00"
+                String caDueDate = (String) p.get('data_vencimento'); // Ex: "2026-03-25T03:00:00.000+00:00"
                 
                 if (caDueDate != null && caDueDate.startsWith(sfDueDateStr)) {
                     return (String) p.get('status');
