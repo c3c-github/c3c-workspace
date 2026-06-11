@@ -8,6 +8,7 @@ async function heartbeat() {
         if (token) {
             console.log("Token está válido e pronto para uso.");
         }
+        process.exit(0);
     } catch (e) {
         console.error("FALHA CRÍTICA NO HEARTBEAT:", e.message);
         // Aqui poderíamos enviar um e-mail ou alerta se o token morrer

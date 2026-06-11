@@ -206,6 +206,7 @@ async function runSyncV2() {
         if (svcsUpdate.length > 0) await bulkOperation(conn, 'Servico__c', 'update', svcsUpdate);
 
         console.log(`\n🏁 MOTOR FINALIZADO! Tempo: ${((new Date() - startTime) / 1000).toFixed(2)}s`);
+        process.exit(0);
     } catch (e) { console.error(`❌ ERRO:`, e.message); process.exit(1); }
 }
 

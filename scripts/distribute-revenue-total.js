@@ -150,6 +150,7 @@ async function distributeRevenue() {
         }
 
         console.log(`\n🏁 RATEIO DEFINITIVO CONCLUÍDO!`);
+        process.exit(0);
     } catch (e) {
         console.error("❌ ERRO NO RATEIO:", e.message);
         process.exit(1);

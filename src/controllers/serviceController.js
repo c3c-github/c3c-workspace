@@ -404,14 +404,8 @@ exports.getSaleInstallmentsPreview = async (req, res) => {
             else if (sUpper === 'VENCIDO') normalizedStatus = 'Atrasado';
             else if (sUpper === 'CANCELADO') normalizedStatus = 'Cancelado';
             
-            // Capturar valor líquido real (se pago, soma das baixas, senão valor líquido da composição)
-            let finalValue = (p.valor_composicao ? p.valor_composicao.valor_liquido : p.valor) || 0;
-            if (p.baixas && p.baixas.length > 0) {
-                finalValue = p.baixas.reduce((sum, b) => {
-                    const val = (b.valor_composicao ? b.valor_composicao.valor_liquido : b.valor_pago) || 0;
-                    return sum + val;
-                }, 0);
-            }
+            // Capturar valor cheio faturado (sem descontos/baixas)
+            const finalValue = p.valor || 0;
 
             return { 
                 desc: p.descricao, 

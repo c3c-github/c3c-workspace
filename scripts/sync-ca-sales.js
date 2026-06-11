@@ -54,6 +54,7 @@ async function syncAllSales() {
             }
         }
         console.log(`\n🏁 SINCRONIZAÇÃO CONCLUÍDA!`);
+        process.exit(0);
     } catch (e) {
         console.error(`❌ ERRO NO PROCESSO:`, e.message);
         process.exit(1);
@@ -74,13 +75,7 @@ async function syncSaleInstallments(conn, token, saleId) {
     if (installments.length === 0) return;
 
     const installmentsToUpsert = installments.map(p => {
-        let finalValue = (p.valor_composicao ? p.valor_composicao.valor_liquido : p.valor) || 0;
-        if (p.baixas && p.baixas.length > 0) {
-            finalValue = p.baixas.reduce((sum, b) => {
-                const val = (b.valor_composicao ? b.valor_composicao.valor_liquido : b.valor_pago) || 0;
-                return sum + val;
-            }, 0);
-        }
+        const finalValue = p.valor || 0; // Utiliza o valor cheio faturado (sem deduções fiscais ou baixas)
 
         return {
             IDContaAzul__c: p.id,
