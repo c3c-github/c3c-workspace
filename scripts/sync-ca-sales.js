@@ -75,7 +75,10 @@ async function syncSaleInstallments(conn, token, saleId) {
     if (installments.length === 0) return;
 
     const installmentsToUpsert = installments.map(p => {
-        const finalValue = p.valor || 0; // Utiliza o valor cheio faturado (sem deduções fiscais ou baixas)
+        // Utiliza o valor cheio faturado (valor_bruto) da composição, com fallbacks caso não exista
+        const finalValue = (p.valor_composicao && p.valor_composicao.valor_bruto !== undefined)
+            ? p.valor_composicao.valor_bruto
+            : (p.valor || p.valor_pago || 0);
 
         return {
             IDContaAzul__c: p.id,

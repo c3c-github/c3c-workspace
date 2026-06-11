@@ -404,8 +404,10 @@ exports.getSaleInstallmentsPreview = async (req, res) => {
             else if (sUpper === 'VENCIDO') normalizedStatus = 'Atrasado';
             else if (sUpper === 'CANCELADO') normalizedStatus = 'Cancelado';
             
-            // Capturar valor cheio faturado (sem descontos/baixas)
-            const finalValue = p.valor || 0;
+            // Capturar valor cheio faturado (valor_bruto) da composição, com fallbacks caso não exista
+            const finalValue = (p.valor_composicao && p.valor_composicao.valor_bruto !== undefined)
+                ? p.valor_composicao.valor_bruto
+                : (p.valor || p.valor_pago || 0);
 
             return { 
                 desc: p.descricao, 
