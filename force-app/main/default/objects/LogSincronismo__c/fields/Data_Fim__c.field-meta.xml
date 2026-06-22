@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Data_Fim__c</fullName>
+    <description>Data e hora em que a execução do script foi concluída (seja com sucesso ou erro).</description>
+    <label>Data de Fim</label>
+    <required>false</required>
+    <trackTrending>false</trackTrending>
+    <type>DateTime</type>
+</CustomField>

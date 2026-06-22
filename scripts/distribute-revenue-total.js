@@ -1,7 +1,12 @@
 require('dotenv').config();
 const { getSfConnection } = require('../src/config/salesforce');
+const IntegrationLogger = require('../src/services/loggerService');
+
+const logger = new IntegrationLogger('distribute-revenue');
+logger.interceptConsole();
 
 async function distributeRevenue() {
+    await logger.start();
     console.log(`[${new Date().toISOString()}] 🚀 INICIANDO MOTOR DE RATEIO PONDERADO POR VENDA...`);
     try {
         const conn = await getSfConnection();
@@ -149,10 +154,10 @@ async function distributeRevenue() {
             await bulkUpdate(conn, 'Servico__c', serviceUpdates);
         }
 
-        console.log(`\n🏁 RATEIO DEFINITIVO CONCLUÍDO!`);
+        await logger.success("🏁 RATEIO DEFINITIVO CONCLUÍDO!");
         process.exit(0);
     } catch (e) {
-        console.error("❌ ERRO NO RATEIO:", e.message);
+        await logger.fail(e);
         process.exit(1);
     }
 }

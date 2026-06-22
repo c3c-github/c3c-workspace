@@ -1,13 +1,16 @@
 require('dotenv').config();
 const { getSfConnection } = require('../src/config/salesforce');
-const { getValidToken, updateSyncStatus } = require('../src/services/contaAzulAuth');
+const { getValidToken } = require('../src/services/contaAzulAuth');
+const IntegrationLogger = require('../src/services/loggerService');
 const axios = require('axios');
+
+const logger = new IntegrationLogger('sync-ca-sales');
+logger.interceptConsole();
 
 const CA_API_URL = 'https://api-v2.contaazul.com/v1';
 
 async function syncAllSales() {
-    console.log(`[${new Date().toISOString()}] 🚀 INICIANDO SINCRONIZAÇÃO TOTAL (ESPELHO CA)...`);
-    await updateSyncStatus('Executando');
+    await logger.start();
     
     try {
         const token = await getValidToken();
@@ -54,12 +57,10 @@ async function syncAllSales() {
                 console.error(`Erro na venda ${sale.id}:`, e.message);
             }
         }
-        console.log(`\n🏁 SINCRONIZAÇÃO CONCLUÍDA!`);
-        await updateSyncStatus('Sucesso');
+        await logger.success("🏁 SINCRONIZAÇÃO CONCLUÍDA!");
         process.exit(0);
     } catch (e) {
-        console.error(`❌ ERRO NO PROCESSO:`, e.message);
-        await updateSyncStatus('Erro', e.message);
+        await logger.fail(e);
         process.exit(1);
     }
 }
