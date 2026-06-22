@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<PermissionSet xmlns="http://soap.sforce.com/2006/04/metadata">
+    <hasActivationRequired>false</hasActivationRequired>
+    <label>Logs de Sincronismo Conta Azul</label>
+    <description>Concede permissões para gravar logs de execução e status da integração Conta Azul no Salesforce.</description>
+
+    <!-- Permissões de Objeto para LogSincronismo__c -->
+    <objectPermissions>
+        <allowCreate>true</allowCreate>
+        <allowDelete>true</allowDelete>
+        <allowEdit>true</allowEdit>
+        <allowRead>true</allowRead>
+        <modifyAllRecords>true</modifyAllRecords>
+        <object>LogSincronismo__c</object>
+        <viewAllRecords>true</viewAllRecords>
+    </objectPermissions>
+
+    <!-- Permissões de Campos para LogSincronismo__c -->
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>LogSincronismo__c.Data_Inicio__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>LogSincronismo__c.Data_Fim__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>LogSincronismo__c.Status__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>LogSincronismo__c.Script__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>LogSincronismo__c.Mensagem_Erro__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>LogSincronismo__c.Detalhes__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+
+    <!-- Permissões de Campos para Configuracao__c -->
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>Configuracao__c.Data_Ultimo_Sincronismo__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>Configuracao__c.Status_Ultimo_Sincronismo__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>Configuracao__c.Mensagem_Erro_Sincronismo__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+</PermissionSet>
