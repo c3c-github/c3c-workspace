@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Data_Ultimo_Sincronismo__c</fullName>
+    <description>Data e hora em que a sincronização Conta Azul foi concluída com sucesso.</description>
+    <label>Data Último Sincronismo</label>
+    <required>false</required>
+    <trackTrending>false</trackTrending>
+    <type>DateTime</type>
+</CustomField>

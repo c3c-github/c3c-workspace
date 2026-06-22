@@ -60,6 +60,29 @@ async function getValidToken() {
     }
 }
 
+async function updateSyncStatus(status, errorMessage = null) {
+    try {
+        const conn = await getSfConnection();
+        const result = await conn.query("SELECT Id FROM Configuracao__c LIMIT 1");
+        if (result.totalSize > 0) {
+            const configId = result.records[0].Id;
+            const updates = {
+                Id: configId,
+                Status_Ultimo_Sincronismo__c: status,
+                Mensagem_Erro_Sincronismo__c: errorMessage
+            };
+            if (status === 'Sucesso') {
+                updates.Data_Ultimo_Sincronismo__c = new Date().toISOString();
+            }
+            await conn.sobject("Configuracao__c").update(updates);
+            console.log(`✅ Status de sincronismo '${status}' gravado no Salesforce.`);
+        }
+    } catch (e) {
+        console.error("⚠️ Não foi possível gravar status de sincronismo no Salesforce:", e.message);
+    }
+}
+
 module.exports = {
-    getValidToken
+    getValidToken,
+    updateSyncStatus
 };

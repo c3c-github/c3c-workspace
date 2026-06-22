@@ -1,12 +1,13 @@
 require('dotenv').config();
 const { getSfConnection } = require('../src/config/salesforce');
-const { getValidToken } = require('../src/services/contaAzulAuth');
+const { getValidToken, updateSyncStatus } = require('../src/services/contaAzulAuth');
 const axios = require('axios');
 
 const CA_API_URL = 'https://api-v2.contaazul.com/v1';
 
 async function syncAllSales() {
     console.log(`[${new Date().toISOString()}] 🚀 INICIANDO SINCRONIZAÇÃO TOTAL (ESPELHO CA)...`);
+    await updateSyncStatus('Executando');
     
     try {
         const token = await getValidToken();
@@ -54,9 +55,11 @@ async function syncAllSales() {
             }
         }
         console.log(`\n🏁 SINCRONIZAÇÃO CONCLUÍDA!`);
+        await updateSyncStatus('Sucesso');
         process.exit(0);
     } catch (e) {
         console.error(`❌ ERRO NO PROCESSO:`, e.message);
+        await updateSyncStatus('Erro', e.message);
         process.exit(1);
     }
 }
