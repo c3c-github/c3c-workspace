@@ -14,6 +14,7 @@ const serviceController = require('./controllers/serviceController');
 const serviceIndicatorController = require('./controllers/serviceIndicatorController');
 const utilityController = require('./controllers/utilityController');
 const billingController = require('./controllers/billingController');
+const syncController = require('./controllers/syncController');
 
 const requireAuth = (req, res, next) => {
     if (!req.session || !req.session.user) { return res.redirect('/'); }
@@ -155,5 +156,8 @@ router.get('/billing/report-print', requireAuth, canAccessBilling, billingContro
 router.get('/api/billing/grid', requireAuth, canAccessBilling, billingController.getBillingGrid);
 router.get('/api/billing/service-logs', requireAuth, canAccessBilling, billingController.getServiceLogs);
 router.post('/api/billing/save', requireAuth, canAccessBilling, billingController.saveAdjustments);
+
+// --- DISPARADOR DE SINCRONISMO (APEX CALLOUT) ---
+router.post('/api/sync/trigger', syncController.triggerSync);
 
 module.exports = router;

@@ -25,7 +25,7 @@
                 </rightValue>
             </conditions>
             <connector>
-                <targetReference>Enviar_Email_Alerta</targetReference>
+                <targetReference>Disparar_Sincronismo_Heroku</targetReference>
             </connector>
             <label>Falhou ou Atrasou</label>
         </rules>
@@ -78,37 +78,13 @@
         <storeOutputAutomatically>true</storeOutputAutomatically>
     </recordLookups>
     <actionCalls>
-        <name>Enviar_Email_Alerta</name>
-        <label>Enviar E-mail de Alerta</label>
+        <name>Disparar_Sincronismo_Heroku</name>
+        <label>Disparar Sincronismo Heroku</label>
         <locationX>50</locationX>
         <locationY>468</locationY>
-        <actionName>emailSimple</actionName>
-        <actionType>emailSimple</actionType>
+        <actionName>ContaAzulSyncCallout</actionName>
+        <actionType>apex</actionType>
         <flowTransactionModel>CurrentTransaction</flowTransactionModel>
-        <inputParameters>
-            <name>emailAddresses</name>
-            <value>
-                <stringValue>tulio.sales@c3c.com.br</stringValue>
-            </value>
-        </inputParameters>
-        <inputParameters>
-            <name>emailSubject</name>
-            <value>
-                <stringValue>⚠️ ALERTA: Falha no Sincronismo Conta Azul &lt;-&gt; Salesforce</stringValue>
-            </value>
-        </inputParameters>
-        <inputParameters>
-            <name>emailBody</name>
-            <value>
-                <stringValue>Atenção, o sincronismo automático com o Conta Azul no Heroku apresentou problemas.
-
-Status da Última Tentativa: {!Obter_Configuracao.Status_Ultimo_Sincronismo__c}
-Data do Último Sucesso: {!Obter_Configuracao.Data_Ultimo_Sincronismo__c}
-Mensagem de Erro: {!Obter_Configuracao.Mensagem_Erro_Sincronismo__c}
-
-Por favor, verifique o status do Heroku Scheduler.</stringValue>
-            </value>
-        </inputParameters>
     </actionCalls>
     <start>
         <locationX>56</locationX>

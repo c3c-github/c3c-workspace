@@ -63,4 +63,14 @@
         <field>Configuracao__c.Mensagem_Erro_Sincronismo__c</field>
         <readable>true</readable>
     </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>Configuracao__c.Heroku_URL__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>Configuracao__c.Heroku_API_Key__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
 </PermissionSet>
