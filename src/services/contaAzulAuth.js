@@ -26,11 +26,24 @@ async function updateAuthConfig(id, updates) {
  * Obtém um Access Token válido, renovando-o se necessário.
  */
 async function getValidToken() {
-    const config = await getAuthConfig();
-    const expirationDate = config.Data_Expiracao__c ? new Date(config.Data_Expiracao__c) : null;
+    let config = await getAuthConfig();
+    let expirationDate = config.Data_Expiracao__c ? new Date(config.Data_Expiracao__c) : null;
     
     // Se ainda é válido (com margem de 5 minutos), retorna o atual
     if (config.Token__c && expirationDate && (expirationDate.getTime() > (Date.now() + 300000))) {
+        return config.Token__c;
+    }
+
+    // Para evitar condições de corrida em execuções concorrentes (evitando invalidar o Refresh Token rotacionado)
+    const jitter = Math.floor(Math.random() * 2000);
+    console.log(`Token expirado ou próximo da expiração. Aguardando jitter de ${jitter}ms para evitar concorrência...`);
+    await new Promise(resolve => setTimeout(resolve, jitter));
+
+    // Reconsulta após o jitter para ver se outro processo já renovou o token
+    config = await getAuthConfig();
+    expirationDate = config.Data_Expiracao__c ? new Date(config.Data_Expiracao__c) : null;
+    if (config.Token__c && expirationDate && (expirationDate.getTime() > (Date.now() + 300000))) {
+        console.log("Token renovado por outro processo concorrente. Utilizando o token atualizado.");
         return config.Token__c;
     }
 

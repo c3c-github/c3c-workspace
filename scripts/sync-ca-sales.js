@@ -17,13 +17,26 @@ async function syncAllSales() {
         const conn = await getSfConnection();
         console.log("✅ Conectado ao Salesforce e Conta Azul.");
 
+        const isFullSync = process.argv.includes('--full');
+        let queryParams = 'tamanho_pagina=100&campo_ordenado_descendente=DATA';
+
+        if (isFullSync) {
+            console.log("🚀 Iniciando sincronização COMPLETA (Histórica)...");
+        } else {
+            const dateLimit = new Date();
+            dateLimit.setDate(dateLimit.getDate() - 60);
+            const dateStr = dateLimit.toISOString().split('T')[0];
+            queryParams += `&data_inicio=${dateStr}`;
+            console.log(`🚀 Iniciando sincronização INCREMENTAL (Vendas desde: ${dateStr})...`);
+        }
+
         let page = 1;
         let hasMore = true;
         const allSales = [];
 
         while (hasMore) {
             console.log(`Buscando página ${page} de vendas...`);
-            const response = await axios.get(`${CA_API_URL}/venda/busca?tamanho_pagina=100&pagina=${page}&campo_ordenado_descendente=DATA`, {
+            const response = await axios.get(`${CA_API_URL}/venda/busca?${queryParams}&pagina=${page}`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             const sales = response.data.itens || response.data || [];
