@@ -71,7 +71,15 @@ async function syncAllSales() {
             }
         }
         await logger.success("🏁 SINCRONIZAÇÃO CONCLUÍDA!");
-        process.exit(0);
+        
+        console.log("Iniciando motor de rateio de receita (distribute-revenue-total)...");
+        const { fork } = require('child_process');
+        const path = require('path');
+        const distributeProcess = fork(path.join(__dirname, 'distribute-revenue-total.js'));
+        distributeProcess.on('exit', (code) => {
+            console.log(`Motor de rateio concluído com código ${code}`);
+            process.exit(code || 0);
+        });
     } catch (e) {
         await logger.fail(e);
         process.exit(1);
