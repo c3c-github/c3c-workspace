@@ -114,8 +114,10 @@ public with sharing class ApuracaoCustosBatch implements Database.Batchable<sObj
         }
         System.debug('Apuração de Custos finalizada. Disparando Sincronização Conta Azul...');
         
-        // 3. Próximo passo da cadeia: Sincronização de Receitas (ERP)
-        Database.executeBatch(new ContaAzulSyncBatch(), 50);
+        // 3. Próximo passo da cadeia: Sincronização de Receitas (ERP) via Heroku
+        if (!Test.isRunningTest()) {
+            ContaAzulSyncCallout.triggerSync();
+        }
     }
 
     private void recalculateTotals() {

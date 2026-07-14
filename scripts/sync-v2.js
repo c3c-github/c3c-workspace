@@ -120,9 +120,8 @@ async function runSyncV2() {
         // ---------------------------------------------------------
         console.log('⏳ [2/4] Reconciliando Realizado...');
         
-        const [timeLogs, revenueLogs] = await Promise.all([
-            fetchAll("SELECT Id, Responsavel__r.Alocacao__c, DiaPeriodo__r.Data__c, ValorTotalLancamento__c, Horas__c, Servico__c FROM LancamentoHora__c WHERE (Status__c = 'Faturado' OR Status__c = 'Aprovado') AND Responsavel__r.Alocacao__c != null AND DiaPeriodo__r.Data__c >= 2025-01-01"),
-            fetchAll("SELECT OrcamentoCompetencia__c, ValorDistribuido__c FROM DistribuicaoReceita__c WHERE OrcamentoCompetencia__c != null AND OrcamentoCompetencia__r.Competencia__c >= 2025-01-01")
+        const [timeLogs] = await Promise.all([
+            fetchAll("SELECT Id, Responsavel__r.Alocacao__c, DiaPeriodo__r.Data__c, ValorTotalLancamento__c, Horas__c, Servico__c, ValorReceita__c FROM LancamentoHora__c WHERE (Status__c = 'Faturado' OR Status__c = 'Aprovado') AND Responsavel__r.Alocacao__c != null AND DiaPeriodo__r.Data__c >= 2025-01-01")
         ]);
 
         const latestOrcs = await fetchAll("SELECT Id, Alocacao__c, AlocacaoPrevista__c, Competencia__c, CustoRealizado__c, ReceitaRealizada__c, HorasRealizadas__c FROM OrcamentoCompetencia__c WHERE Competencia__c >= 2025-01-01");
@@ -150,12 +149,8 @@ async function runSyncV2() {
                 const data = realizedMap.get(orcId);
                 data.cost += lh.ValorTotalLancamento__c || 0;
                 data.hours += lh.Horas__c || 0;
+                data.revenue += lh.ValorReceita__c || 0;
             }
-        });
-
-        revenueLogs.forEach(rl => {
-            const data = realizedMap.get(rl.OrcamentoCompetencia__c);
-            if (data) data.revenue += rl.ValorDistribuido__c || 0;
         });
 
         const orcsUpdateFinal = [];
@@ -164,8 +159,6 @@ async function runSyncV2() {
             const rev = parseFloat(val.revenue.toFixed(2));
             const hrs = parseFloat(val.hours.toFixed(2));
             
-            const curr = val.current;
-            // UPDATE ALL to force numeric values and fix existing nulls
             orcsUpdateFinal.push({ 
                 Id: id, 
                 CustoRealizado__c: cost, 
@@ -183,9 +176,16 @@ async function runSyncV2() {
         // FASE 3: CONSOLIDAÇÃO SERVIÇOS
         // ---------------------------------------------------------
         console.log('⏳ [3/4] Atualizando serviços...');
-        const serviceTotals = await fetchAll(`SELECT Servico__c, SUM(ReceitaRealizada__c) r, SUM(CustoRealizado__c) c, SUM(ReceitaPrevista__c) rp, SUM(CustoPrevisto__c) cp FROM OrcamentoCompetencia__c WHERE Competencia__c >= 2025-01-01 GROUP BY Servico__c`);
+        
+        // Agrupa custos e previsões dos orçamentos de competência
+        const serviceTotals = await fetchAll(`SELECT Servico__c, SUM(CustoRealizado__c) c, SUM(ReceitaPrevista__c) rp, SUM(CustoPrevisto__c) cp FROM OrcamentoCompetencia__c WHERE Competencia__c >= 2025-01-01 GROUP BY Servico__c`);
+        
+        // Busca a receita realizada atual (calculada pelo rateio e incluindo receitas virtuais) para não sobrescrever com valor incorreto
+        const currentServices = await fetchAll(`SELECT Id, ReceitaRealizada__c FROM Servico__c`);
+        const serviceRevenueMap = new Map(currentServices.map(s => [s.Id, s.ReceitaRealizada__c || 0]));
+
         const svcsUpdate = serviceTotals.map(r => {
-            const revReal = r.r || 0;
+            const revReal = serviceRevenueMap.get(r.Servico__c) || 0;
             const costReal = r.c || 0;
             const marginReal = revReal > 0 ? ((revReal - costReal) / revReal) * 100 : (costReal > 0 ? -100 : 0);
             
@@ -197,10 +197,10 @@ async function runSyncV2() {
                 Id: r.Servico__c, 
                 ReceitaRealizada__c: revReal, 
                 CustoRealizado__c: costReal, 
-                MargemRealizada__c: marginReal,
+                MargemRealizada__c: parseFloat(marginReal.toFixed(2)),
                 ReceitaPrevista__c: revPrev, 
                 CustoPrevisto__c: costPrev, 
-                MargemPrevista__c: marginPrev
+                MargemPrevista__c: parseFloat(marginPrev.toFixed(2))
             };
         });
         if (svcsUpdate.length > 0) await bulkOperation(conn, 'Servico__c', 'update', svcsUpdate);

@@ -28,13 +28,23 @@ async function run() {
         console.log(JSON.stringify(rawData[0], null, 2));
 
         // 3. Simular mapeamento do serviceController.getSaleInstallmentsPreview
-        const mapped = rawData.map(p => ({
-            desc: p.descricao,
-            date: p.data_vencimento ? p.data_vencimento.split('T')[0] : null,
-            value: p.valor_composicao ? p.valor_composicao.valor_bruto : (p.valor_pago || 0),
-            status: p.status, // <--- Aqui está o ponto
-            month: p.data_vencimento ? p.data_vencimento.substring(0, 7) : null
-        }));
+        const mapped = rawData.map(p => {
+            let finalValue = (p.valor_composicao ? p.valor_composicao.valor_liquido : p.valor) || 0;
+            if (p.baixas && p.baixas.length > 0) {
+                finalValue = p.baixas.reduce((sum, b) => {
+                    const val = (b.valor_composicao ? b.valor_composicao.valor_liquido : b.valor_pago) || 0;
+                    return sum + val;
+                }, 0);
+            }
+
+            return {
+                desc: p.descricao,
+                date: p.data_vencimento ? p.data_vencimento.split('T')[0] : null,
+                value: finalValue,
+                status: p.status,
+                month: p.data_vencimento ? p.data_vencimento.substring(0, 7) : null
+            };
+        });
 
         console.log("\n--- DADOS MAPEADOS ENVIADOS AO FRONT ---");
         console.log(JSON.stringify(mapped[0], null, 2));

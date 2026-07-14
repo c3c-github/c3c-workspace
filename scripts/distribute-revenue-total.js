@@ -155,7 +155,14 @@ async function distributeRevenue() {
         }
 
         await logger.success("🏁 RATEIO DEFINITIVO CONCLUÍDO!");
-        process.exit(0);
+        console.log("Iniciando motor de sincronização e reconciliação V2 (sync-v2)...");
+        const { fork } = require('child_process');
+        const path = require('path');
+        const syncV2Process = fork(path.join(__dirname, 'sync-v2.js'));
+        syncV2Process.on('exit', (syncCode) => {
+            console.log(`Motor de sincronização V2 concluído com código ${syncCode}`);
+            process.exit(syncCode || 0);
+        });
     } catch (e) {
         await logger.fail(e);
         process.exit(1);

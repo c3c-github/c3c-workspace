@@ -86,12 +86,27 @@ async function syncAllSales() {
     }
 }
 
+function normalizeStatus(status) {
+    if (!status) return 'Pendente';
+    const sUpper = status.toUpperCase();
+    if (['QUITADO', 'PAGO', 'CONFIRMADO', 'APROVADO'].includes(sUpper)) return 'Pago';
+    if (['VENCIDO', 'ATRASADO'].includes(sUpper)) return 'Atrasado';
+    if (['CANCELADO'].includes(sUpper)) return 'Cancelado';
+    return 'Pendente';
+}
+
 async function syncSaleInstallments(conn, token, saleId) {
     const saleDetail = await axios.get(`${CA_API_URL}/venda/${saleId}`, {
         headers: { 'Authorization': `Bearer ${token}` }
     });
     const eventId = saleDetail.data.evento_financeiro ? saleDetail.data.evento_financeiro.id : null;
     if (!eventId) return;
+
+    // Atualiza o ID do evento financeiro no Salesforce
+    await conn.sobject('VendaContaAzul__c').upsert({
+        IDContaAzul__c: saleId,
+        IDEventoFinanceiro__c: eventId
+    }, 'IDContaAzul__c');
 
     const response = await axios.get(`${CA_API_URL}/financeiro/eventos-financeiros/${eventId}/parcelas`, {
         headers: { 'Authorization': `Bearer ${token}` }
@@ -100,17 +115,15 @@ async function syncSaleInstallments(conn, token, saleId) {
     if (installments.length === 0) return;
 
     const installmentsToUpsert = installments.map(p => {
-        // Utiliza o valor cheio faturado (valor_bruto) da composição, com fallbacks caso não exista
-        const finalValue = (p.valor_composicao && p.valor_composicao.valor_bruto !== undefined)
-            ? p.valor_composicao.valor_bruto
-            : (p.valor || p.valor_pago || 0);
+        // Utiliza o valor recebido líquido
+        const finalValue = p.valor_pago || p.valor || 0;
 
         return {
             IDContaAzul__c: p.id,
             VendaContaAzul__r: { IDContaAzul__c: saleId },
             Valor__c: finalValue,
-            DataVencimento__c: p.data_vencimento,
-            Status__c: p.status, // Status original do CA
+            DataVencimento__c: p.data_vencimento ? p.data_vencimento.split('T')[0] : null,
+            Status__c: normalizeStatus(p.status),
             Descricao__c: p.descricao || `Parcela da venda ${saleId}`
         };
     });

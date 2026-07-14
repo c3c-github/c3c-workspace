@@ -330,16 +330,80 @@ exports.saveSales = async (req, res) => {
         const existingLinksMap = {};
         existingLinks.records.forEach(r => existingLinksMap[r.Venda__r.IDContaAzul__c] = r.Id);
         
+        const path = require('path');
+
         for (const s of sales) {
             const salesInSf = await conn.query(`SELECT Id FROM VendaContaAzul__c WHERE IDContaAzul__c = '${s.id}' LIMIT 1`);
-            let sfSaleId = salesInSf.totalSize > 0 ? salesInSf.records[0].Id : (await conn.sobject('VendaContaAzul__c').create({ IDContaAzul__c: s.id, Name: s.number ? String(s.number) : 'S/N', DataEmissao__c: s.emissionDate, ValorTotal__c: s.total, Status__c: s.status })).id;
+            
+            // Busca parcelas do Conta Azul imediatamente
+            let installments = [];
+            let eventId = null;
+            try {
+                installments = await contaAzulService.getSaleInstallments(s.id);
+                if (installments && installments.length > 0) {
+                    eventId = installments[0].financialEventId;
+                }
+            } catch (err) {
+                console.error(`Erro ao buscar parcelas da venda ${s.id}:`, err.message);
+            }
+
+            const saleRecord = {
+                IDContaAzul__c: s.id,
+                Name: s.number ? `Venda ${s.number}` : 'S/N',
+                DataEmissao__c: s.emissionDate,
+                ValorTotal__c: s.total,
+                Status__c: s.status
+            };
+            if (eventId) {
+                saleRecord.IDEventoFinanceiro__c = eventId;
+            }
+
+            let sfSaleId;
+            if (salesInSf.totalSize > 0) {
+                sfSaleId = salesInSf.records[0].Id;
+                await conn.sobject('VendaContaAzul__c').update({ Id: sfSaleId, ...saleRecord });
+            } else {
+                const createResult = await conn.sobject('VendaContaAzul__c').create(saleRecord);
+                sfSaleId = createResult.id;
+            }
             
             if (existingLinksMap[s.id]) {
                 await conn.sobject('VendaServico__c').update({ Id: existingLinksMap[s.id], ValorAlocado__c: s.allocatedValue || s.total });
             } else {
                 await conn.sobject('VendaServico__c').create({ Servico__c: serviceId, Venda__c: sfSaleId, ValorAlocado__c: s.allocatedValue || s.total });
             }
+
+            // Salva as parcelas imediatamente no Salesforce
+            if (installments && installments.length > 0) {
+                const installmentsToUpsert = installments.map(p => {
+                    // Utiliza o valor recebido líquido
+                    const finalValue = p.valor_pago || p.valor || 0;
+
+                    return {
+                        IDContaAzul__c: p.id,
+                        VendaContaAzul__r: { IDContaAzul__c: s.id },
+                        Valor__c: finalValue,
+                        DataVencimento__c: p.data_vencimento ? p.data_vencimento.split('T')[0] : null,
+                        Status__c: p.status, // Já vem normalizado pelo contaAzulService
+                        Descricao__c: p.descricao || `Parcela da venda ${s.number}`
+                    };
+                });
+                await conn.sobject('ParcelaFinanceira__c').upsert(installmentsToUpsert, 'IDContaAzul__c');
+            }
         }
+
+        // Dispara o motor de recálculo (Rateio + Reconciliação V2) em segundo plano
+        try {
+            const { fork } = require('child_process');
+            const child = fork(path.join(__dirname, '../../scripts/distribute-revenue-total.js'), [], {
+                detached: true,
+                stdio: 'ignore'
+            });
+            child.unref();
+        } catch (err) {
+            console.error("Erro ao disparar recálculo em segundo plano:", err.message);
+        }
+
         res.json({ success: true });
     } catch (e) { res.status(500).json({ success: false, error: e.message }); }
 };
@@ -404,10 +468,8 @@ exports.getSaleInstallmentsPreview = async (req, res) => {
             else if (sUpper === 'VENCIDO') normalizedStatus = 'Atrasado';
             else if (sUpper === 'CANCELADO') normalizedStatus = 'Cancelado';
             
-            // Capturar valor cheio faturado (valor_bruto) da composição, com fallbacks caso não exista
-            const finalValue = (p.valor_composicao && p.valor_composicao.valor_bruto !== undefined)
-                ? p.valor_composicao.valor_bruto
-                : (p.valor || p.valor_pago || 0);
+            // Utiliza o valor recebido líquido
+            const finalValue = p.valor_pago || p.valor || 0;
 
             return { 
                 desc: p.descricao, 
