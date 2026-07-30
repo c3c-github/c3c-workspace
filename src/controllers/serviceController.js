@@ -376,8 +376,17 @@ exports.saveSales = async (req, res) => {
             // Salva as parcelas imediatamente no Salesforce
             if (installments && installments.length > 0) {
                 const installmentsToUpsert = installments.map(p => {
-                    const originalValue = p.originalValue || (p.valor_composicao ? (p.valor_composicao.valor_liquido || p.valor_composicao.valor_bruto || p.valor_composicao.valor) : null) || p.valor || p.valor_total || p.valor_pago || p.value || 0;
-                    const finalValue = p.valor_pago || p.value || originalValue;
+                    const originalValue = p.originalValue || (p.valor_composicao ? (p.valor_composicao.valor_bruto || p.valor_composicao.valor_liquido || p.valor_composicao.valor) : null) || p.valor || p.valor_total || p.value || 0;
+                    
+                    let finalValue = p.value || originalValue;
+                    if (p.baixas && Array.isArray(p.baixas) && p.baixas.length > 0) {
+                        finalValue = p.baixas.reduce((sum, b) => {
+                            const val = (b.valor_composicao ? (b.valor_composicao.valor_liquido || b.valor_composicao.valor_bruto || b.valor_composicao.valor) : null) || b.valor_pago || b.valor || 0;
+                            return sum + val;
+                        }, 0);
+                    } else if (p.valor_pago) {
+                        finalValue = p.valor_pago;
+                    }
 
                     return {
                         IDContaAzul__c: p.id || p.id_ca,
@@ -469,8 +478,17 @@ exports.getSaleInstallmentsPreview = async (req, res) => {
             else if (sUpper === 'VENCIDO') normalizedStatus = 'Atrasado';
             else if (sUpper === 'CANCELADO') normalizedStatus = 'Cancelado';
             
-            const originalValue = (p.valor_composicao ? (p.valor_composicao.valor_liquido || p.valor_composicao.valor_bruto || p.valor_composicao.valor) : null) || p.valor || p.valor_total || p.valor_pago || 0;
-            const finalValue = p.valor_pago || originalValue;
+            const originalValue = (p.valor_composicao ? (p.valor_composicao.valor_bruto || p.valor_composicao.valor_liquido || p.valor_composicao.valor) : null) || p.valor || p.valor_total || 0;
+            
+            let finalValue = originalValue;
+            if (p.baixas && Array.isArray(p.baixas) && p.baixas.length > 0) {
+                finalValue = p.baixas.reduce((sum, b) => {
+                    const val = (b.valor_composicao ? (b.valor_composicao.valor_liquido || b.valor_composicao.valor_bruto || b.valor_composicao.valor) : null) || b.valor_pago || b.valor || 0;
+                    return sum + val;
+                }, 0);
+            } else if (p.valor_pago) {
+                finalValue = p.valor_pago;
+            }
 
             return { 
                 desc: p.descricao, 

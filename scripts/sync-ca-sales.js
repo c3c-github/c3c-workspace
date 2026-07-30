@@ -115,8 +115,17 @@ async function syncSaleInstallments(conn, token, saleId) {
     if (installments.length === 0) return;
 
     const installmentsToUpsert = installments.map(p => {
-        const originalValue = (p.valor_composicao ? (p.valor_composicao.valor_liquido || p.valor_composicao.valor_bruto || p.valor_composicao.valor) : null) || p.valor || p.valor_total || p.valor_pago || 0;
-        const finalValue = p.valor_pago || originalValue;
+        const originalValue = (p.valor_composicao ? (p.valor_composicao.valor_bruto || p.valor_composicao.valor_liquido || p.valor_composicao.valor) : null) || p.valor || p.valor_total || 0;
+        
+        let finalValue = originalValue;
+        if (p.baixas && Array.isArray(p.baixas) && p.baixas.length > 0) {
+            finalValue = p.baixas.reduce((sum, b) => {
+                const val = (b.valor_composicao ? (b.valor_composicao.valor_liquido || b.valor_composicao.valor_bruto || b.valor_composicao.valor) : null) || b.valor_pago || b.valor || 0;
+                return sum + val;
+            }, 0);
+        } else if (p.valor_pago) {
+            finalValue = p.valor_pago;
+        }
 
         return {
             IDContaAzul__c: p.id,
