@@ -337,6 +337,11 @@
     </fieldPermissions>
     <fieldPermissions>
         <editable>true</editable>
+        <field>ParcelaFinanceira__c.ValorFaturar__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
         <field>Periodo__c.DataFim__c</field>
         <readable>true</readable>
     </fieldPermissions>

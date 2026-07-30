@@ -122,6 +122,7 @@ async function syncSaleInstallments(conn, token, saleId) {
             IDContaAzul__c: p.id,
             VendaContaAzul__r: { IDContaAzul__c: saleId },
             Valor__c: finalValue,
+            ValorFaturar__c: p.valor,
             DataVencimento__c: p.data_vencimento ? p.data_vencimento.split('T')[0] : null,
             Status__c: normalizeStatus(p.status),
             Descricao__c: p.descricao || `Parcela da venda ${saleId}`

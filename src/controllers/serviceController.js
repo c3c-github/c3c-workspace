@@ -380,12 +380,13 @@ exports.saveSales = async (req, res) => {
                     const finalValue = p.valor_pago || p.valor || 0;
 
                     return {
-                        IDContaAzul__c: p.id,
+                        IDContaAzul__c: p.id || p.id_ca,
                         VendaContaAzul__r: { IDContaAzul__c: s.id },
                         Valor__c: finalValue,
-                        DataVencimento__c: p.data_vencimento ? p.data_vencimento.split('T')[0] : null,
+                        ValorFaturar__c: p.originalValue || p.valor || 0,
+                        DataVencimento__c: p.date ? p.date : (p.data_vencimento ? p.data_vencimento.split('T')[0] : null),
                         Status__c: p.status, // Já vem normalizado pelo contaAzulService
-                        Descricao__c: p.descricao || `Parcela da venda ${s.number}`
+                        Descricao__c: p.desc || p.descricao || `Parcela da venda ${s.number}`
                     };
                 });
                 await conn.sobject('ParcelaFinanceira__c').upsert(installmentsToUpsert, 'IDContaAzul__c');
@@ -475,6 +476,7 @@ exports.getSaleInstallmentsPreview = async (req, res) => {
                 desc: p.descricao, 
                 date: p.data_vencimento ? p.data_vencimento.split('T')[0] : null, 
                 value: finalValue, 
+                originalValue: p.valor || 0,
                 status: p.status, 
                 id_ca: p.id 
             };
