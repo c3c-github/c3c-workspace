@@ -115,14 +115,14 @@ async function syncSaleInstallments(conn, token, saleId) {
     if (installments.length === 0) return;
 
     const installmentsToUpsert = installments.map(p => {
-        // Utiliza o valor recebido líquido
-        const finalValue = p.valor_pago || p.valor || 0;
+        const originalValue = (p.valor_composicao ? (p.valor_composicao.valor_liquido || p.valor_composicao.valor_bruto || p.valor_composicao.valor) : null) || p.valor || p.valor_total || p.valor_pago || 0;
+        const finalValue = p.valor_pago || originalValue;
 
         return {
             IDContaAzul__c: p.id,
             VendaContaAzul__r: { IDContaAzul__c: saleId },
             Valor__c: finalValue,
-            ValorFaturar__c: p.valor,
+            ValorFaturar__c: originalValue,
             DataVencimento__c: p.data_vencimento ? p.data_vencimento.split('T')[0] : null,
             Status__c: normalizeStatus(p.status),
             Descricao__c: p.descricao || `Parcela da venda ${saleId}`

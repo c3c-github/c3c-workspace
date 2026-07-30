@@ -376,14 +376,14 @@ exports.saveSales = async (req, res) => {
             // Salva as parcelas imediatamente no Salesforce
             if (installments && installments.length > 0) {
                 const installmentsToUpsert = installments.map(p => {
-                    // Utiliza o valor recebido líquido
-                    const finalValue = p.valor_pago || p.valor || 0;
+                    const originalValue = p.originalValue || (p.valor_composicao ? (p.valor_composicao.valor_liquido || p.valor_composicao.valor_bruto || p.valor_composicao.valor) : null) || p.valor || p.valor_total || p.valor_pago || p.value || 0;
+                    const finalValue = p.valor_pago || p.value || originalValue;
 
                     return {
                         IDContaAzul__c: p.id || p.id_ca,
                         VendaContaAzul__r: { IDContaAzul__c: s.id },
                         Valor__c: finalValue,
-                        ValorFaturar__c: p.originalValue || p.valor || 0,
+                        ValorFaturar__c: originalValue,
                         DataVencimento__c: p.date ? p.date : (p.data_vencimento ? p.data_vencimento.split('T')[0] : null),
                         Status__c: p.status, // Já vem normalizado pelo contaAzulService
                         Descricao__c: p.desc || p.descricao || `Parcela da venda ${s.number}`
@@ -469,14 +469,14 @@ exports.getSaleInstallmentsPreview = async (req, res) => {
             else if (sUpper === 'VENCIDO') normalizedStatus = 'Atrasado';
             else if (sUpper === 'CANCELADO') normalizedStatus = 'Cancelado';
             
-            // Utiliza o valor recebido líquido
-            const finalValue = p.valor_pago || p.valor || 0;
+            const originalValue = (p.valor_composicao ? (p.valor_composicao.valor_liquido || p.valor_composicao.valor_bruto || p.valor_composicao.valor) : null) || p.valor || p.valor_total || p.valor_pago || 0;
+            const finalValue = p.valor_pago || originalValue;
 
             return { 
                 desc: p.descricao, 
                 date: p.data_vencimento ? p.data_vencimento.split('T')[0] : null, 
                 value: finalValue, 
-                originalValue: p.valor || 0,
+                originalValue: originalValue,
                 status: p.status, 
                 id_ca: p.id 
             };
